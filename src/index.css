@@ -1,0 +1,91 @@
+@import "tailwindcss";
+/* Import Serif for Oulamauna and Arabic for the script */
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400..900;1,400..900&family=Amiri:ital,wght@0,400;0,700;1,400;1,700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Amiri:ital,wght@0,400;0,700;1,400;1,700&display=swap');
+:root {
+  /* THE PRINCIPAL GREEN PALETTE */
+  --color-jade-dark: #285B4B;    /* Principal Branding & Main Buttons (DMC 561) */
+  --color-jade-medium: #7DA89B;  /* Secondary / Active Tints (DMC 503) */
+  --color-gold-beige: #D8BF86;   /* Icon & Call-to-Action Text (DMC 3046) */
+  --color-mocha-light: #B8B09A;  /* Muted Text / Borders (DMC 3782) */
+  --color-cocoa: #7F635E;        /* Warm Neutral Contrast (DMC 3860) */
+ 
+ 
+}
+:root {
+  /* ── Islamic Design Palette ── */
+  --color-jade: #285B4B;       /* Background, primary */
+  --color-gold-rich: #C9A84C;  /* Active, hover, CTA */
+  --color-gold-light: #B8B09A; /* Default text, icons */
+  
+  /* ── Transitions ── */
+  --transition-fast: 150ms ease;
+  --transition-normal: 200ms ease;
+}
+
+:root {
+  /* ── ISLAMIC DESIGN PALETTE ── */
+  
+  /* Green/Jade Family */
+  --color-jade-dark: #285B4B;      /* Primary background */
+  --color-jade-medium: #7DA89B;    /* Secondary accents, gradients */
+  --color-jade-deep: #1f4a3d;      /* Darker shade for gradient depth */
+  
+  /* Gold Family */
+  --color-gold-rich: #C9A84C;      /* Primary gold - CTAs, active */
+  --color-gold-beige: #D8BF86;     /* Secondary gold - decorative */
+  --color-gold-light: #B8B09A;     /* Muted text, icons */
+  
+  /* Neutral/Warm Family */
+  --color-cocoa: #7F635E;          /* Warm neutral text */
+  --color-cocoa-light: #9a847e;    /* Lighter cocoa for hover */
+  
+  /* White/Overlay */
+  --color-white: #FFFFFF;
+  --color-white-dim: rgba(255, 255, 255, 0.7);
+  
+  /* Warning/Danger (for logout) */
+  --color-warning: rgba(220, 38, 38, 0.1);
+  --color-warning-border: rgba(220, 38, 38, 0.3);
+
+  /* ── Transitions ── */
+  --transition-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-normal: 200ms cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-slow: 300ms cubic-bezier(0.4, 0, 0.2, 1);
+
+  /* ── Shadows ─ */
+  --shadow-soft: 0 8px 32px rgba(28, 70, 55, 0.4);
+  --shadow-gold: 0 4px 20px rgba(201, 168, 76, 0.25);
+  --shadow-dropdown: 0 20px 60px rgba(0, 0, 0, 0.4);
+  
+  /* ── Border Radius ── */
+  --radius-sm: 12px;
+  --radius-md: 16px;
+  --radius-lg: 20px;
+  --radius-xl: 24px;
+  --radius-full: 9999px;
+}
+
+/* ── Global Smooth Hover ── */
+a,
+button,
+[role="button"] {
+  transition: all var(--transition-normal);
+}
+
+
+
+
+/* ── Arabic Font ── */
+[lang="ar"],
+[dir="rtl"] {
+  font-family: 'Amiri', 'Noto Naskh Arabic', serif;
+}
+
+.font-serif {
+  font-family: 'Playfair Display', serif;
+}
+
+.font-arabic {
+  font-family: 'Amiri', serif;
+}
