@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { Link, useSearchParams, useNavigate } from "react-router-dom";
-import { Mail, RefreshCw, LogIn, ExternalLink, Check, BadgeCheck, ArrowLeft } from "lucide-react";
+import { Mail, RefreshCw, LogIn, ExternalLink, Check, BadgeCheck, ArrowLeft, AlertCircle } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 // @ts-ignore
 import libraryImg from "../assets/library-1.jpg";
@@ -16,6 +16,7 @@ const VerifyEmailPending: React.FC<{ lang?: Language }> = ({ lang = "EN" }) => {
   const [resent, setResent] = useState(false);
   const [checking, setChecking] = useState(true);
   const [isVerified, setIsVerified] = useState(false);
+  const [error, setError] = useState<string | null>(null); // New error state
 
   const email = (searchParams.get("email") || user?.email || "").toLowerCase();
 
@@ -33,6 +34,7 @@ const VerifyEmailPending: React.FC<{ lang?: Language }> = ({ lang = "EN" }) => {
       resentSuccess: "SENT",
       backToLogin: "BACK TO LOGIN",
       checking: "Checking your status...",
+      errorMessage: "Something went wrong. Please try again.",
     },
     AR: {
       category: "أمان الحساب",
@@ -47,6 +49,7 @@ const VerifyEmailPending: React.FC<{ lang?: Language }> = ({ lang = "EN" }) => {
       resentSuccess: "تم الإرسال",
       backToLogin: "العودة",
       checking: "جاري التحقق...",
+      errorMessage: "حدث خطأ ما. يرجى المحاولة مرة أخرى.",
     },
     FR: {
       category: "SÉCURITÉ DU COMPTE",
@@ -61,41 +64,25 @@ const VerifyEmailPending: React.FC<{ lang?: Language }> = ({ lang = "EN" }) => {
       resentSuccess: "ENVOYÉ",
       backToLogin: "RETOUR",
       checking: "Vérification en cours...",
+      errorMessage: "Une erreur est survenue. Veuillez réessayer.",
     },
   };
 
   const t = content[lang] || content.EN;
 
-  // ✅ On mount: Check status using AuthContext (Passive check, no email sent)
   useEffect(() => {
     setVisible(true);
-
     const initialCheck = async () => {
       setChecking(true);
-      try {
-        await checkUserStatus();
-        // Check context state after call
-        if (user && (user as any).isVerified) {
-          setIsVerified(true);
-        }
-      } catch (error) {
-        console.error("Initial status check failed:", error);
-      } finally {
-        setChecking(false);
-      }
+      await checkUserStatus();
+      setChecking(false);
     };
-
     initialCheck();
-  }, [checkUserStatus]);
+  }, []);
 
-  // ✅ Polling & Storage Sync
   useEffect(() => {
     const pollInterval = setInterval(async () => {
       await checkUserStatus();
-      // Since checkUserStatus returns void, we check the 'user' object from context
-      if (user && (user as any).isVerified) {
-        setIsVerified(true);
-      }
     }, 3000);
 
     const handleStorageChange = (e: StorageEvent) => {
@@ -110,35 +97,39 @@ const VerifyEmailPending: React.FC<{ lang?: Language }> = ({ lang = "EN" }) => {
       clearInterval(pollInterval);
       window.removeEventListener("storage", handleStorageChange);
     };
-  }, [checkUserStatus, user]); // Added user to dependency array
+  }, []);
 
-  // ✅ Watch for user verification status changes to trigger navigate
   useEffect(() => {
     if (user && (user as any).isVerified) {
-       setIsVerified(true);
+      setIsVerified(true);
     }
   }, [user]);
 
-  // ✅ handleResend: The ONLY place where an email trigger is called
   const handleResend = async () => {
     if (loading || resent) return;
     setLoading(true);
+    setError(null); // Clear previous errors
     try {
       const response = await fetch("http://localhost:5000/api/auth/resend-verification", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email }), 
+        body: JSON.stringify({ email }),
       });
+      
+      const data = await response.json();
+
       if (response.ok) {
         setResent(true);
       } else {
-        const data = await response.json();
         if (response.status === 400 && (data.message === "Email is already verified" || data.message === "User is already verified")) {
           setIsVerified(true);
+        } else {
+          setError(data.message || t.errorMessage);
         }
       }
     } catch (error) {
       console.error("Resend failed:", error);
+      setError(t.errorMessage);
     } finally {
       setLoading(false);
     }
@@ -205,6 +196,15 @@ const VerifyEmailPending: React.FC<{ lang?: Language }> = ({ lang = "EN" }) => {
                 <p className="text-[#285B4B] font-bold text-[10px] tracking-wider break-all">{email}</p>
               )}
             </div>
+
+            {/* ERROR MESSAGE DISPLAY */}
+            {error && (
+              <div className="mb-4 flex items-center gap-2 text-red-600 bg-red-50 p-2 rounded w-full justify-center animate-in fade-in slide-in-from-top-1">
+                <AlertCircle className="w-3 h-3" />
+                <span className="text-[10px] font-medium">{error}</span>
+              </div>
+            )}
+
             <button
               onClick={() => window.open("https://mail.google.com/mail/u/0/#search/OULAMAUNA", "_blank")}
               className="w-full max-w-[200px] bg-[#1f4539] hover:bg-[#C9A84C] text-white py-3 rounded-sm text-[9px] font-bold tracking-[0.2em] transition-all flex items-center justify-center gap-2 mb-4"
@@ -216,12 +216,14 @@ const VerifyEmailPending: React.FC<{ lang?: Language }> = ({ lang = "EN" }) => {
               <button
                 onClick={handleResend}
                 disabled={loading || resent}
-                className="flex items-center gap-2 text-[8px] text-[#B59A5B] hover:text-[#285B4B] font-bold uppercase tracking-widest transition-colors"
+                className={`flex items-center gap-2 text-[8px] font-bold uppercase tracking-widest transition-colors ${
+                  resent ? "text-[#285B4B]" : "text-[#B59A5B] hover:text-[#285B4B]"
+                }`}
               >
                 {loading ? (
                   <RefreshCw className="w-3 h-3 animate-spin" />
                 ) : resent ? (
-                  <Check className="w-3 h-3 text-[#285B4B]" />
+                  <Check className="w-3 h-3" />
                 ) : (
                   <RefreshCw className="w-3 h-3" />
                 )}

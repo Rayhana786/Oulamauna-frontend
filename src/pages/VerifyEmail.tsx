@@ -48,7 +48,7 @@ const VerifyEmail: React.FC<{ lang?: Language }> = ({ lang = "EN" }) => {
           icon: "mail",
           showResend: true,
           actions: [
-            { label: "or go to Login", to: "/login", primary: false },
+            { label: "Back to Home", to: "/", primary: false },
           ],
         },
         invalid_token: {
@@ -57,7 +57,7 @@ const VerifyEmail: React.FC<{ lang?: Language }> = ({ lang = "EN" }) => {
           icon: "mail",
           showResend: false,
           actions: [
-            { label: "Try Logging In", to: "/login", primary: true },
+            { label: "Back to Home", to: "/", primary: true },
             { label: "or create a new account", to: "/register", primary: false },
           ],
         },
@@ -67,7 +67,7 @@ const VerifyEmail: React.FC<{ lang?: Language }> = ({ lang = "EN" }) => {
           icon: "clock",
           showResend: true,
           actions: [
-            { label: "or create a new account", to: "/register", primary: false },
+            { label: "Back to Home", to: "/", primary: false },
           ],
         },
         network: {
@@ -77,7 +77,7 @@ const VerifyEmail: React.FC<{ lang?: Language }> = ({ lang = "EN" }) => {
           showResend: false,
           actions: [
             { label: "Try Again", to: null, primary: true, reload: true },
-            { label: "or go Home", to: "/", primary: false },
+            { label: "Back to Home", to: "/", primary: false },
           ],
         },
         server: {
@@ -87,7 +87,7 @@ const VerifyEmail: React.FC<{ lang?: Language }> = ({ lang = "EN" }) => {
           showResend: false,
           actions: [
             { label: "Try Again", to: null, primary: true, reload: true },
-            { label: "or go Home", to: "/", primary: false },
+            { label: "Back to Home", to: "/", primary: false },
           ],
         },
         unknown: {
@@ -96,8 +96,7 @@ const VerifyEmail: React.FC<{ lang?: Language }> = ({ lang = "EN" }) => {
           icon: "alert",
           showResend: false,
           actions: [
-            { label: "Create New Account", to: "/register", primary: true },
-            { label: "or go to Login", to: "/login", primary: false },
+            { label: "Back to Home", to: "/", primary: true },
           ],
         },
       },
@@ -123,7 +122,7 @@ const VerifyEmail: React.FC<{ lang?: Language }> = ({ lang = "EN" }) => {
           subtitle: "لم يتم العثور على رمز التحقق. أدخل بريدك للحصول على رابط جديد.",
           icon: "mail",
           showResend: true,
-          actions: [{ label: "أو الذهاب لتسجيل الدخول", to: "/login", primary: false }],
+          actions: [{ label: "العودة للرئيسية", to: "/", primary: false }],
         },
         invalid_token: {
           title: "رابط غير صالح",
@@ -131,7 +130,7 @@ const VerifyEmail: React.FC<{ lang?: Language }> = ({ lang = "EN" }) => {
           icon: "mail",
           showResend: false,
           actions: [
-            { label: "تسجيل الدخول", to: "/login", primary: true },
+            { label: "العودة للرئيسية", to: "/", primary: true },
             { label: "أو إنشاء حساب جديد", to: "/register", primary: false },
           ],
         },
@@ -140,7 +139,7 @@ const VerifyEmail: React.FC<{ lang?: Language }> = ({ lang = "EN" }) => {
           subtitle: "انتهت صلاحية الرابط. أدخل بريدك لاستلام رابط جديد.",
           icon: "clock",
           showResend: true,
-          actions: [{ label: "أو إنشاء حساب جديد", to: "/register", primary: false }],
+          actions: [{ label: "العودة للرئيسية", to: "/", primary: false }],
         },
         network: {
           title: "خطأ في الاتصال",
@@ -149,7 +148,7 @@ const VerifyEmail: React.FC<{ lang?: Language }> = ({ lang = "EN" }) => {
           showResend: false,
           actions: [
             { label: "حاول مجدداً", to: null, primary: true, reload: true },
-            { label: "أو الصفحة الرئيسية", to: "/", primary: false },
+            { label: "العودة للرئيسية", to: "/", primary: false },
           ],
         },
         server: {
@@ -159,7 +158,7 @@ const VerifyEmail: React.FC<{ lang?: Language }> = ({ lang = "EN" }) => {
           showResend: false,
           actions: [
             { label: "حاول مجدداً", to: null, primary: true, reload: true },
-            { label: "أو الصفحة الرئيسية", to: "/", primary: false },
+            { label: "العودة للرئيسية", to: "/", primary: false },
           ],
         },
         unknown: {
@@ -168,8 +167,7 @@ const VerifyEmail: React.FC<{ lang?: Language }> = ({ lang = "EN" }) => {
           icon: "alert",
           showResend: false,
           actions: [
-            { label: "إنشاء حساب جديد", to: "/register", primary: true },
-            { label: "أو تسجيل الدخول", to: "/login", primary: false },
+            { label: "العودة للرئيسية", to: "/", primary: true },
           ],
         },
       },
@@ -195,7 +193,7 @@ const VerifyEmail: React.FC<{ lang?: Language }> = ({ lang = "EN" }) => {
           subtitle: "Aucun jeton trouvé. Entrez votre e-mail pour recevoir un nouveau lien.",
           icon: "mail",
           showResend: true,
-          actions: [{ label: "ou aller à la connexion", to: "/login", primary: false }],
+          actions: [{ label: "Retour à l'accueil", to: "/", primary: false }],
         },
         invalid_token: {
           title: "Lien invalide",
@@ -203,7 +201,7 @@ const VerifyEmail: React.FC<{ lang?: Language }> = ({ lang = "EN" }) => {
           icon: "mail",
           showResend: false,
           actions: [
-            { label: "Essayer de se connecter", to: "/login", primary: true },
+            { label: "Retour à l'accueil", to: "/", primary: true },
             { label: "ou créer un nouveau compte", to: "/register", primary: false },
           ],
         },
@@ -212,7 +210,7 @@ const VerifyEmail: React.FC<{ lang?: Language }> = ({ lang = "EN" }) => {
           subtitle: "Ce lien a expiré. Entrez votre e-mail pour en recevoir un nouveau.",
           icon: "clock",
           showResend: true,
-          actions: [{ label: "ou créer un nouveau compte", to: "/register", primary: false }],
+          actions: [{ label: "Retour à l'accueil", to: "/", primary: false }],
         },
         network: {
           title: "Erreur de connexion",
@@ -221,7 +219,7 @@ const VerifyEmail: React.FC<{ lang?: Language }> = ({ lang = "EN" }) => {
           showResend: false,
           actions: [
             { label: "Réessayer", to: null, primary: true, reload: true },
-            { label: "ou aller à l'accueil", to: "/", primary: false },
+            { label: "Retour à l'accueil", to: "/", primary: false },
           ],
         },
         server: {
@@ -231,7 +229,7 @@ const VerifyEmail: React.FC<{ lang?: Language }> = ({ lang = "EN" }) => {
           showResend: false,
           actions: [
             { label: "Réessayer", to: null, primary: true, reload: true },
-            { label: "ou aller à l'accueil", to: "/", primary: false },
+            { label: "Retour à l'accueil", to: "/", primary: false },
           ],
         },
         unknown: {
@@ -240,8 +238,7 @@ const VerifyEmail: React.FC<{ lang?: Language }> = ({ lang = "EN" }) => {
           icon: "alert",
           showResend: false,
           actions: [
-            { label: "Créer un nouveau compte", to: "/register", primary: true },
-            { label: "ou aller à la connexion", to: "/login", primary: false },
+            { label: "Retour à l'accueil", to: "/", primary: true },
           ],
         },
       },

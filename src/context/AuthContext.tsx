@@ -21,34 +21,49 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
 
-  const fetchMe = useCallback(async (): Promise<any | null> => {
+  const fetchMe = useCallback(async (): Promise<any> => {
     try {
       const response = await fetch(`${API_URL}/me`, {
         method: "GET",
         headers: { "Content-Type": "application/json" },
-        
+        credentials: "include",
       });
 
       if (response.ok) {
         const data = await response.json();
         return data;
       }
-      return null;
+
+      // 401 = no token = definitely logged out
+      if (response.status === 401) return null;
+
+      // 500 or anything else = server problem, don't log out
+      return undefined;
     } catch (error) {
       console.error("Auth check failed:", error);
-      return null;
+      // Network error — don't log out, server might be temporarily down
+      return undefined;
     }
   }, []);
 
   const checkUserStatus = useCallback(async (): Promise<boolean> => {
     const userData = await fetchMe();
+
     if (userData && (userData.id || userData._id)) {
+      // ✅ Got valid user data
       setUser(userData);
       setIsLoggedIn(true);
       return true;
     }
-    setUser(null);
-    setIsLoggedIn(false);
+
+    if (userData === null) {
+      // ✅ Definitely no token (401) — log out
+      setUser(null);
+      setIsLoggedIn(false);
+      return false;
+    }
+
+    // undefined = server error or network issue — keep current state, don't log out
     return false;
   }, [fetchMe]);
 
@@ -64,7 +79,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return () => { mounted = false; };
   }, [checkUserStatus]);
 
-  // Accepts user data directly from login response — avoids race condition with cookie
   const login = useCallback((userData: any, redirectTo?: string) => {
     setUser(userData);
     setIsLoggedIn(true);
@@ -73,7 +87,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   }, [navigate]);
 
-  // ✅ wrapped in useCallback so it doesn't re-create on every render
   const logout = useCallback(async () => {
     try {
       await fetch(`${API_URL}/logout`, {
