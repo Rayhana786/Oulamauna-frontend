@@ -1,0 +1,551 @@
+{
+  "sidebar": {
+    "brandName": "Oulamauna",
+    "role": "Administrateur du portail",
+    "signOut": "Se déconnecter",
+    "section": {
+      "archives": "Archives & Manuscrits",
+      "engagement": "Engagement",
+      "administration": "Administration"
+    },
+    "dashboard": "Tableau de bord",
+    "scholars": "Savants",
+    "allScholars": "Tous les savants",
+    "addScholar": "Ajouter un savant",
+    "reviewDesk": "Bureau de révision",
+    "newScholars": "Nouveaux savants",
+    "pendingEdits": "Modifications en attente",
+    "mediaVerification": "Vérification des médias",
+    "worksVerification": "Vérification des œuvres",
+    "activeReview": "En cours de révision",
+    "archive": "Archive",
+    "changesRequested": "Modifications demandées",
+    "rejected": "Rejeté",
+    "disciplines": "Disciplines",
+    "communityHub": "Espace communautaire",
+    "allPosts": "Tous les articles",
+    "reported": "Signalés",
+    "userManagement": "Gestion des utilisateurs",
+    "contributors": "Contributeurs",
+    "bannedUsers": "Utilisateurs bannis",
+    "reports": "Rapports",
+    "notifications": "Notifications",
+    "settings": "Paramètres",
+    "translation": "Traduction",
+    "regions": "Régions",
+    "backups": "Sauvegardes"
+  },
+  "navbar": {
+    "dashboard": "Tableau de bord",
+    "searchPlaceholder": "Rechercher dans les archives...",
+    "language": "Langue",
+    "notifications": "Notifications",
+    "viewAll": "Voir tout",
+    "adminName": "Pr. Al-Hadi",
+    "adminRole": "Admin",
+    "profile": "Mon profil",
+    "settings": "Paramètres",
+    "signOut": "Se déconnecter",
+    "notif": {
+      "newScholar": "Nouveau savant ajouté",
+      "newScholarSub": "Biographie d'Ibn Taymiyya soumise",
+      "editProposed": "Modification proposée",
+      "editProposedSub": "Mise à jour du chapitre Al-Muqaddimah",
+      "mediaUploaded": "Médias téléversés",
+      "mediaUploadedSub": "Scan du manuscrit vérifié",
+      "reported": "Contenu signalé",
+      "reportedSub": "Un utilisateur a signalé une traduction"
+    }
+  },
+  "dashboard": {
+    "header": {
+      "eyebrow": "OULAMAUNA · ADMIN",
+      "title": "Vue d'ensemble administrative",
+      "subtitle": "Révisez les soumissions, surveillez la santé de la plateforme et gérez les archives savantes."
+    },
+    "stat": {
+      "scholars": "Savants enregistrés",
+      "scholarsSub": "+12 ajoutés ce mois",
+      "works": "Œuvres archivées",
+      "worksSub": "98 % d'intégrité des données",
+      "pending": "En attente de révision",
+      "pendingSub": "12 éléments prioritaires",
+      "contributors": "Contributeurs",
+      "contributorsSub": "Comptes académiques actifs"
+    },
+    "chart": {
+      "eyebrow": "ACTIVITÉ DES MANUSCRITS",
+      "title": "Soumissions dans le temps",
+      "hijri": "HÉGIRIEN",
+      "gregorian": "GRÉGORIEN"
+    },
+    "month": {
+      "muharram": "Muh.",
+      "safar": "Saf.",
+      "rabiI": "Rab. I",
+      "rabiII": "Rab. II",
+      "jumadaI": "Jum. I",
+      "jumadaII": "Jum. II",
+      "rajab": "Raj."
+    },
+    "review": {
+      "eyebrow": "FILE DE RÉVISION",
+      "reports": "Contenu signalé",
+      "blogFlag": "Articles de blog signalés",
+      "notifs": "Notifications",
+      "viewAll": "Voir tout en attente"
+    },
+    "cat": {
+      "eyebrow": "DISCIPLINES",
+      "title": "Savants par spécialisation",
+      "fiqh": "Fiqh (Droit islamique)",
+      "hadith": "Sciences du Hadith",
+      "tafsir": "Exégèse coranique",
+      "usul": "Usul al-Fiqh",
+      "tasawwuf": "Soufisme",
+      "nahw": "Grammaire arabe"
+    },
+    "century": {
+      "eyebrow": "CHRONOLOGIE",
+      "title": "Savants par siècle hégirien",
+      "label": "Siècles hégiriens (I – X)",
+      "scholars": "savants"
+    },
+    "region": {
+      "eyebrow": "RÉGIONS",
+      "maghreb": "Maghreb",
+      "mashriq": "Machreq",
+      "andalus": "Andalousie",
+      "other": "Autre"
+    },
+    "activity": {
+      "eyebrow": "ACTIVITÉ RÉCENTE",
+      "viewAll": "Voir tout",
+      "duplicateBio": "Profil en double",
+      "duplicateBioSub": "Sujet : Ibn Taymiyya",
+      "newTranslation": "Nouveau brouillon de traduction",
+      "newTranslationSub": "Œuvre : Al-Muqaddimah",
+      "newContributor": "Nouvelle demande de contributeur",
+      "newContributorSub": "Utilisateur : dr_fatima_a",
+      "contentReported": "Contenu signalé",
+      "contentReportedSub": "Article signalé par 2 utilisateurs",
+      "time2m": "Il y a 2 min",
+      "time3h": "Il y a 3 h",
+      "time8h": "Il y a 8 h",
+      "timeYesterday": "Hier"
+    },
+    "badge": {
+      "urgent": "Haute priorité",
+      "pending": "En cours de révision",
+      "requestAccess": "Demande d'accès",
+      "review": "À réviser"
+    },
+    "quick": {
+      "eyebrow": "ACTIONS RAPIDES",
+      "addScholar": "Ajouter un savant",
+      "reviewPending": "Réviser les en attente",
+      "moderateForum": "Modérer le forum",
+      "manageUsers": "Gérer les utilisateurs",
+      "viewReports": "Voir les rapports",
+      "systemSettings": "Paramètres système"
+    },
+    "health": {
+      "eyebrow": "SANTÉ DE LA PLATEFORME",
+      "backup": "Sauvegarde OK",
+      "search": "Recherche OK",
+      "media": "Médias OK",
+      "email": "Erreur e-mail",
+      "lastBackup": "Dernière sauvegarde",
+      "lastBackupValue": "Aujourd'hui, 03:00"
+    }
+  },
+  "scholars": {
+    "newScholars": {
+      "title": "Nouveaux savants",
+      "subtitle": "Révisez les profils de savants récemment soumis avant leur publication dans les archives.",
+      "updatedLabel": "Mis à jour à l'instant",
+      "empty": "Aucune soumission dans la file.",
+      "noResults": "Aucune soumission ne correspond à votre recherche."
+    },
+    "stats": {
+      "totalPending": "Total en attente",
+      "priorityReview": "Révision prioritaire",
+      "underReview": "En cours de révision",
+      "changesRequested": "Modifications demandées"
+    },
+    "search": {
+      "placeholder": "Rechercher par nom, contributeur ou discipline..."
+    },
+    "tabs": {
+      "all": "Tout"
+    },
+    "langVersion": {
+      "en": "Version anglaise",
+      "ar": "Version arabe",
+      "fr": "Version française"
+    },
+    "table": {
+      "scholar": "Savant",
+      "submittedBy": "Soumis par",
+      "date": "Date",
+      "languages": "Langues",
+      "status": "Statut",
+      "actions": "Actions"
+    },
+    "status": {
+      "pending": "En attente",
+      "underReview": "En cours de révision",
+      "changesRequested": "Modifications demandées"
+    },
+    "actions": {
+      "view": "Voir la soumission",
+      "review": "Réviser",
+      "approve": "Approuver",
+      "reject": "Rejeter",
+      "strip": "Retirer les privilèges de contributeur"
+    },
+    "strip": {
+      "title": "Retirer les privilèges de contributeur ?",
+      "body": "Cela supprimera les privilèges de contributeur de {name} et supprimera toutes ses soumissions en attente. Cette action est irréversible.",
+      "confirm": "Retirer les privilèges"
+    },
+    "review": {
+      "cancel": "Annuler"
+    }
+  },
+  "scholarReview": {
+    "badge": {
+      "newSubmission": "NOUVELLE SOUMISSION"
+    },
+    "hero": {
+      "submitter": "Soumis par",
+      "highImpact": "1 soumission à fort impact"
+    },
+    "submittedLang": {
+      "en": "Anglais (principal)",
+      "ar": "Arabe (principal)",
+      "fr": "Français (principal)"
+    },
+    "editBar": {
+      "label": "Édition — corrigez les fautes ou modifiez n'importe quel champ, puis confirmez.",
+      "cancel": "Annuler",
+      "confirm": "Confirmer"
+    },
+    "actions": {
+      "editPage": "Modifier la page",
+      "reject": "Rejeter / Demander des modifications",
+      "approve": "Approuver la soumission"
+    },
+    "modal": {
+      "approveTitle": "Approuver cette soumission ?",
+      "rejectTitle": "Rejeter ou demander des modifications ?",
+      "stripTitle": "Retirer l'accès contributeur ?",
+      "approveSub": "Cela publiera {name} dans l'encyclopédie.",
+      "unreviewed": "nouvelles disciplines non révisées seront ajoutées automatiquement.",
+      "rejectSub": "Indiquez éventuellement au contributeur ce qui doit être modifié. Laissez vide pour rejeter sans message.",
+      "stripSub": "Cela supprime les privilèges contributeur de {name}. Cette action est enregistrée.",
+      "rejectPlaceholder": "Ex. : Veuillez vérifier l'année de naissance — les sources divergent entre 1905 et 1906.",
+      "confirmApprove": "Approuver",
+      "confirmReject": "Rejeter",
+      "confirmSendReject": "Envoyer et rejeter",
+      "confirmStrip": "Retirer l'accès"
+    },
+    "sections": {
+      "biography": "Biographie académique",
+      "lineage": "Filiation intellectuelle & relations",
+      "bibliography": "Bibliographie",
+      "media": "Documents & Médias",
+      "references": "Références académiques"
+    },
+    "bio": {
+      "wordCount": "Nombre de mots : {n} mots",
+      "readingTime": "Temps de lecture : ~{n} min"
+    },
+    "lineage": {
+      "teachers": "Maîtres & influences",
+      "disciples": "Disciples notables"
+    },
+    "works": {
+      "title": "TITRE",
+      "year": "ANNÉE",
+      "format": "FORMAT",
+      "access": "ACCÈS NUMÉRIQUE",
+      "view": "VOIR",
+      "viewPdf": "Voir le PDF"
+    },
+    "media": {
+      "viewPdf": "Voir le PDF",
+      "viewPhotos": "Voir les photos",
+      "watch": "Regarder",
+      "listen": "Écouter",
+      "open": "Ouvrir"
+    },
+    "sidebar": {
+      "vitalStats": "Données biographiques",
+      "name": "Nom",
+      "born": "Naissance",
+      "died": "Décès",
+      "lifespan": "Durée de vie",
+      "region": "Région",
+      "century": "Siècle",
+      "discipline": "Discipline",
+      "expertiseClusters": "Domaines d'expertise",
+      "submitterNote": "Note du contributeur"
+    },
+    "chips": {
+      "kept": "conservé",
+      "removed": "supprimé",
+      "pending": "en attente",
+      "keepPrompt": "Conserver « {label} » ?",
+      "yesAdd": "Oui, ajouter",
+      "undo": "annuler",
+      "keepTitle": "Conserver cette discipline",
+      "removeTitle": "Supprimer cette discipline",
+      "hint": "= nouvelle discipline proposée par le contributeur — décidez de conserver ou supprimer"
+    }
+  },
+  "reviewQueue": {
+    "title": "File de révision",
+    "subtitle": "Gérer les profils de savants entrants et les contributions archivistiques. Assurez-vous que toutes les métadonnées respectent les normes.",
+    "stats": {
+      "totalPending": "Total en attente",
+      "overdue": "En retard (>3 jours)",
+      "newToday": "Nouveau aujourd'hui",
+      "avgTime": "Temps moyen de révision",
+      "thisWeek": "Cette semaine"
+    },
+    "filters": {
+      "title": "Filtrer les soumissions",
+      "clearAll": "Tout effacer",
+      "language": "Langue",
+      "allLanguages": "Toutes les langues",
+      "discipline": "Discipline",
+      "allDisciplines": "Toutes les disciplines",
+      "type": "Type",
+      "allTypes": "Tous les types",
+      "newProfile": "Nouveau profil",
+      "contentEdit": "Modification de contenu",
+      "sort": "Trier"
+    },
+    "sort": {
+      "newest": "Plus récent d'abord",
+      "oldest": "Plus ancien d'abord",
+      "nameAZ": "Nom (A-Z)"
+    },
+    "lang": {
+      "en": "Anglais",
+      "ar": "Arabe",
+      "fr": "Français"
+    },
+    "table": {
+      "title": "Nouvelles soumissions de savants",
+      "updated": "Mis à jour il y a 2 min",
+      "scholar": "Savant",
+      "editor": "Éditeur",
+      "editType": "Type de modification",
+      "submitted": "Soumis le",
+      "actions": "Actions",
+      "empty": "Aucune soumission trouvée"
+    },
+    "editTypes": {
+      "bioModified": "Biographie mise à jour",
+      "workAdded": "Nouvelle œuvre ajoutée",
+      "workModified": "Œuvre modifiée",
+      "mediaAdded": "Médias ajoutés",
+      "mediaModified": "Médias mis à jour",
+      "vitalsUpdated": "Données vitales mises à jour",
+      "disciplineAdded": "Discipline ajoutée"
+    },
+    "pagination": {
+      "showing": "Affichage de {start}–{end} sur {total} soumissions"
+    },
+    "actions": {
+      "review": "Réviser",
+      "approve": "Approuver",
+      "reject": "Rejeter",
+      "strip": "Retirer le contributeur"
+    },
+    "modal": {
+      "title": "Retirer le contributeur",
+      "body": "Êtes-vous sûr de vouloir supprimer toutes les soumissions de {name} ?",
+      "warning": "Cette action est irréversible.",
+      "cancel": "Annuler",
+      "confirm": "Confirmer"
+    }
+  },
+  "pendingEditReview": {
+    "pendingEdit": "MODIFICATION EN ATTENTE",
+    "editor": "Éditeur",
+    "original": "Original",
+    "proposed": "Proposé",
+    "accepted": "Accepté",
+    "rejected": "Rejeté",
+    "pending": "En attente",
+    "totalChanges": "total de modifications",
+    "rejectAll": "Tout rejeter",
+    "approveAccepted": "Approuver les acceptés ({count})",
+    "changedFields": "Champs modifiés",
+    "disciplineChanges": "Modifications des disciplines",
+    "workChanges": "Modifications des œuvres",
+    "mediaChanges": "Modifications des médias",
+    "accept": "Accepter",
+    "reject": "Rejeter",
+    "modify": "Modifier",
+    "reset": "Réinitialiser",
+    "editing": "Modification en cours...",
+    "saveChanges": "Enregistrer les modifications",
+    "cancel": "Annuler",
+    "rejectReasonLabel": "Raison du rejet :",
+    "rejectReasonPlaceholder": "Expliquez pourquoi cette modification est rejetée...",
+    "rejectionReason": "Raison du rejet",
+    "confirmReject": "Rejeter",
+    "type": "Type",
+    "title": "Titre",
+    "year": "Année",
+    "format": "Format",
+    "access": "Accès",
+    "accessUrl": "URL d'accès",
+    "description": "Description",
+    "meta": "Métadonnées (taille/type)",
+    "origLabel": "Orig",
+    "newLabel": "Nouveau",
+    "editLabel": "Modif",
+    "view": "VOIR",
+    "newWork": "Nouvelle œuvre",
+    "modifiedWork": "Œuvre modifiée",
+    "deletedWork": "Œuvre supprimée",
+    "newMedia": "Nouveau média",
+    "modifiedMedia": "Média modifié",
+    "deletedMedia": "Média supprimé",
+    "proposedNewDisciplines": "Nouvelles disciplines proposées",
+    "proposedRemovals": "Suppressions proposées",
+    "acceptRemoval": "Accepter la suppression",
+    "keepDiscipline": "Conserver (rejeter la suppression)",
+    "editInformation": "Informations de modification",
+    "editDate": "Date de modification",
+    "editType": "Type de modification",
+    "originalAuthor": "Auteur original",
+    "language": "Langue",
+    "editorNote": "Note de l'éditeur",
+    "viewPdf": "Voir le PDF",
+    "viewPhotos": "Voir les photos",
+    "watch": "Regarder",
+    "listen": "Écouter",
+    "open": "Ouvrir",
+    "modal": {
+      "approveTitle": "Approuver les modifications acceptées ?",
+      "rejectTitle": "Rejeter toutes les modifications ?",
+      "stripTitle": "Retirer l'accès éditeur ?",
+      "approveSub": "Cela appliquera {count} modifications acceptées au profil de {name}.",
+      "rejectSub": "Cela rejettera toutes les modifications proposées et notifiera l'éditeur.",
+      "stripSub": "Cela supprimera les privilèges d'édition de {name}.",
+      "rejectPlaceholder": "Optionnel : Fournissez une raison pour le rejet...",
+      "confirmApprove": "Confirmer l'approbation",
+      "confirmReject": "Confirmer le rejet",
+      "confirmStrip": "Retirer l'accès"
+    }
+  },
+  "worksQueue": {
+  "title": "Vérification des Œuvres",
+  "subtitle": "Examiner et vérifier les œuvres savantes, livres et manuscrits soumis avant leur publication.",
+  "yearLabel": "Année",
+  "stats": {
+    "totalPending": "Total en attente",
+    "priorityReviews": "Examens prioritaires",
+    "avgTime": "Temps moyen d'examen"
+  },
+  "filters": {
+    "title": "Filtrer les œuvres",
+    "clearAll": "Tout effacer",
+    "format": "Format",
+    "allFormats": "Tous les formats",
+    "scholar": "Savant",
+    "allScholars": "Tous les savants",
+    "sort": "Trier"
+  },
+  "sort": {
+    "newest": "Plus récents",
+    "oldest": "Plus anciens",
+    "titleAZ": "Titre (A–Z)"
+  },
+  "format": {
+    "book": "Livre",
+    "article": "Article",
+    "manuscript": "Manuscrit",
+    "lecture": "Conférence",
+    "letter": "Lettre",
+    "other": "Autre"
+  },
+  "table": {
+    "title": "Soumissions d'œuvres en attente",
+    "updated": "Mis à jour à l'instant",
+    "work": "Œuvre",
+    "format": "Format",
+    "access": "Accès numérique",
+    "scholar": "Savant",
+    "submitter": "Soumis par",
+    "submitted": "Date de soumission",
+    "actions": "Actions",
+    "empty": "Aucune soumission d'œuvre trouvée"
+  },
+  "access": {
+    "link": "Lien externe",
+    "none": "Aucun fichier numérique"
+  },
+  "actions": {
+    "approve": "Approuver",
+    "reject": "Rejeter",
+    "delete": "Supprimer",
+    "review": "Examiner l'œuvre",
+    "strip": "Retirer le contributeur"
+  },
+  "modal": {
+    "rejectTitle": "Rejeter cette œuvre ?",
+    "rejectBody": "Vous êtes sur le point de rejeter \"{title}\". Veuillez fournir une raison.",
+    "rejectPlaceholder": "Raison du rejet...",
+    "deleteTitle": "Supprimer cette soumission ?",
+    "deleteBody": "Êtes-vous sûr de vouloir supprimer définitivement \"{title}\" ? Cette action ne peut pas être annulée.",
+    "deletePlaceholder": "Raison de la suppression (facultatif)...",
+    "deleteConfirm": "Supprimer",
+    "cancel": "Annuler",
+    "confirm": "Confirmer"
+  },
+  "strip": {
+    "title": "Retirer le crédit du contributeur ?",
+    "body": "Cela retirera <b>{name}</b> en tant que contributeur pour \"{title}\".",
+    "warning": "Cette action est permanente et ne peut pas être annulée.",
+    "cancel": "Annuler",
+    "confirm": "Confirmer le retrait",
+    "alreadyStripped": "Contributeur déjà retiré"
+  },
+  "review": {
+    "title": "Examiner l'œuvre",
+    "detailsTitle": "Détails de l'œuvre",
+    "label": {
+      "title": "Titre :",
+      "year": "Année :",
+      "format": "Format :",
+      "scholar": "Savant :",
+      "submittedBy": "Soumis par :"
+    },
+    "checksTitle": "Vérifications",
+    "check1": "Les informations bibliographiques sont exactes et complètes.",
+    "check2": "L'œuvre est correctement attribuée au savant.",
+    "check3": "Les droits d'auteur et d'utilisation sont vérifiés.",
+    "check4": "Le contenu respecte les normes académiques.",
+    "notesTitle": "Notes de l'examinateur",
+    "notesPlaceholder": "Ajoutez des notes internes sur cette œuvre...",
+    "errorChecks": "Veuillez compléter toutes les vérifications avant d'approuver.",
+    "errorReject": "Une raison est requise pour rejeter une œuvre. Veuillez ajouter des notes."
+  },
+  "badge": {
+    "stripped": "Retiré"
+  },
+  "toast": {
+    "approved": "\"{title}\" a été approuvé avec succès.",
+    "rejected": "\"{title}\" a été rejeté.",
+    "deleted": "\"{title}\" a été supprimé.",
+    "stripped": "Le contributeur \"{name}\" a été retiré."
+  }
+}
+}

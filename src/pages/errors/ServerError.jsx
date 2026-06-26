@@ -1,6 +1,7 @@
 import React from "react";
-
-const ServerError = ({ lang = "EN" }) => {
+import { useLang } from "../../context/LanguageContext";
+const ServerError = () => {
+  const { lang } = useLang();
   const content = {
     EN: {
       title: "Patience is Key",

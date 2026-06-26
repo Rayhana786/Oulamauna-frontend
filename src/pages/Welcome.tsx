@@ -5,10 +5,11 @@ import { useAuth } from "../context/AuthContext";
 import { BadgeCheck, ArrowRight, Home } from "lucide-react";
 // @ts-ignore
 import libraryImg from "../assets/library-1.jpg";
-
+import { useLang } from "../context/LanguageContext";
 type Language = "EN" | "AR" | "FR";
 
-const Welcome: React.FC<{ lang?: Language }> = ({ lang = "EN" }) => {
+const Welcome: React.FC = () => {
+  const { lang } = useLang();
   const { user } = useAuth();
   const navigate = useNavigate();
   const [countdown, setCountdown] = useState(5);

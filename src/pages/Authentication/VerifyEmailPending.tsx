@@ -1,13 +1,14 @@
 import React, { useState, useEffect } from "react";
 import { Link, useSearchParams, useNavigate } from "react-router-dom";
 import { Mail, RefreshCw, LogIn, ExternalLink, Check, BadgeCheck, ArrowLeft, AlertCircle } from "lucide-react";
-import { useAuth } from "../context/AuthContext";
+import { useAuth } from "../../context/AuthContext";
 // @ts-ignore
-import libraryImg from "../assets/library-1.jpg";
-
+import libraryImg from "../../assets/library-1.jpg";
+import { useLang } from "../../context/LanguageContext";
 type Language = "EN" | "AR" | "FR";
 
-const VerifyEmailPending: React.FC<{ lang?: Language }> = ({ lang = "EN" }) => {
+const VerifyEmailPending: React.FC = () => {
+  const { lang } = useLang();
   const { user, checkUserStatus } = useAuth();
   const navigate = useNavigate();
   const [visible, setVisible] = useState(false);
@@ -110,7 +111,7 @@ const VerifyEmailPending: React.FC<{ lang?: Language }> = ({ lang = "EN" }) => {
     setLoading(true);
     setError(null); // Clear previous errors
     try {
-      const response = await fetch("http://localhost:5000/api/auth/resend-verification", {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/auth/resend-verification`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email }),

@@ -1,7 +1,8 @@
 import React from "react";
 import { Link } from "react-router-dom";
-
-const Forbidden = ({ lang = "EN" }) => {
+import { useLang } from "../../context/LanguageContext";
+const Forbidden = () => {
+  const { lang } = useLang();
   const content = {
     EN: {
       title: "Access Restricted",

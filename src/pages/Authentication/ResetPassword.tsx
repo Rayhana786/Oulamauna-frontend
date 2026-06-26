@@ -1,9 +1,10 @@
 import React, { useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
-
+import { useLang } from "../../context/LanguageContext";
 type Language = "EN" | "AR" | "FR";
 
-const ResetPassword: React.FC<{ lang?: Language }> = ({ lang = "EN" }) => {
+const ResetPassword: React.FC = () => {
+  const { lang } = useLang();
   const [searchParams] = useSearchParams();
   const token = searchParams.get("token");
 

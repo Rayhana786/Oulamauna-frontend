@@ -1,13 +1,11 @@
 import React from "react";
-import heroVideo from "../assets/hero2.mp4";
+import heroVideo from "../assets/hero3.mp4";
 import { ArrowRight } from "lucide-react";
+import { useLang } from "../context/LanguageContext";
 import "../declarations.d.ts";
 
 type Language = "EN" | "AR" | "FR";
 
-interface HeroProps {
-  lang?: Language;
-}
 
 interface ContentItem {
   title: string;
@@ -17,7 +15,8 @@ interface ContentItem {
   more: string;
 }
 
-const Hero: React.FC<HeroProps> = ({ lang = "EN" }) => {
+const Hero: React.FC = () => {
+  const { lang } = useLang();
   const content: Record<Language, ContentItem> = {
     EN: {
       title: "Oulamauna",

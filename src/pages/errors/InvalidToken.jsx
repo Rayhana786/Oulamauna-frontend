@@ -1,7 +1,8 @@
 import React from "react";
 import { Link } from "react-router-dom";
-
-const InvalidToken = ({ lang = "EN" }) => {
+import { useLang } from "../../context/LanguageContext";
+const InvalidToken = () => {
+  const { lang } = useLang();
   const content = {
     EN: {
       title: "Link Expired",

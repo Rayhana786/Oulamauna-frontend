@@ -1,11 +1,14 @@
 import React, { useState, useEffect } from "react";
-import { useAuth } from "../context/AuthContext";
+import { useAuth } from "../../context/AuthContext";
 import { Link, useNavigate, useLocation } from "react-router-dom";
-import libraryImg from "../assets/library.jpg";
-
+import libraryImg from "../../assets/library.jpg";
+import oulamaunaLogo from '../../assets/lll1.png';
+import logoForBlack from '../../assets/OOLOGO.png';
+import { useLang } from "../../context/LanguageContext";
 type Language = "EN" | "AR" | "FR";
 
-const Login: React.FC<{ lang?: Language }> = ({ lang = "EN" }) => {
+const Login: React.FC = () => {
+  const { lang } = useLang();
   const navigate = useNavigate();
   //auth context for login function
   const { login } = useAuth();
@@ -91,7 +94,7 @@ const Login: React.FC<{ lang?: Language }> = ({ lang = "EN" }) => {
 
     setIsLoading(true);
     try {
-      const response = await fetch("http://localhost:5000/api/auth/login", {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/auth/login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password }),
@@ -105,7 +108,18 @@ if (response.ok) {
 
   
 
-  navigate("/");
+  if (response.ok) {
+  login(data.user, data.token);
+
+  if (response.ok) {
+  login(data.user);
+  if (data.user.role_id === 1) {
+    navigate("/admin");
+  } else {
+    navigate("/");
+  }
+}
+}
 }else {
         // عرض خطأ التوثيق تحت حقل كلمة المرور للخصوصية والأمان
         setErrors({ password: t.errInvalidAuth });
@@ -229,9 +243,10 @@ if (response.ok) {
         <div className="absolute inset-0 bg-[#285B4B]/82" />
         <div className="absolute inset-0 bg-gradient-to-t from-black/35 via-transparent to-transparent" />
         <Link to="/" className="relative z-10">
-          <h1 className="text-lg font-black tracking-[0.35em] text-white uppercase">OULAMAUNA</h1>
-          <span className="text-[#D8BF86] text-sm font-arabic mt-1 block">عُـلَـمَـاؤُنَـا</span>
-        </Link>
+          <div className="relative z-10 flex items-center gap-3">
+            <img src={logoForBlack} alt="Oulamauna Logo" className="h-40 w-40 object-contain" />
+            
+          </div></Link>
         <div className="relative z-10">
           <div className="w-10 h-px bg-[#D8BF86]/50 mb-3" />
           <p className="text-white/95 text-base font-serif italic">"My Lord, increase me in knowledge"</p>

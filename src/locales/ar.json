@@ -1,0 +1,634 @@
+{
+  "sidebar": {
+    "brandName": "علماؤنا",
+    "role": "مدير البوابة",
+    "signOut": "تسجيل الخروج",
+    "section": {
+      "archives": "الأرشيف والمخطوطات",
+      "engagement": "التفاعل",
+      "administration": "الإدارة"
+    },
+    "dashboard": "لوحة التحكم",
+    "scholars": "العلماء",
+    "allScholars": "جميع العلماء",
+    "addScholar": "إضافة عالم جديد",
+    "reviewDesk": "مكتب المراجعة",
+    "newScholars": "العلماء الجدد",
+    "pendingEdits": "التعديلات المعلّقة",
+    "mediaVerification": "التحقق من الوسائط",
+    "worksVerification": "التحقق من الأعمال",
+    "activeReview": "قيد المراجعة",
+    "archive": "الأرشيف",
+    "changesRequested": "طُلبت تغييرات",
+    "rejected": "مرفوض",
+    "disciplines": "التخصصات",
+    "communityHub": "مركز المجتمع",
+    "allPosts": "جميع المنشورات",
+    "reported": "المُبلَّغ عنها",
+    "userManagement": "إدارة المستخدمين",
+    "contributors": "المساهمون",
+    "bannedUsers": "المستخدمون المحظورون",
+    "reports": "التقارير",
+    "notifications": "الإشعارات",
+    "settings": "الإعدادات",
+    "translation": "الترجمة",
+    "regions": "المناطق",
+    "backups": "النسخ الاحتياطية"
+  },
+  "navbar": {
+    "dashboard": "لوحة التحكم",
+    "searchPlaceholder": "ابحث في الأرشيف...",
+    "language": "اللغة",
+    "notifications": "الإشعارات",
+    "viewAll": "عرض الكل",
+    "adminName": "أ. الهادي",
+    "adminRole": "مدير",
+    "profile": "ملفي الشخصي",
+    "settings": "الإعدادات",
+    "signOut": "تسجيل الخروج",
+    "notif": {
+      "newScholar": "تمت إضافة عالم جديد",
+      "newScholarSub": "تم تقديم سيرة ابن تيمية",
+      "editProposed": "تعديل مقترح",
+      "editProposedSub": "تحديث فصل المقدمة",
+      "mediaUploaded": "تم رفع وسائط",
+      "mediaUploadedSub": "تم التحقق من مسح المخطوطة",
+      "reported": "محتوى مُبلَّغ عنه",
+      "reportedSub": "مستخدم أبلغ عن ترجمة"
+    }
+  },
+  "dashboard": {
+    "header": {
+      "eyebrow": "علماؤنا · الإدارة",
+      "title": "نظرة إدارية شاملة",
+      "subtitle": "مراجعة المقدَّمات ومراقبة صحة المنصة وإدارة الأرشيف العلمي."
+    },
+    "stat": {
+      "scholars": "العلماء المسجّلون",
+      "scholarsSub": "+12 أُضيفوا هذا الشهر",
+      "works": "الأعمال المؤرشفة",
+      "worksSub": "98% سلامة البيانات",
+      "pending": "قيد المراجعة",
+      "pendingSub": "12 عنصراً ذا أولوية عالية",
+      "contributors": "المساهمون",
+      "contributorsSub": "حسابات أكاديمية نشطة"
+    },
+    "chart": {
+      "eyebrow": "نشاط المخطوطات",
+      "title": "المقدَّمات عبر الزمن",
+      "hijri": "هجري",
+      "gregorian": "ميلادي"
+    },
+    "month": {
+      "muharram": "محرم",
+      "safar": "صفر",
+      "rabiI": "ربيع الأول",
+      "rabiII": "ربيع الثاني",
+      "jumadaI": "جمادى الأولى",
+      "jumadaII": "جمادى الثانية",
+      "rajab": "رجب"
+    },
+    "review": {
+      "eyebrow": "قائمة المراجعة",
+      "reports": "المحتوى المُبلَّغ عنه",
+      "blogFlag": "منشورات المدوّنة المُعلَّمة",
+      "notifs": "الإشعارات",
+      "viewAll": "عرض جميع المعلّق"
+    },
+    "cat": {
+      "eyebrow": "التخصصات",
+      "title": "العلماء حسب التخصص",
+      "fiqh": "الفقه الإسلامي",
+      "hadith": "علوم الحديث",
+      "tafsir": "التفسير القرآني",
+      "usul": "أصول الفقه",
+      "tasawwuf": "التصوف",
+      "nahw": "النحو العربي"
+    },
+    "century": {
+      "eyebrow": "الجدول الزمني",
+      "title": "العلماء حسب القرن الهجري",
+      "label": "القرون الهجرية (I – X)",
+      "scholars": "علماء"
+    },
+    "region": {
+      "eyebrow": "المناطق",
+      "maghreb": "المغرب",
+      "mashriq": "المشرق",
+      "andalus": "الأندلس",
+      "other": "أخرى"
+    },
+    "activity": {
+      "eyebrow": "النشاط الأخير",
+      "viewAll": "عرض الكل",
+      "duplicateBio": "ملف مكرر",
+      "duplicateBioSub": "الموضوع: ابن تيمية",
+      "newTranslation": "مسودة ترجمة جديدة",
+      "newTranslationSub": "العمل: المقدمة",
+      "newContributor": "طلب مساهم جديد",
+      "newContributorSub": "المستخدم: dr_fatima_a",
+      "contentReported": "محتوى مُبلَّغ عنه",
+      "contentReportedSub": "منشور مُعلَّم من مستخدمَين",
+      "time2m": "منذ دقيقتين",
+      "time3h": "منذ 3 ساعات",
+      "time8h": "منذ 8 ساعات",
+      "timeYesterday": "أمس"
+    },
+    "badge": {
+      "urgent": "أولوية عالية",
+      "pending": "قيد المراجعة",
+      "requestAccess": "طلب وصول",
+      "review": "يحتاج مراجعة"
+    },
+    "quick": {
+      "eyebrow": "إجراءات سريعة",
+      "addScholar": "إضافة عالم",
+      "reviewPending": "مراجعة المعلّق",
+      "moderateForum": "إدارة المنتدى",
+      "manageUsers": "إدارة المستخدمين",
+      "viewReports": "عرض التقارير",
+      "systemSettings": "إعدادات النظام"
+    },
+    "health": {
+      "eyebrow": "صحة المنصة",
+      "backup": "النسخ الاحتياطي: سليم",
+      "search": "البحث: سليم",
+      "media": "الوسائط: سليمة",
+      "email": "البريد: خطأ",
+      "lastBackup": "آخر نسخة احتياطية",
+      "lastBackupValue": "اليوم، 03:00 ص"
+    }
+  },
+  "scholars": {
+    "newScholars": {
+      "title": "العلماء الجدد",
+      "subtitle": "راجع ملفات العلماء المقدَّمة حديثاً قبل نشرها في الأرشيف.",
+      "updatedLabel": "محدَّث للتو",
+      "empty": "لا توجد مقدَّمات في القائمة.",
+      "noResults": "لا توجد مقدَّمات تطابق بحثك."
+    },
+    "stats": {
+      "totalPending": "إجمالي القائمة",
+      "priorityReview": "مراجعة ذات أولوية",
+      "underReview": "قيد المراجعة",
+      "changesRequested": "طُلبت تغييرات"
+    },
+    "search": {
+      "placeholder": "ابحث بالاسم أو المساهم أو التخصص..."
+    },
+    "tabs": {
+      "all": "الكل"
+    },
+    "langVersion": {
+      "en": "النسخة الإنجليزية",
+      "ar": "النسخة العربية",
+      "fr": "النسخة الفرنسية"
+    },
+    "table": {
+      "scholar": "العالم",
+      "submittedBy": "مقدَّم من",
+      "date": "التاريخ",
+      "languages": "اللغات",
+      "status": "الحالة",
+      "actions": "الإجراءات"
+    },
+    "status": {
+      "pending": "معلّق",
+      "underReview": "قيد المراجعة",
+      "changesRequested": "طُلبت تغييرات"
+    },
+    "actions": {
+      "view": "عرض المقدَّمة",
+      "review": "مراجعة",
+      "approve": "موافقة",
+      "reject": "رفض",
+      "strip": "سحب صلاحيات المساهم"
+    },
+    "strip": {
+      "title": "سحب صلاحيات المساهم؟",
+      "body": "سيؤدي هذا إلى إزالة صلاحيات المساهم من {name} وحذف جميع مقدَّماته المعلّقة. لا يمكن التراجع عن هذا الإجراء.",
+      "confirm": "سحب الصلاحيات"
+    },
+    "review": {
+      "cancel": "إلغاء"
+    }
+  },
+  "scholarReview": {
+    "badge": {
+      "newSubmission": "مقدَّمة جديدة"
+    },
+    "hero": {
+      "submitter": "مقدَّم من",
+      "highImpact": "مقدَّمة عالية التأثير"
+    },
+    "submittedLang": {
+      "en": "الإنجليزية (أساسية)",
+      "ar": "العربية (أساسية)",
+      "fr": "الفرنسية (أساسية)"
+    },
+    "editBar": {
+      "label": "وضع التحرير — صحّح الأخطاء أو عدّل أي حقل ثم أكِّد.",
+      "cancel": "إلغاء",
+      "confirm": "تأكيد"
+    },
+    "actions": {
+      "editPage": "تعديل الصفحة",
+      "reject": "رفض / طلب تغييرات",
+      "approve": "الموافقة على المقدَّمة"
+    },
+    "modal": {
+      "approveTitle": "الموافقة على هذه المقدَّمة؟",
+      "rejectTitle": "رفض أو طلب تغييرات؟",
+      "stripTitle": "سحب صلاحيات المساهم؟",
+      "approveSub": "سيؤدي هذا إلى نشر {name} في الموسوعة.",
+      "unreviewed": "تخصصات جديدة لم تُراجع بعد وستُضاف تلقائياً.",
+      "rejectSub": "يمكنك إخبار المساهم بما يحتاج إلى تغيير. اتركه فارغاً للرفض دون رسالة.",
+      "stripSub": "سيؤدي هذا إلى إزالة صلاحيات {name} كمساهم. يُسجَّل هذا الإجراء.",
+      "rejectPlaceholder": "مثال: يرجى التحقق من سنة الميلاد — ثمة تعارض بين المصادر بين 1905 و1906.",
+      "confirmApprove": "موافقة",
+      "confirmReject": "رفض",
+      "confirmSendReject": "إرسال ورفض",
+      "confirmStrip": "سحب الصلاحيات"
+    },
+    "sections": {
+      "biography": "السيرة الأكاديمية",
+      "lineage": "الانتماء الفكري والعلاقات",
+      "bibliography": "الببليوغرافيا",
+      "media": "الوثائق والوسائط",
+      "references": "المراجع الأكاديمية"
+    },
+    "bio": {
+      "wordCount": "عدد الكلمات: {n} كلمة",
+      "readingTime": "وقت القراءة: ~{n} دقيقة"
+    },
+    "lineage": {
+      "teachers": "الشيوخ والمؤثرون",
+      "disciples": "أبرز التلاميذ"
+    },
+    "works": {
+      "title": "العنوان",
+      "year": "السنة",
+      "format": "الشكل",
+      "access": "الوصول الرقمي",
+      "view": "عرض",
+      "viewPdf": "عرض PDF"
+    },
+    "media": {
+      "viewPdf": "عرض PDF",
+      "viewPhotos": "عرض الصور",
+      "watch": "مشاهدة",
+      "listen": "استماع",
+      "open": "فتح"
+    },
+    "sidebar": {
+      "vitalStats": "البيانات الأساسية",
+      "name": "الاسم",
+      "born": "الميلاد",
+      "died": "الوفاة",
+      "lifespan": "مدة الحياة",
+      "region": "المنطقة",
+      "century": "القرن",
+      "discipline": "التخصص",
+      "expertiseClusters": "مجموعات الخبرة",
+      "submitterNote": "ملاحظة المساهم"
+    },
+    "chips": {
+      "kept": "محتفظ به",
+      "removed": "محذوف",
+      "pending": "معلّق",
+      "keepPrompt": "الإبقاء على \"{label}\"؟",
+      "yesAdd": "نعم، أضف",
+      "undo": "تراجع",
+      "keepTitle": "الإبقاء على هذا التخصص",
+      "removeTitle": "حذف هذا التخصص",
+      "hint": "= تخصص جديد مقترح من المساهم — قرِّر الإبقاء أو الحذف"
+    }
+  },
+  "reviewQueue": {
+    "title": "طابور المراجعة",
+    "subtitle": "إدارة ملفات العلماء الواردة والمساهمات الأرشيفية. تأكد من أن جميع البيانات الوصفية تتوافق مع المعايير.",
+    "stats": {
+      "totalPending": "إجمالي المعلّق",
+      "overdue": "متأخر (>3 أيام)",
+      "newToday": "جديد اليوم",
+      "avgTime": "متوسط وقت المراجعة",
+      "thisWeek": "هذا الأسبوع"
+    },
+    "filters": {
+      "title": "تصفية المقدَّمات",
+      "clearAll": "مسح الكل",
+      "language": "اللغة",
+      "allLanguages": "جميع اللغات",
+      "discipline": "التخصص",
+      "allDisciplines": "جميع التخصصات",
+      "type": "النوع",
+      "allTypes": "جميع الأنواع",
+      "newProfile": "ملف جديد",
+      "contentEdit": "تعديل محتوى",
+      "sort": "الترتيب"
+    },
+    "sort": {
+      "newest": "الأحدث أولاً",
+      "oldest": "الأقدم أولاً",
+      "nameAZ": "الاسم (أ-ي)"
+    },
+    "lang": {
+      "en": "الإنجليزية",
+      "ar": "العربية",
+      "fr": "الفرنسية"
+    },
+    "table": {
+      "title": "مقدَّمات علماء جدد",
+      "updated": "محدَّث منذ دقيقتين",
+      "scholar": "العالم",
+      "editor": "المحرّر",
+      "editType": "نوع التعديل",
+      "submitted": "تاريخ التقديم",
+      "actions": "الإجراءات",
+      "empty": "لا توجد مقدَّمات"
+    },
+    "editTypes": {
+      "bioModified": "تم تحديث السيرة",
+      "workAdded": "تمت إضافة عمل جديد",
+      "workModified": "تم تعديل العمل",
+      "mediaAdded": "تمت إضافة وسائط",
+      "mediaModified": "تم تحديث الوسائط",
+      "vitalsUpdated": "تم تحديث البيانات",
+      "disciplineAdded": "تمت إضافة تخصص"
+    },
+    "pagination": {
+      "showing": "عرض {start}–{end} من {total} مقدَّمة"
+    },
+    "actions": {
+      "review": "مراجعة",
+      "approve": "موافقة",
+      "reject": "رفض",
+      "strip": "سحب صلاحيات المساهم"
+    },
+    "modal": {
+      "title": "سحب صلاحيات المساهم",
+      "body": "هل أنت متأكد من رغبتك في إزالة جميع مقدَّمات {name}؟",
+      "warning": "لا يمكن التراجع عن هذا الإجراء.",
+      "cancel": "إلغاء",
+      "confirm": "تأكيد"
+    }
+  },
+  "pendingEditReview": {
+    "pendingEdit": "تعديل معلّق",
+    "editor": "المحرّر",
+    "original": "الأصلي",
+    "proposed": "المقترح",
+    "accepted": "مقبول",
+    "rejected": "مرفوض",
+    "pending": "معلّق",
+    "totalChanges": "إجمالي التغييرات",
+    "rejectAll": "رفض الكل",
+    "approveAccepted": "الموافقة على المقبول ({count})",
+    "changedFields": "الحقول المُعدَّلة",
+    "disciplineChanges": "تغييرات التخصصات",
+    "workChanges": "تغييرات الأعمال",
+    "mediaChanges": "تغييرات الوسائط",
+    "accept": "قبول",
+    "reject": "رفض",
+    "modify": "تعديل",
+    "reset": "إعادة تعيين",
+    "editing": "جارٍ التعديل...",
+    "saveChanges": "حفظ التغييرات",
+    "cancel": "إلغاء",
+    "rejectReasonLabel": "سبب الرفض:",
+    "rejectReasonPlaceholder": "اشرح سبب رفض هذا التغيير...",
+    "rejectionReason": "سبب الرفض",
+    "confirmReject": "تأكيد الرفض",
+    "type": "النوع",
+    "title": "العنوان",
+    "year": "السنة",
+    "format": "الشكل",
+    "access": "الوصول",
+    "accessUrl": "رابط الوصول",
+    "description": "الوصف",
+    "meta": "البيانات الوصفية (الحجم/النوع)",
+    "origLabel": "الأصل",
+    "newLabel": "جديد",
+    "editLabel": "تعديل",
+    "view": "عرض",
+    "newWork": "عمل جديد",
+    "modifiedWork": "عمل مُعدَّل",
+    "deletedWork": "عمل محذوف",
+    "newMedia": "وسائط جديدة",
+    "modifiedMedia": "وسائط مُعدَّلة",
+    "deletedMedia": "وسائط محذوفة",
+    "proposedNewDisciplines": "التخصصات الجديدة المقترحة",
+    "proposedRemovals": "الإزالات المقترحة",
+    "acceptRemoval": "قبول الإزالة",
+    "keepDiscipline": "الإبقاء (رفض الإزالة)",
+    "editInformation": "معلومات التعديل",
+    "editDate": "تاريخ التعديل",
+    "editType": "نوع التعديل",
+    "originalAuthor": "المؤلف الأصلي",
+    "language": "اللغة",
+    "editorNote": "ملاحظة المحرّر",
+    "viewPdf": "عرض PDF",
+    "viewPhotos": "عرض الصور",
+    "watch": "مشاهدة",
+    "listen": "استماع",
+    "open": "فتح",
+    "modal": {
+      "approveTitle": "الموافقة على التغييرات المقبولة؟",
+      "rejectTitle": "رفض جميع التغييرات؟",
+      "stripTitle": "سحب صلاحيات المحرّر؟",
+      "approveSub": "سيؤدي هذا إلى تطبيق {count} تغيير مقبول على ملف {name}.",
+      "rejectSub": "سيؤدي هذا إلى رفض جميع التغييرات المقترحة وإخطار المحرّر.",
+      "stripSub": "سيؤدي هذا إلى إزالة صلاحيات التحرير من {name}.",
+      "rejectPlaceholder": "اختياري: قدّم سببًا للرفض...",
+      "confirmApprove": "تأكيد الموافقة",
+      "confirmReject": "تأكيد الرفض",
+      "confirmStrip": "سحب الصلاحيات"
+    }
+  },
+    "mediaQueue": {
+    "title": "التحقق من الوسائط",
+    "subtitle": "مراجعة والتحقق من ملفات الوسائط والروابط والمستندات المقدمة قبل نشرها.",
+    "stats": {
+      "totalPending": "إجمالي قيد الانتظار",
+      "priorityReviews": "مراجعات ذات أولوية",
+      "avgTime": "متوسط وقت المراجعة"
+    },
+    "filters": {
+      "title": "تصفية الوسائط",
+      "clearAll": "مسح الكل",
+      "type": "نوع الوسائط",
+      "allTypes": "جميع الأنواع",
+      "scholar": "العالم",
+      "allScholars": "جميع العلماء",
+      "sort": "ترتيب"
+    },
+    "sort": {
+      "newest": "الأحدث أولاً",
+      "oldest": "الأقدم أولاً",
+      "titleAZ": "العنوان (أ–ي)"
+    },
+    "type": {
+      "pdf": "مستند PDF",
+      "audio": "صوت",
+      "video": "فيديو"
+    },
+    "table": {
+      "title": "طلبات الوسائط قيد الانتظار",
+      "updated": "تم التحديث الآن",
+      "media": "الوسائط",
+      "type": "النوع",
+      "source": "المصدر",
+      "scholar": "العالم",
+      "submitter": "مُقدّم الطلب",
+      "submitted": "تاريخ التقديم",
+      "actions": "الإجراءات",
+      "empty": "لا توجد طلبات وسائط"
+    },
+    "source": {
+      "link": "رابط خارجي"
+    },
+    "actions": {
+      "approve": "موافقة",
+      "reject": "رفض",
+      "delete": "حذف",
+      "strip": "سحب صلاحيات المُساهم"
+    },
+    "modal": {
+      "rejectTitle": "رفض هذا الملف؟",
+      "rejectBody": "أنت على وشك رفض \"{title}\". يرجى ذكر السبب.",
+      "rejectPlaceholder": "سبب الرفض...",
+      "cancel": "إلغاء",
+      "confirm": "تأكيد"
+    },
+    "strip": {
+      "title": "سحب اعتماد المُساهم؟",
+      "body": "سيؤدي هذا إلى إزالة <b>{name}</b> كمُساهم لـ \"{title}\".",
+      "warning": "هذا الإجراء دائم ولا يمكن التراجع عنه.",
+      "cancel": "إلغاء",
+      "confirm": "تأكيد السحب",
+      "alreadyStripped": "تم سحب صلاحيات المُساهم مسبقاً"
+    },
+    "review": {
+      "title": "مراجعة الوسائط",
+      "detailsTitle": "تفاصيل الوسائط",
+      "label": {
+        "title": "العنوان:",
+        "description": "الوصف:",
+        "scholar": "العالم:",
+        "submittedBy": "قدمه:"
+      },
+      "checksTitle": "فحوصات التحقق",
+      "check1": "الوسائط متاحة وتعمل/تعرض بشكل صحيح.",
+      "check2": "المحتوى يطابق العنوان والوصف المقدم.",
+      "check3": "حقوق النشر والاستخدام القانوني موثقة.",
+      "check4": "المحتوى يلتزم بإرشادات المجتمع.",
+      "notesTitle": "ملاحظات المراجع",
+      "notesPlaceholder": "أضف ملاحظات داخلية حول هذه الوسائط...",
+      "errorChecks": "يرجى إكمال جميع فحوصات التحقق قبل الموافقة.",
+      "errorReject": "يُطلب سبب عند رفض الوسائط. يرجى إضافة ملاحظات."
+    }
+  },
+ "worksQueue": {
+  "title": "التحقق من الأعمال",
+  "subtitle": "مراجعة والتحقق من الأعمال العلمية والكتب والمخطوطات المقدمة قبل نشرها.",
+  "yearLabel": "السنة",
+  "stats": {
+    "totalPending": "إجمالي قيد الانتظار",
+    "priorityReviews": "مراجعات ذات أولوية",
+    "avgTime": "متوسط وقت المراجعة"
+  },
+  "filters": {
+    "title": "تصفية الأعمال",
+    "clearAll": "مسح الكل",
+    "format": "الصيغة",
+    "allFormats": "جميع الصيغ",
+    "scholar": "العالم",
+    "allScholars": "جميع العلماء",
+    "sort": "ترتيب"
+  },
+  "sort": {
+    "newest": "الأحدث أولاً",
+    "oldest": "الأقدم أولاً",
+    "titleAZ": "العنوان (أ–ي)"
+  },
+  "format": {
+    "book": "كتاب",
+    "article": "مقال",
+    "manuscript": "مخطوطة",
+    "lecture": "محاضرة",
+    "letter": "رسالة",
+    "other": "أخرى"
+  },
+  "table": {
+    "title": "طلبات الأعمال قيد الانتظار",
+    "updated": "تم التحديث الآن",
+    "work": "العمل",
+    "format": "الصيغة",
+    "access": "الوصول الرقمي",
+    "scholar": "العالم",
+    "submitter": "مُقدّم الطلب",
+    "submitted": "تاريخ التقديم",
+    "actions": "الإجراءات",
+    "empty": "لا توجد طلبات أعمال"
+  },
+  "access": {
+    "link": "رابط خارجي",
+    "none": "لا يوجد ملف رقمي"
+  },
+  "actions": {
+    "approve": "موافقة",
+    "reject": "رفض",
+    "delete": "حذف",
+    "review": "مراجعة العمل",
+    "strip": "سحب صلاحيات المُساهم"
+  },
+  "modal": {
+    "rejectTitle": "رفض هذا العمل؟",
+    "rejectBody": "أنت على وشك رفض \"{title}\". يرجى ذكر السبب.",
+    "rejectPlaceholder": "سبب الرفض...",
+    "deleteTitle": "حذف هذا الطلب؟",
+    "deleteBody": "هل أنت متأكد من رغبتك في حذف \"{title}\" نهائياً؟ لا يمكن التراجع عن هذا الإجراء.",
+    "deletePlaceholder": "سبب الحذف (اختياري)...",
+    "deleteConfirm": "حذف",
+    "cancel": "إلغاء",
+    "confirm": "تأكيد"
+  },
+  "strip": {
+    "title": "سحب اعتماد المُساهم؟",
+    "body": "سيؤدي هذا إلى إزالة <b>{name}</b> كمُساهم لـ \"{title}\".",
+    "warning": "هذا الإجراء دائم ولا يمكن التراجع عنه.",
+    "cancel": "إلغاء",
+    "confirm": "تأكيد السحب",
+    "alreadyStripped": "تم سحب صلاحيات المُساهم مسبقاً"
+  },
+  "review": {
+    "title": "مراجعة العمل",
+    "detailsTitle": "تفاصيل العمل",
+    "label": {
+      "title": "العنوان:",
+      "year": "السنة:",
+      "format": "الصيغة:",
+      "scholar": "العالم:",
+      "submittedBy": "قدمه:"
+    },
+    "checksTitle": "فحوصات التحقق",
+    "check1": "المعلومات الببليوغرافية دقيقة وكاملة.",
+    "check2": "العمل منسوب بشكل صحيح للعالم.",
+    "check3": "حقوق النشر والاستخدام موثقة.",
+    "check4": "المحتوى يلتزم بالمعايير الأكاديمية.",
+    "notesTitle": "ملاحظات المراجع",
+    "notesPlaceholder": "أضف ملاحظات داخلية حول هذا العمل...",
+    "errorChecks": "يرجى إكمال جميع فحوصات التحقق قبل الموافقة.",
+    "errorReject": "يُطلب سبب عند رفض عمل. يرجى إضافة ملاحظات."
+  },
+  "badge": {
+    "stripped": "مسحوب"
+  },
+  "toast": {
+    "approved": "تمت الموافقة على \"{title}\" بنجاح.",
+    "rejected": "تم رفض \"{title}\".",
+    "deleted": "تم حذف \"{title}\".",
+    "stripped": "تم سحب صلاحيات المُساهم \"{name}\"."
+  }
+}
+}

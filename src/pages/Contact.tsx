@@ -1,12 +1,13 @@
 import React, { useState } from "react";
-
+import { useLang } from "../context/LanguageContext";
 type Language = "EN" | "AR" | "FR";
 
 interface ContactProps {
   lang?: Language;
 }
 
-const ContactPage: React.FC<ContactProps> = ({ lang = "EN" }) => {
+const ContactPage: React.FC<ContactProps> = () => {
+  const { lang } = useLang();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [message, setMessage] = useState("");

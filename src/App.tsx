@@ -1,99 +1,112 @@
 // src/App.tsx
-import React, { useState, useEffect } from "react";
-import { BrowserRouter as Router, Routes, Route, useLocation, useNavigate } from "react-router-dom";
+import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 
+// Layouts
+import PublicLayout from "./Layouts/PublicLayout";
+import NoNavLayout from "./Layouts/NoNavLayout";
+import AdminLayout from "./Layouts/AdminLayout";
+
+// Route guard
+import ProtectedRoute from "./components/ProtectedRoute";
+
+// Contexts
+import { AuthProvider } from "./context/AuthContext";
+import { LanguageProvider } from "./context/LanguageContext";
+
+// Public pages (with navbar)
 import Home from "./pages/Home";
-import Navbar from "./components/Navbar";
 import About from "./pages/About";
 import Contact from "./pages/Contact";
-import Login from "./pages/Login";
-import Register from "./pages/Register";
-import ForgotPassword from "./pages/ForgotPassword";
-import ResetPassword from "./pages/ResetPassword";
-import VerifyEmail from "./pages/VerifyEmail";
+import ScholarsPage from "./pages/Scholars/ScholarsPage";
+
+import Editscholarpage from "./pages/ScholarDetailPage/Editscholarpage";
+
+// Auth pages (no navbar)
+import Login from "./pages/Authentication/Login";
+import Register from "./pages/Authentication/Register";
+import ForgotPassword from "./pages/Authentication/ForgotPassword";
+import ResetPassword from "./pages/Authentication/ResetPassword";
+import VerifyEmail from "./pages/Authentication/VerifyEmail";
+import VerifyEmailPending from "./pages/Authentication/VerifyEmailPending";
 
 
-// NEW
-import VerifyEmailPending from "./pages/VerifyEmailPending";
-import LanguageSwitcher from "./components/LanguageSwitcher";
+//scholars pages
+import ScholarsPageDetails from "./pages/ScholarDetailPage/ScholarDetailPage";
+import EditScholarPage from "./pages/ScholarDetailPage/Editscholarpage";
+import Submitscholarpage from "./pages/ScholarDetailPage/Submitscholarpage";
 
-// ERROR PAGES
+// Error pages (no navbar)
 import NotFound from "./pages/errors/NotFound";
 import ServerError from "./pages/errors/ServerError";
 import Forbidden from "./pages/errors/Forbidden";
 import InvalidToken from "./pages/errors/InvalidToken";
-//context
-import { AuthProvider } from "./context/AuthContext";
-type Language = "EN" | "AR" | "FR";
 
-function AppContent() {
-  
-  const navigate = useNavigate();
-  const [currentLang, setCurrentLang] = useState<Language>("EN");
-  const location = useLocation();
-
-  
-
-  const hideNavbar = [
-    "/login",
-    "/register",
-    "/forgot-password",
-    "/reset-password",
-    "/verify-email",
-    "/verify-email-pending",
-    "/500",           // Added to hide navbar
-    "/403",           // Added to hide navbar
-    "/invalid-token", // Added to hide navbar
-  ].includes(location.pathname) || !["/", "/contact", "/about", "/login", "/forgot-password", "/reset-password", "/register", "/verify-email", "/verify-email-pending", "/dashboard"].includes(location.pathname); 
-  // The line above ensures Navbar is hidden for 404 (any route not defined)
-
-  
-
-  return (
-    <div className="min-h-screen bg-[#fcfaf7]">
-      {!hideNavbar && (
-        <Navbar
-          
-          lang={currentLang}
-          setLang={setCurrentLang}
-          
-        />
-      )}
-
-      <LanguageSwitcher
-        currentLang={currentLang}
-        setCurrentLang={setCurrentLang}
-      />
-
-      <main>
-        <Routes>
-          <Route path="/" element={<Home lang={currentLang} />} />
-          <Route path="/contact" element={<Contact lang={currentLang} />} />
-          <Route path="/about" element={<About />} />
-          <Route path="/login" element={<Login lang={currentLang} />} />
-          <Route path="/forgot-password" element={<ForgotPassword lang={currentLang} />} />
-          <Route path="/reset-password" element={<ResetPassword lang={currentLang} />} />
-          <Route path="/register" element={<Register lang={currentLang} />} />
-          <Route path="/verify-email" element={<VerifyEmail lang={currentLang} />} />
-          <Route path="/verify-email-pending" element={<VerifyEmailPending lang={currentLang} />} />
-          
-          {/* ERROR ROUTES */}
-         <Route path="/500" element={<ServerError lang={currentLang} />} />
-<Route path="/403" element={<Forbidden lang={currentLang} />} />
-<Route path="/invalid-token" element={<InvalidToken lang={currentLang} />} />
-<Route path="*" element={<NotFound lang={currentLang} />} />
-        </Routes>
-      </main>
-    </div>
-  );
-}
+// Admin pages
+import AdminDashboard from "./pages/admin/Admindashboard";
+import NewScholarsQueue from "./pages/admin/NewScholarsQueue";
+import ScholarReview from "./pages/admin/ScholarReview";
+import PendingEditsQueue from "./pages/admin/PendingEditsQueue";
+import PendingEditReview from "./pages/admin/PendingEditReview";
+import MediaPendingQueue from "./pages/admin/MediaPendingQueue";
+import WorksPendingQueue from "./pages/admin/WorksPendingQueue";
+// import AdminScholars from "./pages/admin/AdminScholars"; // add as you build them
 
 function App() {
   return (
     <Router>
-      <AuthProvider> {/* Now Auth is available everywhere */}
-        <AppContent />
-      </AuthProvider>
+      <LanguageProvider>
+        <AuthProvider>
+          <Routes>
+
+            {/* ── PUBLIC ROUTES (with public Navbar) ── */}
+            <Route element={<PublicLayout />}>
+              <Route path="/" element={<Home />} />
+              <Route path="/about" element={<About />} />
+              <Route path="/contact" element={<Contact />} />
+              <Route path="/scholars" element={<ScholarsPage />} />
+              
+              
+            </Route>
+
+            {/* ── AUTH + ERROR ROUTES (no navbar at all) ── */}
+            <Route element={<NoNavLayout />}>
+              <Route path="/login" element={<Login />} />
+              <Route path="/register" element={<Register />} />
+              <Route path="/forgot-password" element={<ForgotPassword />} />
+              <Route path="/reset-password" element={<ResetPassword />} />
+              <Route path="/verify-email" element={<VerifyEmail />} />
+              <Route path="/verify-email-pending" element={<VerifyEmailPending />} />
+              <Route path="/500" element={<ServerError />} />
+              <Route path="/403" element={<Forbidden />} />
+              <Route path="/invalid-token" element={<InvalidToken />} />
+              <Route path="*" element={<NotFound />} />
+
+              {/* ── SCHOLARS ROUTES (with public Navbar) ── */}
+
+              <Route path="/scholars/:id" element={<ScholarsPageDetails />} />
+              <Route path="/scholars/:id/edit" element={<Editscholarpage />} />
+              <Route path="/scholars/submit" element={<Submitscholarpage />} />
+            </Route>
+
+            {/* ── ADMIN ROUTES (sidebar + admin navbar, protected) ── */}
+            <Route element={<ProtectedRoute adminOnly />}>
+              <Route path="/admin" element={<AdminLayout />}>
+                <Route index element={<AdminDashboard />} />
+                <Route path="/admin/pending/scholars" element={<NewScholarsQueue />} />
+                <Route path="/admin/pending/scholars/:id" element={<ScholarReview />} />
+                <Route path="/admin/pending/edits" element={<PendingEditsQueue />} />
+                <Route path="/admin/pending/edits/:id" element={<PendingEditReview />} />
+                <Route path="/admin/pending/media" element={<MediaPendingQueue />} />
+                <Route path="/admin/pending/works" element={<WorksPendingQueue />} />
+                {/* Add more admin routes here as you build them: */}
+                {/* <Route path="scholars" element={<AdminScholars />} /> */}
+                {/* <Route path="scholars/new" element={<AdminAddScholar />} /> */}
+              </Route>
+            </Route>
+
+          </Routes>
+        </AuthProvider>
+      </LanguageProvider>
     </Router>
   );
 }

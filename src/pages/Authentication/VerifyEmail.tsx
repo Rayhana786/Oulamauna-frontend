@@ -3,12 +3,13 @@ import React, { useState, useEffect, useRef } from "react";
 import { Link, useSearchParams, useNavigate } from "react-router-dom";
 import { BadgeCheck, RefreshCw, ArrowLeft, AlertCircle, LogIn, MailX, Clock, Wifi, Check, Send } from "lucide-react";
 // @ts-ignore
-import libraryImg from "../assets/library-1.jpg";
-
+import libraryImg from "../../assets/library-1.jpg";
+import { useLang } from "../../context/LanguageContext";
 type Language = "EN" | "AR" | "FR";
 type ErrorType = "invalid_token" | "expired_token" | "no_token" | "network" | "server" | "unknown";
 
-const VerifyEmail: React.FC<{ lang?: Language }> = ({ lang = "EN" }) => {
+const VerifyEmail: React.FC = () => {
+  const { lang } = useLang();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const [visible, setVisible] = useState(false);
@@ -269,7 +270,7 @@ const VerifyEmail: React.FC<{ lang?: Language }> = ({ lang = "EN" }) => {
 
       try {
         const response = await fetch(
-          `http://localhost:5000/api/auth/verify-email?token=${token}`,
+          `${import.meta.env.VITE_API_URL}/api/auth/verify-email?token=${token}`,
           { method: "GET", headers: { "Content-Type": "application/json" } }
         );
         const data = await response.json();
@@ -305,7 +306,7 @@ const VerifyEmail: React.FC<{ lang?: Language }> = ({ lang = "EN" }) => {
     }
     setResendLoading(true);
     try {
-      const response = await fetch("http://localhost:5000/api/auth/resend-verification", {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/auth/resend-verification`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email: resendEmail.trim() }),

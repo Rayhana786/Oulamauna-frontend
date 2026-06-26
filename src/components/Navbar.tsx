@@ -2,14 +2,13 @@ import React, { useState, useEffect, useRef } from "react";
 import { Link, useLocation } from "react-router-dom";
 import ProfileMenu from "./ProfileMenu";
 import { useAuth } from "../context/AuthContext";
+import { useLang } from "../context/LanguageContext";
+
+
+import oulamaunaLogo from '../assets/OOLOGO.png';
 type Language = "EN" | "AR" | "FR";
 
-interface NavbarProps {
- 
-  lang?: Language;
-  setLang: (lang: Language) => void;
- 
-}
+
 
 const NAV_IDS = ["HOME", "SCHOLARS", "BLOGS", "ABOUT", "CONTACT"] as const;
 const PATHS: Record<string, string> = {
@@ -89,12 +88,8 @@ const IcoChev = ({ open }: { open: boolean }) => (
 );
 
 /* ────────────────────────────────── */
-const Navbar: React.FC<NavbarProps> = ({
- 
-  lang = "EN",
-  setLang,
-
-}) => {
+const Navbar: React.FC = () => {
+  const { lang, setLang } = useLang();
   const { isLoggedIn, logout,user } = useAuth();
   const [active, setActive] = useState("HOME");
   const [searchOpen, setSearchOpen] = useState(false);
@@ -112,6 +107,7 @@ const Navbar: React.FC<NavbarProps> = ({
   const isRTL = lang === "AR";
   const t = T[lang];
   const isSolid = !isHome || scrolled;
+  const [hoveredId, setHoveredId] = useState<string | null>(null);
 
   // Active link sync
   useEffect(() => {
@@ -157,8 +153,8 @@ const Navbar: React.FC<NavbarProps> = ({
 
   /* ── Icon Button Class ── */
   const iconCls = (on: boolean) =>
-    `w-9 h-9 flex items-center justify-center rounded-xl transition-colors duration-200 focus:outline-none
-     ${on ? "text-[#C9A84C]" : "text-[#B8B09A] hover:text-[#C9A84C]"}`;
+  `w-10 h-10 flex items-center justify-center rounded-xl transition-colors duration-200 focus:outline-none
+   ${on ? "text-[#C9A84C] hover:text-[#B8B09A]" : "text-[#B8B09A] hover:text-[#C9A84C]"}`;
 
   return (
     <>
@@ -174,52 +170,69 @@ const Navbar: React.FC<NavbarProps> = ({
               : "bg-transparent"
           }
           /* This logic makes the height bigger and adds top padding ONLY on home */
-          ${isHome ? "h-[80px] pt-2" : "h-[66px]"}
+          ${isHome ? "h-[96px] pt-3" : "h-[80px]"}
         `}
       >
         <div className="h-full flex items-center px-5 md:px-8 lg:px-14">
 
           {/* ── BRAND ─ */}
-          <div className="shrink-0 w-[180px]">
-            <Link to="/" className="inline-flex flex-col focus:outline-none group">
-              <span
-                className="text-white text-[14px] font-bold tracking-[0.22em] leading-none uppercase
-                  group-hover:text-[#C9A84C] transition-colors duration-200"
-                style={{ fontFamily: "'Playfair Display', serif" }}
-              >
-                OULAMAUNA
-              </span>
-              <span
-                className="text-[#B8B09A] leading-none mt-[3px] group-hover:text-[#C9A84C] transition-colors duration-200"
-                style={{
-                  fontFamily: "'Amiri', serif",
-                  fontSize: isRTL ? "11px" : "9px",
-                  letterSpacing: isRTL ? "0" : "0.22em",
-                }}
-              >
-                عُـلَـمَـاؤُنَـا
-              </span>
-            </Link>
-          </div>
-
+<Link to="/" className="shrink-0 flex items-center gap-3 group" style={{ width: 'auto', minWidth: '200px' }}>
+  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginLeft: '-30px' }}>
+    <img
+  src={oulamaunaLogo}
+  alt="Oulamauna Logo"
+  style={{
+    height: isHome && !scrolled ? '150px' : '150px',
+    width: isHome && !scrolled ? '150px' : '150px',
+    objectFit: 'contain',
+    marginBottom: isHome && !scrolled ? '-0px' : '-10px',
+    display: 'block',
+    transition: 'height 0.3s ease, width 0.3s ease, margin-bottom 0.3s ease',
+    mixBlendMode: 'lighten',   // ← ADD THIS
+  }}
+/>
+    <div style={{
+      display: 'flex',
+      flexDirection: 'column',
+      alignItems: 'center',
+      gap: '2px',
+      opacity: isHome && !scrolled ? 1 : 0,
+      transition: 'opacity 0.3s ease',
+      pointerEvents: 'none',
+    }}>
+     
+    </div>
+  </div>
+</Link>
           {/* ── NAV LINKS ── */}
-          <ul className="hidden lg:flex items-center h-full flex-1 justify-center">
+          <ul className={`hidden lg:flex items-center h-full flex-1 ${isRTL ? "justify-center translate-x-16" : "justify-center -translate-x-16"}`}>
             {NAV_IDS.map((id, i) => {
               const on = active === id;
               return (
-                <li key={id} className="h-full flex items-center">
+                <li key={id} className="h-full flex items-center ">
                   <Link
                     to={PATHS[id]}
                     onClick={() => setActive(id)}
-                    className={`
-                      relative h-full px-4 flex items-center font-semibold
-                      transition-colors duration-200 focus:outline-none
-                      ${isRTL ? "text-[13px]" : "text-[11.5px] tracking-[0.06em]"}
-                      ${on ? "text-[#C9A84C]" : "text-[#B8B09A] hover:text-[#C9A84C]"}
-                    `}
+                    onMouseEnter={() => setHoveredId(id)}
+onMouseLeave={() => setHoveredId(null)}
+  className={`
+  relative h-full px-4 flex items-center 
+  transition-colors duration-200 focus:outline-none
+  ${isRTL ? "text-[15px]" : "text-[13px] tracking-[0.06em]"}
+  ${
+    hoveredId
+      ? hoveredId === id
+        ? "text-[#C9A84C]"
+        : "text-[#ffff]"
+      : on
+      ? "text-[#C9A84C]"
+      : "text-[#ffff]"
+  }
+`}
                   >
                     {t.links[i]}
                   </Link>
+                  
                 </li>
               );
             })}
@@ -232,14 +245,14 @@ const Navbar: React.FC<NavbarProps> = ({
             <div className="flex items-center justify-end">
               <div className={`
                 overflow-hidden transition-all duration-200
-                ${searchOpen ? "w-44 me-1 opacity-100" : "w-0 opacity-0"}
+               ${searchOpen ? "w-52 me-1 opacity-100" : "w-0 opacity-0"}
               `}>
                 <input
                   ref={inputRef}
                   type="search"
                   placeholder={t.placeholder}
                   className={`
-                    w-full h-8 px-3.5 rounded-full text-[11px] text-white
+                    w-full h-9 px-3.5 rounded-full text-[12px] text-white
                     bg-white/10 border border-white/15 placeholder-[#B8B09A]
                     outline-none focus:border-[#C9A84C]/50 focus:bg-white/[0.13]
                     transition-all duration-200
@@ -307,10 +320,10 @@ const Navbar: React.FC<NavbarProps> = ({
                 <Link
                   to="/login"
                   className={`
-                    h-9 px-3 flex items-center rounded-xl font-semibold
-                    text-[#B8B09A] hover:text-[#C9A84C]
+                    h-9 px-3 flex items-center rounded-xl 
+                    text-[#ffff] hover:text-[#C9A84C]
                     transition-colors duration-200 focus:outline-none
-                    ${isRTL ? "text-[13px]" : "text-[11.5px] tracking-[0.04em]"}
+                    ${isRTL ? "text-[15px]" : "text-[13px] tracking-[0.04em]"}
                   `}
                 >
                   {t.login}
@@ -318,12 +331,12 @@ const Navbar: React.FC<NavbarProps> = ({
                 <Link
                   to="/register"
                   className={`
-                    h-9 px-5 flex items-center rounded-full font-bold
-                    bg-[#C9A84C] text-[#285B4B]
+                    h-9 px-5 flex items-center rounded-full 
+                    bg-[#B78726] text-[#ffff]
                     hover:bg-[#B8B09A] hover:text-[#285B4B]
                     active:scale-[0.98] transition-all duration-200
                     whitespace-nowrap focus:outline-none
-                    ${isRTL ? "text-[12px]" : "text-[11px] tracking-[0.08em]"}
+                    ${isRTL ? "text-[14px]" : "text-[12px] tracking-[0.08em]"}
                   `}
                 >
                   {t.register}
@@ -333,7 +346,7 @@ const Navbar: React.FC<NavbarProps> = ({
               <div className="flex items-center gap-0.5">
                 <button
                   aria-label="Notifications"
-                  className="relative w-9 h-9 flex items-center justify-center rounded-xl
+                  className="relative w-10 h-10 flex items-center justify-center rounded-xl
                     text-[#B8B09A] hover:text-[#C9A84C] transition-colors duration-200 focus:outline-none"
                 >
                   <IcoBell />
@@ -356,7 +369,7 @@ const Navbar: React.FC<NavbarProps> = ({
         </div>
       </nav>
 
-      {!isHome && <div className="h-[66px]" aria-hidden="true" />}
+      {!isHome && <div className="h-[80px]" aria-hidden="true" />}
     </>
   );
 };

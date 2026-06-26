@@ -1,12 +1,15 @@
 import React, { useState, useEffect } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
-import { useAuth } from "../context/AuthContext";
-import libraryImg from "../assets/library.jpg";
+import { useAuth } from "../../context/AuthContext";
+import { useLang } from "../../context/LanguageContext"; 
+import libraryImg from "../../assets/library.jpg";
+import oulamaunaLogo from '../../assets/OOLOGO.png';
 import axios from "axios";
 
 type Language = "EN" | "AR" | "FR";
 
-const Register: React.FC<{ lang?: Language }> = ({ lang = "EN" }) => {
+const Register: React.FC = () => {
+  const { lang } = useLang();
   const navigate = useNavigate();
   const location = useLocation();
   const { login } = useAuth();
@@ -137,7 +140,7 @@ const Register: React.FC<{ lang?: Language }> = ({ lang = "EN" }) => {
 
     setIsLoading(true);
     try {
-      await axios.post("http://localhost:5000/api/auth/register", {
+      await axios.post(`${import.meta.env.VITE_API_URL}/api/auth/register`, {
         username: form.username,
         email: form.email,
         password: form.password,
@@ -178,10 +181,13 @@ const Register: React.FC<{ lang?: Language }> = ({ lang = "EN" }) => {
       <div className={`hidden lg:flex lg:w-[48%] relative flex-col justify-between p-10 transition-transform duration-700 ease-[cubic-bezier(0.4,0,0.2,1)] ${imageVisible ? "translate-x-0" : isRTL ? (slideDirection === "left" ? "-translate-x-full" : "translate-x-full") : (slideDirection === "left" ? "translate-x-full" : "-translate-x-full")}`}>
         <img src={libraryImg} alt="" className="absolute inset-0 w-full h-full object-cover" />
         <div className="absolute inset-0 bg-[#285B4B]/82" />
-        <div className="relative z-10 text-white">
-          <h1 className="text-lg font-black tracking-[0.35em]">OULAMAUNA</h1>
-          <span className="text-[#D8BF86] text-sm font-arabic block mt-1">عُـلَـمَـاؤُنَـا</span>
-        </div>
+        <div className="relative z-10 flex items-center gap-3">
+  <img src={oulamaunaLogo} alt="Oulamauna Logo" className="h-20 w-20 object-contain" />
+  <div>
+    <h1 className="text-lg font-black tracking-[0.35em] text-white">OULAMAUNA</h1>
+    <span className="text-[#D8BF86] text-sm font-arabic block mt-1">عُـلَـمَـاؤُنَـا</span>
+  </div>
+</div>
         <div className="relative z-10">
           <div className="w-10 h-px bg-[#D8BF86]/50 mb-3" />
           <p className="text-white/95 text-base font-serif italic">"My Lord, increase me in knowledge"</p>

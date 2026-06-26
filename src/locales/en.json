@@ -1,0 +1,634 @@
+{
+  "sidebar": {
+    "brandName": "Oulamauna",
+    "role": "Portal Administrator",
+    "signOut": "Sign out",
+    "section": {
+      "archives": "Archives & Manuscripts",
+      "engagement": "Engagement",
+      "administration": "Administration"
+    },
+    "dashboard": "Dashboard",
+    "scholars": "Scholars",
+    "allScholars": "All Scholars",
+    "addScholar": "Add New Scholar",
+    "reviewDesk": "Review Desk",
+    "newScholars": "New Scholars",
+    "pendingEdits": "Pending Edits",
+    "mediaVerification": "Media Verification",
+    "worksVerification": "Works Verification",
+    "activeReview": "Active Review",
+    "archive": "Archive",
+    "changesRequested": "Changes Requested",
+    "rejected": "Rejected",
+    "disciplines": "Disciplines",
+    "communityHub": "Community Hub",
+    "allPosts": "All Posts",
+    "reported": "Reported",
+    "userManagement": "User Management",
+    "contributors": "Contributors",
+    "bannedUsers": "Banned Users",
+    "reports": "Reports",
+    "notifications": "Notifications",
+    "settings": "Settings",
+    "translation": "Translation",
+    "regions": "Regions",
+    "backups": "Backups"
+  },
+  "navbar": {
+    "dashboard": "Dashboard",
+    "searchPlaceholder": "Search archive...",
+    "language": "Language",
+    "notifications": "Notifications",
+    "viewAll": "View all",
+    "adminName": "Prof. Al-Hadi",
+    "adminRole": "Admin",
+    "profile": "My Profile",
+    "settings": "Settings",
+    "signOut": "Sign out",
+    "notif": {
+      "newScholar": "New Scholar Added",
+      "newScholarSub": "Ibn Taymiyya biography submitted",
+      "editProposed": "Edit Proposed",
+      "editProposedSub": "Al-Muqaddimah chapter update",
+      "mediaUploaded": "Media Uploaded",
+      "mediaUploadedSub": "Manuscript scan verified",
+      "reported": "Content Reported",
+      "reportedSub": "User flagged a translation"
+    }
+  },
+  "dashboard": {
+    "header": {
+      "eyebrow": "OULAMAUNA · ADMIN",
+      "title": "Administrative Overview",
+      "subtitle": "Review submissions, monitor platform health, and manage the scholarly archive."
+    },
+    "stat": {
+      "scholars": "Registered Scholars",
+      "scholarsSub": "+12 added this month",
+      "works": "Archived Works",
+      "worksSub": "98% data integrity",
+      "pending": "Pending Review",
+      "pendingSub": "12 high-priority items",
+      "contributors": "Contributors",
+      "contributorsSub": "Active academic accounts"
+    },
+    "chart": {
+      "eyebrow": "MANUSCRIPT ACTIVITY",
+      "title": "Submissions over time",
+      "hijri": "HIJRI",
+      "gregorian": "GREGORIAN"
+    },
+    "month": {
+      "muharram": "Muh.",
+      "safar": "Saf.",
+      "rabiI": "Rab. I",
+      "rabiII": "Rab. II",
+      "jumadaI": "Jum. I",
+      "jumadaII": "Jum. II",
+      "rajab": "Raj."
+    },
+    "review": {
+      "eyebrow": "REVIEW QUEUE",
+      "reports": "Reported Content",
+      "blogFlag": "Flagged Blog Posts",
+      "notifs": "Notifications",
+      "viewAll": "View all pending"
+    },
+    "cat": {
+      "eyebrow": "DISCIPLINES",
+      "title": "Scholars by specialisation",
+      "fiqh": "Fiqh (Islamic Law)",
+      "hadith": "Hadith Sciences",
+      "tafsir": "Quranic Exegesis",
+      "usul": "Usul al-Fiqh",
+      "tasawwuf": "Tasawwuf",
+      "nahw": "Arabic Grammar"
+    },
+    "century": {
+      "eyebrow": "TIMELINE",
+      "title": "Scholars by Hijri century",
+      "label": "Hijri centuries (I – X)",
+      "scholars": "scholars"
+    },
+    "region": {
+      "eyebrow": "REGIONS",
+      "maghreb": "Maghreb",
+      "mashriq": "Mashriq",
+      "andalus": "Andalusia",
+      "other": "Other"
+    },
+    "activity": {
+      "eyebrow": "RECENT ACTIVITY",
+      "viewAll": "View all",
+      "duplicateBio": "Duplicate Profile",
+      "duplicateBioSub": "Subject: Ibn Taymiyya",
+      "newTranslation": "New Translation Draft",
+      "newTranslationSub": "Work: Al-Muqaddimah",
+      "newContributor": "New Contributor Request",
+      "newContributorSub": "User: dr_fatima_a",
+      "contentReported": "Content Reported",
+      "contentReportedSub": "Blog post flagged by 2 users",
+      "time2m": "2m ago",
+      "time3h": "3h ago",
+      "time8h": "8h ago",
+      "timeYesterday": "Yesterday"
+    },
+    "badge": {
+      "urgent": "High Priority",
+      "pending": "Under Review",
+      "requestAccess": "Access Request",
+      "review": "Needs Review"
+    },
+    "quick": {
+      "eyebrow": "QUICK ACTIONS",
+      "addScholar": "Add Scholar",
+      "reviewPending": "Review Pending",
+      "moderateForum": "Moderate Forum",
+      "manageUsers": "Manage Users",
+      "viewReports": "View Reports",
+      "systemSettings": "System Settings"
+    },
+    "health": {
+      "eyebrow": "PLATFORM HEALTH",
+      "backup": "Backup OK",
+      "search": "Search OK",
+      "media": "Media OK",
+      "email": "Email Error",
+      "lastBackup": "Last backup",
+      "lastBackupValue": "Today, 03:00 AM"
+    }
+  },
+  "scholars": {
+    "newScholars": {
+      "title": "New Scholars",
+      "subtitle": "Review newly submitted scholar profiles before they go live on the archive.",
+      "updatedLabel": "Updated just now",
+      "empty": "No submissions in the queue.",
+      "noResults": "No submissions match your search."
+    },
+    "stats": {
+      "totalPending": "Total in queue",
+      "priorityReview": "Priority review",
+      "underReview": "Under review",
+      "changesRequested": "Changes requested"
+    },
+    "search": {
+      "placeholder": "Search by name, contributor, or discipline..."
+    },
+    "tabs": {
+      "all": "All"
+    },
+    "langVersion": {
+      "en": "English version",
+      "ar": "Arabic version",
+      "fr": "French version"
+    },
+    "table": {
+      "scholar": "Scholar",
+      "submittedBy": "Submitted by",
+      "date": "Date",
+      "languages": "Languages",
+      "status": "Status",
+      "actions": "Actions"
+    },
+    "status": {
+      "pending": "Pending",
+      "underReview": "Under review",
+      "changesRequested": "Changes requested"
+    },
+    "actions": {
+      "view": "View submission",
+      "review": "Review",
+      "approve": "Approve",
+      "reject": "Reject",
+      "strip": "Strip contributor privileges"
+    },
+    "strip": {
+      "title": "Strip contributor privileges?",
+      "body": "This will remove contributor privileges from {name} and delete all of their pending submissions. This action cannot be undone.",
+      "confirm": "Strip privileges"
+    },
+    "review": {
+      "cancel": "Cancel"
+    }
+  },
+  "scholarReview": {
+    "badge": {
+      "newSubmission": "NEW SUBMISSION"
+    },
+    "hero": {
+      "submitter": "Submitter",
+      "highImpact": "1 High Impact Submission"
+    },
+    "submittedLang": {
+      "en": "English (Primary)",
+      "ar": "Arabic (Primary)",
+      "fr": "Français (Primary)"
+    },
+    "editBar": {
+      "label": "Editing — fix typos or correct any field, then confirm.",
+      "cancel": "Cancel",
+      "confirm": "Confirm"
+    },
+    "actions": {
+      "editPage": "Edit Page",
+      "reject": "Reject / Request Changes",
+      "approve": "Approve Submission"
+    },
+    "modal": {
+      "approveTitle": "Approve this submission?",
+      "rejectTitle": "Reject or request changes?",
+      "stripTitle": "Strip contributor access?",
+      "approveSub": "This will publish {name} to the encyclopedia.",
+      "unreviewed": "unreviewed new disciplines will be added automatically.",
+      "rejectSub": "Optionally tell the contributor what needs to change. Leave blank to reject without a message.",
+      "stripSub": "This removes {name}'s contributor privileges. This action is logged.",
+      "rejectPlaceholder": "e.g. Please verify the birth year — sources conflict between 1905 and 1906.",
+      "confirmApprove": "Approve",
+      "confirmReject": "Reject",
+      "confirmSendReject": "Send & Reject",
+      "confirmStrip": "Strip Access"
+    },
+    "sections": {
+      "biography": "Academic Biography",
+      "lineage": "Intellectual Lineage & Relations",
+      "bibliography": "Bibliography",
+      "media": "Documents & Media",
+      "references": "Academic References"
+    },
+    "bio": {
+      "wordCount": "Word count: {n} words",
+      "readingTime": "Reading time: ~{n} min"
+    },
+    "lineage": {
+      "teachers": "Teachers & Influences",
+      "disciples": "Notable Disciples"
+    },
+    "works": {
+      "title": "TITLE",
+      "year": "YEAR",
+      "format": "FORMAT",
+      "access": "DIGITAL ACCESS",
+      "view": "VIEW",
+      "viewPdf": "View PDF"
+    },
+    "media": {
+      "viewPdf": "View PDF",
+      "viewPhotos": "View Photos",
+      "watch": "Watch",
+      "listen": "Listen",
+      "open": "Open"
+    },
+    "sidebar": {
+      "vitalStats": "Vital Statistics",
+      "name": "Name",
+      "born": "Born",
+      "died": "Died",
+      "lifespan": "Lifespan",
+      "region": "Region",
+      "century": "Century",
+      "discipline": "Discipline",
+      "expertiseClusters": "Expertise Clusters",
+      "submitterNote": "Submitter Note"
+    },
+    "chips": {
+      "kept": "kept",
+      "removed": "removed",
+      "pending": "pending",
+      "keepPrompt": "Keep \"{label}\"?",
+      "yesAdd": "Yes, add",
+      "undo": "undo",
+      "keepTitle": "Keep this discipline",
+      "removeTitle": "Remove this discipline",
+      "hint": "= new discipline proposed by contributor — decide to keep or remove"
+    }
+  },
+  "reviewQueue": {
+    "title": "Review Queue",
+    "subtitle": "Manage incoming scholar profiles and archival contributions. Ensure all metadata adheres to standards.",
+    "stats": {
+      "totalPending": "Total Pending",
+      "overdue": "Overdue (>3 days)",
+      "newToday": "New Today",
+      "avgTime": "Avg. Review Time",
+      "thisWeek": "This Week"
+    },
+    "filters": {
+      "title": "Filter Submissions",
+      "clearAll": "Clear All",
+      "language": "Language",
+      "allLanguages": "All Languages",
+      "discipline": "Discipline",
+      "allDisciplines": "All Disciplines",
+      "type": "Type",
+      "allTypes": "All Types",
+      "newProfile": "New Profile",
+      "contentEdit": "Content Edit",
+      "sort": "Sort"
+    },
+    "sort": {
+      "newest": "Newest First",
+      "oldest": "Oldest First",
+      "nameAZ": "Name (A–Z)"
+    },
+    "lang": {
+      "en": "English",
+      "ar": "العربية",
+      "fr": "Français"
+    },
+    "table": {
+      "title": "New Scholar Submissions",
+      "updated": "Updated 2m ago",
+      "scholar": "Scholar",
+      "editor": "Editor",
+      "editType": "Edit Type",
+      "submitted": "Submitted",
+      "actions": "Actions",
+      "empty": "No submissions found"
+    },
+    "editTypes": {
+      "bioModified": "Biography updated",
+      "workAdded": "New work added",
+      "workModified": "Work modified",
+      "mediaAdded": "Media added",
+      "mediaModified": "Media updated",
+      "vitalsUpdated": "Vitals updated",
+      "disciplineAdded": "Discipline added"
+    },
+    "pagination": {
+      "showing": "Showing {start}–{end} of {total} submissions"
+    },
+    "actions": {
+      "review": "Review",
+      "approve": "Approve",
+      "reject": "Reject",
+      "strip": "Strip Contributor"
+    },
+    "modal": {
+      "title": "Strip Contributor",
+      "body": "Are you sure you want to remove all submissions from {name}?",
+      "warning": "This action cannot be undone.",
+      "cancel": "Cancel",
+      "confirm": "Confirm"
+    }
+  },
+  "pendingEditReview": {
+    "pendingEdit": "PENDING EDIT",
+    "editor": "Editor",
+    "original": "Original",
+    "proposed": "Proposed",
+    "accepted": "Accepted",
+    "rejected": "Rejected",
+    "pending": "Pending",
+    "totalChanges": "total changes",
+    "rejectAll": "Reject All",
+    "approveAccepted": "Approve Accepted ({count})",
+    "changedFields": "Changed Fields",
+    "disciplineChanges": "Discipline Changes",
+    "workChanges": "Bibliography Changes",
+    "mediaChanges": "Media Changes",
+    "accept": "Accept",
+    "reject": "Reject",
+    "modify": "Modify",
+    "reset": "Reset",
+    "editing": "Editing...",
+    "saveChanges": "Save changes",
+    "cancel": "Cancel",
+    "rejectReasonLabel": "Reason for rejection:",
+    "rejectReasonPlaceholder": "Explain why this change is being rejected...",
+    "rejectionReason": "Rejection reason",
+    "confirmReject": "Reject",
+    "type": "Type",
+    "title": "Title",
+    "year": "Year",
+    "format": "Format",
+    "access": "Access",
+    "accessUrl": "Access URL",
+    "description": "Description",
+    "meta": "Meta (size/type info)",
+    "origLabel": "Orig",
+    "newLabel": "New",
+    "editLabel": "Edit",
+    "view": "VIEW",
+    "newWork": "New Work",
+    "modifiedWork": "Modified Work",
+    "deletedWork": "Deleted Work",
+    "newMedia": "New Media",
+    "modifiedMedia": "Modified Media",
+    "deletedMedia": "Deleted Media",
+    "proposedNewDisciplines": "Proposed New Disciplines",
+    "proposedRemovals": "Proposed Removals",
+    "acceptRemoval": "Accept removal",
+    "keepDiscipline": "Keep (reject removal)",
+    "editInformation": "Edit Information",
+    "editDate": "Edit Date",
+    "editType": "Edit Type",
+    "originalAuthor": "Original Author",
+    "language": "Language",
+    "editorNote": "Editor's Note",
+    "viewPdf": "View PDF",
+    "viewPhotos": "View Photos",
+    "watch": "Watch",
+    "listen": "Listen",
+    "open": "Open",
+    "modal": {
+      "approveTitle": "Approve accepted changes?",
+      "rejectTitle": "Reject all changes?",
+      "stripTitle": "Strip editor access?",
+      "approveSub": "This will apply {count} accepted changes to {name}'s profile.",
+      "rejectSub": "This will reject all proposed changes and notify the editor.",
+      "stripSub": "This will remove editing privileges from {name}.",
+      "rejectPlaceholder": "Optional: Provide a reason for rejection...",
+      "confirmApprove": "Confirm Approval",
+      "confirmReject": "Confirm Rejection",
+      "confirmStrip": "Strip Access"
+    }
+  },
+    "mediaQueue": {
+    "title": "Media Verification",
+    "subtitle": "Review and verify submitted media files, links, and documents before they are published.",
+    "stats": {
+      "totalPending": "Total Pending",
+      "priorityReviews": "Priority Reviews",
+      "avgTime": "Avg. Review Time"
+    },
+    "filters": {
+      "title": "Filter Media",
+      "clearAll": "Clear All",
+      "type": "Media Type",
+      "allTypes": "All Types",
+      "scholar": "Scholar",
+      "allScholars": "All Scholars",
+      "sort": "Sort"
+    },
+    "sort": {
+      "newest": "Newest First",
+      "oldest": "Oldest First",
+      "titleAZ": "Title (A–Z)"
+    },
+    "type": {
+      "pdf": "PDF",
+      "audio": "Audio",
+      "video": "Video"
+    },
+    "table": {
+      "title": "Pending Media Submissions",
+      "updated": "Updated just now",
+      "media": "Media",
+      "type": "Type",
+      "source": "Source",
+      "scholar": "Scholar",
+      "submitter": "Submitter",
+      "submitted": "Submitted",
+      "actions": "Actions",
+      "empty": "No media submissions found"
+    },
+    "source": {
+      "link": "External Link"
+    },
+    "actions": {
+      "approve": "Approve",
+      "reject": "Reject",
+      "delete": "Delete",
+      "strip": "Strip Contributor"
+    },
+    "modal": {
+      "rejectTitle": "Reject this media?",
+      "rejectBody": "You are about to reject \"{title}\". Please provide a reason.",
+      "rejectPlaceholder": "Reason for rejection...",
+      "cancel": "Cancel",
+      "confirm": "Confirm"
+    },
+    "strip": {
+      "title": "Strip Contributor Credit?",
+      "body": "This will remove <b>{name}</b> as the contributor for \"{title}\".",
+      "warning": "This action is permanent and cannot be undone.",
+      "cancel": "Cancel",
+      "confirm": "Confirm Strip",
+      "alreadyStripped": "Contributor already stripped"
+    },
+    "review": {
+      "title": "Review Media",
+      "detailsTitle": "Media Details",
+      "label": {
+        "title": "Title:",
+        "description": "Description:",
+        "scholar": "Scholar:",
+        "submittedBy": "Submitted by:"
+      },
+      "checksTitle": "Verification Checks",
+      "check1": "Media is accessible and plays/renders correctly.",
+      "check2": "Content matches the provided title and description.",
+      "check3": "Copyright and legal usage rights are verified.",
+      "check4": "Content adheres to community guidelines.",
+      "notesTitle": "Reviewer Notes",
+      "notesPlaceholder": "Add internal notes about this media...",
+      "errorChecks": "Please complete all verification checks before approving.",
+      "errorReject": "A reason is required when rejecting media. Please add notes."
+    }
+  },
+  "worksQueue": {
+  "title": "Works Verification",
+  "subtitle": "Review and verify submitted scholarly works, books, and manuscripts before they are published.",
+  "yearLabel": "Year",
+  "stats": {
+    "totalPending": "Total Pending",
+    "priorityReviews": "Priority Reviews",
+    "avgTime": "Avg. Review Time"
+  },
+  "filters": {
+    "title": "Filter Works",
+    "clearAll": "Clear All",
+    "format": "Format",
+    "allFormats": "All Formats",
+    "scholar": "Scholar",
+    "allScholars": "All Scholars",
+    "sort": "Sort"
+  },
+  "sort": {
+    "newest": "Newest First",
+    "oldest": "Oldest First",
+    "titleAZ": "Title (A–Z)"
+  },
+  "format": {
+    "book": "Book",
+    "article": "Article",
+    "manuscript": "Manuscript",
+    "lecture": "Lecture",
+    "letter": "Letter",
+    "other": "Other"
+  },
+  "table": {
+    "title": "Pending Works Submissions",
+    "updated": "Updated just now",
+    "work": "Work",
+    "format": "Format",
+    "access": "Digital Access",
+    "scholar": "Scholar",
+    "submitter": "Submitter",
+    "submitted": "Submitted",
+    "actions": "Actions",
+    "empty": "No works submissions found"
+  },
+  "access": {
+    "link": "External Link",
+    "none": "No digital file"
+  },
+  "actions": {
+    "approve": "Approve",
+    "reject": "Reject",
+    "delete": "Delete",
+    "review": "Review Work",
+    "strip": "Strip Contributor"
+  },
+  "modal": {
+    "rejectTitle": "Reject this work?",
+    "rejectBody": "You are about to reject \"{title}\". Please provide a reason.",
+    "rejectPlaceholder": "Reason for rejection...",
+    "deleteTitle": "Delete this submission?",
+    "deleteBody": "Are you sure you want to permanently delete \"{title}\"? This action cannot be undone.",
+    "deletePlaceholder": "Reason for deletion (optional)...",
+    "deleteConfirm": "Delete",
+    "cancel": "Cancel",
+    "confirm": "Confirm"
+  },
+  "strip": {
+    "title": "Strip Contributor Credit?",
+    "body": "This will remove <b>{name}</b> as the contributor for \"{title}\".",
+    "warning": "This action is permanent and cannot be undone.",
+    "cancel": "Cancel",
+    "confirm": "Confirm Strip",
+    "alreadyStripped": "Contributor already stripped"
+  },
+  "review": {
+    "title": "Review Work",
+    "detailsTitle": "Work Details",
+    "label": {
+      "title": "Title:",
+      "year": "Year:",
+      "format": "Format:",
+      "scholar": "Scholar:",
+      "submittedBy": "Submitted by:"
+    },
+    "checksTitle": "Verification Checks",
+    "check1": "Bibliographic information is accurate and complete.",
+    "check2": "Work is correctly attributed to the scholar.",
+    "check3": "Copyright and usage rights are verified.",
+    "check4": "Content adheres to academic standards.",
+    "notesTitle": "Reviewer Notes",
+    "notesPlaceholder": "Add internal notes about this work...",
+    "errorChecks": "Please complete all verification checks before approving.",
+    "errorReject": "A reason is required when rejecting a work. Please add notes."
+  },
+  "badge": {
+    "stripped": "Stripped"
+  },
+  "toast": {
+    "approved": "\"{title}\" has been approved successfully.",
+    "rejected": "\"{title}\" has been rejected.",
+    "deleted": "\"{title}\" has been deleted.",
+    "stripped": "Contributor \"{name}\" has been stripped."
+  }
+}
+}

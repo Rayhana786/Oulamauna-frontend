@@ -1,9 +1,10 @@
 import React, { useState } from "react";
 import { Link } from "react-router-dom";
-
+import { useLang } from "../../context/LanguageContext";
 type Language = "EN" | "AR" | "FR";
 
-const ForgotPassword: React.FC<{ lang?: Language }> = ({ lang = "EN" }) => {
+const ForgotPassword: React.FC = () => {
+  const { lang } = useLang();
   const [email, setEmail] = useState("");
   const [error, setError] = useState("");
   const [sent, setSent] = useState(false);

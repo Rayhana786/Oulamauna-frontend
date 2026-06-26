@@ -1,7 +1,8 @@
 import React from "react";
 import { Link } from "react-router-dom";
-
-const NotFound = ({ lang = "EN" }) => {
+import { useLang } from "../../context/LanguageContext";  
+const NotFound = () => {
+  const { lang } = useLang();
   const content = {
     EN: {
       title: "404",

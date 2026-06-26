@@ -1,7 +1,7 @@
 import React, { useRef, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { LayoutDashboard, Edit, Settings, LogOut } from "lucide-react";
-
+import { useLang } from "../context/LanguageContext";
 type Language = "EN" | "AR" | "FR";
 
 interface ProfileMenuProps {
