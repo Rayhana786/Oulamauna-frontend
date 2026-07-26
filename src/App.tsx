@@ -84,12 +84,14 @@ function App() {
               {/* ── SCHOLARS ROUTES (with public Navbar) ── */}
 
               <Route path="/scholars/:id" element={<ScholarsPageDetails />} />
-              <Route path="/scholars/:id/edit" element={<Editscholarpage />} />
+              <Route path="/scholars/:id/edit/:lang" element={<Editscholarpage />} />
               <Route path="/scholars/submit" element={<Submitscholarpage />} />
+              
+              <Route path="/scholars/:scholarId/submit/:lang" element={<Submitscholarpage />} />
             </Route>
 
             {/* ── ADMIN ROUTES (sidebar + admin navbar, protected) ── */}
-            <Route element={<ProtectedRoute adminOnly />}>
+            <Route element={<NoNavLayout />}>
               <Route path="/admin" element={<AdminLayout />}>
                 <Route index element={<AdminDashboard />} />
                 <Route path="/admin/pending/scholars" element={<NewScholarsQueue />} />

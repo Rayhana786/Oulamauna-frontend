@@ -1,5 +1,6 @@
 import React, { useState, useRef } from "react";
-
+import { useNavigate } from "react-router-dom";
+import { useLang } from "../../context/LanguageContext"; 
 /* ─────────────────────────────────────────────
    TYPES
 ───────────────────────────────────────────── */
@@ -1460,7 +1461,9 @@ function DiscussionSection({ lang, t }: { lang: Language; t: UITranslation }) {
    MAIN COMPONENT
 ───────────────────────────────────────────── */
 const ScholarDetailPage: React.FC = () => {
-  const [lang, setLang]           = useState<Language>("EN");
+  const navigate = useNavigate();
+  const { lang: siteLang } = useLang();
+const [lang, setLang] = useState<Language>(siteLang as Language);
   const [activeTab, setActiveTab] = useState<TabId>("works");
   const [contributorsOpen, setContributorsOpen] = useState(true);
   const [imgGray, setImgGray]     = useState(true);
@@ -1688,7 +1691,20 @@ transition: "all 0.3s ease",
                 );
               })}
             </div>
-            <HoverBtn><Icon name="edit_note" size={14} />{t.editBtn}</HoverBtn>
+         {hasLangContent ? (
+  <HoverBtn onClick={() => navigate(`/scholars/${s.id}/edit/${lang}`)}>
+    <Icon name="edit_note" size={14} />
+    {lang === "EN" ? "EDIT ENGLISH" : lang === "AR" ? "تعديل العربية" : "MODIFIER FRANÇAIS"}
+  </HoverBtn>
+) : (
+  <HoverBtn 
+    onClick={() => navigate(`/scholars/${s.id}/submit/${lang}`)} 
+    style={{ borderColor: "#735c00", color: "#735c00" }}
+  >
+    <Icon name="add_circle" size={14} />
+    {lang === "EN" ? "ADD ENGLISH VERSION" : lang === "AR" ? "إضافة نسخة عربية" : "AJOUTER VERSION FRANÇAISE"}
+  </HoverBtn>
+)}
           </div>
         </div>
       </header>

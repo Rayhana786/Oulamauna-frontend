@@ -1,5 +1,7 @@
 import React, { useState, useRef } from "react";
 
+import { useLang } from "../../context/LanguageContext";
+import { useParams, Link, useNavigate } from "react-router-dom"; 
 /* ─────────────────────────────────────────────
    TYPES
 ───────────────────────────────────────────── */
@@ -46,6 +48,7 @@ interface LinkedPerson {
 interface ReferenceItem {
   id: string;
   text: string;
+  isNew?: boolean;
 }
 
 interface RevisionEntry {
@@ -62,7 +65,6 @@ interface AtAGlance {
   region: string;
   discipline: string[];
   expertise: string[];
-  status: "active" | "draft" | "review";
 }
 
 interface EditableScholar {
@@ -73,7 +75,6 @@ interface EditableScholar {
   subtitle: LangContent<string>;
   quote: LangContent<string>;
   overviewText: LangContent<string>;
-  /* biography stored as a single string per language */
   body: LangContent<string>;
   works: Work[];
   media: MediaItem[];
@@ -84,117 +85,6 @@ interface EditableScholar {
   lastUpdatedBy: string;
   lastUpdatedDate: string;
 }
-
-/* ─────────────────────────────────────────────
-   UI TRANSLATIONS
-───────────────────────────────────────────── */
-interface UIStrings {
-  editing: string;
-  basicInfo: string;
-  fullName: string;
-  aliases: string;
-  born: string;
-  died: string;
-  region: string;
-  discipline: string;
-  expertise: string;
-  status: string;
-  statusActive: string;
-  statusDraft: string;
-  statusReview: string;
-  narrativeContent: string;
-  subtitle: string;
-  quote: string;
-  overview: string;
-  improveAI: string;
-  previewFormatting: string;
-  biography: string;
-  biographyHint: string;
-  startTranslation: string;
-  notStarted: string;
-  academicContext: string;
-  teachers: string;
-  disciples: string;
-  addPersonPlaceholder: string;
-  bibliography: string;
-  addWork: string;
-  mediaLibrary: string;
-  addMedia: string;
-  references: string;
-  addReference: string;
-  revisionHistory: string;
-  cancel: string;
-  saveChanges: string;
-  lastUpdated: string;
-  unsavedChanges: string;
-  saved: string;
-}
-
-const UI: Record<Language, UIStrings> = {
-  EN: {
-    editing: "EDITING ENGLISH VERSION",
-    basicInfo: "Basic Information",
-    fullName: "Full Name (as it appears in publications)",
-    aliases: "Aliases / Alternative Spellings",
-    born: "Birth Year", died: "Death Year", region: "Region",
-    discipline: "Discipline & Fields", expertise: "Areas of Expertise",
-    status: "Record Status", statusActive: "Active", statusDraft: "Draft", statusReview: "Under Review",
-    narrativeContent: "Narrative Content", subtitle: "Subtitle / Honorific Title",
-    quote: "Signature Quote", overview: "Overview", improveAI: "Improve with AI",
-    previewFormatting: "Preview Formatting", biography: "Biography",
-    biographyHint: "Use [[Scholar Name]] to link mentions to other profiles. Separate paragraphs with a blank line.",
-    startTranslation: "Start English translation →", notStarted: "Not yet contributed in English.",
-    academicContext: "Academic Context", teachers: "Primary Teachers / Intellectual Lineage",
-    disciples: "Notable Disciples", addPersonPlaceholder: "Link a person from the archive…",
-    bibliography: "Bibliography", addWork: "ADD WORK",
-    mediaLibrary: "Integrated Media Library", addMedia: "ADD MEDIA",
-    references: "Academic References", addReference: "ADD REFERENCE",
-    revisionHistory: "Revision History", cancel: "Cancel", saveChanges: "Save Changes",
-    lastUpdated: "Last updated by", unsavedChanges: "Unsaved changes", saved: "All changes saved",
-  },
-  AR: {
-    editing: "تعديل النسخة العربية",
-    basicInfo: "المعلومات الأساسية",
-    fullName: "الاسم الكامل (كما يظهر في المنشورات)",
-    aliases: "الألقاب / الصيغ البديلة",
-    born: "سنة الميلاد", died: "سنة الوفاة", region: "المنطقة",
-    discipline: "التخصصات والمجالات", expertise: "مجالات الخبرة",
-    status: "حالة السجل", statusActive: "نشط", statusDraft: "مسودة", statusReview: "قيد المراجعة",
-    narrativeContent: "المحتوى السردي", subtitle: "العنوان الفرعي / اللقب التشريفي",
-    quote: "الاقتباس الرئيسي", overview: "نظرة عامة", improveAI: "تحسين بالذكاء الاصطناعي",
-    previewFormatting: "معاينة التنسيق", biography: "السيرة الذاتية",
-    biographyHint: "استخدم [[اسم العالم]] لربط الإشارات بملفات تعريف أخرى. افصل الفقرات بسطر فارغ.",
-    startTranslation: "← بدء الترجمة العربية", notStarted: "لم تتم المساهمة في هذه الصفحة بعد باللغة العربية.",
-    academicContext: "السياق الأكاديمي", teachers: "الأساتذة / السلسلة الفكرية",
-    disciples: "أبرز التلامذة", addPersonPlaceholder: "ربط شخص من الأرشيف…",
-    bibliography: "قائمة المؤلفات", addWork: "إضافة عمل",
-    mediaLibrary: "مكتبة الوسائط المتكاملة", addMedia: "إضافة وسائط",
-    references: "المراجع الأكاديمية", addReference: "إضافة مرجع",
-    revisionHistory: "تاريخ المراجعات", cancel: "إلغاء", saveChanges: "حفظ التعديلات",
-    lastUpdated: "آخر تحديث بواسطة", unsavedChanges: "تعديلات غير محفوظة", saved: "تم حفظ جميع التعديلات",
-  },
-  FR: {
-    editing: "MODIFICATION DE LA VERSION FRANÇAISE",
-    basicInfo: "Informations de base",
-    fullName: "Nom complet (tel qu'il apparaît dans les publications)",
-    aliases: "Alias / Orthographes alternatives",
-    born: "Année de naissance", died: "Année de décès", region: "Région",
-    discipline: "Discipline et domaines", expertise: "Domaines d'expertise",
-    status: "Statut de la fiche", statusActive: "Actif", statusDraft: "Brouillon", statusReview: "En révision",
-    narrativeContent: "Contenu narratif", subtitle: "Sous-titre / Titre honorifique",
-    quote: "Citation signature", overview: "Aperçu", improveAI: "Améliorer avec l'IA",
-    previewFormatting: "Aperçu de la mise en forme", biography: "Biographie",
-    biographyHint: "Utilisez [[Nom du savant]] pour lier les mentions à d'autres profils. Séparez les paragraphes par une ligne vide.",
-    startTranslation: "Démarrer la traduction française →", notStarted: "Cette page n'a pas encore été contribuée en français.",
-    academicContext: "Contexte académique", teachers: "Professeurs / Lignée intellectuelle",
-    disciples: "Disciples notables", addPersonPlaceholder: "Lier une personne depuis l'archive…",
-    bibliography: "Bibliographie", addWork: "AJOUTER UNE ŒUVRE",
-    mediaLibrary: "Médiathèque intégrée", addMedia: "AJOUTER UN MÉDIA",
-    references: "Références académiques", addReference: "AJOUTER UNE RÉFÉRENCE",
-    revisionHistory: "Historique des révisions", cancel: "Annuler", saveChanges: "Enregistrer",
-    lastUpdated: "Mis à jour par", unsavedChanges: "Modifications non enregistrées", saved: "Toutes les modifications sont enregistrées",
-  },
-};
 
 const LANG_LABELS: Record<Language, string> = { EN: "English", AR: "العربية", FR: "Français" };
 
@@ -252,7 +142,6 @@ function colorFor(seed: string): [string, string] {
   return PERSON_PALETTE[h % PERSON_PALETTE.length];
 }
 
-/* helper: convert old string[] body to single string */
 function joinBody(b: string | string[] | undefined): string {
   if (!b) return "";
   if (Array.isArray(b)) return b.join("\n\n");
@@ -260,7 +149,7 @@ function joinBody(b: string | string[] | undefined): string {
 }
 
 /* ─────────────────────────────────────────────
-   MOCK INITIAL DATA
+   MOCK INITIAL DATA — NEVER TRANSLATE THIS BLOCK
 ───────────────────────────────────────────── */
 const INITIAL_SCHOLAR: EditableScholar = {
   id: 1,
@@ -271,7 +160,6 @@ const INITIAL_SCHOLAR: EditableScholar = {
     born: "1905", died: "1973", region: "North Africa",
     discipline: ["Social Sciences", "Philosophy"],
     expertise: ["Social Theory", "Philosophy of History"],
-    status: "active",
   },
   name: { EN: "Malek Bennabi", AR: "مالك بن نبي" },
   subtitle: { EN: "Engineer, philosopher, theorist of civilization", AR: "مهندس، فيلسوف، منظّر الحضارة" },
@@ -391,7 +279,6 @@ function SectionCard({ icon, eyebrow, title, action, children }: {
     <section style={{
       backgroundColor: "#fff", border: "1.5px solid rgba(192,201,195,0.4)",
       borderRadius: "16px", padding: "32px", marginBottom: "28px",
-      /* prevent section from overflowing its column */
       minWidth: 0, overflow: "hidden",
     }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "8px", gap: "16px", flexWrap: "wrap" }}>
@@ -472,8 +359,10 @@ interface UploadZoneProps {
   onRemove: () => void;
   accept?: string;
   hint?: string;
+  dropLabel?: string;
+  browseLabel?: string;
 }
-function UploadZone({ file, existingName, onFile, onRemove, accept, hint }: UploadZoneProps) {
+function UploadZone({ file, existingName, onFile, onRemove, accept, hint, dropLabel, browseLabel }: UploadZoneProps) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [dragOver, setDragOver] = useState(false);
 
@@ -524,7 +413,7 @@ function UploadZone({ file, existingName, onFile, onRemove, accept, hint }: Uplo
       >
         <Icon name="cloud_upload" size={32} />
         <p style={{ fontSize: "13px", color: "#404945", margin: "10px 0 4px", fontWeight: 600 }}>
-          Drop a file here, or <span style={{ color: "#0b4335", textDecoration: "underline" }}>browse</span>
+          {dropLabel ?? "Drop a file here, or"} <span style={{ color: "#0b4335", textDecoration: "underline" }}>{browseLabel ?? "browse"}</span>
         </p>
         <p style={{ ...MONO, fontSize: "9px", color: "#c0c9c3", margin: 0 }}>{hint ?? "PDF, Audio, Video, ePub, Word — up to 50 MB"}</p>
       </div>
@@ -589,6 +478,7 @@ function ModalShell({ title, icon, onClose, children, footer }: {
    WORK MODAL
 ───────────────────────────────────────────── */
 function WorkModal({ initial, onClose, onSave }: { initial: Work | null; onClose: () => void; onSave: (w: Work) => void }) {
+  const { t } = useLang();
   const [title, setTitle] = useState(initial?.title ?? "");
   const [year, setYear] = useState<string>(initial ? String(initial.year) : "");
   const [format, setFormat] = useState<Work["format"]>(initial?.format ?? "BOOK");
@@ -598,11 +488,11 @@ function WorkModal({ initial, onClose, onSave }: { initial: Work | null; onClose
   const [error, setError] = useState("");
 
   const handleSubmit = () => {
-    if (!title.trim()) { setError("Title is required."); return; }
+    if (!title.trim()) { setError(t("editScholar.titleRequiredError")); return; }
     const yr = parseInt(year, 10);
-    if (!year || isNaN(yr) || yr < 600 || yr > new Date().getFullYear()) { setError("Please enter a valid year."); return; }
-    if (accessMode === "link" && !linkUrl.trim()) { setError("Please enter a URL or switch to No Access."); return; }
-    if (accessMode === "upload" && !uploadedFile && !initial?.accessFileName) { setError("Please upload a file or switch to No Access."); return; }
+    if (!year || isNaN(yr) || yr < 600 || yr > new Date().getFullYear()) { setError(t("editScholar.yearRequiredError")); return; }
+    if (accessMode === "link" && !linkUrl.trim()) { setError(t("editScholar.urlRequiredError")); return; }
+    if (accessMode === "upload" && !uploadedFile && !initial?.accessFileName) { setError(t("editScholar.fileRequiredError")); return; }
 
     let accessUrl: string | undefined;
     let accessFileName: string | undefined;
@@ -630,56 +520,56 @@ function WorkModal({ initial, onClose, onSave }: { initial: Work | null; onClose
 
   return (
     <ModalShell
-      title={initial ? "Edit Work" : "Add New Work"}
+      title={initial ? t("editScholar.editWork") : t("editScholar.addNewWork")}
       icon={initial ? "edit_note" : "add_circle"}
       onClose={onClose}
       footer={<>
-        <HoverBtn onClick={onClose} style={{ borderColor: "#c0c9c3", color: "#707974" }}>Cancel</HoverBtn>
+        <HoverBtn onClick={onClose} style={{ borderColor: "#c0c9c3", color: "#707974" }}>{t("editScholar.cancel")}</HoverBtn>
         <button onClick={handleSubmit} style={{ ...BTN_PRIMARY, backgroundColor: "#0b4335", color: "#fff", padding: "8px 20px", fontSize: "11px" }}>
-          <Icon name="check" size={14} />{initial ? "SAVE CHANGES" : "ADD WORK"}
+          <Icon name="check" size={14} />{initial ? t("editScholar.saveChangesBtn") : t("editScholar.addWorkBtn")}
         </button>
       </>}
     >
       <div>
-        <label style={labelStyle}>TITLE *</label>
+        <label style={labelStyle}>{t("editScholar.titleRequired")}</label>
         <input type="text" value={title} onChange={(e) => { setTitle(e.target.value); setError(""); }}
-          placeholder="e.g. The Problem of Culture" style={inputStyle} onFocus={focusBorder} onBlur={blurBorder} />
+          placeholder={t("editScholar.titleWorkPlaceholder")} style={inputStyle} onFocus={focusBorder} onBlur={blurBorder} />
       </div>
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
         <div>
-          <label style={labelStyle}>YEAR *</label>
+          <label style={labelStyle}>{t("editScholar.year")}</label>
           <input type="number" value={year} onChange={(e) => { setYear(e.target.value); setError(""); }}
-            placeholder="e.g. 1959" min={600} max={new Date().getFullYear()} style={inputStyle} onFocus={focusBorder} onBlur={blurBorder} />
+            placeholder={t("editScholar.yearPlaceholder")} min={600} max={new Date().getFullYear()} style={inputStyle} onFocus={focusBorder} onBlur={blurBorder} />
         </div>
         <div>
-          <label style={labelStyle}>FORMAT</label>
+          <label style={labelStyle}>{t("editScholar.format")}</label>
           <select value={format} onChange={(e) => setFormat(e.target.value as Work["format"])} style={{ ...inputStyle, cursor: "pointer" }} onFocus={focusBorder} onBlur={blurBorder}>
-            <option value="BOOK">Book</option>
-            <option value="MANUSCRIPT">Manuscript</option>
-            <option value="ARTICLE">Article</option>
+            <option value="BOOK">{t("editScholar.formatBook")}</option>
+            <option value="MANUSCRIPT">{t("editScholar.formatManuscript")}</option>
+            <option value="ARTICLE">{t("editScholar.formatArticle")}</option>
           </select>
         </div>
       </div>
       <div>
-        <label style={labelStyle}>DIGITAL ACCESS</label>
+        <label style={labelStyle}>{t("editScholar.digitalAccess")}</label>
         <div style={{ display: "flex", borderRadius: "8px", overflow: "hidden", border: "1.5px solid rgba(192,201,195,0.5)", marginBottom: "16px" }}>
-          <button style={modeTabStyle(accessMode === "none")} onClick={() => { setAccessMode("none"); setError(""); }}><Icon name="block" size={13} /> None</button>
-          <button style={{ ...modeTabStyle(accessMode === "upload"), borderLeft: "1px solid rgba(192,201,195,0.5)", borderRight: "1px solid rgba(192,201,195,0.5)" }} onClick={() => { setAccessMode("upload"); setError(""); }}><Icon name="upload_file" size={13} /> Upload</button>
-          <button style={modeTabStyle(accessMode === "link")} onClick={() => { setAccessMode("link"); setError(""); }}><Icon name="link" size={13} /> Link</button>
+          <button style={modeTabStyle(accessMode === "none")} onClick={() => { setAccessMode("none"); setError(""); }}><Icon name="block" size={13} /> {t("editScholar.accessNone")}</button>
+          <button style={{ ...modeTabStyle(accessMode === "upload"), borderLeft: "1px solid rgba(192,201,195,0.5)", borderRight: "1px solid rgba(192,201,195,0.5)" }} onClick={() => { setAccessMode("upload"); setError(""); }}><Icon name="upload_file" size={13} /> {t("editScholar.accessUpload")}</button>
+          <button style={modeTabStyle(accessMode === "link")} onClick={() => { setAccessMode("link"); setError(""); }}><Icon name="link" size={13} /> {t("editScholar.accessLink")}</button>
         </div>
         {accessMode === "upload" && (
           <UploadZone file={uploadedFile} existingName={initial?.accessFileName} onFile={(f) => { setUploadedFile(f); setError(""); }} onRemove={() => setUploadedFile(null)}
             accept=".pdf,.mp3,.wav,.ogg,.m4a,.mp4,.webm,.epub,.doc,.docx,application/pdf,audio/*,video/*"
-            hint="PDF, Audio (MP3/WAV), Video, ePub, Word — up to 50 MB" />
+            hint={t("editScholar.uploadHintWork")} dropLabel={t("editScholar.dropFileHere")} browseLabel={t("editScholar.browse")} />
         )}
         {accessMode === "link" && (
           <div style={{ position: "relative" }}>
             <span style={{ position: "absolute", left: "12px", top: "50%", transform: "translateY(-50%)", color: "#c0c9c3", display: "flex" }}><Icon name="link" size={16} /></span>
-            <input type="url" value={linkUrl} onChange={(e) => { setLinkUrl(e.target.value); setError(""); }} placeholder="https://archive.org/details/…"
+            <input type="url" value={linkUrl} onChange={(e) => { setLinkUrl(e.target.value); setError(""); }} placeholder={t("editScholar.linkPlaceholderWork")}
               style={{ ...inputStyle, paddingLeft: "36px" }} onFocus={focusBorder} onBlur={blurBorder} />
           </div>
         )}
-        {accessMode === "none" && <p style={{ fontSize: "12px", color: "#c0c9c3", fontStyle: "italic", margin: 0 }}>No digital file attached. Shown as "—" in the bibliography.</p>}
+        {accessMode === "none" && <p style={{ fontSize: "12px", color: "#c0c9c3", fontStyle: "italic", margin: 0 }}>{t("editScholar.noAccessNote")}</p>}
       </div>
       {error && <p style={{ ...MONO, fontSize: "10px", color: "#b3261e", margin: 0, display: "flex", alignItems: "center", gap: "6px" }}><Icon name="error" size={13} /> {error}</p>}
     </ModalShell>
@@ -690,17 +580,20 @@ function WorkModal({ initial, onClose, onSave }: { initial: Work | null; onClose
    MEDIA MODAL
 ───────────────────────────────────────────── */
 function MediaModal({ initial, onClose, onSave }: { initial: MediaItem | null; onClose: () => void; onSave: (m: MediaItem) => void }) {
+  const { t } = useLang();
   const [title, setTitle] = useState(initial?.title ?? "");
   const [desc, setDesc] = useState(initial?.description ?? "");
-  const [accessMode, setAccessMode] = useState<AccessMode>(initial?.accessUrl ? (initial.accessSource ?? "link") : "none");
+  const [accessMode, setAccessMode] = useState<AccessMode>(
+    initial?.accessSource ?? "upload"
+  );
   const [linkUrl, setLinkUrl] = useState(initial?.accessSource === "link" ? (initial.accessUrl ?? "") : "");
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);
   const [error, setError] = useState("");
 
   const handleSubmit = () => {
-    if (!title.trim()) { setError("Title is required."); return; }
-    if (accessMode === "link" && !linkUrl.trim()) { setError("Please enter a URL."); return; }
-    if (accessMode === "upload" && !uploadedFile && !initial?.accessFileName) { setError("Please upload a file."); return; }
+    if (!title.trim()) { setError(t("editScholar.titleRequiredError")); return; }
+    if (accessMode === "link" && !linkUrl.trim()) { setError(t("editScholar.urlRequiredErrorMedia")); return; }
+    if (accessMode === "upload" && !uploadedFile && !initial?.accessFileName) { setError(t("editScholar.fileRequiredErrorMedia")); return; }
 
     let type: MediaItem["type"] = "pdf";
     let meta = "File";
@@ -735,46 +628,48 @@ function MediaModal({ initial, onClose, onSave }: { initial: MediaItem | null; o
 
   return (
     <ModalShell
-      title={initial ? "Edit Media" : "Add Media"}
+      title={initial ? t("editScholar.editMedia") : t("editScholar.addNewMedia")}
       icon={initial ? "edit_note" : "add_circle"}
       onClose={onClose}
       footer={<>
-        <HoverBtn onClick={onClose} style={{ borderColor: "#c0c9c3", color: "#707974" }}>Cancel</HoverBtn>
+        <HoverBtn onClick={onClose} style={{ borderColor: "#c0c9c3", color: "#707974" }}>{t("editScholar.cancel")}</HoverBtn>
         <button onClick={handleSubmit} style={{ ...BTN_PRIMARY, backgroundColor: "#0b4335", color: "#fff", padding: "8px 20px", fontSize: "11px" }}>
-          <Icon name="check" size={14} />{initial ? "SAVE CHANGES" : "ADD MEDIA"}
+          <Icon name="check" size={14} />{initial ? t("editScholar.saveChangesBtn") : t("editScholar.addMediaBtn")}
         </button>
       </>}
     >
       <div>
-        <label style={labelStyle}>TITLE *</label>
+        <label style={labelStyle}>{t("editScholar.titleRequired")}</label>
         <input type="text" value={title} onChange={(e) => { setTitle(e.target.value); setError(""); }}
-          placeholder="e.g. 1972 Lecture on Colonizability" style={inputStyle} onFocus={focusBorder} onBlur={blurBorder} />
+          placeholder={t("editScholar.mediaTitlePlaceholder")} style={inputStyle} onFocus={focusBorder} onBlur={blurBorder} />
       </div>
       <div>
-        <label style={labelStyle}>DESCRIPTION</label>
-        <textarea value={desc} onChange={(e) => setDesc(e.target.value)} placeholder="Brief description of this media item" rows={2}
+        <label style={labelStyle}>{t("editScholar.description")}</label>
+        <textarea value={desc} onChange={(e) => setDesc(e.target.value)} placeholder={t("editScholar.descriptionPlaceholder")} rows={2}
           style={{ ...inputStyle, resize: "vertical" }} onFocus={focusBorder} onBlur={blurBorder} />
       </div>
       <div>
-        <label style={labelStyle}>FILE / LINK</label>
+        <label style={labelStyle}>{t("editScholar.fileOrLink")}</label>
         <div style={{ display: "flex", borderRadius: "8px", overflow: "hidden", border: "1.5px solid rgba(192,201,195,0.5)", marginBottom: "16px" }}>
-          <button style={modeTabStyle(accessMode === "none")} onClick={() => { setAccessMode("none"); setError(""); }}><Icon name="block" size={13} /> None</button>
-          <button style={{ ...modeTabStyle(accessMode === "upload"), borderLeft: "1px solid rgba(192,201,195,0.5)", borderRight: "1px solid rgba(192,201,195,0.5)" }} onClick={() => { setAccessMode("upload"); setError(""); }}><Icon name="upload_file" size={13} /> Upload</button>
-          <button style={modeTabStyle(accessMode === "link")} onClick={() => { setAccessMode("link"); setError(""); }}><Icon name="link" size={13} /> Link</button>
+          <button style={{ ...modeTabStyle(accessMode === "upload"), flex: 1 }} onClick={() => { setAccessMode("upload"); setError(""); }}>
+            <Icon name="upload_file" size={13} /> {t("editScholar.accessUpload")}
+          </button>
+          <button style={{ ...modeTabStyle(accessMode === "link"), borderLeft: "1px solid rgba(192,201,195,0.5)", flex: 1 }} onClick={() => { setAccessMode("link"); setError(""); }}>
+            <Icon name="link" size={13} /> {t("editScholar.accessLink")}
+          </button>
         </div>
         {accessMode === "upload" && (
           <UploadZone file={uploadedFile} existingName={initial?.accessFileName} onFile={(f) => { setUploadedFile(f); setError(""); }} onRemove={() => setUploadedFile(null)}
             accept=".pdf,.mp3,.wav,.ogg,.m4a,.mp4,.webm,.avi,audio/*,video/*,application/pdf"
-            hint="PDF, Audio (MP3/WAV), Video (MP4/WebM) — up to 100 MB" />
+            hint={t("editScholar.uploadHintMedia")} dropLabel={t("editScholar.dropFileHere")} browseLabel={t("editScholar.browse")} />
         )}
         {accessMode === "link" && (
           <div style={{ position: "relative" }}>
             <span style={{ position: "absolute", left: "12px", top: "50%", transform: "translateY(-50%)", color: "#c0c9c3", display: "flex" }}><Icon name="link" size={16} /></span>
-            <input type="url" value={linkUrl} onChange={(e) => { setLinkUrl(e.target.value); setError(""); }} placeholder="https://youtube.com/watch?v=… or direct file URL"
+            <input type="url" value={linkUrl} onChange={(e) => { setLinkUrl(e.target.value); setError(""); }} placeholder={t("editScholar.linkPlaceholderMedia")}
               style={{ ...inputStyle, paddingLeft: "36px" }} onFocus={focusBorder} onBlur={blurBorder} />
           </div>
         )}
-        {accessMode === "none" && <p style={{ fontSize: "12px", color: "#c0c9c3", fontStyle: "italic", margin: 0 }}>No file attached. Scholars still see title and description.</p>}
       </div>
       {error && <p style={{ ...MONO, fontSize: "10px", color: "#b3261e", margin: 0, display: "flex", alignItems: "center", gap: "6px" }}><Icon name="error" size={13} /> {error}</p>}
     </ModalShell>
@@ -784,7 +679,7 @@ function MediaModal({ initial, onClose, onSave }: { initial: MediaItem | null; o
 /* ─────────────────────────────────────────────
    LINKED PEOPLE EDITOR
 ───────────────────────────────────────────── */
-function LinkedPeopleEditor({ people, onChange, placeholder }: { people: LinkedPerson[]; onChange: (p: LinkedPerson[]) => void; placeholder: string }) {
+function LinkedPeopleEditor({ people, onChange, placeholder, isAdmin }: { people: LinkedPerson[]; onChange: (p: LinkedPerson[]) => void; placeholder: string; isAdmin?: boolean }) {
   const [val, setVal] = useState("");
   const add = () => {
     if (!val.trim()) return;
@@ -805,7 +700,7 @@ function LinkedPeopleEditor({ people, onChange, placeholder }: { people: LinkedP
                 style={{ flex: 1, border: "none", outline: "none", fontSize: 13, fontWeight: 600, backgroundColor: "transparent", minWidth: 0 }} />
               <input value={p.role} onChange={(e) => { const next = [...people]; next[i] = { ...p, role: e.target.value }; onChange(next); }}
                 placeholder="Role" style={{ flex: 1, border: "none", outline: "none", fontSize: 11, color: "#707974", backgroundColor: "transparent", ...MONO, minWidth: 0 }} />
-              <IconBtn name="close" danger onClick={() => onChange(people.filter((_, idx) => idx !== i))} title="Remove" />
+              {isAdmin && <IconBtn name="close" danger onClick={() => onChange(people.filter((_, idx) => idx !== i))} title="Remove" />}
             </div>
           ))}
         </div>
@@ -821,35 +716,47 @@ function LinkedPeopleEditor({ people, onChange, placeholder }: { people: LinkedP
 }
 
 /* ─────────────────────────────────────────────
-   PROPS — accept initial language from outside
-   (e.g. <EditScholarPage initialLang="AR" />)
+   PROPS
 ───────────────────────────────────────────── */
 interface EditScholarPageProps {
   initialLang?: Language;
+  isAdmin?: boolean;
 }
 
 /* ─────────────────────────────────────────────
    MAIN COMPONENT
 ───────────────────────────────────────────── */
-const EditScholarPage: React.FC<EditScholarPageProps> = ({ initialLang = "EN" }) => {
+const EditScholarPage: React.FC<EditScholarPageProps> = ({ initialLang = "EN", isAdmin = false }) => {
+  const { lang, id } = useParams<{ lang: Language; id: string }>();
+  const navigate = useNavigate();
+  const urlLang: Language = (lang === "AR" || lang === "FR" || lang === "EN")
+    ? lang
+    : (initialLang ?? "EN");
+
   const [scholar, setScholar] = useState<EditableScholar>(() => ({
     ...INITIAL_SCHOLAR,
-    /* normalise body: if source data had string[] convert to string */
     body: {
       EN: joinBody((INITIAL_SCHOLAR.body as any).EN),
       AR: joinBody((INITIAL_SCHOLAR.body as any).AR),
       FR: joinBody((INITIAL_SCHOLAR.body as any).FR),
     },
   }));
-  const [activeLang, setActiveLang] = useState<Language>(initialLang);
+  // This page always edits exactly one language: whichever the route says.
+  // activeLang is derived from urlLang on every render (not copied into its
+  // own state), so switching the URL from /edit/AR to /edit/EN always shows
+  // the English translation — it can't get stuck showing a stale language.
+  const activeLang: Language = urlLang;
+
   const [dirty, setDirty] = useState(false);
   const [portraitFile, setPortraitFile] = useState<File | null>(null);
 
   const [workModal, setWorkModal] = useState<{ open: boolean; index: number | null }>({ open: false, index: null });
   const [mediaModal, setMediaModal] = useState<{ open: boolean; index: number | null }>({ open: false, index: null });
 
-  const t = UI[activeLang];
-  const isRTL = activeLang === "AR";
+  const { t, lang: uiLang } = useLang();
+  const isRTL = activeLang === "AR";       // controls direction of the CONTENT fields only
+  const isUIRTL = uiLang === "AR";         // controls direction of the page chrome/layout        // controls direction of the page chrome/layout
+  const crumbSep = isUIRTL ? " < " : " > ";
 
   const mark = () => setDirty(true);
 
@@ -906,7 +813,13 @@ const EditScholarPage: React.FC<EditScholarPageProps> = ({ initialLang = "EN" })
   }
 
   function addReference() {
-    setScholar((prev) => ({ ...prev, academicReferences: [...prev.academicReferences, { id: uid(), text: "" }] }));
+    setScholar((prev) => ({
+      ...prev,
+      academicReferences: [
+        ...prev.academicReferences,
+        { id: uid(), text: "", isNew: true }
+      ]
+    }));
     mark();
   }
   function updateReference(i: number, text: string) {
@@ -927,12 +840,11 @@ const EditScholarPage: React.FC<EditScholarPageProps> = ({ initialLang = "EN" })
   }
 
   return (
-    <div dir={isRTL ? "rtl" : "ltr"} style={{
+    <div dir={isUIRTL ? "rtl" : "ltr"} style={{
       fontFamily: "'Source Sans 3', sans-serif", minHeight: "100vh",
       backgroundColor: "#f9faf7",
       backgroundImage: "radial-gradient(#e1e3e0 0.5px, transparent 0.5px)",
       backgroundSize: "24px 24px", color: "#191c1b",
-      /* prevent any horizontal overflow at root */
       overflowX: "hidden",
     }}>
       <style>{`
@@ -942,7 +854,6 @@ const EditScholarPage: React.FC<EditScholarPageProps> = ({ initialLang = "EN" })
         * { box-sizing: border-box; }
         button { font-family: inherit; }
         textarea { font-family: inherit; }
-        /* prevent any child from blowing out horizontal width */
         html, body { overflow-x: hidden; }
       `}</style>
 
@@ -968,56 +879,34 @@ const EditScholarPage: React.FC<EditScholarPageProps> = ({ initialLang = "EN" })
         borderBottom: "1px solid rgba(192,201,195,0.3)", padding: "16px 0",
       }}>
         <div style={{ maxWidth: "1280px", margin: "0 auto", padding: "0 32px" }}>
-          <div style={{ ...MONO, fontSize: "11px", color: "#707974", letterSpacing: "0.05em", marginBottom: "8px" }}>
-            <span>Home</span> {" > "} <span>Scholars</span> {" > "}
-            <span>{scholar.atAGlance.fullName}</span> {" > "}
-            <span style={{ color: "#0b4335", fontWeight: 700 }}>Edit</span>
-          </div>
+        <div style={{ ...MONO, fontSize: "11px", color: "#707974", letterSpacing: "0.05em", marginBottom: "8px", display: "flex", alignItems: "center", flexWrap: "wrap", gap: "4px" }}>
+          <Link to="/" style={{ color: "#707974", textDecoration: "none" }}>{t("editScholar.breadcrumbHome")}</Link>
+          <span>{crumbSep}</span>
+          <Link to="/scholars" style={{ color: "#707974", textDecoration: "none" }}>{t("editScholar.breadcrumbScholars")}</Link>
+          <span>{crumbSep}</span>
+          <Link to={`/scholars/${id}`} style={{ color: "#707974", textDecoration: "none" }}>{scholar.atAGlance.fullName}</Link>
+          <span>{crumbSep}</span>
+          <span style={{ color: "#0b4335", fontWeight: 700 }}>{isAdmin ? t("editScholar.breadcrumbAdminEdit") : t("editScholar.breadcrumbEdit")}</span>
+        </div>
 
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "12px" }}>
             <div style={{ minWidth: 0 }}>
               <h1 style={{ ...SERIF, fontSize: "24px", fontWeight: 700, color: "#0b4335", margin: "0 0 4px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                 {scholar.name[activeLang] || scholar.atAGlance.fullName}
               </h1>
-              <p style={{ ...MONO, fontSize: "10px", color: "#0b4335", letterSpacing: "0.15em", margin: 0, fontWeight: 700 }}>{t.editing}</p>
-            </div>
+              <p style={{ ...MONO, fontSize: "10px", color: "#0b4335", letterSpacing: "0.15em", margin: 0, fontWeight: 700 }}>
+  {activeLang === "EN" 
+    ? (uiLang === "FR" ? "MODIFICATION DE LA VERSION ANGLAISE" : uiLang === "AR" ? "تعديل النسخة الإنجليزية" : "Editing English Version")
+    : activeLang === "FR"
+    ? (uiLang === "FR" ? "MODIFICATION DE LA VERSION FRANÇAISE" : uiLang === "AR" ? "تعديل النسخة الفرنسية" : "Editing French Version")
+    : (uiLang === "FR" ? "MODIFICATION DE LA VERSION ARABE" : uiLang === "AR" ? "تعديل النسخة العربية" : "Editing Arabic Version")
+  }
+</p></div>
             <div style={{ display: "flex", alignItems: "center", gap: "10px", flexShrink: 0 }}>
-              <span style={{ ...MONO, fontSize: "9px", letterSpacing: "0.08em", color: dirty ? "#735c00" : "#0b4335", display: "flex", alignItems: "center", gap: "4px" }}>
-                <Icon name={dirty ? "edit" : "check_circle"} size={13} />
-                {dirty ? t.unsavedChanges : t.saved}
-              </span>
-              <HoverBtn style={{ borderColor: "#c0c9c3", color: "#707974" }}>{t.cancel}</HoverBtn>
               <button onClick={handleSave} style={{ ...BTN_PRIMARY, backgroundColor: "#0b4335", color: "#fff", padding: "8px 20px" }}>
-                <Icon name="save" size={14} />{t.saveChanges}
+                <Icon name="draft" size={14} />{t("editScholar.saveAsDraft")}
               </button>
             </div>
-          </div>
-
-          {/* Language tabs */}
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: "16px", paddingTop: "12px", borderTop: "1px solid rgba(192,201,195,0.2)", flexWrap: "wrap", gap: "8px" }}>
-            <div style={{ display: "flex", gap: "4px", padding: "4px 8px", backgroundColor: "rgba(11,67,53,0.04)", border: "1px solid rgba(11,67,53,0.1)", borderRadius: "999px" }}>
-              {(["AR", "EN", "FR"] as Language[]).map((l) => {
-                const active = activeLang === l;
-                const hasContent = !!scholar.name[l];
-                return (
-                  <button key={l} onClick={() => setActiveLang(l)} style={{
-                    ...MONO, fontSize: "10px", fontWeight: 700, letterSpacing: "0.08em",
-                    padding: "4px 12px", borderRadius: "999px", border: "1px solid",
-                    borderColor: active ? "#0b4335" : "rgba(192,201,195,0.5)",
-                    backgroundColor: active ? "#0b4335" : "transparent",
-                    color: active ? "#fff" : hasContent ? "#707974" : "#c0c9c3",
-                    cursor: "pointer", transition: "all 0.15s",
-                    display: "flex", alignItems: "center", gap: "5px",
-                  }}>
-                    {l === "AR" ? "ARABIC" : l === "EN" ? "ENGLISH" : "FRENCH"}
-                    {!hasContent && <Icon name="circle" size={6} />}
-                  </button>
-                );
-              })}
-            </div>
-            <span style={{ ...MONO, fontSize: "9px", color: "#c0c9c3", letterSpacing: "0.06em", flexShrink: 0 }}>
-              {t.lastUpdated} {scholar.lastUpdatedBy} • {scholar.lastUpdatedDate}
-            </span>
           </div>
         </div>
       </header>
@@ -1032,64 +921,54 @@ const EditScholarPage: React.FC<EditScholarPageProps> = ({ initialLang = "EN" })
 
               {/* Portrait */}
               <div style={{ backgroundColor: "#fff", border: "1px solid rgba(192,201,195,0.4)", borderRadius: "12px", padding: "20px", boxShadow: "0 1px 4px rgba(0,0,0,0.06)" }}>
-                <label style={labelStyle}>PORTRAIT</label>
+                <label style={labelStyle}>{t("editScholar.portrait")}</label>
                 <div style={{ marginBottom: "16px", borderRadius: "8px", overflow: "hidden", aspectRatio: "3/4" }}>
                   <img alt="Scholar portrait" src={portraitFile ? URL.createObjectURL(portraitFile) : scholar.image}
                     style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
                 </div>
                 <UploadZone file={portraitFile} onFile={(f) => { setPortraitFile(f); mark(); }} onRemove={() => { setPortraitFile(null); mark(); }}
-                  accept="image/*" hint="JPG or PNG — at least 800×1000px" />
+                  accept="image/*" hint={t("editScholar.portraitHint")} dropLabel={t("editScholar.dropFileHere")} browseLabel={t("editScholar.browse")} />
               </div>
 
               {/* Basic info */}
               <div style={{ backgroundColor: "#fff", border: "1px solid rgba(192,201,195,0.4)", borderRadius: "12px", padding: "20px", boxShadow: "0 1px 4px rgba(0,0,0,0.06)" }}>
-                <p style={{ ...MONO, fontSize: "9px", color: "#0b4335", letterSpacing: "0.2em", marginBottom: "16px", borderBottom: "1px solid rgba(11,67,53,0.1)", paddingBottom: "8px" }}>{t.basicInfo}</p>
+                <p style={{ ...MONO, fontSize: "9px", color: "#0b4335", letterSpacing: "0.2em", marginBottom: "16px", borderBottom: "1px solid rgba(11,67,53,0.1)", paddingBottom: "8px" }}>{t("editScholar.basicInfo")}</p>
 
                 <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
                   <div>
-                    <label style={labelStyle}>{t.status}</label>
-                    <select value={scholar.atAGlance.status} onChange={(e) => updateAtAGlance("status", e.target.value as AtAGlance["status"])}
-                      style={{ ...inputStyle, cursor: "pointer" }} onFocus={focusBorder} onBlur={blurBorder}>
-                      <option value="active">● {t.statusActive}</option>
-                      <option value="draft">● {t.statusDraft}</option>
-                      <option value="review">● {t.statusReview}</option>
-                    </select>
-                  </div>
-
-                  <div>
-                    <label style={labelStyle}>{t.fullName}</label>
+                    <label style={labelStyle}>{t("editScholar.fullName")}</label>
                     <input value={scholar.atAGlance.fullName} onChange={(e) => updateAtAGlance("fullName", e.target.value)}
                       style={inputStyle} onFocus={focusBorder} onBlur={blurBorder} />
                   </div>
 
                   <div>
-                    <label style={labelStyle}>{t.aliases}</label>
+                    <label style={labelStyle}>{t("editScholar.aliases")}</label>
                     <TagInput tags={scholar.atAGlance.aliases} onChange={(v) => updateAtAGlance("aliases", v)} placeholder="e.g. Malik ibn al-Nabi" />
                   </div>
 
                   <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
                     <div>
-                      <label style={labelStyle}>{t.born}</label>
+                      <label style={labelStyle}>{t("editScholar.born")}</label>
                       <input value={scholar.atAGlance.born} onChange={(e) => updateAtAGlance("born", e.target.value)} style={inputStyle} onFocus={focusBorder} onBlur={blurBorder} />
                     </div>
                     <div>
-                      <label style={labelStyle}>{t.died}</label>
+                      <label style={labelStyle}>{t("editScholar.died")}</label>
                       <input value={scholar.atAGlance.died} onChange={(e) => updateAtAGlance("died", e.target.value)} style={inputStyle} onFocus={focusBorder} onBlur={blurBorder} />
                     </div>
                   </div>
 
                   <div>
-                    <label style={labelStyle}>{t.region}</label>
+                    <label style={labelStyle}>{t("editScholar.region")}</label>
                     <input value={scholar.atAGlance.region} onChange={(e) => updateAtAGlance("region", e.target.value)} style={inputStyle} onFocus={focusBorder} onBlur={blurBorder} />
                   </div>
 
                   <div>
-                    <label style={labelStyle}>{t.discipline}</label>
+                    <label style={labelStyle}>{t("editScholar.discipline")}</label>
                     <TagInput tags={scholar.atAGlance.discipline} onChange={(v) => updateAtAGlance("discipline", v)} placeholder="e.g. Philosophy" />
                   </div>
 
                   <div>
-                    <label style={labelStyle}>{t.expertise}</label>
+                    <label style={labelStyle}>{t("editScholar.expertise")}</label>
                     <TagInput tags={scholar.atAGlance.expertise} onChange={(v) => updateAtAGlance("expertise", v)} placeholder="e.g. Social Theory" />
                   </div>
                 </div>
@@ -1103,48 +982,47 @@ const EditScholarPage: React.FC<EditScholarPageProps> = ({ initialLang = "EN" })
             {/* ── NARRATIVE CONTENT — per language ── */}
             <SectionCard
               icon="translate"
-              eyebrow={`${t.narrativeContent} — ${LANG_LABELS[activeLang].toUpperCase()}`}
-              title={t.narrativeContent}
+              eyebrow={`${t("editScholar.narrativeContent")} — ${LANG_LABELS[activeLang].toUpperCase()}`}
+              title={t("editScholar.narrativeContent")}
             >
               {!scholar.name[activeLang] ? (
                 <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "14px", padding: "48px 24px", textAlign: "center", border: "2px dashed #c0c9c3", borderRadius: "12px" }}>
                   <Icon name="translate" size={36} />
-                  <p style={{ color: "#707974", fontSize: "14px", margin: 0 }}>{t.notStarted}</p>
+                  <p style={{ color: "#707974", fontSize: "14px", margin: 0 }}>{t("editScholar.notStarted")}</p>
                   <button onClick={startTranslation} style={{ ...MONO, fontSize: "11px", color: "#0b4335", fontWeight: 700, background: "none", border: "none", cursor: "pointer", textDecoration: "underline", textUnderlineOffset: "3px" }}>
-                    {t.startTranslation}
+                    {t("editScholar.startTranslation")}
                   </button>
                 </div>
               ) : (
                 <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
                   <div>
-                    <label style={labelStyle}>{t.subtitle}</label>
+                    <label style={labelStyle}>{t("editScholar.subtitle")}</label>
                     <input value={scholar.subtitle[activeLang] ?? ""} onChange={(e) => setLangField("subtitle", e.target.value)}
                       style={inputStyle} onFocus={focusBorder} onBlur={blurBorder} dir={isRTL ? "rtl" : "ltr"} />
                   </div>
 
                   <div>
-                    <label style={labelStyle}>{t.quote}</label>
+                    <label style={labelStyle}>{t("editScholar.quote")}</label>
                     <textarea value={scholar.quote[activeLang] ?? ""} onChange={(e) => setLangField("quote", e.target.value)} rows={2}
                       style={{ ...inputStyle, resize: "vertical", ...SERIF, fontStyle: "italic" }} onFocus={focusBorder} onBlur={blurBorder} dir={isRTL ? "rtl" : "ltr"} />
                   </div>
 
                   <div>
-                    <label style={labelStyle}>{t.overview}</label>
+                    <label style={labelStyle}>{t("editScholar.overview")}</label>
                     <textarea value={scholar.overviewText[activeLang] ?? ""} onChange={(e) => setLangField("overviewText", e.target.value)} rows={4}
                       style={{ ...inputStyle, resize: "vertical" }} onFocus={focusBorder} onBlur={blurBorder} dir={isRTL ? "rtl" : "ltr"} />
                     <div style={{ display: "flex", gap: "8px", marginTop: "8px" }}>
                       <button style={{ ...MONO, fontSize: "9px", color: "#707974", background: "none", border: "1px solid rgba(192,201,195,0.5)", borderRadius: "6px", padding: "5px 10px", cursor: "pointer", display: "flex", alignItems: "center", gap: "5px" }}>
-                        <Icon name="auto_awesome" size={13} />{t.improveAI}
+                        <Icon name="auto_awesome" size={13} />{t("editScholar.improveAI")}
                       </button>
                       <button style={{ ...MONO, fontSize: "9px", color: "#707974", background: "none", border: "1px solid rgba(192,201,195,0.5)", borderRadius: "6px", padding: "5px 10px", cursor: "pointer", display: "flex", alignItems: "center", gap: "5px" }}>
-                        <Icon name="visibility" size={13} />{t.previewFormatting}
+                        <Icon name="visibility" size={13} />{t("editScholar.previewFormatting")}
                       </button>
                     </div>
                   </div>
 
-                  {/* ── Biography — single textarea ── */}
                   <div>
-                    <label style={labelStyle}>{t.biography}</label>
+                    <label style={labelStyle}>{t("editScholar.biography")}</label>
                     <textarea
                       value={scholar.body[activeLang] ?? ""}
                       onChange={(e) => setLangField("body", e.target.value)}
@@ -1154,7 +1032,6 @@ const EditScholarPage: React.FC<EditScholarPageProps> = ({ initialLang = "EN" })
                         ...inputStyle,
                         resize: "vertical",
                         lineHeight: 1.75,
-                        /* make sure textarea never forces horizontal scroll */
                         width: "100%",
                         maxWidth: "100%",
                       }}
@@ -1162,7 +1039,7 @@ const EditScholarPage: React.FC<EditScholarPageProps> = ({ initialLang = "EN" })
                       onBlur={blurBorder}
                     />
                     <p style={{ fontSize: "11px", color: "#c0c9c3", fontStyle: "italic", margin: "6px 0 0" }}>
-                      {t.biographyHint}
+                      {t("editScholar.biographyHint")}
                     </p>
                   </div>
                 </div>
@@ -1170,25 +1047,24 @@ const EditScholarPage: React.FC<EditScholarPageProps> = ({ initialLang = "EN" })
             </SectionCard>
 
             {/* ── ACADEMIC CONTEXT — shared ── */}
-            <SectionCard icon="school" eyebrow="SHARED ACROSS ALL LANGUAGES" title={t.academicContext}>
-              <SharedBanner note={t.academicContext} />
+            <SectionCard icon="school" eyebrow={t("editScholar.sharedBanner")} title={t("editScholar.academicContext")}>
+              <SharedBanner note={t("editScholar.academicContext")} />
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "24px" }}>
                 <div style={{ minWidth: 0 }}>
-                  <label style={labelStyle}>{t.teachers}</label>
-                  <LinkedPeopleEditor people={scholar.intellectualLineage} onChange={(v) => { setScholar((p) => ({ ...p, intellectualLineage: v })); mark(); }} placeholder={t.addPersonPlaceholder} />
+                  <label style={labelStyle}>{t("editScholar.teachers")}</label>
+                  <LinkedPeopleEditor people={scholar.intellectualLineage} onChange={(v) => { setScholar((p) => ({ ...p, intellectualLineage: v })); mark(); }} placeholder={t("editScholar.addPersonPlaceholder")} isAdmin={isAdmin} />
                 </div>
                 <div style={{ minWidth: 0 }}>
-                  <label style={labelStyle}>{t.disciples}</label>
-                  <LinkedPeopleEditor people={scholar.notableDisciples} onChange={(v) => { setScholar((p) => ({ ...p, notableDisciples: v })); mark(); }} placeholder={t.addPersonPlaceholder} />
+                  <label style={labelStyle}>{t("editScholar.disciples")}</label>
+                  <LinkedPeopleEditor people={scholar.notableDisciples} onChange={(v) => { setScholar((p) => ({ ...p, notableDisciples: v })); mark(); }} placeholder={t("editScholar.addPersonPlaceholder")} isAdmin={isAdmin} />
                 </div>
               </div>
             </SectionCard>
 
             {/* ── BIBLIOGRAPHY — shared ── */}
-            <SectionCard icon="menu_book" eyebrow="SHARED ACROSS ALL LANGUAGES" title={t.bibliography}
-              action={<HoverBtn onClick={() => setWorkModal({ open: true, index: null })}><Icon name="add_circle" size={13} />{t.addWork}</HoverBtn>}>
-              <SharedBanner note={t.bibliography} />
-              {/* Wrap table to prevent x-overflow */}
+            <SectionCard icon="menu_book" eyebrow={t("editScholar.sharedBanner")} title={t("editScholar.bibliography")}
+              action={<HoverBtn onClick={() => setWorkModal({ open: true, index: null })}><Icon name="add_circle" size={13} />{t("editScholar.addWork")}</HoverBtn>}>
+              <SharedBanner note={t("editScholar.bibliography")} />
               <div style={{ border: "1px solid rgba(192,201,195,0.4)", borderRadius: "12px", overflow: "hidden" }}>
                 <div style={{ overflowX: "auto" }}>
                   <table style={{ width: "100%", borderCollapse: "collapse", minWidth: "480px" }}>
@@ -1211,7 +1087,7 @@ const EditScholarPage: React.FC<EditScholarPageProps> = ({ initialLang = "EN" })
                           <td style={{ padding: "12px 14px", whiteSpace: "nowrap" }}>
                             <div style={{ display: "flex", gap: "4px" }}>
                               <IconBtn name="edit" onClick={() => setWorkModal({ open: true, index: i })} title="Edit" />
-                              <IconBtn name="delete" danger onClick={() => deleteWork(i)} title="Delete" />
+                              {isAdmin && <IconBtn name="delete" danger onClick={() => deleteWork(i)} title="Delete" />}
                             </div>
                           </td>
                         </tr>
@@ -1221,16 +1097,16 @@ const EditScholarPage: React.FC<EditScholarPageProps> = ({ initialLang = "EN" })
                 </div>
                 {scholar.works.length === 0 && (
                   <div style={{ padding: "32px", textAlign: "center" }}>
-                    <p style={{ color: "#707974", fontSize: "13px", margin: 0 }}>No works added yet.</p>
+                    <p style={{ color: "#707974", fontSize: "13px", margin: 0 }}>{t("editScholar.noWorksYet")}</p>
                   </div>
                 )}
               </div>
             </SectionCard>
 
             {/* ── MEDIA — shared ── */}
-            <SectionCard icon="perm_media" eyebrow="SHARED ACROSS ALL LANGUAGES" title={t.mediaLibrary}
-              action={<HoverBtn onClick={() => setMediaModal({ open: true, index: null })}><Icon name="add_circle" size={13} />{t.addMedia}</HoverBtn>}>
-              <SharedBanner note={t.mediaLibrary} />
+            <SectionCard icon="perm_media" eyebrow={t("editScholar.sharedBanner")} title={t("editScholar.mediaLibrary")}
+              action={<HoverBtn onClick={() => setMediaModal({ open: true, index: null })}><Icon name="add_circle" size={13} />{t("editScholar.addMedia")}</HoverBtn>}>
+              <SharedBanner note={t("editScholar.mediaLibrary")} />
               <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(220px, 1fr))", gap: "14px" }}>
                 {scholar.media.map((m, i) => (
                   <div key={m.id} style={{ backgroundColor: "#fff", padding: "18px", border: "1.5px solid rgba(192,201,195,0.4)", borderRadius: "12px", minWidth: 0 }}>
@@ -1240,7 +1116,7 @@ const EditScholarPage: React.FC<EditScholarPageProps> = ({ initialLang = "EN" })
                       </span>
                       <div style={{ display: "flex", gap: "2px" }}>
                         <IconBtn name="edit" onClick={() => setMediaModal({ open: true, index: i })} title="Edit" />
-                        <IconBtn name="delete" danger onClick={() => deleteMedia(i)} title="Delete" />
+                        {isAdmin && <IconBtn name="delete" danger onClick={() => deleteMedia(i)} title="Delete" />}
                       </div>
                     </div>
                     <p style={{ fontSize: "13px", fontWeight: 700, margin: "0 0 4px", wordBreak: "break-word" }}>{m.title}</p>
@@ -1248,29 +1124,51 @@ const EditScholarPage: React.FC<EditScholarPageProps> = ({ initialLang = "EN" })
                     <span style={{ ...MONO, fontSize: "9px", color: "#c0c9c3" }}>{m.meta}</span>
                   </div>
                 ))}
-                {scholar.media.length === 0 && <p style={{ fontSize: "12px", color: "#c0c9c3", fontStyle: "italic", margin: 0 }}>No media added yet.</p>}
+                {scholar.media.length === 0 && <p style={{ fontSize: "12px", color: "#c0c9c3", fontStyle: "italic", margin: 0 }}>{t("editScholar.noMediaYet")}</p>}
               </div>
             </SectionCard>
 
             {/* ── REFERENCES — shared ── */}
-            <SectionCard icon="format_quote" eyebrow="SHARED ACROSS ALL LANGUAGES" title={t.references}
-              action={<HoverBtn onClick={addReference}><Icon name="add" size={13} />{t.addReference}</HoverBtn>}>
-              <SharedBanner note={t.references} />
+            <SectionCard icon="format_quote" eyebrow={t("editScholar.sharedBanner")} title={t("editScholar.references")}
+              action={<HoverBtn onClick={addReference}><Icon name="add" size={13} />{t("editScholar.addReference")}</HoverBtn>}>
+              <SharedBanner note={t("editScholar.references")} />
               <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
                 {scholar.academicReferences.map((r, i) => (
                   <div key={r.id} style={{ display: "flex", gap: "8px", alignItems: "flex-start" }}>
                     <span style={{ ...MONO, fontSize: "10px", color: "#c0c9c3", paddingTop: "12px", minWidth: "16px", flexShrink: 0 }}>{i + 1}</span>
-                    <textarea value={r.text} onChange={(e) => updateReference(i, e.target.value)} rows={2}
-                      style={{ ...inputStyle, ...SERIF, fontSize: "12px", resize: "vertical", flex: 1 }} onFocus={focusBorder} onBlur={blurBorder} />
-                    <IconBtn name="delete" danger onClick={() => removeReference(i)} title="Remove" />
+                    <textarea
+                      value={r.text}
+                      onChange={(e) => updateReference(i, e.target.value)}
+                      rows={2}
+                      readOnly={!r.isNew}
+                      style={{
+                        ...inputStyle,
+                        ...SERIF,
+                        fontSize: "12px",
+                        resize: "vertical",
+                        flex: 1,
+                        backgroundColor: r.isNew ? "#fafbf8" : "#f5f5f5",
+                        opacity: r.isNew ? 1 : 0.7
+                      }}
+                      onFocus={r.isNew ? focusBorder : undefined}
+                      onBlur={r.isNew ? blurBorder : undefined}
+                    />
+                    {r.isNew && (
+                      <IconBtn
+                        name="close"
+                        danger
+                        onClick={() => removeReference(i)}
+                        title="Remove"
+                      />
+                    )}
                   </div>
                 ))}
-                {scholar.academicReferences.length === 0 && <p style={{ fontSize: "12px", color: "#c0c9c3", fontStyle: "italic", margin: 0 }}>No references added yet.</p>}
+                {scholar.academicReferences.length === 0 && <p style={{ fontSize: "12px", color: "#c0c9c3", fontStyle: "italic", margin: 0 }}>{t("editScholar.noReferencesYet")}</p>}
               </div>
             </SectionCard>
 
             {/* ── REVISION HISTORY — read-only ── */}
-            <SectionCard icon="history" eyebrow="READ ONLY — GENERATED AUTOMATICALLY" title={t.revisionHistory}>
+            <SectionCard icon="history" eyebrow={t("editScholar.readOnlyBanner")} title={t("editScholar.revisionHistory")}>
               <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
                 {scholar.revisionHistory.map((r, i) => (
                   <div key={i} style={{ display: "flex", gap: "12px", alignItems: "flex-start" }}>
@@ -1286,9 +1184,9 @@ const EditScholarPage: React.FC<EditScholarPageProps> = ({ initialLang = "EN" })
 
             {/* Bottom save bar */}
             <div style={{ display: "flex", justifyContent: "flex-end", gap: "10px", marginTop: "12px" }}>
-              <HoverBtn style={{ borderColor: "#c0c9c3", color: "#707974" }}>{t.cancel}</HoverBtn>
+              <HoverBtn onClick={() => navigate(-1)} style={{ borderColor: "#c0c9c3", color: "#707974" }}>{t("editScholar.cancel")}</HoverBtn>
               <button onClick={handleSave} style={{ ...BTN_PRIMARY, backgroundColor: "#0b4335", color: "#fff", padding: "10px 24px" }}>
-                <Icon name="save" size={14} />{t.saveChanges}
+                <Icon name="save" size={14} />{t("editScholar.saveChanges")}
               </button>
             </div>
           </div>
