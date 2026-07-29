@@ -121,9 +121,16 @@ if (response.ok) {
 }
 }
 }else {
-        // عرض خطأ التوثيق تحت حقل كلمة المرور للخصوصية والأمان
-        setErrors({ password: t.errInvalidAuth });
-      }
+
+  if (data.code === "EMAIL_NOT_VERIFIED") {
+    navigate(
+      `/verify-email-pending?email=${encodeURIComponent(data.email)}`
+    );
+    return;
+  }
+
+  setErrors({ password: t.errInvalidAuth });
+}
     } catch (error) {
       setErrors({ general: t.errServer });
     } finally {

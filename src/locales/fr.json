@@ -851,5 +851,38 @@
     "next": "SUIVANT",
     "submit": "SOUMETTRE POUR RÉVISION"
   }
+},
+"editProfile": {
+  "myProfile": "Mon Profil",
+  "dashboard": "Tableau de bord",
+  "editProfile": "Modifier le profil",
+  "settings": "Paramètres",
+  "signOut": "Se déconnecter",
+  "personalInfo": "Informations personnelles",
+  "displayName": "Nom d'affichage",
+  "username": "Nom d'utilisateur (Requis)",
+  "fullName": "Nom complet",
+  "email": "E-mail (Requis)",
+  "bio": "Bio",
+  "country": "Pays",
+  "links": "Liens",
+  "linksHint": "Ajoutez des liens vers Facebook, Instagram, ou toute autre page.",
+  "linkPlaceholder": "https://facebook.com/yourname",
+  "addLink": "Ajouter un lien",
+  "cancel": "Annuler",
+  "saveChanges": "Enregistrer",
+  "saved": "Enregistré !",
+  "discard": "Annuler les modifications",
+  "saveProfile": "Enregistrer le profil",
+  "profileUpdated": "Profil mis à jour !",
+  "profileCompletion": "Complétion du profil",
+  "completeHint": "Complétez votre profil pour débloquer plus de fonctionnalités.",
+  "becomeContributor": "Devenir contributeur",
+  "upgradeHint": "Soumettez une nouvelle page savante pour améliorer votre statut.",
+  "upgradeNow": "Mettre à niveau",
+  "contributing": "Contribuer aux pages savantes",
+  "browsing": "Parcourir les archives",
+  "user": "Utilisateur",
+  "contributor": "Contributeur"
 }
 }

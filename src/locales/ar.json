@@ -934,5 +934,38 @@
     "next": "التالي",
     "submit": "تقديم للمراجعة"
   }
+},
+"editProfile": {
+  "myProfile": "ملفي الشخصي",
+  "dashboard": "لوحة التحكم",
+  "editProfile": "تعديل الملف الشخصي",
+  "settings": "الإعدادات",
+  "signOut": "تسجيل الخروج",
+  "personalInfo": "المعلومات الشخصية",
+  "displayName": "الاسم المعروض",
+  "username": "اسم المستخدم (مطلوب)",
+  "fullName": "الاسم الكامل",
+  "email": "البريد الإلكتروني (مطلوب)",
+  "bio": "نبذة",
+  "country": "البلد",
+  "links": "الروابط",
+  "linksHint": "أضف روابط لفيسبوك، إنستغرام، أو أي صفحة أخرى.",
+  "linkPlaceholder": "https://facebook.com/yourname",
+  "addLink": "إضافة رابط",
+  "cancel": "إلغاء",
+  "saveChanges": "حفظ التغييرات",
+  "saved": "تم الحفظ!",
+  "discard": "تجاهل التغييرات",
+  "saveProfile": "حفظ الملف الشخصي",
+  "profileUpdated": "تم تحديث الملف الشخصي!",
+  "profileCompletion": "اكتمال الملف الشخصي",
+  "completeHint": "أكمل ملفك الشخصي لفتح المزيد من الميزات.",
+  "becomeContributor": "كن مساهمًا",
+  "upgradeHint": "قدّم صفحة عالم جديدة لترقية حالتك.",
+  "upgradeNow": "الترقية الآن",
+  "contributing": "المساهمة في صفحات العلماء",
+  "browsing": "تصفح الأرشيف",
+  "user": "مستخدم",
+  "contributor": "مساهم"
 }
 }

@@ -60,14 +60,45 @@ const ForgotPassword: React.FC = () => {
   const t = content[lang];
   const isRTL = lang === "AR";
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!email.trim()) { setError(t.errEmpty); return; }
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { setError(t.errInvalid); return; }
+  const handleSubmit = async (e: React.FormEvent) => {
+  e.preventDefault();
+
+  if (!email.trim()) {
+    setError(t.errEmpty);
+    return;
+  }
+
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    setError(t.errInvalid);
+    return;
+  }
+
+  try {
+    const response = await fetch(
+      `${import.meta.env.VITE_API_URL}/api/auth/forgot-password`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ email }),
+      }
+    );
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      setError(data.message);
+      return;
+    }
+
     setError("");
     setSent(true);
-    // TODO: call your reset API here
-  };
+
+  } catch (error) {
+    setError("Server connection failed.");
+  }
+};
 
   const iconBase = "w-4 h-4 text-[#7DA89B] transition-colors duration-200 group-hover:text-[#C9A84C]";
   const inputBase = "w-full bg-[#f8fafc] border rounded-2xl pl-12 py-3 text-sm outline-none transition-all duration-200 group-hover:border-[#C9A84C]/50 focus:border-[#C9A84C]";

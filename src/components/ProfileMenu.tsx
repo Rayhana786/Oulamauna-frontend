@@ -57,7 +57,7 @@ const ProfileMenu: React.FC<ProfileMenuProps> = ({
 
   const menuItems = [
     { to: "/dashboard",    icon: LayoutDashboard, label: t.dashboard   },
-    { to: "/profile/edit", icon: Edit,            label: t.editProfile },
+    { to: "/edit-profile", icon: Edit,            label: t.editProfile },
     { to: "/settings",     icon: Settings,        label: t.settings    },
   ];
 

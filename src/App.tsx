@@ -28,6 +28,7 @@ import ForgotPassword from "./pages/Authentication/ForgotPassword";
 import ResetPassword from "./pages/Authentication/ResetPassword";
 import VerifyEmail from "./pages/Authentication/VerifyEmail";
 import VerifyEmailPending from "./pages/Authentication/VerifyEmailPending";
+import Editprofilepage from "./pages/Authentication/Editprofilepage";
 
 
 //scholars pages
@@ -64,7 +65,7 @@ function App() {
               <Route path="/about" element={<About />} />
               <Route path="/contact" element={<Contact />} />
               <Route path="/scholars" element={<ScholarsPage />} />
-              
+              <Route path="/edit-profile" element={<Editprofilepage />} />
               
             </Route>
 
@@ -72,6 +73,7 @@ function App() {
             <Route element={<NoNavLayout />}>
               <Route path="/login" element={<Login />} />
               <Route path="/register" element={<Register />} />
+              
               <Route path="/forgot-password" element={<ForgotPassword />} />
               <Route path="/reset-password" element={<ResetPassword />} />
               <Route path="/verify-email" element={<VerifyEmail />} />

@@ -879,5 +879,38 @@
     "next": "NEXT",
     "submit": "SUBMIT FOR REVIEW"
   }
+},
+"editProfile": {
+  "myProfile": "My Profile",
+  "dashboard": "Dashboard",
+  "editProfile": "Edit Profile",
+  "settings": "Settings",
+  "signOut": "Sign Out",
+  "personalInfo": "Personal Information",
+  "displayName": "Display Name",
+  "username": "Username (Required)",
+  "fullName": "Full Name",
+  "email": "Email (Required)",
+  "bio": "Bio",
+  "country": "Country",
+  "links": "Links",
+  "linksHint": "Add links to Facebook, Instagram, or any other page.",
+  "linkPlaceholder": "https://facebook.com/yourname",
+  "addLink": "Add link",
+  "cancel": "Cancel",
+  "saveChanges": "Save Changes",
+  "saved": "Saved!",
+  "discard": "Discard Changes",
+  "saveProfile": "Save Profile",
+  "profileUpdated": "Profile Updated!",
+  "profileCompletion": "Profile Completion",
+  "completeHint": "Complete your profile to unlock more features.",
+  "becomeContributor": "Become a Contributor",
+  "upgradeHint": "Submit a new scholar page to upgrade your status.",
+  "upgradeNow": "Upgrade Now",
+  "contributing": "Contribute to scholar pages",
+  "browsing": "Browsing the archive",
+  "user": "User",
+  "contributor": "Contributor"
 }
 }
