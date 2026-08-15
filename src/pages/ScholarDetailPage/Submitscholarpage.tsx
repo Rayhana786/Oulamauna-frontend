@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from "react";
 import { useParams } from "react-router-dom";
 import { useLang } from "../../context/LanguageContext";
+import { scholarsApi } from "../../api/scholarsApi";
 
 /* ─────────────────────────────────────────────
    TYPES
@@ -15,11 +16,6 @@ interface MockScholar {
   initials: string;
   discipline: string;
   born: string;
-}
-
-interface ChipField {
-  value: string;
-  items: string[];
 }
 
 interface LinkedScholar {
@@ -58,49 +54,66 @@ interface MediaEntry {
   url: string;
 }
 
+// UPDATED: Only 3 fields as requested
 interface RefEntry {
   title: string;
-  author: string;
-  year: string;
-  publisher: string;
-  type: string;
+  citation: string;
   url: string;
-  notes: string;
 }
 
 interface FormState {
-  fullName: string;
-  canonicalName: string;
-  aliases: string[];
-  birthYear: string;
-  birthMonth: string;
-  deathYear: string;
-  deathMonth: string;
+  // EXACT Backend Fields (matching scholar_versions columns)
+  canonical_name: string;
   region: string;
-  country: string;
-  century: string;
-  era: string;
-  disciplines: string[];
-  expertise: string[];
-  keywords: string[];
-  teachers: PersonEntry[];
-  students: PersonEntry[];
-  relatedScholars: Array<PersonEntry & { relationType: string }>;
+  birth_date_gerogean: string; // Matching backend spelling exactly
+  birth_date_hijri: string;
+  death_date_gerogean: string; // Matching backend spelling exactly
+  death_date_hijri: string;
+  century_hijri: string;
+  century_gregorian: string;
+  biography: string;
+  aliases: string[];
+  discipline_ids: number[];
+  
+  // UI-only fields (kept for other steps)
+  portraitUrl: string | null;
   pageTitle: string;
   summary: string;
-  biography: string;
   quote: string;
-  works: WorkEntry[];
-  media: MediaEntry[];
-  refs: RefEntry[];
+  teachers: any[];
+  students: any[];
+  relatedScholars: any[];
+  works: any[];
+  media: any[];
+  refs: { title: string; citation: string; url: string }[];
   confirmed: boolean;
-  portraitFile: File | null;
-  portraitUrl: string | null;
 }
 
 /* ─────────────────────────────────────────────
    CONSTANTS
 ───────────────────────────────────────────── */
+const LANGUAGES = [
+  { language_id: 1, code: 'en', name: 'English' },
+  { language_id: 2, code: 'ar', name: 'Arabic' },
+  { language_id: 3, code: 'fr', name: 'French' },
+];
+export const DISCIPLINES = [
+  { id: 1, name: { ar: "الفقه", en: "Fiqh", fr: "Fiqh" } },
+  { id: 2, name: { ar: "الحديث", en: "Hadith", fr: "Hadith" } },
+  { id: 3, name: { ar: "التفسير", en: "Tafsir", fr: "Tafsir" } },
+  { id: 4, name: { ar: "العقيدة", en: "Aqidah", fr: "Aqida" } },
+  { id: 5, name: { ar: "السيرة النبوية", en: "Seerah", fr: "Sîra" } },
+  { id: 6, name: { ar: "اللغة العربية", en: "Arabic Language", fr: "Langue arabe" } },
+  { id: 7, name: { ar: "علوم القرآن", en: "Quranic Sciences", fr: "Sciences du Coran" } },
+  { id: 8, name: { ar: "أصول الفقه", en: "Usul al-Fiqh", fr: "Fondements du Fiqh" } },
+  { id: 9, name: { ar: "التاريخ الإسلامي", en: "Islamic History", fr: "Histoire islamique" } },
+  { id: 10, name: { ar: "علم الكلام", en: "Theology", fr: "Théologie" } },
+];
+const NATIVE_LANG_NAMES: Record<Language, string> = {
+  EN: "English",
+  AR: "العربية",
+  FR: "Français",
+};
 const MONO = "'JetBrains Mono', monospace";
 const SERIF = "'Source Serif 4', 'Georgia', serif";
 const SANS = "'Source Sans 3', system-ui, sans-serif";
@@ -116,14 +129,9 @@ const GOLD = "#735c00";
 const REGIONS = ["North Africa", "Middle East", "Central Asia", "South Asia", "Sub-Saharan Africa", "Andalusia", "Ottoman Empire", "Other"];
 const CENTURIES = ["9th", "10th", "11th", "12th", "13th", "14th", "15th", "16th", "17th", "18th", "19th", "20th", "21st"];
 const ERAS = ["Classical", "Medieval", "Early Modern", "Modern"];
-const DISCIPLINES = [
-  "Theology (Kalam)", "Jurisprudence (Fiqh)", "Sufism", "Philosophy",
-  "Hadith Sciences", "Tafsir", "History", "Medicine",
-  "Mathematics", "Astronomy", "Social Sciences", "Literature",
-];
+
 const WORK_TYPES = ["Book", "Article", "Manuscript", "Research Paper", "Lecture", "Other"];
 const MEDIA_TYPES = ["PDF", "Audio", "Video", "Image"];
-const REF_TYPES = ["Book", "Article", "Journal", "Website", "Archive", "Thesis"];
 const RELATION_TYPES = ["Influence", "Contemporary", "Correspondence", "Debate", "Similar School", "Other"];
 
 const MOCK_SCHOLARS: MockScholar[] = [
@@ -147,7 +155,7 @@ function emptyMedia(): MediaEntry {
   return { title: "", type: "PDF", desc: "", accessMode: "none", file: null, url: "" };
 }
 function emptyRef(): RefEntry {
-  return { title: "", author: "", year: "", publisher: "", type: "Book", url: "", notes: "" };
+  return { title: "", citation: "", url: "" };
 }
 
 /* ─────────────────────────────────────────────
@@ -521,10 +529,177 @@ function AddBtn({ onClick, children }: { onClick: () => void; children: React.Re
 }
 
 /* ─────────────────────────────────────────────
+   RICH TEXT EDITOR (WYSIWYG TOGGLE)
+───────────────────────────────────────────── */
+const RichTextEditor = ({ value, onChange, placeholder }: { 
+  value: string; 
+  onChange: (val: string) => void; 
+  placeholder: string 
+}) => {
+  const editorRef = useRef<HTMLDivElement>(null);
+  const [activeCmds, setActiveCmds] = useState<Record<string, boolean>>({});
+
+  // Sync initial value only on mount to prevent cursor jumping
+  useEffect(() => {
+    if (editorRef.current && editorRef.current.innerHTML !== value) {
+      editorRef.current.innerHTML = value;
+    }
+  }, []);
+
+  // Check which formatting is currently active at the cursor position
+  const updateActiveState = () => {
+    if (!editorRef.current || !document.contains(editorRef.current)) return;
+    
+    const cmds = ['bold', 'italic', 'underline', 'insertUnorderedList', 'insertOrderedList'];
+    const newState: Record<string, boolean> = {};
+    
+    cmds.forEach(cmd => {
+      try { newState[cmd] = document.queryCommandState(cmd); } catch (e) {}
+    });
+    
+    // Check block formats (Heading, Quote)
+    try {
+      const block = document.queryCommandValue('formatBlock').toLowerCase();
+      newState['h2'] = block.includes('h2') || block.includes('heading');
+      newState['blockquote'] = block.includes('blockquote');
+    } catch (e) {}
+    
+    setActiveCmds(newState);
+  };
+
+  // Execute a formatting command
+  const exec = (command: string, val: string | undefined = undefined) => {
+    editorRef.current?.focus();
+    document.execCommand(command, false, val);
+    updateActiveState();
+    if (editorRef.current) onChange(editorRef.current.innerHTML);
+  };
+
+  const handleInput = () => {
+    if (editorRef.current) {
+      onChange(editorRef.current.innerHTML);
+    }
+    updateActiveState();
+  };
+
+  // Toolbar button style
+  const btnStyle = (isActive: boolean): React.CSSProperties => ({
+    background: isActive ? GREEN_LIGHT : "transparent",
+    border: "none",
+    cursor: "pointer",
+    padding: "6px 10px",
+    borderRadius: "4px",
+    color: isActive ? GREEN : "#404945",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    transition: "all 0.15s",
+    fontWeight: isActive ? 700 : 400,
+  });
+
+  return (
+    <div style={{ border: `1.5px solid ${BORDER}`, borderRadius: "8px", overflow: "hidden", background: "#fff" }}>
+      {/* Toolbar */}
+      <div style={{ display: "flex", gap: "2px", padding: "6px 10px", background: "#f3f4f1", borderBottom: `1px solid ${BORDER}`, flexWrap: "wrap" }}>
+        <button title="Bold" style={btnStyle(activeCmds['bold'])} onMouseDown={e => { e.preventDefault(); exec('bold'); }}>
+          <Icon name="format_bold" size={18} />
+        </button>
+        <button title="Italic" style={btnStyle(activeCmds['italic'])} onMouseDown={e => { e.preventDefault(); exec('italic'); }}>
+          <Icon name="format_italic" size={18} />
+        </button>
+        
+        <div style={{ width: "1px", background: BORDER, margin: "0 4px" }} />
+        
+        <button title="Heading" style={btnStyle(activeCmds['h2'])} onMouseDown={e => { e.preventDefault(); exec('formatBlock', 'h2'); }}>
+          <span style={{ fontFamily: SERIF, fontSize: "16px", fontWeight: 700 }}>T</span>
+        </button>
+        <button title="Quote" style={btnStyle(activeCmds['blockquote'])} onMouseDown={e => { e.preventDefault(); exec('formatBlock', 'blockquote'); }}>
+          <span style={{ fontFamily: SERIF, fontSize: "16px", fontWeight: 700, lineHeight: 1 }}>&ldquo;</span>
+        </button>
+        <button title="List" style={btnStyle(activeCmds['insertUnorderedList'])} onMouseDown={e => { e.preventDefault(); exec('insertUnorderedList'); }}>
+          <Icon name="format_list_bulleted" size={18} />
+        </button>
+        
+        <div style={{ width: "1px", background: BORDER, margin: "0 4px" }} />
+
+        <button title="Link" style={btnStyle(false)} onMouseDown={e => { 
+          e.preventDefault(); 
+          const url = prompt("Enter URL:"); 
+          if (url) exec('createLink', url); 
+        }}>
+          <Icon name="link" size={18} />
+        </button>
+        <button title="Image" style={btnStyle(false)} onMouseDown={e => { 
+          e.preventDefault(); 
+          const url = prompt("Enter Image URL:"); 
+          if (url) exec('insertImage', url); 
+        }}>
+          <Icon name="image" size={18} />
+        </button>
+      </div>
+
+      {/* Editable Area */}
+      <div
+        ref={editorRef}
+        contentEditable
+        suppressContentEditableWarning
+        onInput={handleInput}
+        onKeyUp={updateActiveState}
+        onMouseUp={updateActiveState}
+        onFocus={updateActiveState}
+        data-placeholder={placeholder}
+        style={{
+          minHeight: "400px",
+          padding: "16px",
+          fontFamily: SANS,
+          fontSize: "14px",
+          lineHeight: "1.8",
+          color: "#191c1b",
+          outline: "none",
+          whiteSpace: "pre-wrap",
+          wordBreak: "break-word",
+        }}
+      />
+      
+      {/* CSS for placeholder and internal editor styles */}
+      <style>{`
+        [contenteditable]:empty:before {
+          content: attr(data-placeholder);
+          color: ${MUTED};
+          pointer-events: none;
+          display: block;
+        }
+        [contenteditable] blockquote {
+          border-left: 3px solid ${GREEN};
+          margin: 10px 0;
+          padding-left: 16px;
+          color: #404945;
+          font-style: italic;
+        }
+        [contenteditable] h2 {
+          font-family: ${SERIF};
+          font-size: 20px;
+          color: ${GREEN};
+          margin: 16px 0 8px 0;
+        }
+        [contenteditable] ul {
+          padding-left: 24px;
+          margin: 8px 0;
+        }
+        [contenteditable] a {
+          color: ${GREEN};
+          text-decoration: underline;
+        }
+      `}</style>
+    </div>
+  );
+};
+
+/* ─────────────────────────────────────────────
    MAIN COMPONENT
 ───────────────────────────────────────────── */
 const SubmitScholarPage: React.FC = () => {
-  const { t } = useLang();
+  const { t, setLang } = useLang();
 
   const STEPS = [
     { id: "identity",  num: "01", label: t("submitScholar.steps.identity") },
@@ -550,17 +725,36 @@ const SubmitScholarPage: React.FC = () => {
   const [step, setStep] = useState(0);
   const topRef = useRef<HTMLDivElement>(null);
 
-  const [form, setForm] = useState<FormState>({
-    fullName: "", canonicalName: "", aliases: [],
-    birthYear: "", birthMonth: "", deathYear: "", deathMonth: "",
-    region: "", country: "", century: "", era: "",
-    disciplines: [], expertise: [], keywords: [],
-    teachers: [], students: [], relatedScholars: [],
-    pageTitle: "", summary: "", biography: "", quote: "",
-    works: [], media: [], refs: [],
-    confirmed: false, portraitFile: null, portraitUrl: null,
+    const [form, setForm] = useState<FormState>({
+    canonical_name: "",
+    region: "",
+    birth_date_gerogean: "",
+    birth_date_hijri: "",
+    death_date_gerogean: "",
+    death_date_hijri: "",
+    century_hijri: "",
+    century_gregorian: "",
+    biography: "",
+    aliases: [],
+    discipline_ids: [],
+    portraitUrl: null,
+    pageTitle: "",
+    summary: "",
+    quote: "",
+    teachers: [],
+    students: [],
+    relatedScholars: [],
+    works: [],
+    media: [],
+    refs: [],
+    confirmed: false,
   });
 
+  const [isLoadingMeta, setIsLoadingMeta] = useState(true);
+
+    // Meta data state (Using static data since API is not built yet)
+  const languages = LANGUAGES;
+  const disciplines = DISCIPLINES.map(d => ({ discipline_id: d.id, name: d.name.en }));
   const portraitInputRef = useRef<HTMLInputElement>(null);
 
   const scrollTop = () => { setTimeout(() => topRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }), 50); };
@@ -571,13 +765,17 @@ const SubmitScholarPage: React.FC = () => {
 
   const upd = <K extends keyof FormState>(key: K, val: FormState[K]) => setForm(f => ({ ...f, [key]: val }));
 
-  const langLabel = lang === "AR" ? "Arabic" : lang === "FR" ? "French" : "English";
+     const langLabel = NATIVE_LANG_NAMES[lang];
+    useEffect(() => {
+    if (validRouteLang) {
+      setLang(validRouteLang);
+    }
+  }, [validRouteLang, setLang]);;
 
   /* ── LANGUAGE SELECTION ── */
   if (phase === "lang") {
     return (
-      <div className="submit-scholar-page" style={{ fontFamily: SANS, minHeight: "100vh", background: "#f9faf7", backgroundImage: "radial-gradient(#e1e3e0 0.5px, transparent 0.5px)", backgroundSize: "24px 24px", display: "flex", alignItems: "center", justifyContent: "center", padding: "40px 24px" }}>
-        <style>{`
+      <div className="submit-scholar-page" style={{ fontFamily: SANS, minHeight: "100vh", background: "#faf9f6", backgroundImage: "radial-gradient(circle at 50% 0%, rgba(201,168,76,0.06) 0%, transparent 60%)", display: "flex", alignItems: "center", justifyContent: "center", padding: "40px 24px" }}> <style>{`
           @import url('https://fonts.googleapis.com/css2?family=Source+Serif+4:ital,opsz,wght@0,8..60,400..900;1,8..60,400..900&family=Source+Sans+3:wght@300..700&family=JetBrains+Mono:wght@400..700&display=swap');
           @import url('https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=swap');
           .material-symbols-outlined { font-variation-settings: 'FILL' 0,'wght' 400,'GRAD' 0,'opsz' 24; font-family: 'Material Symbols Outlined'; display: inline-block; vertical-align: middle; }
@@ -654,14 +852,17 @@ const SubmitScholarPage: React.FC = () => {
   /* ── FORM ── */
   const renderStep = () => {
     switch (step) {
-      /* ════ STEP 1: IDENTITY ════ */
+          
+           /* ════ STEP 1: IDENTITY & METADATA ════ */
+                 /* ════ STEP 1: IDENTITY & METADATA ════ */
       case 0: return (
         <Card>
-          <CardTitle num="01" title={t("submitScholar.step1.title")} />
+          <CardTitle num="01" title={t("submitScholar.step1.title") || "Identity & Metadata"} />
+          
           <div style={{ display: "grid", gridTemplateColumns: "160px 1fr", gap: "32px", marginBottom: "28px" }}>
-            {/* Portrait */}
+            {/* Portrait (UI Only, NOT sent to backend yet) */}
             <div>
-              <label style={labelStyle}>{t("submitScholar.step1.portrait")}</label>
+              <label style={labelStyle}>{t("submitScholar.step1.portrait") || "Portrait"}</label>
               {form.portraitUrl ? (
                 <div style={{ position: "relative", borderRadius: "10px", overflow: "hidden", aspectRatio: "3/4", background: "#e7e8e6" }}>
                   <img src={form.portraitUrl} alt="Portrait" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
@@ -673,105 +874,82 @@ const SubmitScholarPage: React.FC = () => {
                   onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.borderColor = BORDER; (e.currentTarget as HTMLDivElement).style.background = "#fafbf8"; }}
                 >
                   <Icon name="add_photo_alternate" size={28} />
-                  <span style={{ fontSize: "11px", color: MUTED, fontFamily: MONO }}>{t("submitScholar.step1.uploadImage")}</span>
+                  <span style={{ fontSize: "11px", color: MUTED, fontFamily: MONO }}>{t("submitScholar.step1.uploadImage") || "Upload Image"}</span>
                 </div>
               )}
-              <input ref={portraitInputRef} type="file" accept="image/*" style={{ display: "none" }} onChange={e => { const f = e.target.files?.[0]; if (f) { upd("portraitFile", f); upd("portraitUrl", URL.createObjectURL(f)); } }} />
+              <input ref={portraitInputRef} type="file" accept="image/*" style={{ display: "none" }} onChange={e => { const f = e.target.files?.[0]; if (f) upd("portraitUrl", URL.createObjectURL(f)); }} />
             </div>
 
-            {/* Name fields */}
+            {/* Backend Fields Only */}
             <div style={{ display: "flex", flexDirection: "column", gap: "18px" }}>
               <div>
-                <label style={labelStyle}>{t("submitScholar.step1.fullName")} <span style={{ color: DANGER }}>*</span></label>
-                <FocusInput type="text" value={form.fullName} onChange={e => upd("fullName", e.target.value)} placeholder={t("submitScholar.step1.fullNamePh")} />
+                <label style={labelStyle}>{t("submitScholar.step1.canonicalName") || "Canonical Name"} <span style={{ color: DANGER }}>*</span></label>
+                <FocusInput type="text" value={form.canonical_name} onChange={e => upd("canonical_name", e.target.value)} placeholder="e.g. Malek Bennabi" />
               </div>
               <div>
-                <label style={labelStyle}>{t("submitScholar.step1.canonicalName")} <span style={{ color: DANGER }}>*</span></label>
-                <FocusInput type="text" value={form.canonicalName} onChange={e => upd("canonicalName", e.target.value)} placeholder={t("submitScholar.step1.canonicalNamePh")} />
-              </div>
-              <div>
-                <label style={labelStyle}>{t("submitScholar.step1.aliases")}</label>
-                <ChipInput items={form.aliases} onAdd={v => upd("aliases", [...form.aliases, v])} onRemove={i => upd("aliases", form.aliases.filter((_, idx) => idx !== i))} placeholder={t("submitScholar.step1.aliasesPh")} />
+                <label style={labelStyle}>{t("submitScholar.step1.aliases") || "Aliases"}</label>
+                <ChipInput items={form.aliases} onAdd={v => upd("aliases", [...form.aliases, v])} onRemove={i => upd("aliases", form.aliases.filter((_, idx) => idx !== i))} placeholder="e.g. Malik Bin Nabi" />
               </div>
             </div>
           </div>
 
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "24px", marginBottom: "24px" }}>
             <div>
-              <label style={labelStyle}>{t("submitScholar.step1.birthDate")}</label>
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "8px" }}>
-                <FocusInput type="number" value={form.birthYear} onChange={e => upd("birthYear", e.target.value)} placeholder={t("submitScholar.step1.year")} min={600} max={2025} />
-                <FocusInput type="number" value={form.birthMonth} onChange={e => upd("birthMonth", e.target.value)} placeholder={t("submitScholar.step1.month")} min={1} max={12} />
-              </div>
+              <label style={labelStyle}>{t("submitScholar.step1.birthDateGregorian") || "Birth Date (Gregorian)"}</label>
+              <FocusInput type="text" value={form.birth_date_gerogean} onChange={e => upd("birth_date_gerogean", e.target.value)} placeholder="e.g. 1905" />
             </div>
             <div>
-              <label style={labelStyle}>{t("submitScholar.step1.deathDate")}</label>
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "8px" }}>
-                <FocusInput type="number" value={form.deathYear} onChange={e => upd("deathYear", e.target.value)} placeholder={t("submitScholar.step1.year")} min={600} max={2025} />
-                <FocusInput type="number" value={form.deathMonth} onChange={e => upd("deathMonth", e.target.value)} placeholder={t("submitScholar.step1.month")} min={1} max={12} />
-              </div>
+              <label style={labelStyle}>{t("submitScholar.step1.birthDateHijri") || "Birth Date (Hijri)"}</label>
+              <FocusInput type="text" value={form.birth_date_hijri} onChange={e => upd("birth_date_hijri", e.target.value)} placeholder="e.g. 1323 AH" />
             </div>
           </div>
 
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "16px", marginBottom: "24px" }}>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "24px", marginBottom: "24px" }}>
             <div>
-              <label style={labelStyle}>{t("submitScholar.step1.region")} <span style={{ color: DANGER }}>*</span></label>
-              <FocusSelect value={form.region} onChange={e => upd("region", e.target.value)}>
-                <option value="">{t("submitScholar.step1.selectRegion")}</option>
-                {REGIONS.map(r => <option key={r} value={r}>{r}</option>)}
-              </FocusSelect>
+              <label style={labelStyle}>{t("submitScholar.step1.deathDateGregorian") || "Death Date (Gregorian)"}</label>
+              <FocusInput type="text" value={form.death_date_gerogean} onChange={e => upd("death_date_gerogean", e.target.value)} placeholder="e.g. 1973" />
             </div>
             <div>
-              <label style={labelStyle}>{t("submitScholar.step1.century")} <span style={{ color: DANGER }}>*</span></label>
-              <FocusSelect value={form.century} onChange={e => upd("century", e.target.value)}>
-                <option value="">{t("submitScholar.step1.selectCentury")}</option>
-                {CENTURIES.map(c => <option key={c} value={c}>{c}</option>)}
-              </FocusSelect>
-            </div>
-            <div>
-              <label style={labelStyle}>{t("submitScholar.step1.country")}</label>
-              <FocusInput type="text" value={form.country} onChange={e => upd("country", e.target.value)} placeholder={t("submitScholar.step1.countryPh")} />
+              <label style={labelStyle}>{t("submitScholar.step1.deathDateHijri") || "Death Date (Hijri)"}</label>
+              <FocusInput type="text" value={form.death_date_hijri} onChange={e => upd("death_date_hijri", e.target.value)} placeholder="e.g. 1393 AH" />
             </div>
           </div>
 
-          <div style={{ marginBottom: "24px" }}>
-            <label style={labelStyle}>{t("submitScholar.step1.era")}</label>
-            <div style={{ display: "flex", flexWrap: "wrap", gap: "8px", marginTop: "6px" }}>
-              {ERAS.map(e => <DisciplineBtn key={e} label={e} active={form.era === e} onClick={() => upd("era", form.era === e ? "" : e)} />)}
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "24px", marginBottom: "24px" }}>
+            <div>
+              <label style={labelStyle}>{t("submitScholar.step1.region") || "Region"} <span style={{ color: DANGER }}>*</span></label>
+              <FocusInput type="text" value={form.region} onChange={e => upd("region", e.target.value)} placeholder="e.g. Algeria" />
+            </div>
+            <div>
+              <label style={labelStyle}>{t("submitScholar.step1.centuryGregorian") || "Century (Gregorian)"}</label>
+              <FocusInput type="text" value={form.century_gregorian} onChange={e => upd("century_gregorian", e.target.value)} placeholder="e.g. 20" />
+            </div>
+            <div>
+              <label style={labelStyle}>{t("submitScholar.step1.centuryHijri") || "Century (Hijri)"}</label>
+              <FocusInput type="text" value={form.century_hijri} onChange={e => upd("century_hijri", e.target.value)} placeholder="e.g. 14" />
             </div>
           </div>
 
           <Divider />
 
           <div style={{ marginBottom: "24px" }}>
-            <label style={labelStyle}>{t("submitScholar.step1.disciplines")} <span style={{ color: DANGER }}>*</span></label>
+            <label style={labelStyle}>{t("submitScholar.step1.disciplines") || "Disciplines"} <span style={{ color: DANGER }}>*</span></label>
             <div style={{ display: "flex", flexWrap: "wrap", gap: "8px", marginTop: "8px" }}>
               {DISCIPLINES.map(d => (
-                <DisciplineBtn key={d} label={d} active={form.disciplines.includes(d)}
-                  onClick={() => upd("disciplines", form.disciplines.includes(d) ? form.disciplines.filter(x => x !== d) : [...form.disciplines, d])}
+                <DisciplineBtn 
+                  key={d.id} 
+                  label={d.name[lang === "AR" ? "ar" : lang === "FR" ? "fr" : "en"]} 
+                  active={form.discipline_ids.includes(d.id)}
+                  onClick={() => upd("discipline_ids", form.discipline_ids.includes(d.id) ? form.discipline_ids.filter(x => x !== d.id) : [...form.discipline_ids, d.id])}
                 />
               ))}
             </div>
           </div>
-
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "24px" }}>
-            <div>
-              <label style={labelStyle}>{t("submitScholar.step1.expertise")} <span style={{ color: DANGER }}>*</span></label>
-              <ChipInput items={form.expertise} onAdd={v => upd("expertise", [...form.expertise, v])} onRemove={i => upd("expertise", form.expertise.filter((_, idx) => idx !== i))} placeholder={t("submitScholar.step1.expertisePh")} />
-            </div>
-            <div>
-              <label style={labelStyle}>{t("submitScholar.step1.keywords")}</label>
-              <ChipInput items={form.keywords} onAdd={v => upd("keywords", [...form.keywords, v])} onRemove={i => upd("keywords", form.keywords.filter((_, idx) => idx !== i))} placeholder={t("submitScholar.step1.keywordsPh")} />
-            </div>
-          </div>
         </Card>
       );
-
-      /* ════ STEP 2: RELATIONS ════ */
       case 1: return (
         <Card>
           <CardTitle num="02" title={t("submitScholar.step2.title")} />
-
           {/* Teachers */}
           <div style={{ marginBottom: "28px" }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "14px" }}>
@@ -794,9 +972,7 @@ const SubmitScholarPage: React.FC = () => {
               </ItemCard>
             ))}
           </div>
-
           <Divider />
-
           {/* Students */}
           <div style={{ marginBottom: "28px" }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "14px" }}>
@@ -819,9 +995,7 @@ const SubmitScholarPage: React.FC = () => {
               </ItemCard>
             ))}
           </div>
-
           <Divider />
-
           {/* Related Scholars */}
           <div>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "14px" }}>
@@ -854,7 +1028,9 @@ const SubmitScholarPage: React.FC = () => {
         </Card>
       );
 
-      /* ════ STEP 3: NARRATIVE ════ */
+      
+            /* ════ STEP 3: BIOGRAPHY ════ */
+           /* ════ STEP 3: BIOGRAPHY ════ */
       case 2: return (
         <Card>
           <div style={{ display: "flex", alignItems: "center", gap: "14px", marginBottom: "32px", paddingBottom: "20px", borderBottom: "1px solid rgba(192,201,195,0.3)" }}>
@@ -864,40 +1040,25 @@ const SubmitScholarPage: React.FC = () => {
           </div>
 
           <div style={{ marginBottom: "20px" }}>
-            <label style={labelStyle}>{t("submitScholar.step3.pageTitle")} <span style={{ color: DANGER }}>*</span></label>
-            <FocusInput type="text" value={form.pageTitle} onChange={e => upd("pageTitle", e.target.value)} placeholder={t("submitScholar.step3.pageTitlePh")} />
-          </div>
-
-          <div style={{ marginBottom: "20px" }}>
-            <label style={labelStyle}>{t("submitScholar.step3.summary")} <span style={{ color: DANGER }}>*</span></label>
-            <FocusTextarea value={form.summary} onChange={e => upd("summary", e.target.value)} rows={3} placeholder={t("submitScholar.step3.summaryPh")} />
-          </div>
-
-          <div style={{ marginBottom: "20px" }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: "6px" }}>
               <label style={labelStyle}>{t("submitScholar.step3.biography")} <span style={{ color: DANGER }}>*</span></label>
-              <span style={{ fontFamily: MONO, fontSize: "9px", color: MUTED }}>{t("submitScholar.step3.richText")}</span>
+              <span style={{ fontFamily: MONO, fontSize: "9px", color: MUTED }}>Rich Text Editor</span>
             </div>
-            {/* Toolbar */}
-            <div style={{ display: "flex", gap: "4px", padding: "8px 12px", background: "#f3f4f1", border: `1.5px solid ${BORDER}`, borderBottom: "none", borderRadius: "8px 8px 0 0" }}>
-              {[["format_bold", "Bold"], ["format_italic", "Italic"], ["format_list_bulleted", "List"], ["format_quote", "Quote"]].map(([icon, label]) => (
-                <button key={icon} title={label} style={{ background: "none", border: "none", cursor: "pointer", padding: "5px 8px", borderRadius: "4px", color: "#404945", display: "flex", alignItems: "center", transition: "background 0.12s" }}
-                  onMouseEnter={e => (e.currentTarget as HTMLButtonElement).style.background = GREEN_LIGHT}
-                  onMouseLeave={e => (e.currentTarget as HTMLButtonElement).style.background = "transparent"}
-                ><Icon name={icon} size={16} /></button>
-              ))}
-            </div>
-            <FocusTextarea value={form.biography} onChange={e => upd("biography", e.target.value)} rows={10} placeholder={t("submitScholar.step3.biographyPh")} style={{ borderRadius: "0 0 8px 8px", minHeight: "240px" }} />
-          </div>
-
-          <div>
-            <label style={labelStyle}>{t("submitScholar.step3.quote")} <span style={{ color: MUTED, fontStyle: "italic", fontFamily: SANS, fontSize: "11px", letterSpacing: 0, fontWeight: 400 }}>{t("submitScholar.step3.quoteOptional")}</span></label>
-            <FocusTextarea value={form.quote} onChange={e => upd("quote", e.target.value)} rows={3} placeholder={t("submitScholar.step3.quotePh")} style={{ fontFamily: SERIF, fontStyle: "italic" }} />
+            
+            {/* The new toggleable Rich Text Editor */}
+            <RichTextEditor 
+              value={form.biography} 
+              onChange={(html) => upd("biography", html)} 
+              placeholder="Write biography here... Select text and click buttons to format." 
+            />
+            
+            <p style={{ fontFamily: MONO, fontSize: "9px", color: MUTED, marginTop: "8px", fontStyle: "italic" }}>
+              Tip: Click a button to toggle formatting on. Click it again to turn it off.
+            </p>
           </div>
         </Card>
       );
-
-      /* ════ STEP 4: WORKS ════ */
+       /* ════ STEP 4: WORKS (Kept in UI, not sent to backend yet) ════ */
       case 3: return (
         <Card>
           <CardTitle num="04" title={t("submitScholar.step4.title")} />
@@ -936,7 +1097,7 @@ const SubmitScholarPage: React.FC = () => {
         </Card>
       );
 
-      /* ════ STEP 5: MEDIA ════ */
+      /* ════ STEP 5: MEDIA (Kept in UI, not sent to backend yet) ════ */
       case 4: return (
         <Card>
           <CardTitle num="05" title={t("submitScholar.step5.title")} />
@@ -971,7 +1132,7 @@ const SubmitScholarPage: React.FC = () => {
         </Card>
       );
 
-      /* ════ STEP 6: REFERENCES ════ */
+      /* ════ STEP 6: REFERENCES (Simplified to 3 fields) ════ */
       case 5: return (
         <Card>
           <CardTitle num="06" title={t("submitScholar.step6.title")} />
@@ -987,18 +1148,19 @@ const SubmitScholarPage: React.FC = () => {
           )}
           {form.refs.map((r, i) => (
             <ItemCard key={i} index={i} label={t("submitScholar.step6.reference")} onRemove={() => upd("refs", form.refs.filter((_, idx) => idx !== i))}>
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px", marginBottom: "14px" }}>
-                <div><label style={labelStyle}>{t("submitScholar.step6.titleField")} <span style={{ color: DANGER }}>*</span></label><FocusInput type="text" value={r.title} onChange={e => { const t2 = [...form.refs]; t2[i] = { ...t2[i], title: e.target.value }; upd("refs", t2); }} placeholder={t("submitScholar.step6.titlePh")} /></div>
-                <div><label style={labelStyle}>{t("submitScholar.step6.author")} <span style={{ color: DANGER }}>*</span></label><FocusInput type="text" value={r.author} onChange={e => { const t2 = [...form.refs]; t2[i] = { ...t2[i], author: e.target.value }; upd("refs", t2); }} placeholder={t("submitScholar.step6.authorPh")} /></div>
-              </div>
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "14px", marginBottom: "14px" }}>
-                <div><label style={labelStyle}>{t("submitScholar.step6.year")}</label><FocusInput type="number" value={r.year} onChange={e => { const t2 = [...form.refs]; t2[i] = { ...t2[i], year: e.target.value }; upd("refs", t2); }} placeholder={t("submitScholar.step6.yearPh")} /></div>
-                <div><label style={labelStyle}>{t("submitScholar.step6.publisher")}</label><FocusInput type="text" value={r.publisher} onChange={e => { const t2 = [...form.refs]; t2[i] = { ...t2[i], publisher: e.target.value }; upd("refs", t2); }} placeholder={t("submitScholar.step6.publisherPh")} /></div>
-                <div><label style={labelStyle}>{t("submitScholar.step6.type")} <span style={{ color: DANGER }}>*</span></label><FocusSelect value={r.type} onChange={e => { const t2 = [...form.refs]; t2[i] = { ...t2[i], type: e.target.value }; upd("refs", t2); }}>{REF_TYPES.map(x => <option key={x}>{x}</option>)}</FocusSelect></div>
-              </div>
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "14px" }}>
-                <div><label style={labelStyle}>{t("submitScholar.step6.url")}</label><FocusInput type="url" value={r.url} onChange={e => { const t2 = [...form.refs]; t2[i] = { ...t2[i], url: e.target.value }; upd("refs", t2); }} placeholder="https://…" /></div>
-                <div><label style={labelStyle}>{t("submitScholar.step6.notes")}</label><FocusInput type="text" value={r.notes} onChange={e => { const t2 = [...form.refs]; t2[i] = { ...t2[i], notes: e.target.value }; upd("refs", t2); }} placeholder={t("submitScholar.step6.notesPh")} /></div>
+              <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+                <div>
+                  <label style={labelStyle}>Title *</label>
+                  <FocusInput type="text" value={r.title} onChange={e => { const t2 = [...form.refs]; t2[i] = { ...t2[i], title: e.target.value }; upd("refs", t2); }} placeholder="e.g. Wikipedia" />
+                </div>
+                <div>
+                  <label style={labelStyle}>Citation *</label>
+                  <FocusInput type="text" value={r.citation} onChange={e => { const t2 = [...form.refs]; t2[i] = { ...t2[i], citation: e.target.value }; upd("refs", t2); }} placeholder="e.g. Malek Bennabi" />
+                </div>
+                <div>
+                  <label style={labelStyle}>URL</label>
+                  <FocusInput type="url" value={r.url} onChange={e => { const t2 = [...form.refs]; t2[i] = { ...t2[i], url: e.target.value }; upd("refs", t2); }} placeholder="https://en.wikipedia.org/wiki/Malek_Bennabi" />
+                </div>
               </div>
             </ItemCard>
           ))}
@@ -1018,25 +1180,14 @@ const SubmitScholarPage: React.FC = () => {
           <div style={{ marginBottom: "24px", padding: "20px", background: "#f9faf7", border: `1px solid ${BORDER}`, borderRadius: "12px" }}>
             <div style={{ fontFamily: MONO, fontSize: "9px", color: GREEN, letterSpacing: "0.18em", marginBottom: "14px" }}>{t("submitScholar.step7.identitySection")}</div>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "14px" }}>
-              {[
-                [t("submitScholar.step1.fullName"), form.fullName],
-                [t("submitScholar.step1.canonicalName"), form.canonicalName],
-                [t("submitScholar.step1.region"), form.region],
-                [t("submitScholar.step1.century"), form.century],
-                [t("submitScholar.step1.era"), form.era],
-                [t("submitScholar.step1.country"), form.country],
-              ].map(([lbl, val]) => (
+             {[
+  [t("submitScholar.step1.canonicalName"), form.canonical_name],
+  [t("submitScholar.step1.region"), form.region],
+  [t("submitScholar.step1.century"), `${form.century_gregorian} / ${form.century_hijri}`],
+].map(([lbl, val]) => (
                 <div key={lbl}><div style={{ fontFamily: MONO, fontSize: "9px", color: MUTED, marginBottom: "3px" }}>{lbl.toUpperCase()}</div><div style={{ fontSize: "13px", fontWeight: 600, color: val ? "#191c1b" : "#c0c9c3" }}>{val || "—"}</div></div>
               ))}
             </div>
-            {form.disciplines.length > 0 && (
-              <div style={{ marginTop: "14px" }}>
-                <div style={{ fontFamily: MONO, fontSize: "9px", color: MUTED, marginBottom: "8px" }}>{t("submitScholar.step1.disciplines")}</div>
-                <div style={{ display: "flex", flexWrap: "wrap", gap: "6px" }}>
-                  {form.disciplines.map(d => <span key={d} style={{ padding: "3px 10px", background: GREEN_LIGHT, color: GREEN, borderRadius: "20px", fontFamily: MONO, fontSize: "9px", fontWeight: 700, border: `1px solid ${GREEN_BORDER}` }}>{d}</span>)}
-                </div>
-              </div>
-            )}
           </div>
 
           {/* Narrative summary */}
@@ -1044,20 +1195,6 @@ const SubmitScholarPage: React.FC = () => {
             <div style={{ fontFamily: MONO, fontSize: "9px", color: GREEN, letterSpacing: "0.18em", marginBottom: "14px" }}>{t("submitScholar.step7.narrativeSection")} ({langLabel.toUpperCase()})</div>
             <div style={{ marginBottom: "10px" }}><div style={{ fontFamily: MONO, fontSize: "9px", color: MUTED, marginBottom: "3px" }}>{t("submitScholar.step3.pageTitle")}</div><div style={{ fontSize: "14px", fontWeight: 700, color: form.pageTitle ? "#191c1b" : "#c0c9c3", fontFamily: SERIF }}>{form.pageTitle || "—"}</div></div>
             {form.summary && <div style={{ fontSize: "13px", color: "#404945", lineHeight: 1.65 }}>{form.summary}</div>}
-          </div>
-
-          {/* Works */}
-          <div style={{ marginBottom: "24px", padding: "20px", background: "#f9faf7", border: `1px solid ${BORDER}`, borderRadius: "12px" }}>
-            <div style={{ fontFamily: MONO, fontSize: "9px", color: GREEN, letterSpacing: "0.18em", marginBottom: "14px" }}>{t("submitScholar.step7.worksSection")} ({form.works.length})</div>
-            {form.works.length === 0 ? <p style={{ fontSize: "12px", color: MUTED, fontStyle: "italic" }}>{t("submitScholar.step7.noneAdded")}</p> :
-              <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-                {form.works.map((w, i) => <div key={i} style={{ fontSize: "13px", color: "#404945", padding: "8px 0", borderBottom: "1px solid #f0f1ee", display: "flex", gap: "12px", alignItems: "center" }}>
-                  <span style={{ fontFamily: MONO, fontSize: "9px", padding: "2px 8px", background: GREEN_LIGHT, color: GREEN, borderRadius: "4px" }}>{w.type}</span>
-                  <span style={{ fontWeight: 700 }}>{w.title || "Untitled"}</span>
-                  {w.year && <span style={{ color: MUTED, fontSize: "12px" }}>{w.year}</span>}
-                </div>)}
-              </div>
-            }
           </div>
 
           {/* References */}
@@ -1068,7 +1205,7 @@ const SubmitScholarPage: React.FC = () => {
             ) : (
               <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
                 {form.refs.map((r, i) => <div key={i} style={{ fontSize: "13px", color: "#404945", padding: "8px 0", borderBottom: "1px solid #f0f1ee" }}>
-                  <span style={{ fontWeight: 700 }}>{r.author}</span>{r.year ? ` (${r.year})` : ""} — {r.title || "Untitled"}
+                  <span style={{ fontWeight: 700 }}>{r.title}</span>{r.citation ? ` — ${r.citation}` : ""}
                 </div>)}
               </div>
             )}
@@ -1109,18 +1246,18 @@ const SubmitScholarPage: React.FC = () => {
             <div style={{ fontFamily: MONO, fontSize: "10px", color: GREEN, letterSpacing: "0.2em", opacity: 0.7 }}>OULAMAUNA</div>
             <div style={{ fontSize: "13px", color: MUTED }}>{t("submitScholar.portal.title")}</div>
           </div>
-          
         </div>
       </header>
 
       <main style={{ maxWidth: "900px", margin: "0 auto", padding: "40px 40px 80px" }}>
         <div ref={topRef} />
 
-       {/* LANGUAGE (locked) */}
+        {/* LANGUAGE (locked) */}
         <div style={{ display: "inline-flex", alignItems: "center", gap: "6px", padding: "6px 16px", background: GREEN_LIGHT, border: `1px solid ${GREEN_BORDER}`, borderRadius: "999px", width: "fit-content", marginBottom: "32px" }}>
           <Icon name="lock" size={12} />
           <span style={{ fontFamily: MONO, fontSize: "10px", fontWeight: 700, letterSpacing: "0.08em", color: GREEN }}>
-            {lang === "AR" ? "ARABIC" : lang === "EN" ? "ENGLISH" : "FRANÇAIS"}
+            {/* This will now dynamically show "English", "العربية", or "Français" */}
+            {NATIVE_LANG_NAMES[lang]}
           </span>
         </div>
 
@@ -1176,7 +1313,55 @@ const SubmitScholarPage: React.FC = () => {
                 {t("submitScholar.footer.next")} <Icon name="arrow_forward" size={14} />
               </button>
             ) : (
-              <button onClick={() => { if (!form.confirmed || form.refs.length === 0) { alert(t("submitScholar.step7.submitAlert")); return; } setPhase("success"); }} style={{ padding: "10px 28px", background: form.confirmed && form.refs.length > 0 ? GREEN : "#c0c9c3", color: "#fff", border: "none", borderRadius: "8px", fontFamily: MONO, fontSize: "10px", fontWeight: 700, letterSpacing: "0.1em", cursor: form.confirmed && form.refs.length > 0 ? "pointer" : "not-allowed", transition: "background 0.15s", display: "inline-flex", alignItems: "center", gap: "8px" }}
+                                 <button 
+                onClick={async () => { 
+                  if (!form.confirmed || form.refs.length === 0) { 
+                    alert(t("submitScholar.step7.submitAlert") || "Please confirm and add at least one reference"); 
+                    return; 
+                  } 
+                  
+                  try {
+                    const selectedLang = languages.find(l => l.code === lang.toLowerCase());
+                    
+                    // EXACT PAYLOAD MATCHING YOUR BACKEND scholar_versions COLUMNS
+                    const payload: any = {
+                      canonical_name: form.canonical_name,
+                      region: form.region,
+                      birth_date_gerogean: form.birth_date_gerogean || null,
+                      birth_date_hijri: form.birth_date_hijri || null,
+                      death_date_gerogean: form.death_date_gerogean || null,
+                      death_date_hijri: form.death_date_hijri || null,
+                      century_hijri: form.century_hijri || null,
+                      century_gregorian: form.century_gregorian || null,
+                      biography: form.biography,
+                      aliases: form.aliases,
+                      language_id: selectedLang?.language_id,
+                      references: form.refs.map(r => ({
+                        title: r.title,
+                        citation: r.citation,
+                        url: r.url || null
+                      }))
+                    };
+
+                    // If scholarId exists, we are adding a language version. DO NOT send discipline_ids.
+                    if (scholarId) {
+                      payload.scholar_id = parseInt(scholarId, 10);
+                    } else {
+                      // New scholar: send discipline_ids directly (already numeric IDs from static DISCIPLINES)
+                      payload.discipline_ids = form.discipline_ids;
+                    }
+
+                    // TODO: Connect Works, Media, Relations, Portrait, Expertise, and Keywords APIs once available.
+                    // Currently managed locally in React state but not sent to backend.
+
+                    await scholarsApi.create(payload);
+                    setPhase("success");
+                  } catch (error) {
+                    console.error("Failed to submit scholar:", error);
+                    alert("Failed to submit. Please try again.");
+                  }
+                }} 
+                style={{ padding: "10px 28px", background: form.confirmed && form.refs.length > 0 ? GREEN : "#c0c9c3", color: "#fff", border: "none", borderRadius: "8px", fontFamily: MONO, fontSize: "10px", fontWeight: 700, letterSpacing: "0.1em", cursor: form.confirmed && form.refs.length > 0 ? "pointer" : "not-allowed", transition: "background 0.15s", display: "inline-flex", alignItems: "center", gap: "8px" }}
                 onMouseEnter={e => { if (form.confirmed && form.refs.length > 0) (e.currentTarget as HTMLButtonElement).style.background = GREEN_DARK; }}
                 onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = form.confirmed && form.refs.length > 0 ? GREEN : "#c0c9c3"; }}
               >

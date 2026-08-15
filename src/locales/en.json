@@ -750,12 +750,18 @@
     "aliases": "ALIASES / ALTERNATIVE SPELLINGS",
     "aliasesPh": "Add variation…",
     "birthDate": "BIRTH DATE",
+    "birthDateGregorian": "BIRTH DATE (GREGORIAN)",
+    "birthDateHijri": "BIRTH DATE (HIJRI)",
     "deathDate": "DEATH DATE",
+    "deathDateGregorian": "DEATH DATE (GREGORIAN)",
+    "deathDateHijri": "DEATH DATE (HIJRI)",
     "year": "Year",
     "month": "Month (opt.)",
     "region": "REGION",
     "selectRegion": "Select Region",
     "century": "CENTURY",
+    "centuryGregorian": "CENTURY (GREGORIAN)",
+    "centuryHijri": "CENTURY (HIJRI)",
     "selectCentury": "Select Century",
     "country": "COUNTRY",
     "countryPh": "e.g. Algeria",
@@ -912,5 +918,154 @@
   "browsing": "Browsing the archive",
   "user": "User",
   "contributor": "Contributor"
+},
+"dashboard": {
+  "welcome": "Welcome",
+  "roleLabel": "Role",
+  "roleContributor": "CONTRIBUTOR",
+  "welcomeUser": "Welcome to your OULAMAUNA workspace.",
+  "tabs": {
+    "overview": "OVERVIEW",
+    "notifications": "NOTIFICATIONS",
+    "watchlist": "WATCHLIST",
+    "submissions": "MY SUBMISSIONS",
+    "media": "MEDIA",
+    "works": "WORKS & REFERENCES"
+  },
+  "stats": {
+    "scholars": "Scholars submitted",
+    "versions": "Versions submitted",
+    "media": "Media submitted",
+    "works": "Works / refs submitted"
+  },
+  "overview": {
+    "profileTitle": "My Profile",
+    "profileDesc": "View and edit your profile details.",
+    "watchlistTitle": "My Watchlist",
+    "watchlistDesc": "Scholars you're following.",
+    "notificationsTitle": "Recent Notifications",
+    "notificationsDesc": "Nothing new right now.",
+    "recentActivity": "Recent Activity"
+  },
+  "cta": {
+    "title": "Contribute to OULAMAUNA",
+    "desc": "Help preserve and expand our scholarly encyclopedia.",
+    "button": "SUBMIT A SCHOLAR"
+  },
+  "table": {
+    "type": "Type",
+    "scholar": "Scholar",
+    "language": "Language",
+    "version": "Version",
+    "date": "Date",
+    "status": "Status",
+    "actions": "Actions",
+    "file": "File",
+    "title": "Title"
+  },
+  "status": {
+    "draft": "DRAFT",
+    "pending": "PENDING",
+    "approved": "APPROVED",
+    "rejected": "REJECTED"
+  },
+  "kind": {
+    "new": "New Scholar",
+    "edit": "Edit"
+  },
+  "filter": {
+    "all": "All"
+  },
+  "actions": {
+    "newScholar": "New Scholar",
+    "editExisting": "Edit Existing",
+    "continue": "Continue",
+    "delete": "Delete",
+    "view": "View",
+    "history": "History",
+    "resubmit": "Edit & Resubmit"
+  },
+  "media": {
+    "addButton": "ADD MEDIA",
+    "tempNote": "Temporary data — backend endpoint for user media submissions not yet available."
+  },
+  "works": {
+    "addButton": "ADD WORK / REFERENCE"
+  },
+  "empty": {
+    "submissions": "No submissions yet. Start a new scholar page or edit an existing one.",
+    "media": "No media submitted yet.",
+    "works": "No works or references submitted yet.",
+    "notifications": "You're all caught up.",
+    "watchlist": "You're not watching any scholars yet."
+  }
+},
+"settings": {
+  "title": "Settings",
+  "subtitle": "Manage your Oulamauna account and preferences.",
+  "common": { "cancel": "Cancel", "save": "Save", "saving": "Saving…" },
+  "language": {
+    "title": "Language & Interface",
+    "language": "Language"
+  },
+  "notif": {
+    "title": "Notification Preferences",
+    "email": "Email Notifications",
+    "emailDesc": "Receive notifications by email.",
+    "commentReply": "Comment & Reply Notifications",
+    "commentReplyDesc": "When someone interacts with your comments.",
+    "discussion": "Discussion Notifications",
+    "discussionDesc": "Activity related to your discussions.",
+    "system": "System Notifications",
+    "systemDesc": "Important platform announcements.",
+    "contributorTitle": "Contributor Notifications",
+    "contribApproved": "Submission approved",
+    "contribRejected": "Submission rejected",
+    "contribChanges": "Submission requires changes",
+    "contribTranslation": "Translation reviewed",
+    "contribStatus": "Contribution status changes"
+  },
+  "privacy": {
+    "title": "Privacy",
+    "visibility": "Profile Visibility",
+    "visibilityPublic": "Public",
+    "visibilityRegistered": "Registered users only",
+    "showEmail": "Show my email address on my public profile",
+    "showEmailDesc": "Off by default.",
+    "showActivity": "Show my activity on my profile",
+    "showContributions": "Show my contributions on my profile",
+    "showContributionsDesc": "Controls public visibility only — administrators can always see your contribution records.",
+    "adminNote": "Administrators retain full visibility into contribution records regardless of these settings, for editorial traceability."
+  },
+  "security": {
+    "title": "Security",
+    "password": "Password",
+    "changePassword": "Change Password",
+    "pwCurrent": "Current password",
+    "pwNew": "New password",
+    "pwConfirm": "Confirm new password",
+    "pwErrorCurrent": "Enter your current password.",
+    "pwErrorLength": "New password must be at least 8 characters.",
+    "pwErrorMatch": "New password and confirmation don't match.",
+    "pwSuccess": "Password updated successfully.",
+    "emailVerification": "Email Verification",
+    "verified": "Verified",
+    "notVerified": "Not verified",
+    "resend": "Resend verification email",
+    "resendSent": "Sent!"
+  },
+  "account": {
+    "title": "Account",
+    "deactivate": "Deactivate Account",
+    "deactivateDesc": "Temporarily disable your account. You can reactivate it later.",
+    "deactivateTitle": "Deactivate your account?",
+    "deactivateWarning": "Your profile and contributions will be hidden until you log back in to reactivate.",
+    "deactivateConfirm": "Deactivate",
+    "deleteTitle": "Delete Account",
+    "deleteDesc": "Permanently delete your account and associated data.",
+    "deleteWarning": "This action may be permanent and cannot be undone. All your personal data will be removed according to our data policy.",
+    "deleteTypeConfirm": "Type DELETE to confirm",
+    "deleteConfirm": "Delete my account"
+  }
 }
 }

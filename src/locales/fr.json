@@ -688,12 +688,12 @@
   "scholarsBreadcrumb": "Savants",
   "replyTo": "Répondre à"
 },
-"submitScholar": {
+  "submitScholar": {
   "portal": {
     "title": "Portail de Soumission Académique",
     "subtitle": "Contribuer au registre numérique de référence du patrimoine intellectuel islamique. Veuillez vous assurer que toutes les données sont citées et vérifiées.",
     "selectLang": "SÉLECTIONNER LA LANGUE DE SOUMISSION",
-    "langDesc": "Choisissez la langue de votre contribution scientifique. D'autres langues pourront être soumises après l'examen de l'entrée initiale.",
+    "langDesc": "Choisissez la langue de votre contribution savante. Des langues supplémentaires peuvent être soumises après l'examen de l'entrée initiale.",
     "begin": "COMMENCER LA SOUMISSION"
   },
   "steps": {
@@ -701,37 +701,43 @@
     "relations": "Relations Académiques",
     "narrative": "Contenu Narratif",
     "works": "Œuvres Académiques",
-    "media": "Médiathèque",
+    "media": "Bibliothèque Multimédia",
     "refs": "Références",
-    "review": "Révision et Soumission"
+    "review": "Examen et Soumission"
   },
   "success": {
     "title": "Soumission Reçue",
-    "desc": "Votre entrée de savant a été soumise pour révision éditoriale. Vous serez notifié une fois le processus de révision terminé.",
-    "pending": "EN ATTENTE DE RÉVISION",
+    "desc": "Votre entrée de savant a été soumise pour examen éditorial. Vous serez notifié une fois le processus d'examen terminé.",
+    "pending": "EN ATTENTE D'EXAMEN",
     "note": "L'équipe éditoriale examinera votre entrée et pourra l'Approuver, la Rejeter ou Demander des Modifications. Vous pouvez suivre le statut depuis votre tableau de bord."
   },
   "step1": {
-    "title": "Identité et Métadonnées Essentielles",
+    "title": "Identité et Métadonnées de Base",
     "portrait": "PORTRAIT DU SAVANT",
-    "uploadImage": "Télécharger une image",
-    "fullName": "NOM LÉGAL COMPLET / DE NAISSANCE",
+    "uploadImage": "Télécharger une Image",
+    "fullName": "NOM LÉGAL / DE NAISSANCE COMPLET",
     "fullNamePh": "ex. Abd al-Rahman b. Muhammad al-Tha'alibi",
     "canonicalName": "NOM CANONIQUE (CONNU SOUS)",
     "canonicalNamePh": "ex. Al-Tha'alibi",
-    "aliases": "ALIAS / ORTHOGRAPHES ALTERNATIVES",
-    "aliasesPh": "Ajouter une variante…",
+    "aliases": "ALIASES / ORTHOGRAPHES ALTERNATIVES",
+    "aliasesPh": "Ajouter une variation…",
     "birthDate": "DATE DE NAISSANCE",
+    "birthDateGregorian": "DATE DE NAISSANCE (GRÉGORIEN)",
+    "birthDateHijri": "DATE DE NAISSANCE (HIJRI)",
     "deathDate": "DATE DE DÉCÈS",
+    "deathDateGregorian": "DATE DE DÉCÈS (GRÉGORIEN)",
+    "deathDateHijri": "DATE DE DÉCÈS (HIJRI)",
     "year": "Année",
     "month": "Mois (opt.)",
     "region": "RÉGION",
-    "selectRegion": "Sélectionner une région",
+    "selectRegion": "Sélectionner la Région",
     "century": "SIÈCLE",
-    "selectCentury": "Sélectionner un siècle",
+    "centuryGregorian": "SIÈCLE (GRÉGORIEN)",
+    "centuryHijri": "SIÈCLE (HIJRI)",
+    "selectCentury": "Sélectionner le Siècle",
     "country": "PAYS",
     "countryPh": "ex. Algérie",
-    "era": "ÈRE / PÉRIODE HISTORIQUE",
+    "era": "ÉPOQUE / PÉRIODE HISTORIQUE",
     "disciplines": "DISCIPLINES (DOMAINES GÉNÉRAUX)",
     "expertise": "DOMAINES D'EXPERTISE",
     "expertisePh": "ex. Théorie Sociale",
@@ -740,52 +746,52 @@
   },
   "step2": {
     "title": "Relations Académiques et Taxonomie",
-    "teachers": "PRINCIPAUX ENSEIGNANTS",
+    "teachers": "ENSEIGNANTS PRINCIPAUX",
     "addTeacher": "AJOUTER UN ENSEIGNANT",
-    "noTeachers": "Aucun enseignant ajouté pour l'instant.",
-    "students": "ÉLÈVES NOTABLES",
-    "addStudent": "AJOUTER UN ÉLÈVE",
-    "noStudents": "Aucun élève ajouté pour l'instant.",
+    "noTeachers": "Aucun enseignant ajouté pour le moment.",
+    "students": "ÉTUDIANTS NOTABLES",
+    "addStudent": "AJOUTER UN ÉTUDIANT",
+    "noStudents": "Aucun étudiant ajouté pour le moment.",
     "related": "SAVANTS LIÉS",
     "addRelation": "AJOUTER UNE RELATION",
-    "noRelated": "Aucun savant lié ajouté pour l'instant.",
+    "noRelated": "Aucun savant lié ajouté pour le moment.",
     "name": "NOM",
     "scholarName": "NOM DU SAVANT",
     "relationDesc": "DESCRIPTION DE LA RELATION",
     "relationType": "TYPE DE RELATION",
     "description": "DESCRIPTION",
-    "linkToScholar": "LIER À UN SAVANT",
+    "linkToScholar": "LIER AU SAVANT",
     "database": "Base de données",
-    "externalLink": "Lien externe",
-    "noLink": "Aucun lien",
+    "externalLink": "Lien Externe",
+    "noLink": "Aucun Lien",
     "searchPlaceholder": "Rechercher un savant par nom…",
     "noScholarFound": "Aucun savant trouvé dans la base de données",
     "externalUrlPh": "https://fr.wikipedia.org/wiki/…",
-    "externalUrlHint": "URL externe — entrée d'encyclopédie, page universitaire ou archive.",
+    "externalUrlHint": "URL externe — entrée d'encyclopédie, page universitaire ou registre d'archive.",
     "dbHint": "Si le savant existe dans Oulamauna, le lier par ID garantit que son profil reste connecté.",
-    "noLinkHint": "Le nom apparaîtra en texte brut sans lien."
+    "noLinkHint": "Le nom apparaîtra en texte brut sans aucun lien."
   },
   "step3": {
     "title": "Contenu Narratif",
-    "pageTitle": "TITRE DE LA PAGE D'ENCYCLOPÉDIE",
+    "pageTitle": "TITRE DE LA PAGE ENCYCLOPÉDIQUE",
     "pageTitlePh": "ex. L'Héritage d'Abd al-Rahman al-Tha'alibi",
     "summary": "RÉSUMÉ COURT (70–280 caractères)",
-    "summaryPh": "Fournissez un aperçu concis de 2-3 phrases pour les aperçus de recherche et les en-têtes de page…",
+    "summaryPh": "Fournissez un aperçu concis de 2 à 3 phrases pour les aperçus de recherche et les en-têtes de page…",
     "biography": "BIOGRAPHIE",
     "richText": "ÉDITEUR DE TEXTE ENRICHI",
-    "biographyPh": "Commencez à rédiger la biographie académique…",
+    "biographyPh": "Commencez à écrire la biographie savante ici... Utilisez [[Nom du savant]] pour lier à d'autres profils.",
     "quote": "CITATION CÉLÈBRE",
     "quoteOptional": "(optionnel)",
-    "quotePh": "\"Une civilisation naît lorsque…\""
+    "quotePh": "\"Une civilisation naît quand…\""
   },
   "step4": {
     "title": "Œuvres Académiques",
-    "noWorks": "Aucune œuvre ajoutée pour l'instant.",
+    "noWorks": "Aucune œuvre ajoutée pour le moment.",
     "work": "ŒUVRE",
     "titleField": "TITRE",
     "titlePh": "ex. Le Phénomène Coranique",
     "origTitle": "TITRE ORIGINAL",
-    "origTitlePh": "Titre dans la langue d'origine",
+    "origTitlePh": "Titre dans la langue originale",
     "workType": "TYPE D'ŒUVRE",
     "pubYear": "ANNÉE DE PUBLICATION",
     "language": "LANGUE",
@@ -795,20 +801,20 @@
     "digitalAccess": "ACCÈS NUMÉRIQUE",
     "addWork": "AJOUTER UNE NOUVELLE ŒUVRE",
     "none": "Aucun",
-    "upload": "Téléverser",
-    "link": "Coller un lien",
+    "upload": "Télécharger",
+    "link": "Coller un Lien",
     "noneHint": "Aucun fichier numérique. Apparaîtra comme \"—\" dans la bibliographie."
   },
   "step5": {
-    "title": "Médiathèque Globale",
-    "desc": "Joignez des PDF, enregistrements audio, documentaires vidéo et images relatifs à ce savant. Cette bibliothèque est partagée entre toutes les versions linguistiques.",
-    "noMedia": "Aucun média ajouté pour l'instant.",
+    "title": "Bibliothèque Multimédia Globale",
+    "desc": "Joignez des PDF, des enregistrements audio, des documentaires vidéo et des images liés à ce savant. Cette bibliothèque est partagée entre toutes les versions linguistiques.",
+    "noMedia": "Aucun média ajouté pour le moment.",
     "media": "MÉDIA",
     "titleField": "TITRE",
     "titlePh": "ex. Conférence du Caire 1968",
     "mediaType": "TYPE DE MÉDIA",
     "description": "DESCRIPTION",
-    "descPh": "Brève description de cet élément média…",
+    "descPh": "Brève description de cet élément multimédia…",
     "fileLink": "FICHIER / LIEN",
     "addMedia": "AJOUTER UN MÉDIA",
     "noneHint": "Aucun fichier. Le titre et la description resteront visibles pour les utilisateurs."
@@ -816,7 +822,7 @@
   "step6": {
     "title": "Références et Bibliographie",
     "warning": "Au moins UNE référence est requise avant la soumission.",
-    "noRefs": "Aucune référence ajoutée pour l'instant.",
+    "noRefs": "Aucune référence ajoutée pour le moment.",
     "reference": "RÉFÉRENCE",
     "titleField": "TITRE",
     "titlePh": "ex. Les Conditions de la Renaissance",
@@ -829,27 +835,27 @@
     "type": "TYPE",
     "url": "URL (optionnel)",
     "notes": "NOTES",
-    "notesPh": "Notes additionnelles",
+    "notesPh": "Notes supplémentaires",
     "addRef": "AJOUTER UNE RÉFÉRENCE"
   },
   "step7": {
-    "title": "Révision et Soumission",
-    "desc": "Vérifiez votre soumission ci-dessous. Cliquez sur une étape de la barre de progression pour revenir et modifier.",
+    "title": "Examen et Soumission",
+    "desc": "Examinez votre soumission ci-dessous. Cliquez sur n'importe quelle étape dans la barre de progression pour revenir en arrière et apporter des modifications.",
     "identitySection": "01 — IDENTITÉ",
-    "narrativeSection": "03 — NARRATIF",
+    "narrativeSection": "03 — CONTENU NARRATIF",
     "worksSection": "04 — ŒUVRES ACADÉMIQUES",
     "refsSection": "06 — RÉFÉRENCES",
-    "noneAdded": "Rien d'ajouté.",
+    "noneAdded": "Rien ajouté.",
     "refsRequired": "Aucune référence — requise avant la soumission.",
-    "confirmText": "Je confirme que les informations que j'ai fournies sont exactes au meilleur de ma connaissance, et sont conformes aux directives de soumission d'Oulamauna et aux normes d'intégrité académique.",
-    "confirmNote": "Après la soumission, l'équipe éditoriale pourra Approuver, Rejeter ou Demander des Modifications.",
+    "confirmText": "Je confirme que les informations que j'ai fournies sont exactes au meilleur de ma connaissance, et conformes aux directives de soumission d'Oulamauna et aux normes d'intégrité académique.",
+    "confirmNote": "Après la soumission, l'équipe éditoriale peut Approuver, Rejeter ou Demander des Modifications.",
     "submitAlert": "Veuillez ajouter au moins une référence et confirmer l'exactitude avant de soumettre."
   },
   "footer": {
     "back": "RETOUR",
-    "saveDraft": "ENREGISTRER LE BROUILLON",
+    "saveDraft": "SAUVEGARDER LE BROUILLON",
     "next": "SUIVANT",
-    "submit": "SOUMETTRE POUR RÉVISION"
+    "submit": "SOUMETTRE POUR EXAMEN"
   }
 },
 "editProfile": {
@@ -884,5 +890,155 @@
   "browsing": "Parcourir les archives",
   "user": "Utilisateur",
   "contributor": "Contributeur"
+},
+"dashboard": {
+  "welcome": "Bienvenue",
+  "roleLabel": "Rôle",
+  "roleContributor": "CONTRIBUTEUR",
+  "welcomeUser": "Bienvenue dans votre espace OULAMAUNA.",
+  "tabs": {
+    "overview": "APERÇU",
+    "notifications": "NOTIFICATIONS",
+    "watchlist": "SUIVIS",
+    "submissions": "MES SOUMISSIONS",
+    "media": "MÉDIAS",
+    "works": "ŒUVRES & RÉFÉRENCES"
+  },
+  "stats": {
+    "scholars": "Érudits soumis",
+    "versions": "Versions soumises",
+    "media": "Médias soumis",
+    "works": "Œuvres / réf. soumises"
+  },
+  "overview": {
+    "profileTitle": "Mon profil",
+    "profileDesc": "Voir et modifier les détails de votre profil.",
+    "watchlistTitle": "Ma liste de suivi",
+    "watchlistDesc": "Les érudits que vous suivez.",
+    "notificationsTitle": "Notifications récentes",
+    "notificationsDesc": "Rien de nouveau pour le moment.",
+    "recentActivity": "Activité récente"
+  },
+  "cta": {
+    "title": "Contribuer à OULAMAUNA",
+    "desc": "Aidez à préserver et enrichir notre encyclopédie savante.",
+    "button": "SOUMETTRE UN ÉRUDIT"
+  },
+  "table": {
+    "type": "Type",
+    "scholar": "Érudit",
+    "language": "Langue",
+    "version": "Version",
+    "date": "Date",
+    "status": "Statut",
+    "actions": "Actions",
+    "file": "Fichier",
+    "title": "Titre"
+  },
+  "status": {
+    "draft": "BROUILLON",
+    "pending": "EN ATTENTE",
+    "approved": "APPROUVÉ",
+    "rejected": "REJETÉ"
+  },
+  "kind": {
+    "new": "Nouvel érudit",
+    "edit": "Modification"
+  },
+  "filter": {
+    "all": "Tous"
+  },
+  "actions": {
+    "newScholar": "Nouvel érudit",
+    "editExisting": "Modifier existant",
+    "continue": "Continuer",
+    "delete": "Supprimer",
+    "view": "Voir",
+    "history": "Historique",
+    "resubmit": "Modifier et resoumettre"
+  },
+  "media": {
+    "addButton": "AJOUTER UN MÉDIA",
+    "tempNote": "Données temporaires — l'API pour les médias utilisateur n'est pas encore disponible."
+  },
+  "works": {
+    "addButton": "AJOUTER UNE ŒUVRE / RÉFÉRENCE"
+  },
+  "empty": {
+    "submissions": "Aucune soumission pour l'instant. Commencez un nouvel érudit ou modifiez-en un existant.",
+    "media": "Aucun média soumis pour l'instant.",
+    "works": "Aucune œuvre ou référence soumise pour l'instant.",
+    "notifications": "Vous êtes à jour.",
+    "watchlist": "Vous ne suivez aucun érudit pour l'instant."
+  }
+},
+"settings": {
+  "title": "Paramètres",
+  "subtitle": "Gérez votre compte et vos préférences OULAMAUNA.",
+  "common": { "cancel": "Annuler", "save": "Enregistrer", "saving": "Enregistrement…" },
+  "language": {
+    "title": "Langue & Interface",
+    "language": "Langue"
+  },
+  "notif": {
+    "title": "Préférences de notification",
+    "email": "Notifications par e-mail",
+    "emailDesc": "Recevoir des notifications par e-mail.",
+    "commentReply": "Notifications de commentaires & réponses",
+    "commentReplyDesc": "Quand quelqu'un interagit avec vos commentaires.",
+    "discussion": "Notifications de discussion",
+    "discussionDesc": "Activité liée à vos discussions.",
+    "system": "Notifications système",
+    "systemDesc": "Annonces importantes de la plateforme.",
+    "contributorTitle": "Notifications de contributeur",
+    "contribApproved": "Soumission approuvée",
+    "contribRejected": "Soumission rejetée",
+    "contribChanges": "Soumission nécessitant des modifications",
+    "contribTranslation": "Traduction révisée",
+    "contribStatus": "Changement de statut de contribution"
+  },
+  "privacy": {
+    "title": "Confidentialité",
+    "visibility": "Visibilité du profil",
+    "visibilityPublic": "Public",
+    "visibilityRegistered": "Utilisateurs inscrits uniquement",
+    "showEmail": "Afficher mon e-mail sur mon profil public",
+    "showEmailDesc": "Désactivé par défaut.",
+    "showActivity": "Afficher mon activité sur mon profil",
+    "showContributions": "Afficher mes contributions sur mon profil",
+    "showContributionsDesc": "Contrôle uniquement la visibilité publique — les administrateurs voient toujours vos contributions.",
+    "adminNote": "Les administrateurs conservent un accès complet aux registres de contribution, quels que soient ces réglages, à des fins de traçabilité éditoriale."
+  },
+  "security": {
+    "title": "Sécurité",
+    "password": "Mot de passe",
+    "changePassword": "Changer le mot de passe",
+    "pwCurrent": "Mot de passe actuel",
+    "pwNew": "Nouveau mot de passe",
+    "pwConfirm": "Confirmer le nouveau mot de passe",
+    "pwErrorCurrent": "Saisissez votre mot de passe actuel.",
+    "pwErrorLength": "Le nouveau mot de passe doit contenir au moins 8 caractères.",
+    "pwErrorMatch": "Le nouveau mot de passe et la confirmation ne correspondent pas.",
+    "pwSuccess": "Mot de passe mis à jour avec succès.",
+    "emailVerification": "Vérification de l'e-mail",
+    "verified": "Vérifié",
+    "notVerified": "Non vérifié",
+    "resend": "Renvoyer l'e-mail de vérification",
+    "resendSent": "Envoyé !"
+  },
+  "account": {
+    "title": "Compte",
+    "deactivate": "Désactiver le compte",
+    "deactivateDesc": "Désactivez temporairement votre compte. Vous pourrez le réactiver plus tard.",
+    "deactivateTitle": "Désactiver votre compte ?",
+    "deactivateWarning": "Votre profil et vos contributions seront masqués jusqu'à ce que vous vous reconnectiez pour réactiver.",
+    "deactivateConfirm": "Désactiver",
+    "deleteTitle": "Supprimer le compte",
+    "deleteDesc": "Supprimer définitivement votre compte et vos données associées.",
+    "deleteWarning": "Cette action peut être permanente et irréversible. Toutes vos données personnelles seront supprimées conformément à notre politique de données.",
+    "deleteTypeConfirm": "Tapez DELETE pour confirmer",
+    "deleteConfirm": "Supprimer mon compte"
+  }
 }
+
 }

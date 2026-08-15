@@ -1,4 +1,4 @@
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 
 import { useLang } from "../../context/LanguageContext";
 import { useParams, Link, useNavigate } from "react-router-dom"; 
@@ -753,10 +753,17 @@ const EditScholarPage: React.FC<EditScholarPageProps> = ({ initialLang = "EN", i
   const [workModal, setWorkModal] = useState<{ open: boolean; index: number | null }>({ open: false, index: null });
   const [mediaModal, setMediaModal] = useState<{ open: boolean; index: number | null }>({ open: false, index: null });
 
-  const { t, lang: uiLang } = useLang();
-  const isRTL = activeLang === "AR";       // controls direction of the CONTENT fields only
-  const isUIRTL = uiLang === "AR";         // controls direction of the page chrome/layout        // controls direction of the page chrome/layout
+    const { t, lang: uiLang, setLang } = useLang();
+    const isRTL = activeLang === "AR";       // controls direction of the CONTENT fields only
+  const isUIRTL = uiLang === "AR";         // controls direction of the page chrome/layout
   const crumbSep = isUIRTL ? " < " : " > ";
+
+  // 👇 ADD THIS TO SYNC THE UI LANGUAGE WITH THE URL ROUTE 👇
+  useEffect(() => {
+    if (urlLang) {
+      setLang(urlLang);
+    }
+  }, [urlLang, setLang]);
 
   const mark = () => setDirty(true);
 
@@ -894,14 +901,9 @@ const EditScholarPage: React.FC<EditScholarPageProps> = ({ initialLang = "EN", i
               <h1 style={{ ...SERIF, fontSize: "24px", fontWeight: 700, color: "#0b4335", margin: "0 0 4px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                 {scholar.name[activeLang] || scholar.atAGlance.fullName}
               </h1>
-              <p style={{ ...MONO, fontSize: "10px", color: "#0b4335", letterSpacing: "0.15em", margin: 0, fontWeight: 700 }}>
-  {activeLang === "EN" 
-    ? (uiLang === "FR" ? "MODIFICATION DE LA VERSION ANGLAISE" : uiLang === "AR" ? "تعديل النسخة الإنجليزية" : "Editing English Version")
-    : activeLang === "FR"
-    ? (uiLang === "FR" ? "MODIFICATION DE LA VERSION FRANÇAISE" : uiLang === "AR" ? "تعديل النسخة الفرنسية" : "Editing French Version")
-    : (uiLang === "FR" ? "MODIFICATION DE LA VERSION ARABE" : uiLang === "AR" ? "تعديل النسخة العربية" : "Editing Arabic Version")
-  }
-</p></div>
+                         <p style={{ ...MONO, fontSize: "10px", color: "#0b4335", letterSpacing: "0.15em", margin: 0, fontWeight: 700 }}>
+                {activeLang === "AR" ? "تعديل النسخة العربية" : activeLang === "FR" ? "Modification de la version française" : "Editing English Version"}
+              </p></div>
             <div style={{ display: "flex", alignItems: "center", gap: "10px", flexShrink: 0 }}>
               <button onClick={handleSave} style={{ ...BTN_PRIMARY, backgroundColor: "#0b4335", color: "#fff", padding: "8px 20px" }}>
                 <Icon name="draft" size={14} />{t("editScholar.saveAsDraft")}

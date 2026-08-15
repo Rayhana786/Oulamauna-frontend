@@ -18,7 +18,6 @@ import Home from "./pages/Home";
 import About from "./pages/About";
 import Contact from "./pages/Contact";
 import ScholarsPage from "./pages/Scholars/ScholarsPage";
-
 import Editscholarpage from "./pages/ScholarDetailPage/Editscholarpage";
 
 // Auth pages (no navbar)
@@ -28,8 +27,11 @@ import ForgotPassword from "./pages/Authentication/ForgotPassword";
 import ResetPassword from "./pages/Authentication/ResetPassword";
 import VerifyEmail from "./pages/Authentication/VerifyEmail";
 import VerifyEmailPending from "./pages/Authentication/VerifyEmailPending";
-import Editprofilepage from "./pages/Authentication/Editprofilepage";
-
+// Account pages
+import ProfilePage from "./pages/Account/ProfilePage";
+import Editprofilepage from "./pages/Account/Editprofilepage";
+import DashboardPage from "./pages/Account/DashboardPage";
+import SettingsPage from "./pages/Account/Settingspage";
 
 //scholars pages
 import ScholarsPageDetails from "./pages/ScholarDetailPage/ScholarDetailPage";
@@ -53,7 +55,9 @@ import WorksPendingQueue from "./pages/admin/WorksPendingQueue";
 // import AdminScholars from "./pages/admin/AdminScholars"; // add as you build them
 
 function App() {
+   const testLoggedInUserId = "21";
   return (
+    
     <Router>
       <LanguageProvider>
         <AuthProvider>
@@ -66,8 +70,11 @@ function App() {
               <Route path="/contact" element={<Contact />} />
               <Route path="/scholars" element={<ScholarsPage />} />
               <Route path="/edit-profile" element={<Editprofilepage />} />
-              
-            </Route>
+              <Route path="/profile" element={<ProfilePage />} />
+<Route path="/profile/:id" element={<ProfilePage />} />
+<Route path="/dashboard" element={<DashboardPage />} />
+<Route path="/settings" element={<SettingsPage />} />
+</Route>
 
             {/* ── AUTH + ERROR ROUTES (no navbar at all) ── */}
             <Route element={<NoNavLayout />}>
