@@ -1,7 +1,8 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useLang } from "../../context/LanguageContext";
 import { Link } from "react-router-dom";
-import { scholarsApi, ApiScholar } from "../../api/scholarsApi";
+import { scholarsApi, ApiScholar, ApiScholarVersion } from "../../api/scholarsApi";
+import scholarFallbackImg from "../../assets/scholar.png";
 
 // ── Types ──────────────────────────────────────────────────────────────────
 type Language = "EN" | "AR" | "FR";
@@ -12,8 +13,8 @@ interface ScholarCardData {
 
   isFallback: boolean;
   displayedLanguage: string;
-  requestedLanguage: string;        // single string now — API only returns ONE language per fetch
-  nameAr?: string;      // only present if the fetched language IS arabic
+  requestedLanguage: string;
+  nameAr?: string;
   years: string;
   region: string;
   excerpt: string;
@@ -22,26 +23,19 @@ interface ScholarCardData {
   image: string | null;
 }
 
-// ⚠️ CONFIRM these against your real `languages` table — this is a guess
-// based on typical seed order. If wrong, discipline names won't match.
-const LANGUAGE_ID_BY_CODE: Record<Language, number> = {
-  AR: 1,
-  EN: 2,
-  FR: 3,
-};
 const LANG_CODE_BY_UI: Record<Language, string> = {
   EN: "en",
   AR: "ar",
   FR: "fr",
 };
 
-// ── Translations (unchanged) ────────────────────────────────────────────────
+// ── Translations ───────────────────────────────────────────────────────────
 const T = {
   EN: {
     breadcrumb: "HOME › SCHOLAR ENCYCLOPEDIA",
     heroTitle: "Explore the Intellectual Heritage",
     heroSub: "A comprehensive directory of polymaths, theologians, and scientists who shaped the global landscape of knowledge.",
-    searchPlaceholder: "Search by name, discipline, or region...",
+    searchPlaceholder: "Search by name...",
     searchBtn: "SEARCH",
     filters: "FILTERS",
     clearAll: "Clear all",
@@ -58,7 +52,7 @@ const T = {
     biography: "BIOGRAPHY",
     regions: ["Andalusia", "Maghreb", "Khorasan", "Hijaz"],
     centuries: ["1st – 3rd Century", "4th – 6th Century", "7th – 9th Century"],
-       disciplines: ["Tafsir", "Hadith", "Fiqh", "Astronomy", "Philosophy"],
+    disciplines: ["Tafsir", "Hadith", "Fiqh", "Astronomy", "Philosophy"],
     sortOptions: ["Name (A-Z)", "Name (Z-A)", "Century (Oldest)", "Century (Newest)"],
     noScholars: "No scholars available in this language yet.",
     noResults: "No scholars match your search or filters.",
@@ -68,7 +62,7 @@ const T = {
     breadcrumb: "الرئيسية › موسوعة العلماء",
     heroTitle: "استكشف الإرث الفكري الإسلامي",
     heroSub: "دليل شامل للعلماء والمفكرين والعلماء الذين شكّلوا الحضارة الإنسانية.",
-    searchPlaceholder: "ابحث باسم العالم أو التخصص أو المنطقة...",
+    searchPlaceholder: "ابحث باسم العالم...",
     searchBtn: "بحث",
     filters: "التصفية",
     clearAll: "مسح الكل",
@@ -85,7 +79,7 @@ const T = {
     biography: "السيرة الذاتية",
     regions: ["الأندلس", "المغرب", "خراسان", "الحجاز"],
     centuries: ["القرن 1-3", "القرن 4-6", "القرن 7-9"],
-       disciplines: ["تفسير", "حديث", "فقه", "فلك", "فلسفة"],
+    disciplines: ["تفسير", "حديث", "فقه", "فلك", "فلسفة"],
     sortOptions: ["الاسم (أ-ي)", "الاسم (ي-أ)", "الأقدم", "الأحدث"],
     noScholars: "لا يوجد علماء متاحون بهذه اللغة حتى الآن.",
     noResults: "لا يوجد علماء يطابقون بحثك أو التصفية.",
@@ -95,7 +89,7 @@ const T = {
     breadcrumb: "ACCUEIL › ENCYCLOPÉDIE DES SAVANTS",
     heroTitle: "Explorer le Patrimoine Intellectuel",
     heroSub: "Un répertoire complet de polymathes, théologiens et scientifiques qui ont façonné le savoir universel.",
-    searchPlaceholder: "Rechercher par nom, discipline ou région...",
+    searchPlaceholder: "Rechercher par nom...",
     searchBtn: "RECHERCHER",
     filters: "FILTRES",
     clearAll: "Tout effacer",
@@ -112,65 +106,53 @@ const T = {
     biography: "BIOGRAPHIE",
     regions: ["Andalousie", "Maghreb", "Khorasan", "Hijaz"],
     centuries: ["1er – 3e Siècle", "4e – 6e Siècle", "7e – 9e Siècle"],
-      disciplines: ["Tafsir", "Hadith", "Fiqh", "Astronomie", "Philosophie"],
+    disciplines: ["Tafsir", "Hadith", "Fiqh", "Astronomie", "Philosophie"],
     sortOptions: ["Nom (A-Z)", "Nom (Z-A)", "Le plus ancien", "Le plus récent"],
     noScholars: "Aucun savant disponible dans cette langue pour le moment.",
-    noResults: "Aucun savant ne correspond à votre recherche ou vos filtres.",
+    noResults: "Aucun savant ne correspond à votre recherche ou aux filtres.",
     tryChanging: "Essayez de modifier votre recherche ou d'effacer les filtres.",
   },
 };
 
-// ── Mapping: Prisma API shape → what the UI needs ───────────────────────────
-function computeYears(v: ApiScholar["scholar_versions"][0]): string {
-  const birth = v.birth_date_gerogean;
-  const death = v.death_date_gerogean;
-  const by = birth ? new Date(birth).getFullYear() : null;
-  const dy = death ? new Date(death).getFullYear() : null;
-  if (by && dy) return `${by} – ${dy} CE`;
-  if (by) return `b. ${by} CE`;
+// ── Mapping: Prisma API shape → what the UI needs ──────────────────────────
+function computeYears(v: ApiScholarVersion): string {
+  const dates = v.scholar_dates ?? [];
+  const birth = dates.find((d) => d.date_type === "birth" && d.calendar === "gregorian")?.year;
+  const death = dates.find((d) => d.date_type === "death" && d.calendar === "gregorian")?.year;
+  if (birth && death) return `${birth} – ${death} CE`;
+  if (birth) return `b. ${birth} CE`;
   return "";
 }
 
-function computeExcerpt(bio: string, max = 80): string {
-  if (!bio) return "";
-  return bio.length > max ? bio.slice(0, max) + "…" : bio;
-}
-
-function getDisciplineNames(scholar: ApiScholar, languageId: number): string[] {
-  return scholar.scholar_disciplines
-    .map((sd) => {
-      const t = sd.disciplines?.discipline_translations?.find(
-        (tr) => tr.language_id === languageId
-      );
-      return t?.name?.toUpperCase();
-    })
+function getDisciplineNames(scholar: ApiScholar): string[] {
+  return (scholar.scholar_disciplines ?? [])
+    .map((sd) => sd.disciplines?.name?.toUpperCase())
     .filter((x): x is string => Boolean(x));
 }
 
 function mapApiScholar(apiScholar: ApiScholar, lang: Language): ScholarCardData | null {
   const version = apiScholar.scholar_versions[0];
-  if (!version) return null; // shouldn't happen since GET / only returns scholars WITH an approved version
+  if (!version) return null;
+
+  const hasDeath = (version.scholar_dates ?? []).some((d) => d.date_type === "death");
 
   return {
-  id: apiScholar.scholar_id,
-  name: version.canonical_name,
-
-  isFallback: false,
-
-displayedLanguage: version.languages?.code ?? "",
-
-requestedLanguage: lang.toLowerCase(),
-    nameAr: lang === "AR" ? version.canonical_name : undefined,
+    id: apiScholar.scholar_id,
+    name: version.canonical_name,
+    isFallback: false,
+    displayedLanguage: version.languages?.code ?? "",
+    requestedLanguage: lang.toLowerCase(),
+    nameAr: version.scholar_aliases?.[0]?.alias_name,
     years: computeYears(version),
-    region: version.region ?? "",
-    excerpt: computeExcerpt(version.biography),
-    disciplines: getDisciplineNames(apiScholar, LANGUAGE_ID_BY_CODE[lang]),
-    status: version.death_date_gerogean ? "deceased" : "living",
-    image: null, // GET / has no media include — list page always uses the avatar fallback
+    region: version.regions?.name ?? "",
+    excerpt: version.biography ?? "",
+    disciplines: getDisciplineNames(apiScholar),
+    status: hasDeath ? "deceased" : "living",
+    image: version.image_url ?? null,
   };
 }
 
-// ── Discipline Tags with +N badge (unchanged) ───────────────────────────────
+// ── Discipline Tags with +N badge ──────────────────────────────────────────
 const DisciplineTags: React.FC<{ disciplines: string[] }> = ({ disciplines }) => {
   const MAX_SHOW = 2;
   const visible = disciplines.slice(0, MAX_SHOW);
@@ -197,16 +179,17 @@ const DisciplineTags: React.FC<{ disciplines: string[] }> = ({ disciplines }) =>
   );
 };
 
-// ── Scholar Card ─────────────────────────────────────────────────────────
+// ── Scholar Card ───────────────────────────────────────────────────────────
 const ScholarCard: React.FC<{ scholar: ScholarCardData; lang: Language; biographyLabel: string }> = ({
   scholar, lang, biographyLabel,
 }) => {
   const [hovered, setHovered] = useState(false);
+  const [imgFailed, setImgFailed] = useState(false);
   const isRTL = lang === "AR";
-  const avatarFallback = `https://ui-avatars.com/api/?name=${encodeURIComponent(scholar.name)}&background=285B4B&color=C9A84C&size=400`;
+  const showFallback = !scholar.image || imgFailed;
 
   return (
-    <Link to={`/scholars/${scholar.id}`} style={{ textDecoration: "none" }}>
+    <Link to={`/scholars/${scholar.id}`} style={{ textDecoration: "none", display: "block", height: "100%" }}>
       <div
         onMouseEnter={() => setHovered(true)}
         onMouseLeave={() => setHovered(false)}
@@ -217,11 +200,12 @@ const ScholarCard: React.FC<{ scholar: ScholarCardData; lang: Language; biograph
           transition: "box-shadow 0.25s ease, transform 0.25s ease",
           display: "flex", flexDirection: "column", cursor: "pointer",
           direction: isRTL ? "rtl" : "ltr",
+          height: "100%",
         }}
       >
-        <div style={{ position: "relative", height: "200px", overflow: "hidden" }}>
+        <div style={{ position: "relative", height: "200px", overflow: "hidden", flexShrink: 0 }}>
           <img
-            src={scholar.image ?? avatarFallback}
+            src={showFallback ? scholarFallbackImg : (scholar.image as string)}
             alt={scholar.name}
             style={{
               width: "100%", height: "100%", objectFit: "cover",
@@ -229,7 +213,7 @@ const ScholarCard: React.FC<{ scholar: ScholarCardData; lang: Language; biograph
               transform: hovered ? "scale(1.05)" : "scale(1)",
               transition: "transform 0.4s ease, filter 0.45s ease",
             }}
-            onError={(e) => { (e.target as HTMLImageElement).src = avatarFallback; }}
+            onError={() => setImgFailed(true)}
           />
           <div style={{ position: "absolute", top: "10px", left: isRTL ? "auto" : "10px", right: isRTL ? "10px" : "auto" }}>
             <DisciplineTags disciplines={scholar.disciplines} />
@@ -241,26 +225,35 @@ const ScholarCard: React.FC<{ scholar: ScholarCardData; lang: Language; biograph
             fontFamily: lang === "AR" ? "'Amiri', serif" : "'Playfair Display', 'Georgia', serif",
             fontSize: "17px", fontWeight: 600, color: hovered ? "#C9A84C" : "#191c1b",
             margin: "0 0 4px 0", lineHeight: 1.3, transition: "color 0.2s ease",
+            display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical",
+            overflow: "hidden", minHeight: "44px",
           }}>
             {scholar.name}
           </h3>
-          {scholar.nameAr && (
-            <p style={{
-              fontFamily: "'Amiri', serif", fontSize: "13px", color: "#C9A84C",
-              margin: "0 0 14px 0", direction: "rtl", textAlign: isRTL ? "left" : "right",
-            }}>
-              {scholar.nameAr}
-            </p>
-          )}
+
+          <p style={{
+            fontFamily: "'Amiri', serif", fontSize: "13px", color: "#C9A84C",
+            margin: "0 0 14px 0", direction: "rtl", textAlign: isRTL ? "left" : "right",
+            minHeight: "20px",
+          }}>
+            {scholar.nameAr ?? ""}
+          </p>
+
           <p style={{
             fontFamily: "'Inter', sans-serif", fontSize: "11px", color: "#6b7775",
             letterSpacing: "0.06em", fontWeight: 500, margin: "0 0 6px 0",
+            minHeight: "16px", textTransform: "uppercase",
           }}>
-            {scholar.years} {scholar.years && "• "}<span style={{ color: "#404945" }}>{scholar.region}</span>
+            {scholar.years}
+            {scholar.years && scholar.region && " • "}
+            <span style={{ color: "#404945" }}>{scholar.region}</span>
           </p>
+
           <p style={{
             fontFamily: lang === "AR" ? "'Amiri', serif" : "'Inter', sans-serif",
             fontSize: "13px", color: "#404945", lineHeight: 1.6, margin: 0,
+            display: "-webkit-box", WebkitLineClamp: 3, WebkitBoxOrient: "vertical",
+            overflow: "hidden",
           }}>
             {scholar.excerpt}
           </p>
@@ -290,7 +283,7 @@ const ScholarCard: React.FC<{ scholar: ScholarCardData; lang: Language; biograph
   );
 };
 
-// ── Filter Checkbox (unchanged) ─────────────────────────────────────────────
+// ── Filter Checkbox ────────────────────────────────────────────────────────
 const FilterCheckbox: React.FC<{
   label: string; count?: number; checked: boolean; onChange: () => void; isRTL?: boolean;
 }> = ({ label, count, checked, onChange, isRTL }) => (
@@ -318,7 +311,7 @@ const FilterCheckbox: React.FC<{
 
 const PAGE_SIZE = 12;
 
-// ── Main Page ────────────────────────────────────────────────────────────
+// ── Main Page ──────────────────────────────────────────────────────────────
 const ScholarsPage: React.FC = () => {
   const { lang } = useLang();
   const t = T[lang];
@@ -333,18 +326,15 @@ const ScholarsPage: React.FC = () => {
   const [selectedDisciplines, setSelectedDisciplines] = useState<string[]>([]);
   const [statusFilter, setStatusFilter] = useState<"all" | "deceased">("all");
   const [sort, setSort] = useState(t.sortOptions[0]);
-    const [sortOpen, setSortOpen] = useState(false);
+  const [sortOpen, setSortOpen] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
 
-  // Check if the user is actively searching or using filters
   const isSearchingOrFiltering =
     search.trim() !== "" ||
     selectedRegions.length > 0 ||
     selectedDisciplines.length > 0 ||
     statusFilter !== "all";
 
-  // Refetch whenever the language changes — the API only returns one
-  // language version per call, so switching EN/AR/FR must hit the server again.
   useEffect(() => {
     let cancelled = false;
     setLoading(true);
@@ -381,9 +371,6 @@ const ScholarsPage: React.FC = () => {
     setSearch("");
   };
 
-  // Client-side filter/search/sort — the backend has no query params for
-  // these yet (no ?region=, ?discipline=, ?q=, ?page=). Fine at current
-  // scale; move server-side once the scholar count grows.
   const filtered = useMemo(() => {
     let list = [...scholars];
 
@@ -597,17 +584,22 @@ const ScholarsPage: React.FC = () => {
 
           {!loading && !error && (
             <>
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(220px, 1fr))", gap: "20px" }}>
+              <div style={{
+                display: "grid",
+                gridTemplateColumns: "repeat(auto-fill, minmax(220px, 1fr))",
+                gap: "20px",
+                alignItems: "stretch",
+              }}>
                 {pageItems.map((s) => (
                   <ScholarCard key={s.id} scholar={s} lang={lang} biographyLabel={t.biography} />
                 ))}
               </div>
 
-                           {pageItems.length === 0 && (
-                <div style={{ 
-                  textAlign: "center", 
-                  padding: "60px 20px", 
-                  color: "#6b7775", 
+              {pageItems.length === 0 && (
+                <div style={{
+                  textAlign: "center",
+                  padding: "60px 20px",
+                  color: "#6b7775",
                   fontFamily: lang === "AR" ? "'Amiri', serif" : "'Inter', sans-serif",
                   backgroundColor: "#fff",
                   borderRadius: "4px",
@@ -618,11 +610,11 @@ const ScholarsPage: React.FC = () => {
                     <path d="M21 21l-4.3-4.3" />
                     {isSearchingOrFiltering && <path d="M8 11h6" />}
                   </svg>
-                  
+
                   <p style={{ fontSize: "18px", fontWeight: 600, color: "#404945", margin: "0 0 8px 0" }}>
                     {isSearchingOrFiltering ? t.noResults : t.noScholars}
                   </p>
-                  
+
                   {isSearchingOrFiltering && (
                     <p style={{ fontSize: "14px", color: "#888", margin: 0 }}>
                       {t.tryChanging}

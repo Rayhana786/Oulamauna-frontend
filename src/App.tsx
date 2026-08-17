@@ -18,7 +18,7 @@ import Home from "./pages/Home";
 import About from "./pages/About";
 import Contact from "./pages/Contact";
 import ScholarsPage from "./pages/Scholars/ScholarsPage";
-import Editscholarpage from "./pages/ScholarDetailPage/Editscholarpage";
+import Editscholarpage from "./pages/Scholars/Editscholarpage";
 
 // Auth pages (no navbar)
 import Login from "./pages/Authentication/Login";
@@ -34,9 +34,9 @@ import DashboardPage from "./pages/Account/DashboardPage";
 import SettingsPage from "./pages/Account/Settingspage";
 
 //scholars pages
-import ScholarsPageDetails from "./pages/ScholarDetailPage/ScholarDetailPage";
-import EditScholarPage from "./pages/ScholarDetailPage/Editscholarpage";
-import Submitscholarpage from "./pages/ScholarDetailPage/Submitscholarpage";
+import ScholarsPageDetails from "./pages/Scholars/ScholarDetailPage";
+import EditScholarPage from "./pages/Scholars/Editscholarpage";
+import Submitscholarpage from "./pages/Scholars/Submitscholarpage";
 
 // Error pages (no navbar)
 import NotFound from "./pages/errors/NotFound";
