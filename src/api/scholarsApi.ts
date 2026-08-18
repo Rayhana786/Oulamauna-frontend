@@ -1,6 +1,7 @@
 // src/api/scholarsApi.ts
 
-const API_URL = import.meta.env.VITE_API_URL;
+// ✅ FIX 1: Safe access to prevent TypeScript "Property 'env' does not exist" error
+const API_URL = (import.meta as any).env?.VITE_API_URL || "http://localhost:5000";
 
 // ─────────────────────────────────────────────
 // Authentication
@@ -27,19 +28,10 @@ async function request(
 
   const res = await fetch(`${baseUrl}${path}`, {
     ...options,
-
-    // Send authentication cookies
     credentials: "include",
-
     headers: {
       "Content-Type": "application/json",
-
-      ...(token
-        ? {
-            Authorization: `Bearer ${token}`,
-          }
-        : {}),
-
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
       ...(options.headers || {}),
     },
   });
@@ -47,9 +39,7 @@ async function request(
   const data = await res.json().catch(() => null);
 
   if (!res.ok) {
-    throw new Error(
-      data?.message || `Request failed (${res.status})`
-    );
+    throw new Error(data?.message || `Request failed (${res.status})`);
   }
 
   return data;
@@ -66,8 +56,9 @@ export interface ApiDisciplineTranslation {
 
 export interface ApiDiscipline {
   discipline_id: number;
-  name: string; // ✅ flat table now — the name lives HERE
-  discipline_translations?: ApiDisciplineTranslation[]; // legacy, no longer returned by the API
+  name: string;
+  language_id?: number;
+  discipline_translations?: ApiDisciplineTranslation[];
 }
 
 export interface ApiScholarDiscipline {
@@ -92,65 +83,43 @@ export interface ApiScholarDate {
 export interface ApiRegion {
   region_id: number;
   name: string;
+  language_id: number;
 }
 
 export interface ApiScholarVersion {
   version_id: number;
   scholar_id: number;
   language_id: number;
-
   canonical_name: string;
-
   biography: string;
-
   status: "pending" | "approved" | "rejected";
-
   version_type: "creation" | "edition";
-
-  image_url: string | null;   // ✅ the photo (null when not approved)
+  image_url: string | null;
   image_status: string | null;
-
   created_at: string;
-
-  scholar_aliases?: {
-    alias_name: string;
-  }[];
-
+  scholar_aliases?: { alias_id: number; alias_name: string }[];
   languages?: ApiLanguage;
-
-  regions?: ApiRegion | null;      // ✅ the region object
-  scholar_dates?: ApiScholarDate[]; // ✅ birth/death years
+  regions?: ApiRegion | null;
+  scholar_dates?: ApiScholarDate[];
+  media?: { media_id: number; title: string; description: string | null; media_url: string; status: string }[];
+  
+  // ✅ FIX 2: Added these because your backend now includes them inside the version
+  scholar_disciplines?: ApiScholarDiscipline[];
+  comments?: { comment_id: number; content: string; created_at: string; users: { id: number; username: string } }[];
 }
-
-// ─────────────────────────────────────────────
-// Scholar
-// ─────────────────────────────────────────────
 
 export interface ApiScholar {
   scholar_id: number;
-
   created_at: string;
-
   scholar_versions: ApiScholarVersion[];
-
-  scholar_disciplines: ApiScholarDiscipline[];
-
   is_fallback?: boolean;
-
   displayed_language?: string;
-
   requested_language?: string;
 }
 
-// ─────────────────────────────────────────────
-// List response
-// ─────────────────────────────────────────────
-
 export interface ApiListResponse {
   success: boolean;
-
   count?: number;
-
   data: ApiScholar[];
 }
 
@@ -159,45 +128,41 @@ export interface ApiListResponse {
 // ─────────────────────────────────────────────
 
 export const scholarsApi = {
-  // GET /api/scholars?lang=1
   list: (lang: string): Promise<ApiListResponse> =>
     request(`?lang=${encodeURIComponent(lang)}`),
 
-  // GET /api/scholars/:id
-  getById: (id: number, lang?: string) =>
-    request(
-      `/${id}${lang ? `?lang=${encodeURIComponent(lang)}` : ""}`
-    ),
+  getById: (id: number, lang?: string): Promise<any> =>
+    request(`/${id}${lang ? `?lang=${encodeURIComponent(lang)}` : ""}`),
 
-  // POST /api/scholars
-  create: (payload: Record<string, unknown>) =>
+  create: (payload: Record<string, unknown>): Promise<any> =>
     request("/", {
       method: "POST",
       body: JSON.stringify(payload),
     }),
 
-  // PATCH /api/scholars/:id
-  update: (
-    id: number,
-    payload: Record<string, unknown>
-  ) =>
+  update: (id: number, payload: Record<string, unknown>): Promise<any> =>
     request(`/${id}`, {
       method: "PATCH",
       body: JSON.stringify(payload),
     }),
 
-  // GET /api/scholars/my-submissions
-  mySubmissions: () =>
-    request("/my-submissions"),
+  mySubmissions: (): Promise<any> => request("/my-submissions"),
 
-  // GET /api/scholars/name?q=...&lang=...
-  searchByName: (q: string, lang: string): Promise<{ success: boolean; data: ApiScholar }> =>
+  searchByName: (q: string, lang: string): Promise<any> =>
     request(`/name?q=${encodeURIComponent(q)}&lang=${encodeURIComponent(lang)}`),
 
-  // Metadata
-  getLanguages: () =>
-    request("/languages", {}, false),
+  getLanguages: (): Promise<any> => request("/languages", {}, false),
 
-  getDisciplines: () =>
-    request("/disciplines", {}, false),
+  getDisciplines: (lang: string): Promise<any> =>
+    request(`/discipline?lang=${encodeURIComponent(lang)}`, {}, false),
+
+  getRegions: (lang: string): Promise<any> =>
+    request(`/region?lang=${encodeURIComponent(lang)}`, {}, false),
+
+  // ✅ ADDED: Post a new comment to a scholar
+  addComment: (scholarId: number, text: string): Promise<any> =>
+    request(`/${scholarId}/comments`, {
+      method: "POST",
+      body: JSON.stringify({ text }),
+    }),
 };

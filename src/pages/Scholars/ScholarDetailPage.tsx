@@ -2,30 +2,60 @@ import React, { useState, useRef, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useLang } from "../../context/LanguageContext"; 
 import { scholarsApi } from "../../api/scholarsApi";
+import DOMPurify from 'dompurify';
 
 /* ─────────────────────────────────────────────
    BACKEND TYPES (Matches your Prisma JSON)
 ───────────────────────────────────────────── */
 interface BackendAlias { alias_id: number; alias_name: string; }
 interface BackendLanguage { language_id: number; code: string; name: string; }
-interface BackendVersion {
-  version_id: number; scholar_id: number; language_id: number;
-  canonical_name: string; region: string | null;
-  birth_date_gerogean: string | null; birth_date_hijri: string | null;
-  death_date_gerogean: string | null; death_date_hijri: string | null;
-  century_hijri: string | null; century_gregorian: string | null;
-  biography: string; status: string; created_by: number; created_at: string;
-  languages: BackendLanguage;
-  scholar_aliases: BackendAlias[];
-  internal_links: any[];
-}
-interface BackendDiscipline {
-  discipline_id: number;
-  disciplines: { discipline_translations: { language_id: number; name: string }[] };
+interface BackendRegion { region_id: number; name: string; }
+interface BackendScholarDate {
+  date_id: number; version_id: number;
+  date_type: "birth" | "death"; calendar: "hijri" | "gregorian";
+  year: number | null; is_approximate?: boolean; raw_text?: string | null;
 }
 interface BackendMedia {
-  media_id: number; file_name: string; file_path: string; file_type: string;
-  status: string; uploaded_at: string; view_count: number; like_count: number;
+  media_id: number; version_id: number;
+  file_name: string; file_path: string | null; media_url: string | null;
+  source_type: string; file_type: string;
+  status: string; uploaded_by: number | null; uploaded_at: string;
+  view_count: number; like_count: number;
+  title: string; year: number | null; description: string | null;
+  users?: { id: number; username: string } | null; // who uploaded it
+}
+interface BackendWork {
+  work_id: number; version_id: number; title: string; year: number | null;
+  format: string; description: string | null;
+  media_url: string | null; file_name: string | null; file_path: string | null;
+  source_type: string | null; status: string;
+  created_by?: number | null;
+  users?: { id: number; username: string } | null; // who added it
+}
+interface BackendVersion {  version_id: number; scholar_id: number; language_id: number;
+  canonical_name: string;
+  region_id: number | null;
+  century_hijri_start: number | null; century_hijri_end: number | null;
+  century_gregorian_start: number | null; century_gregorian_end: number | null;
+  biography: string;
+  image_url: string | null; image_status: string | null;
+  status: string; created_by: number | null; created_at: string;
+  version_type: "creation" | "edition";
+  languages: BackendLanguage;
+  regions?: BackendRegion | null;
+  scholar_aliases: BackendAlias[];
+  scholar_dates?: BackendScholarDate[];
+  media?: BackendMedia[];
+  internal_links: any[];
+  // Disciplines and comments are version-scoped now — each language
+  // version carries its own tags and its own comment thread.
+  scholar_disciplines?: { discipline_id: number; disciplines: { discipline_id: number; name: string; language_id: number } }[];
+  comments?: { comment_id: number; content: string; created_at: string; users: { id: number; username: string } }[];
+}
+interface BackendDiscipline {
+  scholar_id: number;
+  discipline_id: number;
+  disciplines: { discipline_id: number; name: string; language_id: number; created_at: string };
 }
 interface BackendBibliography { bibliography_id: number; title: string; citation: string; url: string | null; }
 interface BackendComment {
@@ -33,25 +63,31 @@ interface BackendComment {
   users: { id: number; username: string };
 }
 interface BackendContributor { users: { id: number; username: string }; }
+
 interface BackendRelation {
   relation_id: number; relation_type: string;
-  scholars_scholar_relationships_related_scholar_idToscholars: { scholar_id: number };
+  scholars_scholar_relationships_related_scholar_idToscholars: {
+    scholar_id: number;
+    // All of the related scholar's approved versions (any language),
+    // so we can show their real name matched to the page's language
+    // instead of a "Scholar #N" placeholder.
+    scholar_versions: { canonical_name: string; languages: { code: string } }[];
+  };
 }
 interface BackendReference { reference_id: number; title: string; citation: string; url: string | null; }
 interface BackendHistory {
   version_id: number; status: string; created_at: string;
-  users: { id: number; username: string };
+  users: { id: number; username: string } | null;
 }
 
 interface BackendScholarResponse {
   success: boolean;
   data: {
-    scholar_id: number; created_by: number; created_at: string;
+    scholar_id: number; created_by: number | null; created_at: string;
     scholar_versions: BackendVersion[];
-    scholar_disciplines: BackendDiscipline[];
-    media: BackendMedia[];
+    // scholar_disciplines, media, and comments are no longer at the root level
     bibliography: BackendBibliography[];
-    comments: BackendComment[];
+    works: BackendWork[];
     scholar_contributors: BackendContributor[];
     scholar_relationships_scholar_relationships_scholar_idToscholars: BackendRelation[];
     references: BackendReference[];
@@ -59,7 +95,6 @@ interface BackendScholarResponse {
     available_languages: BackendLanguage[];
   };
 }
-
 /* ─────────────────────────────────────────────
    UI TYPES
 ───────────────────────────────────────────── */
@@ -71,11 +106,13 @@ interface Work {
   title: string; year: number; format: "BOOK" | "MANUSCRIPT" | "ARTICLE";
   digitalAccess?: "pdf" | "audio" | "file" | null;
   accessUrl?: string; accessFileName?: string; accessSource?: "upload" | "link";
+  uploadedBy?: string; uploadedByUrl?: string;
 }
 interface MediaItem {
   type: "pdf" | "audio" | "video"; title: string; description: string;
-  meta: string; action: string; actionIcon: string;
+  viewCount: number; likeCount: number; action: string; actionIcon: string;
   accessUrl?: string; accessSource?: "upload" | "link"; accessFileName?: string;
+  uploadedBy?: string; uploadedByUrl?: string;
 }
 interface RelatedPerson {
   initials: string; color: string; textColor: string; name: string; role: string; profileUrl?: string;
@@ -118,7 +155,7 @@ interface UITranslation {
   overview: string; atAGlance: string; fullName: string; born: string; died: string;
   century: string; region: string; discipline: string;
   allContributors: string; contributor: string; contributions: string; contributors: string;
-  citePage: string; tabs: string[]; editBtn: string; bibliographyTitle: string;
+  tabs: string[]; editBtn: string; bibliographyTitle: string;
   colTitle: string; colYear: string; colFormat: string; colAccess: string;
   mediaTitle: string; addMedia: string; intellectualLineage: string;
   notableDisciples: string; relatedByField: string; academicReferences: string;
@@ -165,7 +202,7 @@ const T: Record<Language, UITranslation> = {
     overview: "OVERVIEW", atAGlance: "AT A GLANCE", fullName: "Full Name", born: "Born", died: "Died",
     century: "Century", region: "Region", discipline: "Discipline",
     allContributors: "ALL CONTRIBUTORS", contributor: "CONTRIBUTOR", contributions: "CONTRIBUTIONS",
-    contributors: "Contributors", citePage: "CITE THIS PAGE",
+    contributors: "Contributors", 
     tabs: ["WORKS", "MEDIA", "RELATIONS", "REFERENCES"], editBtn: "EDIT ENGLISH",
     bibliographyTitle: "Bibliography", colTitle: "TITLE", colYear: "YEAR", colFormat: "FORMAT", colAccess: "DIGITAL ACCESS",
     mediaTitle: "Integrated Media Library", addMedia: "ADD MEDIA", intellectualLineage: "Intellectual Lineage",
@@ -192,7 +229,7 @@ const T: Record<Language, UITranslation> = {
     overview: "نظرة عامة", atAGlance: "لمحة سريعة", fullName: "الاسم الكامل", born: "الميلاد", died: "الوفاة",
     century: "القرن", region: "المنطقة", discipline: "التخصص",
     allContributors: "جميع المساهمين", contributor: "المساهم", contributions: "المساهمات",
-    contributors: "مساهمون", citePage: "استشهد بهذه الصفحة",
+    contributors: "مساهمون", 
     tabs: ["الأعمال", "الوسائط", "العلاقات", "المراجع"], editBtn: "تعديل العربية",
     bibliographyTitle: "قائمة المؤلفات", colTitle: "العنوان", colYear: "السنة", colFormat: "الصيغة", colAccess: "الوصول الرقمي",
     mediaTitle: "مكتبة الوسائط المتكاملة", addMedia: "إضافة وسائط", intellectualLineage: "السلسلة الفكرية",
@@ -219,7 +256,7 @@ const T: Record<Language, UITranslation> = {
     overview: "APERÇU", atAGlance: "EN UN COUP D'ŒIL", fullName: "Nom complet", born: "Né", died: "Décédé",
     century: "Siècle", region: "Région", discipline: "Discipline",
     allContributors: "TOUS LES CONTRIBUTEURS", contributor: "CONTRIBUTEUR", contributions: "CONTRIBUTIONS",
-    contributors: "Contributeurs", citePage: "CITER CETTE PAGE",
+    contributors: "Contributeurs",
     tabs: ["ŒUVRES", "MÉDIAS", "RELATIONS", "RÉFÉRENCES"], editBtn: "MODIFIER FRANÇAIS",
     bibliographyTitle: "Bibliographie", colTitle: "TITRE", colYear: "ANNÉE", colFormat: "FORMAT", colAccess: "ACCÈS NUMÉRIQUE",
     mediaTitle: "Médiathèque Intégrée", addMedia: "AJOUTER MÉDIA", intellectualLineage: "LIGNÉE INTELLECTUELLE",
@@ -247,11 +284,33 @@ const T: Record<Language, UITranslation> = {
 const LANG_LABELS: Record<Language, string> = { EN: "English", AR: "العربية", FR: "Français" };
 
 /* ─────────────────────────────────────────────
+   DATE / CENTURY HELPERS
+───────────────────────────────────────────── */
+function formatDate(dates: BackendScholarDate[] | undefined, type: "birth" | "death"): string {
+  if (!dates || dates.length === 0) return "";
+  const greg = dates.find((d) => d.date_type === type && d.calendar === "gregorian");
+  const hijri = dates.find((d) => d.date_type === type && d.calendar === "hijri");
+  const gregLabel = greg?.raw_text || (greg?.year != null ? `${greg.year}${greg.is_approximate ? " (approx.)" : ""}` : "");
+  const hijriLabel = hijri?.raw_text || (hijri?.year != null ? `${hijri.year} AH` : "");
+  return [gregLabel, hijriLabel].filter(Boolean).join(" / ");
+}
+
+function formatCentury(start: number | null | undefined, end: number | null | undefined): string {
+  if (!start && !end) return "";
+  if (start && end && start !== end) return `${start}th–${end}th century`;
+  const c = start || end;
+  return c ? `${c}th century` : "";
+}
+
+/* ─────────────────────────────────────────────
    DATA TRANSFORMER (Backend -> UI)
 ───────────────────────────────────────────── */
 const transformBackendToUI = (data: BackendScholarResponse["data"], lang: Language): ScholarDetail => {
   const versions = data.scholar_versions || [];
-  const getVersion = (code: string) => versions.find((v) => v.languages?.code === code);
+  // API returns language codes uppercase ("EN"/"AR"/"FR") but callers here
+  // pass lowercase ("en"/"ar"/"fr") — match case-insensitively or every
+  // version lookup silently fails and the page renders as empty.
+  const getVersion = (code: string) => versions.find((v) => v.languages?.code?.toLowerCase() === code.toLowerCase());
   
   const enVersion = getVersion("en");
   const arVersion = getVersion("ar");
@@ -269,21 +328,34 @@ const transformBackendToUI = (data: BackendScholarResponse["data"], lang: Langua
   const frBio = splitBio(frVersion?.biography || "");
 
   const history = data.history || [];
-  const creator = history.length > 0 ? history[history.length - 1].users?.username : "Unknown";
-  const creatorId = history.length > 0 ? history[history.length - 1].users?.id : 0;
-  const lastUpdater = history.length > 0 ? history[0].users?.username : creator;
-  const lastUpdaterId = history.length > 0 ? history[0].users?.id : creatorId;
+  const creator = history.length > 0 ? (history[history.length - 1].users?.username ?? "Unknown") : "Unknown";
+  const creatorId = history.length > 0 ? (history[history.length - 1].users?.id ?? 0) : 0;
+  const lastUpdater = history.length > 0 ? (history[0].users?.username ?? creator) : creator;
+  const lastUpdaterId = history.length > 0 ? (history[0].users?.id ?? creatorId) : creatorId;
   
   const hasBeenEdited = lastUpdater !== creator || history.length > 1;
 
-  const disciplines = (data.scholar_disciplines || [])
-    .map((d) => d.disciplines?.discipline_translations?.find((t) => t.language_id === activeVersion?.languages?.language_id)?.name || d.disciplines?.discipline_translations?.[0]?.name)
+  // Each scholar_disciplines row is a single-language translation row
+  // (disciplines.name), keyed by disciplines.language_id, and lives on
+  // the active version now (not on the scholar directly).
+  const disciplines = (activeVersion?.scholar_disciplines || [])
+    .map((d: any) => d.disciplines?.name)
     .filter(Boolean)
     .join(", ");
 
   const mapRelations = (rels: any[], color1: string, color2: string) => rels.map((r, i) => {
     const target = r.scholars_scholar_relationships_related_scholar_idToscholars;
-    const name = `Scholar ID: ${target?.scholar_id}`; 
+    const relatedVersions = target?.scholar_versions || [];
+    // Prefer the related scholar's name in the language currently being
+    // viewed; if they have no approved version in this language, fall
+    // back to whichever approved language they do have, rather than
+    // showing a bare "Scholar #N" placeholder.
+    const matchInCurrentLang = relatedVersions.find(
+      (v: any) => v.languages?.code?.toLowerCase() === lang.toLowerCase()
+    );
+    const name = matchInCurrentLang?.canonical_name
+      || relatedVersions[0]?.canonical_name
+      || `Scholar #${target?.scholar_id}`;
     return {
       initials: name.split(" ").map((n: string) => n[0]).join("").substring(0, 2).toUpperCase(),
       color: i % 2 === 0 ? color1 : color2, textColor: "#fff", name,
@@ -304,42 +376,71 @@ const transformBackendToUI = (data: BackendScholarResponse["data"], lang: Langua
     lastUpdatedBy: hasBeenEdited ? lastUpdater : undefined,
     lastUpdatedByUrl: hasBeenEdited ? `/profile/${lastUpdaterId}` : undefined,
     lastUpdatedDate: hasBeenEdited ? new Date(history[0].created_at).toLocaleDateString() : undefined,
-    image: "", 
+    // image_url lives on each scholar_version, not on the top-level payload
+    image: activeVersion?.image_url || fallbackVersion?.image_url || "",
     overviewText: { EN: enBio.overview, AR: arBio.overview, FR: frBio.overview },
     body: { EN: enBio.body, AR: arBio.body, FR: frBio.body },
     atAGlance: {
       fullName: activeVersion?.canonical_name || "",
-      born: activeVersion?.birth_date_gerogean ? `${activeVersion.birth_date_gerogean} ${activeVersion.birth_date_hijri || ""}` : "",
-      died: activeVersion?.death_date_gerogean ? `${activeVersion.death_date_gerogean} ${activeVersion.death_date_hijri || ""}` : "",
-      century: activeVersion?.century_gregorian || "",
-      region: activeVersion?.region || "",
+      // birth/death dates come from scholar_dates[], not birth_date_gerogean/hijri fields
+      born: formatDate(activeVersion?.scholar_dates, "birth"),
+      died: formatDate(activeVersion?.scholar_dates, "death"),
+      century: formatCentury(activeVersion?.century_gregorian_start, activeVersion?.century_gregorian_end),
+      region: activeVersion?.regions?.name || "",
       discipline: disciplines || ""
     },
     contributors: (data.scholar_contributors || []).map((c) => ({ name: c.users?.username || "Unknown", contributions: 1, profileUrl: `/profile/${c.users?.id}` })),
-    works: (data.bibliography || []).map((b) => {
-      const yearMatch = b.citation?.match(/\b(18|19|20)\d{2}\b/);
-      return { title: b.title, year: yearMatch ? parseInt(yearMatch[0], 10) : 0, format: "BOOK" as const, digitalAccess: b.url ? "pdf" : null, accessUrl: b.url || undefined, accessSource: b.url ? "link" : undefined };
+    // The API returns works in a top-level `works[]` array now.
+    // `bibliography` is kept only as a legacy fallback in case an older
+    // endpoint version is hit.
+    works: (data.works && data.works.length > 0 ? data.works : (data.bibliography as any[]) || []).map((w: any): Work => {
+      const url: string | null = w.media_url || w.file_path || w.url || null;
+      const format: Work["format"] = (["BOOK", "MANUSCRIPT", "ARTICLE"].includes(w.format) ? w.format : "BOOK");
+      return {
+        title: w.title,
+        year: w.year || 0,
+        format,
+        digitalAccess: url ? getAccessType(url) : null,
+        accessUrl: url || undefined,
+        accessSource: url ? (w.source_type === "upload" ? "upload" : "link") : undefined,
+        uploadedBy: w.users?.username,
+        uploadedByUrl: w.users?.id ? `/profile/${w.users.id}` : undefined,
+      };
     }),
-    media: (data.media || []).map((m) => ({
-      type: m.file_type as any, title: m.file_name, description: `${m.file_type.toUpperCase()} • ${m.view_count || 0} views • ${m.like_count || 0} likes`,
-      meta: `${m.file_type.toUpperCase()} • ${m.view_count || 0} views`, action: "OPEN DOCUMENT", actionIcon: "open_in_new",
-      accessUrl: m.file_path, accessSource: "link"
-    })),
+    // media is nested per scholar_version (per language), so we flatten
+    // across every version rather than reading a non-existent top-level
+    // `data.media` field.
+        media: versions.flatMap((v) => v.media || []).map((m): MediaItem => {
+      const fileType = (m.file_type || "pdf") as MediaItem["type"];
+      return {
+        type: fileType,
+        title: m.title || m.file_name,
+        description: m.description || `${(m.file_type || "").toUpperCase()} file`,
+        viewCount: m.view_count || 0,
+        likeCount: m.like_count || 0,
+        action: "OPEN DOCUMENT", actionIcon: "open_in_new",
+        accessUrl: m.media_url || m.file_path || undefined, accessSource: "link",
+        uploadedBy: m.users?.username,
+        uploadedByUrl: m.users?.id ? `/profile/${m.users.id}` : undefined,
+      };
+    }),
     intellectualLineage: mapRelations((data.scholar_relationships_scholar_relationships_scholar_idToscholars || []).filter((r: any) => r.relation_type === 'teacher' || r.relation_type === 'historical_influence'), "#0b4335", "#d9dad8"),
     notableDisciples: mapRelations((data.scholar_relationships_scholar_relationships_scholar_idToscholars || []).filter((r: any) => r.relation_type === 'student' || r.relation_type === 'disciple'), "#735c00", "#5c2e29"),
     relatedScholars: [],
     academicReferences: (data.references || []).map((r) => ({ 
-  title: r.title,
-  citation: r.citation,
-  url: r.url 
-})),
-revisionHistory: [],
+      title: r.title,
+      citation: r.citation,
+      url: r.url 
+    })),
+    revisionHistory: [],
     recentRevisions: history.slice(0, 5).map((h) => ({ date: new Date(h.created_at).toLocaleDateString(), author: h.users?.username || "Unknown", action: `Version ${h.version_id} - ${h.status}`, authorUrl: `/profile/${h.users?.id}` })),
-    comments: (data.comments || []).map((c) => ({
+    // Comments now come from the active version's own thread, not a
+    // scholar-level list shared across all languages.
+    comments: (activeVersion?.comments || []).map((c: any) => ({
       id: c.comment_id,
       author: c.users?.username || "Unknown",
       role: null,
-      text: c.content,
+      text: c.content || "",
       time: new Date(c.created_at).toLocaleDateString(),
       votes: 0,
       replies: []
@@ -382,24 +483,17 @@ function HoverBtn({ children, onClick, style }: { children: React.ReactNode; onC
   );
 }
 
-function EmptyLangState({ lang, t }: { lang: Language; t: UITranslation }) {
+function EmptyLangState({ lang, t, onContribute }: { lang: Language; t: UITranslation; onContribute: () => void }) {
   return (
     <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: "16px", padding: "64px 32px", textAlign: "center", border: "2px dashed #c0c9c3", borderRadius: "12px", margin: "32px 0" }}>
       <Icon name="translate" size={40} />
       <p style={{ color: "#707974", fontSize: "15px", lineHeight: 1.6 }}>{t.noContent} <strong>{LANG_LABELS[lang]}</strong>.</p>
-      <a href="#contribute" style={{ color: "#0b4335", fontWeight: 700, fontSize: "13px", textDecoration: "underline", textUnderlineOffset: "3px" }}>{t.contribute}</a>
+      <button onClick={onContribute} style={{ background: "none", border: "none", padding: 0, color: "#0b4335", fontWeight: 700, fontSize: "13px", textDecoration: "underline", textUnderlineOffset: "3px", cursor: "pointer" }}>{t.contribute}</button>
     </div>
   );
 }
 
-function SharedBanner({ t }: { t: UITranslation }) {
-  return (
-    <div style={{ display: "inline-flex", alignItems: "center", gap: "6px", marginBottom: "20px", padding: "5px 12px", backgroundColor: "rgba(11,67,53,0.05)", border: "1px solid rgba(11,67,53,0.12)", borderRadius: "6px" }}>
-      <Icon name="public" size={13} />
-      <span style={{ ...MONO, fontSize: "9px", color: "#707974", letterSpacing: "0.1em" }}>{t.sharedNote}</span>
-    </div>
-  );
-}
+
 
 /* ─────────────────────────────────────────────
    FILE UTILS & MODALS (Condensed for brevity, kept fully functional)
@@ -536,7 +630,7 @@ function AddMediaModal({ onClose, onAdd, t }: AddMediaModalProps) {
       else if (["mp4", "webm"].includes(ext) || accessUrl.includes("youtube") || accessUrl.includes("vimeo")) { type = "video"; action = "WATCH NOW"; actionIcon = "open_in_new"; meta = "Video"; } 
       else { meta = "PDF"; }
     }
-    onAdd({ type, title: title.trim(), description: desc.trim() || "No description.", meta, action, actionIcon, accessUrl, accessSource, accessFileName }); onClose();
+    onAdd({ type, title: title.trim(), description: desc.trim() || meta || "No description.", viewCount: 0, likeCount: 0, action, actionIcon, accessUrl, accessSource, accessFileName }); onClose();
   };
   return (
     <div style={{ position: "fixed", inset: 0, zIndex: 200, backgroundColor: "rgba(25,28,27,0.45)", display: "flex", alignItems: "center", justifyContent: "center", backdropFilter: "blur(4px)" }} onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}>
@@ -746,6 +840,51 @@ function DiscussionSection({ lang, t, scholarId, backendComments }: { lang: Lang
 }
 
 /* ─────────────────────────────────────────────
+   MEDIA CARD
+   NOTE: the like button is local/static for now —
+   it just toggles the icon and count in UI state.
+   Not wired to the backend yet.
+───────────────────────────────────────────── */
+interface MediaCardProps { item: MediaItem; mediaIconName: (type: "pdf" | "audio" | "video") => string; }
+function MediaCard({ item: m, mediaIconName }: MediaCardProps) {
+  const [liked, setLiked] = useState(false);
+  const displayLikes = m.likeCount + (liked ? 1 : 0);
+  return (
+    <div className="card-hover" style={{ backgroundColor: "#fff", padding: "24px", border: "1.5px solid rgba(192,201,195,0.4)", borderRadius: "12px", display: "flex", flexDirection: "column", cursor: "pointer" }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "16px" }}>
+        <span className="material-symbols-outlined" style={{ fontSize: "32px", color: "#0b4335" }}>{mediaIconName(m.type)}</span>
+      </div>
+      <p style={{ fontSize: "14px", fontWeight: 700, color: "#191c1b", margin: "0 0 8px" }}>{m.title}</p>
+      <p style={{ fontSize: "12px", color: "#707974", lineHeight: 1.55, flex: 1, margin: "0 0 12px" }}>{m.description}</p>
+      {m.uploadedBy && (
+        <p style={{ ...MONO, fontSize: "9px", color: "#c0c9c3", letterSpacing: "0.04em", margin: "0 0 12px" }}>
+          uploaded by <ProfileLink name={m.uploadedBy} url={m.uploadedByUrl ?? "#"} />
+        </p>
+      )}
+      <div style={{ display: "flex", alignItems: "center", gap: "16px", marginBottom: "14px" }}>
+        <span style={{ display: "flex", alignItems: "center", gap: "4px", ...MONO, fontSize: "10px", color: "#707974" }}>
+          <Icon name="visibility" size={15} /> {m.viewCount}
+        </span>
+        <button
+          onClick={(e) => { e.stopPropagation(); setLiked((v) => !v); }}
+          title="Like (not saved yet)"
+          style={{ display: "flex", alignItems: "center", gap: "4px", background: "none", border: "none", cursor: "pointer", padding: 0, ...MONO, fontSize: "10px", color: liked ? "#b3261e" : "#707974" }}
+        >
+          <Icon name={liked ? "favorite" : "favorite_border"} size={15} /> {displayLikes}
+        </button>
+      </div>
+      {m.accessUrl ? (
+        <a href={m.accessUrl} target="_blank" rel="noopener noreferrer" download={m.accessSource === "upload" ? (m.accessFileName ?? true) : undefined} style={{ textDecoration: "none" }}>
+          <button className="action-link">{m.action} <Icon name={m.actionIcon} size={15} /></button>
+        </a>
+      ) : (
+        <button className="action-link">{m.action} <Icon name={m.actionIcon} size={15} /></button>
+      )}
+    </div>
+  );
+}
+
+/* ─────────────────────────────────────────────
    MAIN COMPONENT
 ───────────────────────────────────────────── */
 const ScholarDetailPage: React.FC = () => {
@@ -800,12 +939,13 @@ const ScholarDetailPage: React.FC = () => {
     fetchData();
   }, [scholarId, lang]);
 
-  if (error && error !== "Scholar not found in language") {
+  if (isLoading) {
+    return <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", backgroundColor: "#f9faf7" }}><Icon name="hourglass_empty" size={32} /></div>;
+  }
+  if (error) {
     return <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", backgroundColor: "#f9faf7", color: "#b3261e" }}>{error}</div>;
   }
   if (!s) return null;
-  if (isLoading) return <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", backgroundColor: "#f9faf7" }}><Icon name="hourglass_empty" size={32} /></div>;
-  if (error || !s) return <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", backgroundColor: "#f9faf7", color: "#b3261e" }}>{error || "Scholar not found"}</div>;
 
   const t = T[lang];
   const isRTL = lang === "AR";
@@ -1023,23 +1163,34 @@ const ScholarDetailPage: React.FC = () => {
                     </div>
                   )}
 
-                  <HoverBtn style={{ width: "100%", justifyContent: "center", marginTop: "20px", padding: "10px 16px" }}><Icon name="format_quote" size={15} />{t.citePage}</HoverBtn>
-                </div>
+                  </div>
               </div>
             ) : null}
           </aside>
 
           <div>
-            {!hasLangContent ? (
-              <EmptyLangState lang={lang} t={t} />
+                        {!hasLangContent ? (
+              <EmptyLangState lang={lang} t={t} onContribute={() => navigate(`/scholars/${s.id}/submit/${lang}`)} />
             ) : (
               <>
                 <section style={{ backgroundColor: "rgba(11,67,53,0.05)", border: "1px solid rgba(11,67,53,0.1)", borderRadius: "16px", padding: "32px", marginBottom: "32px" }}>
                   <p style={{ ...MONO, fontSize: "9px", color: "#0b4335", letterSpacing: "0.2em", marginBottom: "14px", display: "flex", alignItems: "center", gap: "8px" }}><span style={{ width: "16px", height: "1px", backgroundColor: "#0b4335", display: "inline-block" }} />{t.overview}</p>
-                  {getOverview() && <p style={{ fontSize: "14px", color: "#404945", lineHeight: 1.75, margin: "0 0 16px 0" }}>{getOverview()}</p>}
-                  {(getBody() ?? []).map((para, i) => (
-                    <p key={i} style={{ fontSize: lang === "AR" ? "16px" : "15px", fontFamily: lang === "AR" ? "'Amiri', serif" : undefined, color: "#404945", lineHeight: 1.8, marginBottom: i === (getBody()?.length ?? 0) - 1 ? 0 : "20px" }}>{para}</p>
-                  ))}
+                    {/* Overview Section */}
+   {getOverview() && (
+     <div 
+       style={{ fontSize: "14px", color: "#404945", lineHeight: 1.75, marginBottom: "16px" }}
+       dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(getOverview() || "") }} 
+     />
+   )}
+
+   {/* Body Paragraphs Section */}
+   {(getBody() ?? []).map((para, i) => (
+     <div 
+       key={i} 
+       style={{ fontSize: lang === "AR" ? "16px" : "15px", fontFamily: lang === "AR" ? "'Amiri', serif" : undefined, color: "#404945", lineHeight: 1.8, marginBottom: i === (getBody()?.length ?? 0) - 1 ? 0 : "20px" }}
+       dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(para) }} 
+     />
+   ))}
                 </section>
               </>
             )}
@@ -1054,7 +1205,7 @@ const ScholarDetailPage: React.FC = () => {
 
             {activeTab === "works" && (
               <div>
-                <SharedBanner t={t} />
+                
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "24px" }}>
                   <h2 style={{ ...SERIF, fontSize: "24px", fontWeight: 700, color: "#0b4335", margin: 0 }}>{t.bibliographyTitle}</h2>
                   <HoverBtn onClick={() => setShowAddWork(true)}><Icon name="add_circle" size={14} />{t.addWork}</HoverBtn>
@@ -1067,7 +1218,14 @@ const ScholarDetailPage: React.FC = () => {
                         const { label, icon, color } = getAccessLabel(w);
                         return (
                           <tr key={i} className="row-hover" style={{ borderBottom: "1px solid #f0f1ee", transition: "background 0.12s" }}>
-                            <td style={{ ...SERIF, padding: "14px 16px", fontSize: "14px", fontWeight: 700, fontStyle: "italic", color: "#191c1b" }}>{w.title}</td>
+                            <td style={{ ...SERIF, padding: "14px 16px", fontSize: "14px", fontWeight: 700, fontStyle: "italic", color: "#191c1b" }}>
+                              {w.title}
+                              {w.uploadedBy && (
+                                <div style={{ ...MONO, fontSize: "9px", fontStyle: "normal", fontWeight: 400, color: "#c0c9c3", marginTop: "3px" }}>
+                                  added by <ProfileLink name={w.uploadedBy} url={w.uploadedByUrl ?? "#"} />
+                                </div>
+                              )}
+                            </td>
                             <td style={{ padding: "14px 16px", fontSize: "13px", color: "#707974" }}>{w.year}</td>
                             <td style={{ padding: "14px 16px" }}><span style={{ ...MONO, fontSize: "9px", fontWeight: 700, padding: "3px 10px", borderRadius: "4px", backgroundColor: w.format === "BOOK" ? "rgba(11,67,53,0.08)" : "#f3f4f1", color: w.format === "BOOK" ? "#0b4335" : "#404945" }}>{w.format}</span></td>
                             <td style={{ padding: "14px 16px" }}>
@@ -1085,20 +1243,13 @@ const ScholarDetailPage: React.FC = () => {
 
             {activeTab === "media" && (
               <div>
-                <SharedBanner t={t} />
+                
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "28px" }}>
                   <h2 style={{ ...SERIF, fontSize: "24px", fontWeight: 700, color: "#0b4335", margin: 0 }}>{t.mediaTitle}</h2>
                   <HoverBtn onClick={() => setShowAddMedia(true)}><Icon name="add_circle" size={14} />{t.addMedia}</HoverBtn>
                 </div>
-                <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: "20px" }}>
-                  {s.media.map((m, i) => (
-                    <div key={i} className="card-hover" style={{ backgroundColor: "#fff", padding: "24px", border: "1.5px solid rgba(192,201,195,0.4)", borderRadius: "12px", display: "flex", flexDirection: "column", cursor: "pointer" }}>
-                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "16px" }}><span className="material-symbols-outlined" style={{ fontSize: "32px", color: "#0b4335" }}>{mediaIconName(m.type)}</span><span style={{ ...MONO, fontSize: "9px", color: "#c0c9c3", letterSpacing: "0.06em" }}>{m.meta}</span></div>
-                      <p style={{ fontSize: "14px", fontWeight: 700, color: "#191c1b", margin: "0 0 8px" }}>{m.title}</p>
-                      <p style={{ fontSize: "12px", color: "#707974", lineHeight: 1.55, flex: 1, margin: "0 0 20px" }}>{m.description}</p>
-                      {m.accessUrl ? (<a href={m.accessUrl} target="_blank" rel="noopener noreferrer" download={m.accessSource === "upload" ? (m.accessFileName ?? true) : undefined} style={{ textDecoration: "none" }}><button className="action-link">{m.action} <Icon name={m.actionIcon} size={15} /></button></a>) : (<button className="action-link">{m.action} <Icon name={m.actionIcon} size={15} /></button>)}
-                    </div>
-                  ))}
+                                <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: "20px" }}>
+                  {s.media.map((m, i) => (<MediaCard key={i} item={m} mediaIconName={mediaIconName} />))}
                 </div>
               </div>
             )}

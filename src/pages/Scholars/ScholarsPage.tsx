@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useLang } from "../../context/LanguageContext";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import { scholarsApi, ApiScholar, ApiScholarVersion } from "../../api/scholarsApi";
 import scholarFallbackImg from "../../assets/scholar.png";
 
@@ -10,7 +10,6 @@ type Language = "EN" | "AR" | "FR";
 interface ScholarCardData {
   id: number;
   name: string;
-
   isFallback: boolean;
   displayedLanguage: string;
   requestedLanguage: string;
@@ -50,9 +49,7 @@ const T = {
     scholars: "Scholars",
     sortBy: "SORT BY:",
     biography: "BIOGRAPHY",
-    regions: ["Andalusia", "Maghreb", "Khorasan", "Hijaz"],
     centuries: ["1st – 3rd Century", "4th – 6th Century", "7th – 9th Century"],
-    disciplines: ["Tafsir", "Hadith", "Fiqh", "Astronomy", "Philosophy"],
     sortOptions: ["Name (A-Z)", "Name (Z-A)", "Century (Oldest)", "Century (Newest)"],
     noScholars: "No scholars available in this language yet.",
     noResults: "No scholars match your search or filters.",
@@ -77,9 +74,7 @@ const T = {
     scholars: "عالم",
     sortBy: "ترتيب:",
     biography: "السيرة الذاتية",
-    regions: ["الأندلس", "المغرب", "خراسان", "الحجاز"],
     centuries: ["القرن 1-3", "القرن 4-6", "القرن 7-9"],
-    disciplines: ["تفسير", "حديث", "فقه", "فلك", "فلسفة"],
     sortOptions: ["الاسم (أ-ي)", "الاسم (ي-أ)", "الأقدم", "الأحدث"],
     noScholars: "لا يوجد علماء متاحون بهذه اللغة حتى الآن.",
     noResults: "لا يوجد علماء يطابقون بحثك أو التصفية.",
@@ -104,9 +99,7 @@ const T = {
     scholars: "Savants",
     sortBy: "TRIER PAR :",
     biography: "BIOGRAPHIE",
-    regions: ["Andalousie", "Maghreb", "Khorasan", "Hijaz"],
     centuries: ["1er – 3e Siècle", "4e – 6e Siècle", "7e – 9e Siècle"],
-    disciplines: ["Tafsir", "Hadith", "Fiqh", "Astronomie", "Philosophie"],
     sortOptions: ["Nom (A-Z)", "Nom (Z-A)", "Le plus ancien", "Le plus récent"],
     noScholars: "Aucun savant disponible dans cette langue pour le moment.",
     noResults: "Aucun savant ne correspond à votre recherche ou aux filtres.",
@@ -124,8 +117,9 @@ function computeYears(v: ApiScholarVersion): string {
   return "";
 }
 
-function getDisciplineNames(scholar: ApiScholar): string[] {
-  return (scholar.scholar_disciplines ?? [])
+// ✅ UPDATED: Now takes `version` instead of `scholar`, because disciplines are version-scoped
+function getDisciplineNames(version: ApiScholarVersion): string[] {
+  return (version.scholar_disciplines ?? [])
     .map((sd) => sd.disciplines?.name?.toUpperCase())
     .filter((x): x is string => Boolean(x));
 }
@@ -136,6 +130,11 @@ function mapApiScholar(apiScholar: ApiScholar, lang: Language): ScholarCardData 
 
   const hasDeath = (version.scholar_dates ?? []).some((d) => d.date_type === "death");
 
+  // ✅ UPDATED: Strip HTML tags from biography for the card excerpt so it doesn't show "<p><strong>..."
+  const rawExcerpt = version.biography ?? "";
+  const cleanExcerpt = rawExcerpt.replace(/<[^>]+>/g, '').trim();
+  const shortExcerpt = cleanExcerpt.length > 150 ? cleanExcerpt.substring(0, 150) + "..." : cleanExcerpt;
+
   return {
     id: apiScholar.scholar_id,
     name: version.canonical_name,
@@ -145,8 +144,8 @@ function mapApiScholar(apiScholar: ApiScholar, lang: Language): ScholarCardData 
     nameAr: version.scholar_aliases?.[0]?.alias_name,
     years: computeYears(version),
     region: version.regions?.name ?? "",
-    excerpt: version.biography ?? "",
-    disciplines: getDisciplineNames(apiScholar),
+    excerpt: shortExcerpt, // Use the cleaned, shortened excerpt
+    disciplines: getDisciplineNames(version), // ✅ Pass `version` here, not `apiScholar`
     status: hasDeath ? "deceased" : "living",
     image: version.image_url ?? null,
   };
@@ -317,23 +316,27 @@ const ScholarsPage: React.FC = () => {
   const t = T[lang];
   const isRTL = lang === "AR";
 
+  const [searchParams, setSearchParams] = useSearchParams();
+
   const [scholars, setScholars] = useState<ScholarCardData[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const [search, setSearch] = useState("");
+  const [search, setSearch] = useState(searchParams.get("q") || "");
   const [selectedRegions, setSelectedRegions] = useState<string[]>([]);
   const [selectedDisciplines, setSelectedDisciplines] = useState<string[]>([]);
-  const [statusFilter, setStatusFilter] = useState<"all" | "deceased">("all");
-  const [sort, setSort] = useState(t.sortOptions[0]);
+ const [sort, setSort] = useState(t.sortOptions[0]);
   const [sortOpen, setSortOpen] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
+
+  // ✅ NEW: Backend fetched filter options
+  const [availableRegions, setAvailableRegions] = useState<string[]>([]);
+  const [availableDisciplines, setAvailableDisciplines] = useState<string[]>([]);
 
   const isSearchingOrFiltering =
     search.trim() !== "" ||
     selectedRegions.length > 0 ||
-    selectedDisciplines.length > 0 ||
-    statusFilter !== "all";
+       selectedDisciplines.length > 0;
 
   useEffect(() => {
     let cancelled = false;
@@ -360,6 +363,34 @@ const ScholarsPage: React.FC = () => {
     return () => { cancelled = true; };
   }, [lang]);
 
+   // ✅ NEW: Fetch Regions and Disciplines from backend
+  // Now passes the current language, and re-runs when language changes
+  useEffect(() => {
+    const langCode = LANG_CODE_BY_UI[lang]; // "en", "ar", or "fr"
+
+    scholarsApi
+      .getRegions(langCode)
+      .then((res: any) => {
+        const list = Array.isArray(res) ? res : res?.data ?? [];
+        setAvailableRegions(list.map((r: any) => r.name).filter(Boolean));
+      })
+      .catch((err) => console.error("Failed to load regions:", err));
+
+    scholarsApi
+      .getDisciplines(langCode)
+      .then((res: any) => {
+        const list = Array.isArray(res) ? res : res?.data ?? [];
+        setAvailableDisciplines(list.map((d: any) => d.name).filter(Boolean));
+      })
+      .catch((err) => console.error("Failed to load disciplines:", err));
+  }, [lang]); // 👈 Re-fetch when language changes!
+  useEffect(() => {
+    const q = searchParams.get("q") || "";
+    if (q !== search) {
+      setSearch(q);
+    }
+  }, [searchParams]);
+
   const toggle = (arr: string[], setArr: (v: string[]) => void, val: string) => {
     setArr(arr.includes(val) ? arr.filter((x) => x !== val) : [...arr, val]);
   };
@@ -367,8 +398,9 @@ const ScholarsPage: React.FC = () => {
   const clearAll = () => {
     setSelectedRegions([]);
     setSelectedDisciplines([]);
-    setStatusFilter("all");
+    
     setSearch("");
+    setSearchParams({});
   };
 
   const filtered = useMemo(() => {
@@ -388,15 +420,13 @@ const ScholarsPage: React.FC = () => {
         s.disciplines.some((d) => selectedDisciplines.some((sd) => d.includes(sd.toUpperCase())))
       );
     }
-    if (statusFilter === "deceased") {
-      list = list.filter((s) => s.status === "deceased");
-    }
+   
 
     if (sort === t.sortOptions[0]) list.sort((a, b) => a.name.localeCompare(b.name));
     if (sort === t.sortOptions[1]) list.sort((a, b) => b.name.localeCompare(a.name));
 
     return list;
-  }, [scholars, search, selectedRegions, selectedDisciplines, statusFilter, sort, t.sortOptions]);
+  }, [scholars, search, selectedRegions, selectedDisciplines, sort, t.sortOptions]);
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
   const pageItems = filtered.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
@@ -443,7 +473,13 @@ const ScholarsPage: React.FC = () => {
           <input
             type="text"
             value={search}
-            onChange={(e) => { setSearch(e.target.value); setCurrentPage(1); }}
+            onChange={(e) => { 
+              const val = e.target.value;
+              setSearch(val); 
+              setCurrentPage(1); 
+              if (val) setSearchParams({ q: val }); 
+              else setSearchParams({});
+            }}
             placeholder={t.searchPlaceholder}
             style={{
               flex: 1, border: "none", outline: "none",
@@ -481,46 +517,39 @@ const ScholarsPage: React.FC = () => {
             </button>
           </div>
 
+          {/* ✅ DYNAMIC REGIONS FROM BACKEND */}
           <div style={{ marginBottom: "24px" }}>
             <p style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.1em", color: "#c0c9c3", marginBottom: "10px" }}>{t.regionLabel}</p>
             <div style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
-              {t.regions.map((r) => (
-                <FilterCheckbox key={r} label={r} isRTL={isRTL}
-                  checked={selectedRegions.includes(r)}
-                  onChange={() => { toggle(selectedRegions, setSelectedRegions, r); setCurrentPage(1); }} />
-              ))}
+              {availableRegions.length > 0 ? (
+                availableRegions.map((r) => (
+                  <FilterCheckbox key={r} label={r} isRTL={isRTL}
+                    checked={selectedRegions.includes(r)}
+                    onChange={() => { toggle(selectedRegions, setSelectedRegions, r); setCurrentPage(1); }} />
+                ))
+              ) : (
+                <span style={{ fontSize: "11px", color: "#999" }}>Loading...</span>
+              )}
             </div>
           </div>
 
+          {/* ✅ DYNAMIC DISCIPLINES FROM BACKEND */}
           <div style={{ marginBottom: "24px" }}>
             <p style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.1em", color: "#c0c9c3", marginBottom: "10px" }}>{t.disciplineLabel}</p>
             <div style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
-              {t.disciplines.map((d) => (
-                <FilterCheckbox key={d} label={d} isRTL={isRTL}
-                  checked={selectedDisciplines.includes(d)}
-                  onChange={() => { toggle(selectedDisciplines, setSelectedDisciplines, d); setCurrentPage(1); }} />
-              ))}
+              {availableDisciplines.length > 0 ? (
+                availableDisciplines.map((d) => (
+                  <FilterCheckbox key={d} label={d} isRTL={isRTL}
+                    checked={selectedDisciplines.includes(d)}
+                    onChange={() => { toggle(selectedDisciplines, setSelectedDisciplines, d); setCurrentPage(1); }} />
+                ))
+              ) : (
+                <span style={{ fontSize: "11px", color: "#999" }}>Loading...</span>
+              )}
             </div>
           </div>
 
-          <div>
-            <p style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.1em", color: "#c0c9c3", marginBottom: "10px" }}>{t.statusLabel}</p>
-            <div style={{ display: "flex", gap: "8px", flexDirection: isRTL ? "row-reverse" : "row" }}>
-              {(["all", "deceased"] as const).map((s) => (
-                <button key={s} onClick={() => { setStatusFilter(s); setCurrentPage(1); }} style={{
-                  padding: "6px 14px", borderRadius: "2px", border: "1.5px solid",
-                  borderColor: statusFilter === s ? "#0b4335" : "#c0c9c3",
-                  backgroundColor: statusFilter === s ? "#0b4335" : "transparent",
-                  color: statusFilter === s ? "#fff" : "#6b7775",
-                  fontSize: "11px", fontWeight: 600, letterSpacing: "0.06em",
-                  fontFamily: "'Inter', sans-serif", cursor: "pointer",
-                  transition: "all 0.15s ease", textTransform: "uppercase",
-                }}>
-                  {s === "all" ? t.statusAll : t.statusDeceased}
-                </button>
-              ))}
-            </div>
-          </div>
+         
         </aside>
 
         {/* Main Content */}

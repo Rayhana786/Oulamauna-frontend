@@ -1,14 +1,11 @@
 import React, { useState, useEffect, useRef } from "react";
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom"; // ✅ Added useNavigate
 import ProfileMenu from "./ProfileMenu";
 import { useAuth } from "../context/AuthContext";
 import { useLang } from "../context/LanguageContext";
 
-
 import oulamaunaLogo from '../assets/OOLOGO.png';
 type Language = "EN" | "AR" | "FR";
-
-
 
 const NAV_IDS = ["HOME", "SCHOLARS", "BLOGS", "ABOUT", "CONTACT"] as const;
 const PATHS: Record<string, string> = {
@@ -90,7 +87,12 @@ const IcoChev = ({ open }: { open: boolean }) => (
 /* ────────────────────────────────── */
 const Navbar: React.FC = () => {
   const { lang, setLang } = useLang();
-  const { isLoggedIn, logout,user } = useAuth();
+  const { isLoggedIn, logout, user } = useAuth();
+  
+  // ✅ Added useNavigate and searchQuery state
+  const navigate = useNavigate();
+  const [searchQuery, setSearchQuery] = useState("");
+
   const [active, setActive] = useState("HOME");
   const [searchOpen, setSearchOpen] = useState(false);
   const [langOpen, setLangOpen] = useState(false);
@@ -150,6 +152,21 @@ const Navbar: React.FC = () => {
   useEffect(() => {
     if (searchOpen) setTimeout(() => inputRef.current?.focus(), 80);
   }, [searchOpen]);
+   useEffect(() => {
+    const query = searchQuery.trim();
+    
+    // If user is typing, wait 0.5 seconds then redirect to list page
+    if (query.length > 0) {
+      const timer = setTimeout(() => {
+        navigate(`/scholars?q=${encodeURIComponent(query)}`);
+      }, 500); 
+      return () => clearTimeout(timer);
+    } 
+    // If user cleared the search bar, go back to normal list
+    else if (location.pathname === "/scholars" && location.search !== "") {
+      navigate("/scholars");
+    }
+  }, [searchQuery, navigate, location.pathname, location.search]);
 
   /* ── Icon Button Class ── */
   const iconCls = (on: boolean) =>
@@ -176,34 +193,34 @@ const Navbar: React.FC = () => {
         <div className="h-full flex items-center px-5 md:px-8 lg:px-14">
 
           {/* ── BRAND ─ */}
-<Link to="/" className="shrink-0 flex items-center gap-3 group" style={{ width: 'auto', minWidth: '200px' }}>
-  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginLeft: '-30px' }}>
-    <img
-  src={oulamaunaLogo}
-  alt="Oulamauna Logo"
-  style={{
-    height: isHome && !scrolled ? '150px' : '150px',
-    width: isHome && !scrolled ? '150px' : '150px',
-    objectFit: 'contain',
-    marginBottom: isHome && !scrolled ? '-0px' : '-10px',
-    display: 'block',
-    transition: 'height 0.3s ease, width 0.3s ease, margin-bottom 0.3s ease',
-    mixBlendMode: 'lighten',   // ← ADD THIS
-  }}
-/>
-    <div style={{
-      display: 'flex',
-      flexDirection: 'column',
-      alignItems: 'center',
-      gap: '2px',
-      opacity: isHome && !scrolled ? 1 : 0,
-      transition: 'opacity 0.3s ease',
-      pointerEvents: 'none',
-    }}>
-     
-    </div>
-  </div>
-</Link>
+          <Link to="/" className="shrink-0 flex items-center gap-3 group" style={{ width: 'auto', minWidth: '200px' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginLeft: '-30px' }}>
+              <img
+                src={oulamaunaLogo}
+                alt="Oulamauna Logo"
+                style={{
+                  height: isHome && !scrolled ? '150px' : '150px',
+                  width: isHome && !scrolled ? '150px' : '150px',
+                  objectFit: 'contain',
+                  marginBottom: isHome && !scrolled ? '-0px' : '-10px',
+                  display: 'block',
+                  transition: 'height 0.3s ease, width 0.3s ease, margin-bottom 0.3s ease',
+                  mixBlendMode: 'lighten',
+                }}
+              />
+              <div style={{
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                gap: '2px',
+                opacity: isHome && !scrolled ? 1 : 0,
+                transition: 'opacity 0.3s ease',
+                pointerEvents: 'none',
+              }}>
+              </div>
+            </div>
+          </Link>
+
           {/* ── NAV LINKS ── */}
           <ul className={`hidden lg:flex items-center h-full flex-1 ${isRTL ? "justify-center translate-x-16" : "justify-center -translate-x-16"}`}>
             {NAV_IDS.map((id, i) => {
@@ -214,25 +231,24 @@ const Navbar: React.FC = () => {
                     to={PATHS[id]}
                     onClick={() => setActive(id)}
                     onMouseEnter={() => setHoveredId(id)}
-onMouseLeave={() => setHoveredId(null)}
-  className={`
-  relative h-full px-4 flex items-center 
-  transition-colors duration-200 focus:outline-none
-  ${isRTL ? "text-[15px]" : "text-[13px] tracking-[0.06em]"}
-  ${
-    hoveredId
-      ? hoveredId === id
-        ? "text-[#C9A84C]"
-        : "text-[#ffff]"
-      : on
-      ? "text-[#C9A84C]"
-      : "text-[#ffff]"
-  }
-`}
+                    onMouseLeave={() => setHoveredId(null)}
+                    className={`
+                      relative h-full px-4 flex items-center 
+                      transition-colors duration-200 focus:outline-none
+                      ${isRTL ? "text-[15px]" : "text-[13px] tracking-[0.06em]"}
+                      ${
+                        hoveredId
+                          ? hoveredId === id
+                            ? "text-[#C9A84C]"
+                            : "text-[#ffff]"
+                          : on
+                          ? "text-[#C9A84C]"
+                          : "text-[#ffff]"
+                      }
+                    `}
                   >
                     {t.links[i]}
                   </Link>
-                  
                 </li>
               );
             })}
@@ -241,15 +257,18 @@ onMouseLeave={() => setHoveredId(null)}
           {/* ── UTILITIES ── */}
           <div className="shrink-0 flex items-center gap-0.5 justify-end w-[260px]">
 
-            {/* Search */}
+            {/* Search - ✅ MODIFIED */}
             <div className="flex items-center justify-end">
               <div className={`
                 overflow-hidden transition-all duration-200
-               ${searchOpen ? "w-52 me-1 opacity-100" : "w-0 opacity-0"}
+                ${searchOpen ? "w-52 me-1 opacity-100" : "w-0 opacity-0"}
               `}>
                 <input
                   ref={inputRef}
                   type="search"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                 
                   placeholder={t.placeholder}
                   className={`
                     w-full h-9 px-3.5 rounded-full text-[12px] text-white
