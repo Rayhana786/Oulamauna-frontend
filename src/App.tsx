@@ -94,15 +94,17 @@ function App() {
 
               <Route path="/scholars/:id" element={<ScholarsPageDetails />} />
               <Route path="/scholars/:id/edit/:lang" element={<Editscholarpage />} />
+              
               <Route path="/scholars/submit" element={<Submitscholarpage />} />
+              <Route path="/scholars/submit/:lang" element={<Submitscholarpage />} /> {/* ✅ ADDED: Handles /scholars/submit/ar perfectly */}
               
               <Route path="/scholars/:scholarId/submit/:lang" element={<Submitscholarpage />} />
             </Route>
 
             {/* ── ADMIN ROUTES (sidebar + admin navbar, protected) ── */}
             <Route element={<NoNavLayout />}>
-              <Route path="/admin" element={<AdminLayout />}>
-                <Route index element={<AdminDashboard />} />
+              <Route element={<AdminLayout />}>
+                <Route path="/admin/dashboard" element={<AdminDashboard />} />
                 <Route path="/admin/pending/scholars" element={<NewScholarsQueue />} />
                 <Route path="/admin/pending/scholars/:id" element={<ScholarReview />} />
                 <Route path="/admin/pending/edits" element={<PendingEditsQueue />} />

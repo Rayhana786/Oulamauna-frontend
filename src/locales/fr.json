@@ -732,8 +732,10 @@
     "region": "RÉGION",
     "selectRegion": "Sélectionner la Région",
     "century": "SIÈCLE",
-    "centuryGregorian": "SIÈCLE (GRÉGORIEN)",
-    "centuryHijri": "SIÈCLE (HIJRI)",
+    "centuryGregorianStart": "Début du siècle grégorien",
+      "centuryGregorianEnd": "Fin du siècle grégorien",
+      "centuryHijriStart": "Début du siècle hijri",
+      "centuryHijriEnd": "Fin du siècle hijri",
     "selectCentury": "Sélectionner le Siècle",
     "country": "PAYS",
     "countryPh": "ex. Algérie",
@@ -817,7 +819,8 @@
     "descPh": "Brève description de cet élément multimédia…",
     "fileLink": "FICHIER / LIEN",
     "addMedia": "AJOUTER UN MÉDIA",
-    "noneHint": "Aucun fichier. Le titre et la description resteront visibles pour les utilisateurs."
+    "noneHint": "Aucun fichier. Le titre et la description resteront visibles pour les utilisateurs.",
+    "year": "Année"
   },
   "step6": {
     "title": "Références et Bibliographie",

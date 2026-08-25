@@ -30,7 +30,7 @@ interface NavItem {
 
 /* ─────────────────────── Nav data ─────────────────────── */
 const NAV: NavItem[] = [
-  { type: "link", icon: "grid_view", labelKey: "sidebar.dashboard", to: "/admin" },
+  { type: "link", icon: "grid_view", labelKey: "sidebar.dashboard", to: "/admin/dashboard" },
 
   { type: "section", labelKey: "sidebar.section.archives" },
   {

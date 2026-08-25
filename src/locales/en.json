@@ -760,8 +760,10 @@
     "region": "REGION",
     "selectRegion": "Select Region",
     "century": "CENTURY",
-    "centuryGregorian": "CENTURY (GREGORIAN)",
-    "centuryHijri": "CENTURY (HIJRI)",
+    "centuryGregorianStart": "Century Gregorian Start",
+      "centuryGregorianEnd": "Century Gregorian End",
+      "centuryHijriStart": "Century Hijri Start",
+      "centuryHijriEnd": "Century Hijri End",
     "selectCentury": "Select Century",
     "country": "COUNTRY",
     "countryPh": "e.g. Algeria",
@@ -845,7 +847,8 @@
     "descPh": "Brief description of this media item…",
     "fileLink": "FILE / LINK",
     "addMedia": "ADD MEDIA",
-    "noneHint": "No file. Title and description will still be visible to users."
+    "noneHint": "No file. Title and description will still be visible to users.",
+    "year": "Year"
   },
   "step6": {
     "title": "References & Bibliography",

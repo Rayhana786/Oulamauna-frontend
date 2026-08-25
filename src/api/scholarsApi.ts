@@ -15,6 +15,55 @@ function getToken(): string | null {
 // Generic request helper
 // ─────────────────────────────────────────────
 
+// Separate helper for multipart/form-data requests (file uploads).
+// Must NOT set Content-Type manually — the browser sets it with the
+// correct multipart boundary when you pass a FormData body.
+// Replace your existing requestForm function with this:
+async function requestForm(
+  path: string, 
+  formData: FormData, 
+  method: string = "POST",
+  isScholarEndpoint: boolean = true
+) {
+  const token = getToken();
+  const baseUrl = isScholarEndpoint ? `${API_URL}/api/scholars` : `${API_URL}/api`;
+
+  console.log("🚀 Sending request to:", `${baseUrl}${path}`);
+  console.log("📦 FormData keys being sent:", Array.from(formData.keys()));
+
+  const res = await fetch(`${baseUrl}${path}`, {
+    method,
+    credentials: "include",
+    headers: {
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      // DO NOT set 'Content-Type': 'multipart/form-data' here. 
+      // The browser sets it automatically with the correct boundary.
+    },
+    body: formData,
+  });
+
+  console.log("📡 Response status:", res.status);
+
+  let data;
+  try {
+    data = await res.json();
+  } catch (e) {
+    // If the backend returns an HTML error page (like a 500 crash), res.json() fails.
+    // This catches it and prints the raw HTML/text so you can see the actual backend error.
+    const rawText = await res.text();
+    console.error("❌ Backend did not return JSON. Raw response:", rawText);
+    data = { message: `Server returned ${res.status} (Non-JSON response)` };
+  }
+
+  if (!res.ok) {
+    const errorMsg = data?.message || data?.error || `Request failed with status ${res.status}`;
+    console.error("❌ API Error Details:", errorMsg, data);
+    throw new Error(errorMsg);
+  }
+
+  return data;
+}
+
 async function request(
   path: string,
   options: RequestInit = {},
@@ -44,6 +93,7 @@ async function request(
 
   return data;
 }
+
 
 // ─────────────────────────────────────────────
 // Types
@@ -123,6 +173,31 @@ export interface ApiListResponse {
   data: ApiScholar[];
 }
 
+// Add this below your existing types
+export interface EditScholarResponse {
+  success: boolean;
+  message: string;
+  data: {
+    newVersion: ApiScholarVersion;
+    carriedOverContent: {
+      works: any[];
+      media: any[];
+      references: any[];
+      dates: ApiScholarDate[];
+      relationships: {
+        relationship_id: number;
+        relation_type: "teacher" | "student";
+        related_version_id: number;
+        related_scholar_version?: {
+          scholar_id: number;
+          canonical_name: string;
+          languages?: { code: string; name: string };
+        };
+      }[];
+    };
+  };
+}
+
 // ─────────────────────────────────────────────
 // API
 // ─────────────────────────────────────────────
@@ -134,19 +209,35 @@ export const scholarsApi = {
   getById: (id: number, lang?: string): Promise<any> =>
     request(`/${id}${lang ? `?lang=${encodeURIComponent(lang)}` : ""}`),
 
-  create: (payload: Record<string, unknown>): Promise<any> =>
-    request("/", {
+   create: (payload: Record<string, unknown> | FormData): Promise<any> => {
+    if (payload instanceof FormData) {
+      // ✅ Pass 'true' so it hits /api/scholars/
+      return requestForm("/", payload, "POST", true); 
+    }
+    return request("/", {
+      method: "POST",
+      body: JSON.stringify(payload),
+    });
+  },
+
+      update: (id: number, payload: Record<string, unknown> | FormData): Promise<EditScholarResponse> => {
+    if (payload instanceof FormData) {
+      // ✅ Changed to "PATCH" to match standard REST and most Express routers
+      return requestForm(`/${id}`, payload, "PATCH", true); 
+    }
+    return request(`/${id}`, {
+      method: "PATCH",
+      body: JSON.stringify(payload),
+    });
+  },
+
+    mySubmissions: (): Promise<any> => request("/my-submissions"),
+
+  saveDraft: (payload: Record<string, unknown>): Promise<any> =>
+    request("/draft", {
       method: "POST",
       body: JSON.stringify(payload),
     }),
-
-  update: (id: number, payload: Record<string, unknown>): Promise<any> =>
-    request(`/${id}`, {
-      method: "PATCH",
-      body: JSON.stringify(payload),
-    }),
-
-  mySubmissions: (): Promise<any> => request("/my-submissions"),
 
   searchByName: (q: string, lang: string): Promise<any> =>
     request(`/name?q=${encodeURIComponent(q)}&lang=${encodeURIComponent(lang)}`),
@@ -165,4 +256,36 @@ export const scholarsApi = {
       method: "POST",
       body: JSON.stringify({ text }),
     }),
+    
+  addMedia: (versionId: number, formData: FormData): Promise<any> =>
+    requestForm(`/media`, formData, "POST", false), // ✅ Added false
+  
+  // Alternative for external URL (JSON)
+  addMediaUrl: (versionId: number, mediaData: {
+    version_id: number;
+    title: string;
+    year?: number;
+    description?: string;
+    media_url: string;
+  }): Promise<any> =>
+    request(`/media`, {
+      method: "POST",
+      body: JSON.stringify(mediaData),
+    }, false), // ✅ Added false
+      
+  addWork: (versionId: number, formData: FormData): Promise<any> =>
+    requestForm(`/work`, formData, "POST", false), // ✅ Added false
+  
+  addWorkUrl: (versionId: number, workData: {
+    version_id: number;
+    title: string;
+    year?: number;
+    format: string;
+    description?: string;
+    media_url?: string;
+  }): Promise<any> =>
+    request(`/work`, {
+      method: "POST",
+      body: JSON.stringify(workData),
+    }, false), // ✅ Already had false, kept it
 };

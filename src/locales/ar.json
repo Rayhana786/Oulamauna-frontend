@@ -815,8 +815,10 @@
     "region": "المنطقة",
     "selectRegion": "اختر المنطقة",
     "century": "القرن",
-    "centuryGregorian": "القرن (ميلادي)",
-    "centuryHijri": "القرن (هجري)",
+    "centuryGregorianStart": "بداية القرن الميلادي",
+      "centuryGregorianEnd": "نهاية القرن الميلادي",
+      "centuryHijriStart": "بداية القرن الهجري",
+      "centuryHijriEnd": "نهاية القرن الهجري",
     "selectCentury": "اختر القرن",
     "country": "البلد",
     "countryPh": "مثال: الجزائر",
@@ -900,7 +902,8 @@
     "descPh": "وصف موجز لعنصر الوسائط هذا…",
     "fileLink": "ملف / رابط",
     "addMedia": "إضافة وسائط",
-    "noneHint": "لا يوجد ملف. سيظل العنوان والوصف مرئيين للمستخدمين."
+    "noneHint": "لا يوجد ملف. سيظل العنوان والوصف مرئيين للمستخدمين.",
+    "year": "السنة"
   },
   "step6": {
     "title": "المراجع والمصادر",
