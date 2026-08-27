@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, useSearchParams } from "react-router-dom";
 import { useLang } from "../../context/LanguageContext";
 import { scholarsApi } from "../../api/scholarsApi";
 
@@ -119,15 +119,20 @@ function extractErrorMessage(error: any, fallback: string): string {
 }
 
 /* ─────────────────────────────────────────────
-   DRAFT PERSISTENCE
+   DRAFT PERSISTENCE (FIXED: Uses versionId to prevent overwriting)
 ───────────────────────────────────────────── */
 const DRAFT_STORAGE_PREFIX = "oulamauna_scholar_draft_";
+const SESSION_KEY = "oulamauna_draft_session";
 
-function draftKey(scholarId?: string) {
-  return `${DRAFT_STORAGE_PREFIX}${scholarId || "new"}`;
+// ✅ FIX: Add language to the key to prevent cross-language/scholar contamination
+function draftKey(scholarId?: string, versionId?: number | null, lang?: string) {
+  if (versionId) return `${DRAFT_STORAGE_PREFIX}v_${versionId}`; // Version is already unique to scholar+lang
+  const langSuffix = lang ? `_${lang.toLowerCase()}` : '_default';
+  if (scholarId) return `${DRAFT_STORAGE_PREFIX}s_${scholarId}${langSuffix}`;
+  return `${DRAFT_STORAGE_PREFIX}new${langSuffix}`;
 }
 
-function saveDraft(scholarId: string | undefined, form: FormState, step: number, draftVersionId?: number | null) {
+function saveDraft(scholarId: string | undefined, form: FormState, step: number, draftVersionId?: number | null, lang?: string) {
   try {
     const { portraitFile, portraitUrl, works, media, ...rest } = form;
     const serializable = {
@@ -135,15 +140,16 @@ function saveDraft(scholarId: string | undefined, form: FormState, step: number,
       works: works.map(({ file, ...w }) => w),
       media: media.map(({ file, ...m }) => m),
     };
-    localStorage.setItem(draftKey(scholarId), JSON.stringify({ step, form: serializable, draftVersionId: draftVersionId ?? null, savedAt: Date.now() }));
+    localStorage.setItem(draftKey(scholarId, draftVersionId, lang), JSON.stringify({ step, form: serializable, draftVersionId: draftVersionId ?? null, savedAt: Date.now() }));
+    saveSession(scholarId, draftVersionId, lang); // ✅ Auto-save session too
   } catch (e) {
     console.warn("Could not save draft:", e);
   }
 }
 
-function loadDraft(scholarId: string | undefined): { step: number; form: Partial<FormState>; draftVersionId: number | null } | null {
+function loadDraft(scholarId: string | undefined, versionId?: number | null, lang?: string): { step: number; form: Partial<FormState>; draftVersionId: number | null } | null {
   try {
-    const raw = localStorage.getItem(draftKey(scholarId));
+    const raw = localStorage.getItem(draftKey(scholarId, versionId, lang));
     if (!raw) return null;
     const parsed = JSON.parse(raw);
     if (!parsed?.form) return null;
@@ -154,8 +160,24 @@ function loadDraft(scholarId: string | undefined): { step: number; form: Partial
   }
 }
 
-function clearDraft(scholarId?: string) {
-  try { localStorage.removeItem(draftKey(scholarId)); } catch (e) { /* ignore */ }
+function saveSession(scholarId?: string, versionId?: number | null, lang?: string) {
+  try {
+    localStorage.setItem(SESSION_KEY, JSON.stringify({ scholarId, versionId, lang }));
+  } catch (e) { /* ignore */ }
+}
+
+function loadSession() {
+  try {
+    const raw = localStorage.getItem(SESSION_KEY);
+    return raw ? JSON.parse(raw) : null;
+  } catch (e) { return null; }
+}
+
+function clearDraft(scholarId?: string, versionId?: number | null, lang?: string) {
+  try { 
+    localStorage.removeItem(draftKey(scholarId, versionId, lang)); 
+    localStorage.removeItem(SESSION_KEY); 
+  } catch (e) { /* ignore */ }
 }
 
 /* ─────────────────────────────────────────────
@@ -233,7 +255,7 @@ function ChipInput({ items, onAdd, onRemove, placeholder }: { items: string[]; o
   );
 }
 
-function PersonLinkSection({ person, onChange, t, lang }: { person: PersonEntry; onChange: (p: PersonEntry) => void; t: (k: string) => string; lang: string; }) {
+function PersonLinkSection({ person, onChange, t, lang, selectedScholarIds }: { person: PersonEntry; onChange: (p: PersonEntry) => void; t: (k: string) => string; lang: string; selectedScholarIds: number[]; }) {
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<any[]>([]);
   const [open, setOpen] = useState(false);
@@ -252,12 +274,16 @@ function PersonLinkSection({ person, onChange, t, lang }: { person: PersonEntry;
     setLoading(true);
     try {
       const res = await scholarsApi.searchByName(q, lang);
-            const scholars = res.data?.scholar_versions?.map((v: any) => ({
-        id: v.version_id, // ✅ CHANGED: Capture version_id so we link to the exact language version
+      let scholars = res.data?.scholar_versions?.map((v: any) => ({
+        id: v.version_id,
         name: v.canonical_name,
         discipline: v.scholar_disciplines?.[0]?.disciplines?.name || "Unknown",
         born: v.scholar_dates?.find((d: any) => d.date_type === "birth")?.year || "Unknown"
       })) || [];
+      
+      // ✅ FILTER OUT ALREADY SELECTED SCHOLARS
+      scholars = scholars.filter(s => !selectedScholarIds.includes(s.id));
+      
       setResults(scholars);
       setOpen(true);
     } catch (error) { console.error("Search error:", error); setResults([]); } finally { setLoading(false); }
@@ -286,15 +312,38 @@ function PersonLinkSection({ person, onChange, t, lang }: { person: PersonEntry;
         <div style={{ position: "absolute", top: "calc(100% + 4px)", left: 0, right: 0, background: "#fff", border: `1.5px solid ${GREEN_BORDER}`, borderRadius: "8px", boxShadow: "0 8px 32px rgba(11,67,53,0.12)", zIndex: 100, maxHeight: "200px", overflowY: "auto", animation: "fade-in-up 0.15s ease-out" }}>
           {results.length === 0 ? (
             <div style={{ padding: "12px 14px", fontSize: "12px", color: MUTED, fontStyle: "italic" }}>{loading ? "Searching..." : "No scholars found"}</div>
-          ) : results.map((s) => (
-            <div key={s.id} onClick={() => { onChange({ scholar_id: s.id, scholar_name: s.name }); setOpen(false); setQuery(""); }}
-              style={{ padding: "10px 14px", cursor: "pointer", borderBottom: `1px solid rgba(192,201,195,0.2)`, transition: "background 0.12s" }}
-              onMouseEnter={e => (e.currentTarget as HTMLDivElement).style.background = GREEN_LIGHT}
-              onMouseLeave={e => (e.currentTarget as HTMLDivElement).style.background = "transparent"}>
-              <div style={{ fontSize: "13px", fontWeight: 700, color: "#191c1b" }}>{s.name}</div>
-              <div style={{ fontFamily: MONO, fontSize: "10px", color: MUTED }}>{s.discipline} · b.{s.born}</div>
-            </div>
-          ))}
+          ) : results.map((s) => {
+            const isAlreadySelected = selectedScholarIds.includes(s.id);
+            return (
+              <div 
+                key={s.id} 
+                onClick={() => {
+                  if (isAlreadySelected) return;
+                  onChange({ scholar_id: s.id, scholar_name: s.name }); 
+                  setOpen(false); 
+                  setQuery(""); 
+                }}
+                style={{ 
+                  padding: "10px 14px", 
+                  cursor: isAlreadySelected ? "not-allowed" : "pointer", 
+                  borderBottom: `1px solid rgba(192,201,195,0.2)`, 
+                  transition: "background 0.12s",
+                  opacity: isAlreadySelected ? 0.5 : 1,
+                  backgroundColor: isAlreadySelected ? "#f5f5f5" : "transparent"
+                }}
+                onMouseEnter={e => {
+                  if (!isAlreadySelected) (e.currentTarget as HTMLDivElement).style.background = GREEN_LIGHT;
+                }}
+                onMouseLeave={e => {
+                  if (!isAlreadySelected) (e.currentTarget as HTMLDivElement).style.background = "transparent";
+                }}
+              >
+                <div style={{ fontSize: "13px", fontWeight: 700, color: "#191c1b" }}>{s.name}</div>
+                <div style={{ fontFamily: MONO, fontSize: "10px", color: MUTED }}>{s.discipline} · b.{s.born}</div>
+                {isAlreadySelected && <div style={{ fontSize: "11px", color: DANGER, marginTop: "2px" }}>Already added</div>}
+              </div>
+            );
+          })}
         </div>
       )}
     </div>
@@ -437,6 +486,8 @@ const RichTextEditor = ({ value, onChange, placeholder }: { value: string; onCha
 const SubmitScholarPage: React.FC = () => {
   const { t, setLang } = useLang();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const urlDraftId = searchParams.get("draftId"); // ✅ Get draftId from URL
 
   const tt = (key: string, fallback: string) => {
     const val = t(key);
@@ -455,16 +506,11 @@ const SubmitScholarPage: React.FC = () => {
 
   const { scholarId, lang: routeLang } = useParams<{ scholarId?: string; lang?: string }>();
   
-  // ✅ UPDATED: Handles lowercase route params (e.g., "ar" -> "AR") so refresh doesn't reset to English
   const validRouteLang: Language | null = routeLang && (["en", "ar", "fr"] as string[]).includes(routeLang.toLowerCase()) 
     ? (routeLang.toUpperCase() as Language) 
     : null;
 
-  // ✅ AUTO-RESUME LOGIC: Check if a draft already exists
   const hasDraft = !!loadDraft(scholarId);
-
-  // ✅ FIXED: Always show language picker when NO language in URL, even if draft exists
-  // Only skip to form if language IS in the URL
   const initialPhase: "lang" | "form" | "success" = validRouteLang ? "form" : "lang";
 
   const [phase, setPhase] = useState<"lang" | "form" | "success">(initialPhase);
@@ -477,7 +523,7 @@ const SubmitScholarPage: React.FC = () => {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
-    const [draftRestored, setDraftRestored] = useState(false);
+  const [draftRestored, setDraftRestored] = useState(false);
   const [draftSavedPulse, setDraftSavedPulse] = useState(false);
   const [draftVersionId, setDraftVersionId] = useState<number | null>(null);
   const [draftSaveError, setDraftSaveError] = useState<string | null>(null);
@@ -489,46 +535,260 @@ const SubmitScholarPage: React.FC = () => {
     teachers: [], students: [], works: [], media: [], refs: [], confirmed: false,
   });
 
+  // ✅ Calculate selected IDs to pass down and prevent duplicates
+  const selectedScholarIds = [
+    ...form.teachers.map(t => t.scholar_id).filter((id): id is number => id !== null),
+    ...form.students.map(s => s.scholar_id).filter((id): id is number => id !== null),
+  ];
+
   const [disciplines, setDisciplines] = useState<{ discipline_id: number; name: string }[]>([]);
   const [regions, setRegions] = useState<{ region_id: number; name: string }[]>([]);
   const [isLoadingMeta, setIsLoadingMeta] = useState(true);
   const portraitInputRef = useRef<HTMLInputElement>(null);
   const loadedMetaLangRef = useRef<Language | null>(null);
 
-  const draftLoadAttempted = useRef(false);
+    const draftLoadAttempted = useRef(false);
+
+  // ✅ UNIFIED DRAFT LOADING LOGIC (Strictly isolated by versionId OR lang)
   useEffect(() => {
     if (phase !== "form" || draftLoadAttempted.current) return;
     draftLoadAttempted.current = true;
-    const draft = loadDraft(scholarId);
 
+    const fetchAndMapDraft = async (idToFetch: number) => {
+      try {
+        const response = await scholarsApi.getDraftById(idToFetch);
+        const draft = response.data;
+        
+        const mappedForm: Partial<FormState> = {
+          canonical_name: draft.canonical_name || "",
+          region_id: draft.region_id,
+          birth_date_gregorian: draft.scholar_dates?.find((d: any) => d.date_type === "birth" && d.calendar === "gregorian")?.year?.toString() || "",
+          birth_date_hijri: draft.scholar_dates?.find((d: any) => d.date_type === "birth" && d.calendar === "hijri")?.year?.toString() || "",
+          death_date_gregorian: draft.scholar_dates?.find((d: any) => d.date_type === "death" && d.calendar === "gregorian")?.year?.toString() || "",
+          death_date_hijri: draft.scholar_dates?.find((d: any) => d.date_type === "death" && d.calendar === "hijri")?.year?.toString() || "",
+          century_hijri_start: draft.century_hijri_start,
+          century_hijri_end: draft.century_hijri_end,
+          century_gregorian_start: draft.century_gregorian_start,
+          century_gregorian_end: draft.century_gregorian_end,
+          biography: draft.biography || "",
+          aliases: draft.scholar_aliases?.map((a: any) => a.alias_name) || [],
+          discipline_ids: draft.scholar_disciplines?.map((d: any) => d.discipline_id) || [],
+          teachers: draft.scholar_relationships_as_source?.filter((r: any) => r.relation_type === "teacher").map((r: any) => ({
+            scholar_id: r.related_version_id,
+            scholar_name: r.related_scholar_version?.canonical_name || ""
+          })) || [],
+          students: draft.scholar_relationships_as_source?.filter((r: any) => r.relation_type === "student").map((r: any) => ({
+            scholar_id: r.related_version_id,
+            scholar_name: r.related_scholar_version?.canonical_name || ""
+          })) || [],
+          works: draft.scholar_works?.map((w: any) => ({
+            title: w.title || "", year: w.year?.toString() || "", type: w.format || "BOOK",
+            desc: w.description || "", accessMode: w.media_url ? "link" : "none", file: null, url: w.media_url || "",
+          })) || [],
+          media: draft.media?.map((m: any) => ({
+            title: m.title || "", type: m.file_type || "pdf", year: m.year?.toString() || "",
+            desc: m.description || "", accessMode: m.media_url ? "link" : "upload", file: null, url: m.media_url || "",
+          })) || [],
+          refs: draft.scholar_references?.map((r: any) => ({ title: r.title || "", citation: r.citation || "", url: r.url || "" })) || [],
+        };
+
+        setForm(f => ({ ...f, ...mappedForm }));
+        setDraftVersionId(draft.version_id);
+        setDraftRestored(true);
+        saveSession(scholarId, draft.version_id, lang);
+
+        if (routeLang && (["en", "ar", "fr"] as string[]).includes(routeLang.toLowerCase())) {
+           setPickedLang(routeLang.toUpperCase() as Language);
+        }
+      } catch (error) {
+        console.error("Draft not found or deleted:", error);
+        // ✅ If draft was deleted, just show a fresh form instead of error
+        setForm({
+          canonical_name: "", region_id: null, birth_date_gregorian: "", birth_date_hijri: "", 
+          death_date_gregorian: "", death_date_hijri: "", century_hijri_start: null, century_hijri_end: null, 
+          century_gregorian_start: null, century_gregorian_end: null, biography: "", aliases: [], 
+          discipline_ids: [], portraitUrl: null, portraitFile: null, pageTitle: "", summary: "", quote: "",
+          teachers: [], students: [], works: [], media: [], refs: [], confirmed: false,
+        });
+        setDraftVersionId(null);
+        setDraftRestored(false);
+        // Clear the URL parameter
+        navigate(`/scholars/submit/${lang.toLowerCase()}`, { replace: true });
+      }
+    };
+
+    const loadLocalDraft = (versionId: number) => {
+      const localDraft = loadDraft(scholarId, versionId, lang); // ✅ Pass lang
+      if (localDraft && localDraft.form) {
+        setForm(f => ({ ...f, ...localDraft.form }));
+        setStep(localDraft.step || 0);
+        setDraftVersionId(versionId);
+        setDraftRestored(true);
+        saveSession(scholarId, versionId, lang);
+        return true;
+      }
+      return false;
+    };
+
+    // 1. Priority: URL param (from Dashboard "Continue")
+    if (urlDraftId) {
+      const versionId = parseInt(urlDraftId, 10);
+      if (!loadLocalDraft(versionId)) {
+        fetchAndMapDraft(versionId);
+      }
+      return; 
+    }
+
+    // 2. Fallback: Check Session Marker (for Page Refresh)
+    const session = loadSession();
+    if (session?.versionId) {
+      if (!loadLocalDraft(session.versionId)) {
+        fetchAndMapDraft(session.versionId);
+      }
+      return;
+    }
+
+    // 3. Last Resort: Local Storage (for brand new unsaved drafts)
+    const draft = loadDraft(session?.scholarId || scholarId, null, lang); // ✅ Pass lang
     if (draft) {
-      // If this is a brand-new scholar session (no scholarId in the URL)
-      // AND the leftover local data was never actually saved to the
-      // server (draftVersionId is null) — it's stale abandoned typing
-      // from a previous visit, not a real draft. Don't auto-restore it;
-      // wipe it and start blank.
-      const isStaleUnsavedNewDraft = !scholarId && !draft.draftVersionId;
-
+      const isStaleUnsavedNewDraft = !session?.scholarId && !draft.draftVersionId;
       if (isStaleUnsavedNewDraft) {
-        clearDraft(scholarId);
+        clearDraft(session?.scholarId || scholarId, null, lang);
       } else {
         setForm(f => ({ ...f, ...draft.form }));
         setStep(draft.step || 0);
         setDraftVersionId(draft.draftVersionId);
         setDraftRestored(true);
+        saveSession(session?.scholarId || scholarId, draft.draftVersionId, lang);
       }
     }
-  }, [phase]);
+  }, [phase, urlDraftId, scholarId, navigate, routeLang, lang]); // ✅ Added lang
 
-  // NOTE: this stays LOCAL-ONLY (crash-safety net, no server call) — it
-  // fires on every keystroke, and we don't want to hit the backend that
-  // often. The server draft only saves when the user clicks "Save Draft".
+  
+    const prevLangRef = useRef<Language | null>(null);
+
+  // ✅ UNIFIED DRAFT LOADING LOGIC (Strictly separates "New Scholar" from "Add Version")
   useEffect(() => {
     if (phase !== "form") return;
-    const timeout = setTimeout(() => { saveDraft(scholarId, form, step, draftVersionId); }, 500);
-    return () => clearTimeout(timeout);
-  }, [form, step, phase, scholarId, draftVersionId]);
 
+    // 1. If language changed, wipe the slate clean for the new language
+    if (prevLangRef.current !== null && prevLangRef.current !== lang) {
+      setForm({
+        canonical_name: "", region_id: null, birth_date_gregorian: "", birth_date_hijri: "", 
+        death_date_gregorian: "", death_date_hijri: "", century_hijri_start: null, century_hijri_end: null, 
+        century_gregorian_start: null, century_gregorian_end: null, biography: "", aliases: [], 
+        discipline_ids: [], portraitUrl: null, portraitFile: null, pageTitle: "", summary: "", quote: "",
+        teachers: [], students: [], works: [], media: [], refs: [], confirmed: false,
+      });
+      setStep(0);
+      setDraftVersionId(null);
+      setDraftRestored(false);
+    }
+    prevLangRef.current = lang;
+
+    // 2. Load draft strictly based on the CURRENT route
+    const loadDraftForLang = async () => {
+      const applyDraft = (formData: Partial<FormState>, step: number, versionId: number | null) => {
+        setForm(f => ({ ...f, ...formData }));
+        setStep(step);
+        setDraftVersionId(versionId);
+        setDraftRestored(true);
+        saveSession(scholarId, versionId, lang);
+      };
+
+      const mapBackendDraft = (draft: any) => ({
+        canonical_name: draft.canonical_name || "",
+        region_id: draft.region_id,
+        birth_date_gregorian: draft.scholar_dates?.find((d: any) => d.date_type === "birth" && d.calendar === "gregorian")?.year?.toString() || "",
+        birth_date_hijri: draft.scholar_dates?.find((d: any) => d.date_type === "birth" && d.calendar === "hijri")?.year?.toString() || "",
+        death_date_gregorian: draft.scholar_dates?.find((d: any) => d.date_type === "death" && d.calendar === "gregorian")?.year?.toString() || "",
+        death_date_hijri: draft.scholar_dates?.find((d: any) => d.date_type === "death" && d.calendar === "hijri")?.year?.toString() || "",
+        century_hijri_start: draft.century_hijri_start,
+        century_hijri_end: draft.century_hijri_end,
+        century_gregorian_start: draft.century_gregorian_start,
+        century_gregorian_end: draft.century_gregorian_end,
+        biography: draft.biography || "",
+        aliases: draft.scholar_aliases?.map((a: any) => a.alias_name) || [],
+        discipline_ids: draft.scholar_disciplines?.map((d: any) => d.discipline_id) || [],
+        teachers: draft.scholar_relationships_as_source?.filter((r: any) => r.relation_type === "teacher").map((r: any) => ({
+          scholar_id: r.related_version_id,
+          scholar_name: r.related_scholar_version?.canonical_name || ""
+        })) || [],
+        students: draft.scholar_relationships_as_source?.filter((r: any) => r.relation_type === "student").map((r: any) => ({
+          scholar_id: r.related_version_id,
+          scholar_name: r.related_scholar_version?.canonical_name || ""
+        })) || [],
+        works: draft.scholar_works?.map((w: any) => ({
+          title: w.title || "", year: w.year?.toString() || "", type: w.format || "BOOK",
+          desc: w.description || "", accessMode: w.media_url ? "link" : "none", file: null, url: w.media_url || "",
+        })) || [],
+        media: draft.media?.map((m: any) => ({
+          title: m.title || "", type: m.file_type || "pdf", year: m.year?.toString() || "",
+          desc: m.description || "", accessMode: m.media_url ? "link" : "upload", file: null, url: m.media_url || "",
+        })) || [],
+        refs: draft.scholar_references?.map((r: any) => ({ title: r.title || "", citation: r.citation || "", url: r.url || "" })) || [],
+      });
+
+      // A. URL Draft ID (Highest priority: user clicked "Continue" from dashboard)
+      if (urlDraftId) {
+        const versionId = parseInt(urlDraftId, 10);
+        const local = loadDraft(scholarId, versionId, lang);
+        if (local?.form) {
+          applyDraft(local.form, local.step || 0, versionId);
+          return;
+        }
+        try {
+          const response = await scholarsApi.getDraftById(versionId);
+          applyDraft(mapBackendDraft(response.data), 0, response.data.version_id);
+        } catch (error) {
+          console.error("Failed to fetch draft:", error);
+        }
+        return;
+      }
+
+      // B. ROUTE-AWARE LOADING (Prevents mixing "New" and "Existing" scholar drafts)
+      if (scholarId) {
+        // MODE 1: Adding a version to an EXISTING scholar
+        const session = loadSession();
+        if (session?.versionId && session.scholarId === scholarId && session.lang === lang) {
+          const local = loadDraft(scholarId, session.versionId, lang);
+          if (local?.form) {
+            applyDraft(local.form, local.step || 0, session.versionId);
+            return;
+          }
+          try {
+            const response = await scholarsApi.getDraftById(session.versionId);
+            applyDraft(mapBackendDraft(response.data), 0, response.data.version_id);
+          } catch (error) { /* ignore */ }
+        }
+        
+        // Check for unsaved local draft for this specific scholar + lang
+        const localNewVersion = loadDraft(scholarId, null, lang);
+        if (localNewVersion?.form) {
+          applyDraft(localNewVersion.form, localNewVersion.step || 0, localNewVersion.draftVersionId);
+        }
+      } else {
+        // MODE 2: Creating a BRAND NEW scholar
+        const session = loadSession();
+        // Only use session if it's explicitly for a NEW scholar (no scholarId) in this lang
+        if (session && !session.scholarId && session.lang === lang && session.versionId) {
+          const local = loadDraft(undefined, session.versionId, lang);
+          if (local?.form) {
+            applyDraft(local.form, local.step || 0, session.versionId);
+            return;
+          }
+        }
+
+        // Fallback to generic new scholar draft for this lang
+        const localNew = loadDraft(undefined, null, lang);
+        if (localNew?.form) {
+          applyDraft(localNew.form, localNew.step || 0, localNew.draftVersionId);
+        }
+      }
+    };
+
+    loadDraftForLang();
+  }, [phase, urlDraftId, scholarId, navigate, routeLang, lang]);
   const buildDraftPayload = () => {
     const selectedLang = LANGUAGES.find(l => l.code === lang.toLowerCase());
 
@@ -555,7 +815,6 @@ const SubmitScholarPage: React.FC = () => {
         form.death_date_gregorian ? { date_type: "death", calendar: "gregorian", year: parseInt(form.death_date_gregorian), raw_text: form.death_date_gregorian, is_approximate: false } : null,
         form.death_date_hijri ? { date_type: "death", calendar: "hijri", year: parseInt(form.death_date_hijri), raw_text: form.death_date_hijri, is_approximate: false } : null,
       ].filter(Boolean),
-      // DRAFT: no files (portrait/work/media files) go to the backend here — only links.
       references: form.refs.filter(r => r.title || r.citation).map(r => ({ title: r.title, citation: r.citation, url: r.url || null })),
       works: form.works.filter(w => w.title).map(w => ({
         title: w.title,
@@ -579,8 +838,7 @@ const SubmitScholarPage: React.FC = () => {
   };
 
   const manualSaveDraft = async () => {
-    // Always keep the local (crash-safety) copy in sync first.
-    saveDraft(scholarId, form, step, draftVersionId);
+    saveDraft(scholarId, form, step, draftVersionId, lang);
 
     try {
       setDraftSaveError(null);
@@ -591,12 +849,7 @@ const SubmitScholarPage: React.FC = () => {
         setDraftVersionId(newDraftVersionId);
       }
 
-      // ✅ Once the save succeeds, the database is now the single source
-      // of truth for this draft — clear the local copy. If the user
-      // keeps typing after this, the existing auto-save useEffect will
-      // naturally start writing to localStorage again (protecting only
-      // the NEW, not-yet-saved changes) until the next successful save.
-      clearDraft(scholarId);
+      clearDraft(scholarId, draftVersionId,lang);
 
       setDraftSavedPulse(true);
       setTimeout(() => setDraftSavedPulse(false), 1800);
@@ -605,6 +858,20 @@ const SubmitScholarPage: React.FC = () => {
       setDraftSaveError(extractErrorMessage(error, "Could not save draft to server. Your progress is still saved on this device."));
     }
   };
+
+    useEffect(() => {
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      // Only warn if we are in the form phase and there is actual data typed
+      if (phase === "form" && (form.canonical_name.trim() !== "" || form.biography.trim() !== "")) {
+        e.preventDefault();
+        e.returnValue = ""; // Required for Chrome to show the warning
+      }
+    };
+
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    return () => window.removeEventListener("beforeunload", handleBeforeUnload);
+  }, [phase, form.canonical_name, form.biography]);
+
 
   useEffect(() => {
     const fetchMeta = async () => {
@@ -699,7 +966,6 @@ const SubmitScholarPage: React.FC = () => {
       const selectedLang = LANGUAGES.find(l => l.code === lang.toLowerCase());
 
       const relationships = [
-        // ✅ CHANGED: Backend expects 'related_version_id', even though the frontend state variable is still called 'scholar_id'
         ...form.teachers.filter(t => t.scholar_id !== null).map(t => ({ related_version_id: t.scholar_id, relation_type: "teacher" })),
         ...form.students.filter(s => s.scholar_id !== null).map(s => ({ related_version_id: s.scholar_id, relation_type: "student" })),
       ];
@@ -722,16 +988,16 @@ const SubmitScholarPage: React.FC = () => {
           form.death_date_hijri ? { date_type: "death", calendar: "hijri", year: parseInt(form.death_date_hijri), raw_text: form.death_date_hijri, is_approximate: false } : null,
         ].filter(Boolean),
         references: form.refs.map(r => ({ title: r.title, citation: r.citation, url: r.url || null })),
-                works: form.works.map(w => ({
+        works: form.works.map(w => ({
           title: w.title,
           year: w.year ? parseInt(w.year) : null,
           format: w.type,
           description: w.desc || null,
           media_url: w.accessMode === "link" ? w.url : null,
-          source_type: w.accessMode === "upload" ? "upload" : w.accessMode === "none" ? "none" : "external", // ✅ Fixed to handle "none"
+          source_type: w.accessMode === "upload" ? "upload" : w.accessMode === "none" ? "none" : "external",
           file_ref: w.accessMode === "upload" ? `work_file_${form.works.indexOf(w)}` : null,
         })),
-                media: form.media.map((m, index) => ({
+        media: form.media.map((m, index) => ({
           title: m.title,
           year: m.year ? parseInt(m.year) : null,
           description: m.desc || null,
@@ -754,19 +1020,17 @@ const SubmitScholarPage: React.FC = () => {
       form.media.forEach((m, i) => { if (m.accessMode === "upload" && m.file) formData.append(`media_file_${i}`, m.file); });
       if (form.portraitFile) formData.append("image", form.portraitFile);
 
-            const response = await scholarsApi.create(formData);
+      const response = await scholarsApi.create(formData);
       
-      // ✅ NEW: Check for hidden warnings (like image upload failures)
       if (response.warnings && response.warnings.length > 0) {
         const warningMsg = response.warnings.map((w: any) => `${w.type.toUpperCase()}: ${w.message}`).join("\n");
         alert(`⚠️ Scholar submitted, but the following issues occurred:\n\n${warningMsg}\n\nPlease check the console for details.`);
         console.warn("Submission warnings:", response.warnings);
-        // Do NOT clear draft or go to success yet, let them fix it
         return; 
       }
 
       setSuccessMessage(response.message || "Submission successful!");
-      clearDraft(scholarId);
+      clearDraft(scholarId, draftVersionId); // ✅ Clear the specific version's draft
       setPhase("success");
     } catch (error: any) {
       console.error("Failed to submit scholar:", error);
@@ -777,23 +1041,18 @@ const SubmitScholarPage: React.FC = () => {
     }
   };
 
-  // ✅ ALWAYS forces a completely fresh start to create a new scholar
   const startNewSubmission = () => {
-    clearDraft(scholarId);
+    clearDraft(scholarId, draftVersionId);
     window.location.href = "/scholars/submit";
   };
 
-    // Reachable from ANYWHERE mid-form (no navbar in this design, so it
-  // lives in the sticky header). Clears BOTH the current session's
-  // local draft AND the shared "new scholar" slot, so returning to
-  // /scholars/submit never shows stale leftover data from before.
   const startFreshDraft = () => {
     const confirmed = window.confirm(
       tt("submitScholar.draft.confirmNew", "Start a new scholar? Any unsaved progress on this form will be lost (saved drafts are safe).")
     );
     if (!confirmed) return;
-    clearDraft(scholarId);
-    clearDraft(undefined); // the shared "new" slot
+    clearDraft(scholarId, draftVersionId,lang);
+    clearDraft(undefined, null,lang);
     window.location.href = "/scholars/submit";
   };
 
@@ -820,10 +1079,10 @@ const SubmitScholarPage: React.FC = () => {
               {(["EN", "AR", "FR"] as Language[]).map(l => (
                 <button
                   key={l}
-                                    onClick={() => { 
+                  onClick={() => { 
                     setPickedLang(l); 
                     setLang(l); 
-                    navigate(`/scholars/submit/${l.toLowerCase()}`); // ✅ ADDED: Puts language in URL
+                    navigate(`/scholars/submit/${l.toLowerCase()}`);
                   }}
                   style={{ padding: "12px 24px", borderRadius: "999px", border: `1.5px solid ${pickedLang === l ? GREEN : BORDER}`, background: pickedLang === l ? GREEN : "transparent", color: pickedLang === l ? "#fff" : MUTED, fontFamily: MONO, fontSize: "11px", fontWeight: 700, letterSpacing: "0.1em", cursor: "pointer", transition: "all 0.2s" }}>
                   {l === "AR" ? "ARABIC" : l === "EN" ? "ENGLISH" : "FRANÇAIS"}
@@ -992,7 +1251,13 @@ const SubmitScholarPage: React.FC = () => {
             {form.teachers.length === 0 && <p style={{ fontSize: "13px", color: MUTED, fontStyle: "italic", padding: "16px 0" }}>{t("submitScholar.step2.noTeachers")}</p>}
             {form.teachers.map((p, i) => (
               <ItemCard key={i} index={i} label="Teacher" onRemove={() => upd("teachers", form.teachers.filter((_, idx) => idx !== i))}>
-                <PersonLinkSection person={p} onChange={np => { const t2 = [...form.teachers]; t2[i] = np; upd("teachers", t2); }} t={t} lang={lang.toLowerCase()} />
+                <PersonLinkSection 
+                  person={p} 
+                  onChange={np => { const t2 = [...form.teachers]; t2[i] = np; upd("teachers", t2); }} 
+                  t={t} 
+                  lang={lang.toLowerCase()} 
+                  selectedScholarIds={selectedScholarIds} 
+                />
               </ItemCard>
             ))}
           </div>
@@ -1007,7 +1272,13 @@ const SubmitScholarPage: React.FC = () => {
             {form.students.length === 0 && <p style={{ fontSize: "13px", color: MUTED, fontStyle: "italic", padding: "16px 0" }}>{t("submitScholar.step2.noStudents")}</p>}
             {form.students.map((p, i) => (
               <ItemCard key={i} index={i} label="Student" onRemove={() => upd("students", form.students.filter((_, idx) => idx !== i))}>
-                <PersonLinkSection person={p} onChange={np => { const t2 = [...form.students]; t2[i] = np; upd("students", t2); }} t={t} lang={lang.toLowerCase()} />
+                <PersonLinkSection 
+                  person={p} 
+                  onChange={np => { const t2 = [...form.students]; t2[i] = np; upd("students", t2); }} 
+                  t={t} 
+                  lang={lang.toLowerCase()} 
+                  selectedScholarIds={selectedScholarIds} 
+                />
               </ItemCard>
             ))}
           </div>
@@ -1227,7 +1498,7 @@ const SubmitScholarPage: React.FC = () => {
         @keyframes fade-in { from { opacity: 0; } to { opacity: 1; } }
         .submit-scholar-page button, .submit-scholar-page input, .submit-scholar-page select, .submit-scholar-page textarea { transition: border-color 0.15s ease, background-color 0.15s ease, color 0.15s ease, box-shadow 0.15s ease; }
       `}</style>
-            <header style={{ position: "sticky", top: 0, zIndex: 50, background: "rgba(249,250,247,0.96)", backdropFilter: "blur(8px)", borderBottom: "1px solid rgba(192,201,195,0.3)", padding: "14px 0" }}>
+      <header style={{ position: "sticky", top: 0, zIndex: 50, background: "rgba(249,250,247,0.96)", backdropFilter: "blur(8px)", borderBottom: "1px solid rgba(192,201,195,0.3)", padding: "14px 0" }}>
         <div style={{ maxWidth: "900px", margin: "0 auto", padding: "0 40px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
           <div><div style={{ fontFamily: MONO, fontSize: "10px", color: GREEN, letterSpacing: "0.2em", opacity: 0.7 }}>OULAMAUNA</div><div style={{ fontSize: "13px", color: MUTED }}>{t("submitScholar.portal.title")}</div></div>
           <button

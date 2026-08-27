@@ -142,7 +142,7 @@ export interface ApiScholarVersion {
   language_id: number;
   canonical_name: string;
   biography: string;
-  status: "pending" | "approved" | "rejected";
+  status: "draft" | "pending" | "approved" | "rejected" | "superseded";
   version_type: "creation" | "edition";
   image_url: string | null;
   image_status: string | null;
@@ -238,6 +238,21 @@ export const scholarsApi = {
       method: "POST",
       body: JSON.stringify(payload),
     }),
+
+    getMyDrafts: (): Promise<any> =>
+    request("/drafts"),
+
+  getDraftById: (versionId: number): Promise<any> =>
+    request(`/draft/${versionId}`),
+
+  deleteDraft: (versionId: number): Promise<any> =>
+    request(`/draft/${versionId}`, { method: "DELETE" }),
+
+  submitDraft: (versionId: number): Promise<any> =>
+    request(`/draft/${versionId}/submit`, { method: "POST" }),
+
+  addRelationship: (payload: { version_id: number; related_version_id: number; relation_type: string }): Promise<any> =>
+    request("/relationships", { method: "POST", body: JSON.stringify(payload) }),  
 
   searchByName: (q: string, lang: string): Promise<any> =>
     request(`/name?q=${encodeURIComponent(q)}&lang=${encodeURIComponent(lang)}`),

@@ -1,928 +1,496 @@
-
-import { useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import React, { useState, useMemo, useEffect } from "react";
+import { useParams, useNavigate, useSearchParams } from "react-router-dom";
 import { useLang } from "../../context/LanguageContext";
 
-/* ─────────────────────── Types ─────────────────────── */
-type DisciplineStatus = "existing" | "new_pending" | "new_kept" | "new_removed";
+/* ------------------------------------------------------------------ */
+/*  Design tokens — Oulamnauna admin palette                          */
+/* ------------------------------------------------------------------ */
+const colors = {
+  creamLight: "#fcfaf5",
+  creamMid: "#f6efdc",
+  creamDark: "#e5d5a8",
+  forestGreen: "#0b4335",
+  amber: "#b8860b",
+  red: "#8b2c2c",
+};
 
-interface DisciplineTag {
-  id: string;
-  label: string;
-  isNew: boolean;
-  status: DisciplineStatus;
-  dbUrl?: string;
-}
+const fonts = {
+  headline: "'Hanken Grotesk', sans-serif",
+  body: "'Inter', sans-serif",
+  label: "'JetBrains Mono', monospace",
+};
 
-interface Teacher {
-  id: string;
-  name: string;
-  subtitle: string;
-}
+const cardStyle: React.CSSProperties = {
+  backgroundColor: colors.creamLight,
+  borderRadius: 12,
+  boxShadow: "0px 4px 20px rgba(11, 67, 53, 0.08)",
+  border: `1px solid ${colors.forestGreen}`,
+};
 
+/* ------------------------------------------------------------------ */
+/*  Reusable UI Components                                             */
+/* ------------------------------------------------------------------ */
+const Icon: React.FC<{ name: string; size?: number; filled?: boolean }> = ({
+  name,
+  size = 18,
+  filled = false,
+}) => (
+  <span
+    className="material-symbols-outlined"
+    style={{
+      fontSize: size,
+      lineHeight: 1,
+      fontVariationSettings: `'FILL' ${filled ? 1 : 0}, 'wght' 400, 'GRAD' 0, 'opsz' 24`,
+    }}
+  >
+    {name}
+  </span>
+);
+
+const StatusBadge: React.FC<{ status: string }> = ({ status }) => {
+  const map: Record<string, { bg: string; color: string; dot: string }> = {
+    "Pending Review": { bg: colors.creamMid, color: colors.amber, dot: colors.amber },
+    "Under Review": { bg: colors.creamDark, color: colors.forestGreen, dot: colors.forestGreen },
+    Approved: { bg: colors.forestGreen, color: colors.creamLight, dot: colors.creamLight },
+    Rejected: { bg: colors.red, color: colors.creamLight, dot: colors.creamLight },
+  };
+  const s = map[status] || map["Pending Review"];
+  return (
+    <span style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "4px 10px", borderRadius: 9999, backgroundColor: s.bg, color: s.color, fontFamily: fonts.label, fontSize: 11, fontWeight: 600, letterSpacing: "0.03em", border: `1px solid ${colors.forestGreen}` }}>
+      <span style={{ width: 6, height: 6, borderRadius: "50%", backgroundColor: s.dot }} />
+      {status}
+    </span>
+  );
+};
+
+/* ------------------------------------------------------------------ */
+/*  Types                                                              */
+/* ------------------------------------------------------------------ */
+type Language = "EN" | "AR" | "FR";
+
+interface Contributor { name: string; contributions: number; profileUrl?: string; }
 interface Work {
-  id: string;
-  title: string;
-  year: string;
-  format: "BOOK" | "MANUSCRIPT" | "ARTICLE";
-  access: string | null;
-  accessLabel: string | null;
+  title: string; year: number; format: string;
+  digitalAccess?: "pdf" | "audio" | "file" | null;
+  accessUrl?: string; accessSource?: "upload" | "link";
+  accessFileName?: string; uploadedBy?: string; uploadedByUrl?: string;
 }
-
 interface MediaItem {
-  id: string;
-  title: string;
-  meta: string;
-  type: string;
-  icon: string;
-  color: string;
-  description: string;
-  access?: string | null;
+  media_id?: number; type: "pdf" | "audio" | "video"; title: string; description: string;
+  viewCount: number; likeCount: number; action: string; actionIcon: string;
+  accessUrl?: string; accessSource?: "upload" | "link"; accessFileName?: string;
+  uploadedBy?: string; uploadedByUrl?: string;
 }
-
-interface AcademicRef {
-  id: string;
-  text: string;
+interface RelatedPerson {
+  initials: string; color: string; textColor: string; name: string; role: string; profileUrl?: string;
 }
+interface Reference { title: string; citation: string; url: string | null; }
+interface RecentRevision { date: string; author: string; action: string; authorUrl?: string; }
 
 interface ScholarDetail {
-  id: string;
-  submittedBy: string;
-  submitterAvatar: string;
-  date: string;
-  submittedLang: "EN" | "AR" | "FR";
-  isHighImpact: boolean;
-  fullName: string;
-  fullNameAr: string;
-  bio: string;
-  wordCount: number;
-  readingTime: number;
-  birthYear: string;
-  birthPlace: string;
-  deathYear: string;
-  deathPlace: string;
-  lifespan: string;
-  region: string;
-  century: string;
-  discipline: string;
-  teachers: Teacher[];
-  disciples: Teacher[];
-  works: Work[];
-  media: MediaItem[];
-  references: AcademicRef[];
-  disciplineTags: DisciplineTag[];
-  submitterNote: string;
+  id: number; versionId: number; status?: string;
+  name: Record<Language, string>; subtitle: Record<Language, string>;
+  createdBy: string; createdByUrl: string; createdDate: string;
+  image: string;
+  overviewText: Record<Language, string>;
+  body: Record<Language, string[]>;
+  atAGlance: { fullName: string; born: string; died: string; century: string; region: string; discipline: string; };
+  contributors: Contributor[]; works: Work[]; media: MediaItem[];
+  intellectualLineage: RelatedPerson[]; notableDisciples: RelatedPerson[];
+  academicReferences: Reference[]; recentRevisions: RecentRevision[];
 }
 
-/* ─────────────────────── Mock data ─────────────────────── */
-const DETAIL: ScholarDetail = {
-  id: "sch_001",
-  submittedBy: "Zaid Al-Hassan",
-  submitterAvatar: "ZA",
-  date: "24 OCT 2023",
-  submittedLang: "AR",
-  isHighImpact: true,
-  fullName: "Malek Bennabi",
-  fullNameAr: "مالك بن نبي",
-  bio: `يعدّ مالك بن نبي من أبرز المفكرين الإسلاميين في القرن العشرين، إذ أسهم إسهاماً بالغ الأثر في تشكيل الفكر الإصلاحي العربي والإسلامي المعاصر. وُلد في قسنطينة عام 1905، وتوفي في الجزائر عام 1973، بعد أن أمضى معظم حياته في التأمل والكتابة والنضال الفكري في مواجهة إشكاليات التخلف الحضاري.
-
-طوّر بن نبي رؤية نقدية شاملة حول ظاهرة "القابلية للاستعمار"، مؤكداً أن ضعف المجتمعات الإسلامية ليس نتيجةً خارجية حتمية، بل هو في جوهره أزمة داخلية ثقافية وحضارية. وقد عالج في كتاباته إشكالية النهضة من منظور حضاري متكامل، يربط بين الدين والإنسان والتراب باعتبارها عناصر تكوينية لأي نهضة حقيقية.`,
-  wordCount: 142,
-  readingTime: 2,
-  birthYear: "1905",
-  birthPlace: "Constantine",
-  deathYear: "1973",
-  deathPlace: "Algiers",
-  lifespan: "1905 · 1973 (Algeria)",
-  region: "North Africa (Algeria)",
-  century: "20th Century / 14th AH",
-  discipline: "Social Sciences, Philosophy",
-  teachers: [
-    { id: "t1", name: "Ibn Badis", subtitle: "Early Influence" },
-    { id: "t2", name: "Ibn Khaldun", subtitle: "Theoretical Foundation" },
-  ],
-  disciples: [
-    { id: "d1", name: "Al-Mesawi", subtitle: "Direct Student" },
-    { id: "d2", name: "Ghannoushi", subtitle: "Intellectual Heir" },
-  ],
+/* ------------------------------------------------------------------ */
+/*  Mock Data                                                          */
+/* ------------------------------------------------------------------ */
+const MOCK_SCHOLAR: ScholarDetail = {
+  id: 1, versionId: 101, status: "Pending Review",
+  name: { EN: "Ibn al-Haytham", AR: "ابن الهيثم", FR: "Alhazen" },
+  subtitle: { EN: "The Father of Modern Optics", AR: "أبو البصريات", FR: "Le Père de l'Optique Moderne" },
+  createdBy: "Karim Mansouri", createdByUrl: "/profile/1", createdDate: "June 14, 2026",
+  image: "https://ui-avatars.com/api/?name=Ibn+al-Haytham&background=0b4335&color=fff&size=128",
+  overviewText: {
+    EN: "Ibn al-Haytham was a pioneering polymath, mathematician, astronomer, and physicist of the Islamic Golden Age.",
+    AR: "ابن الهيثم كان عالمًا موسوعيًا رائدًا، ورياضيًا، وفلكيًا، وفيزيائيًا في العصر الذهبي الإسلامي.",
+    FR: "Ibn al-Haytham était un polymathe, mathématicien, astronome et physicien pionnier de l'âge d'or islamique."
+  },
+  body: {
+    EN: [
+      "He made significant contributions to the principles of optics, astronomy, mathematics, and the scientific method.",
+      "His Book of Optics (1011-1021) laid the foundation for modern optics and influenced later European scholars like Kepler and Descartes."
+    ],
+    AR: [
+      "قدم مساهمات كبيرة في مبادئ البصريات والفلك والرياضيات والمنهج العلمي.",
+      "كتاب المناظر (1011-1021) وضع الأسس للبصريات الحديثة وأثر على علماء أوروبيين لاحقين مثل كيبلر وديكارت."
+    ],
+    FR: [
+      "Il a apporté des contributions significatives aux principes de l'optique, de l'astronomie, des mathématiques et de la méthode scientifique.",
+      "Son Livre d'optique (1011-1021) a jeté les bases de l'optique moderne et a influencé des savants européens ultérieurs comme Kepler et Descartes."
+    ]
+  },
+  atAGlance: {
+    fullName: "Abu Ali al-Hasan ibn al-Haytham",
+    born: "965 CE / 354 AH",
+    died: "1040 CE / 430 AH",
+    century: "10th–11th century",
+    region: "Basra, Iraq",
+    discipline: "Optics, Mathematics, Astronomy"
+  },
+  contributors: [{ name: "Karim Mansouri", contributions: 1, profileUrl: "/profile/1" }],
   works: [
-    { id: "w1", title: "The Quranic Phenomenon",                   year: "1946", format: "BOOK",       access: null,                  accessLabel: null },
-    { id: "w2", title: "Conditions of the Renaissance",            year: "1948", format: "BOOK",       access: "https://archive.org", accessLabel: "VIEW PDF" },
-    { id: "w3", title: "The Problem of Ideas in the Muslim World", year: "1970", format: "MANUSCRIPT", access: null,                  accessLabel: null },
-    { id: "w4", title: "Vocation de l'Islam",                      year: "1954", format: "BOOK",       access: "https://archive.org", accessLabel: "VIEW PDF" },
+    { title: "Book of Optics (Kitab al-Manazir)", year: 1021, format: "BOOK", digitalAccess: "pdf", accessUrl: "#", accessSource: "upload", accessFileName: "optics.pdf", uploadedBy: "Karim Mansouri", uploadedByUrl: "/profile/1" },
+    { title: "Doubts Concerning Ptolemy", year: 1028, format: "TREATISE", digitalAccess: null }
   ],
   media: [
-    { id: "m1", title: "The Question of Culture",  meta: "2.4 MB · Primary Source",  type: "Primary Source",   icon: "description",   color: "#E8F0FE", description: "Original manuscript with annotations.", access: "https://archive.org/details/example-manuscript" },
-    { id: "m2", title: "Original Portraits",        meta: "1.1 MB · Media",           type: "Media",            icon: "photo_library", color: "#FCE8E6", description: "Photographic archive from the 1960s.",   access: "https://archive.org/details/example-portraits" },
-    { id: "m3", title: "1965 Cairo Lecture",         meta: "Audio · 45:00",            type: "Historic Seminar", icon: "mic",           color: "#E6F4EA", description: "Recorded lecture at Al-Azhar University.", access: "https://archive.org/details/example-lecture-audio" },
-    { id: "m4", title: "The Idea and Thought",       meta: "Video · HD",               type: "Documentary",      icon: "play_circle",   color: "#FEF3E2", description: "Documentary series on his legacy.",      access: "https://archive.org/details/example-documentary" },
+    { media_id: 1, type: "pdf", title: "Manuscript Scan", description: "High-res scan of the 13th century manuscript", viewCount: 124, likeCount: 15, action: "DOWNLOAD FILE", actionIcon: "download", accessUrl: "#", accessSource: "upload", accessFileName: "manuscript.pdf", uploadedBy: "Karim Mansouri", uploadedByUrl: "/profile/1" },
+    { media_id: 2, type: "video", title: "Lecture on Optics", description: "Modern academic lecture discussing his theories", viewCount: 89, likeCount: 8, action: "WATCH NOW", actionIcon: "open_in_new", accessUrl: "https://youtube.com", accessSource: "link" }
   ],
-  references: [
-    { id: "r1", text: "Bennabi, M. (1948). Les Conditions de la Renaissance. Alger: Éditions de la Renaissance d'Algérie." },
-    { id: "r2", text: "Stenberg, L. (1996). The Islamization of Science: Four Muslim Positions. Lund Studies in African and Asian Religions." },
-    { id: "r3", text: "Naylor, P. C. (2000). France and Algeria: A History of Decolonization and Transformation. University Press of Florida." },
+  intellectualLineage: [
+    { initials: "BM", color: colors.forestGreen, textColor: colors.creamLight, name: "Banu Musa", role: "HISTORICAL INFLUENCE", profileUrl: "/scholars/2" }
   ],
-  disciplineTags: [
-    { id: "dt1", label: "Philosophy of History",  isNew: false, status: "existing",    dbUrl: "/disciplines/philosophy-of-history" },
-    { id: "dt2", label: "Civilizational Studies", isNew: true,  status: "new_pending" },
-    { id: "dt3", label: "Sociology",              isNew: false, status: "existing",    dbUrl: "/disciplines/sociology" },
-    { id: "dt4", label: "Political Economy",      isNew: true,  status: "new_pending" },
-    { id: "dt5", label: "Islamic Reform",         isNew: false, status: "existing",    dbUrl: "/disciplines/islamic-reform" },
+  notableDisciples: [
+    { initials: "RB", color: colors.amber, textColor: colors.forestGreen, name: "Roger Bacon", role: "DISCIPLE", profileUrl: "/scholars/3" },
+    { initials: "JK", color: colors.red, textColor: colors.creamLight, name: "Johannes Kepler", role: "DISCIPLE", profileUrl: "/scholars/4" }
   ],
-  submitterNote: `"This is a high-quality summary based on original French and Arabic texts. She verified the dates against the Algerian National Library records. Please note the specific spelling of 'Bennabi' in Arabic as it often gets mistranscribed."`,
+  academicReferences: [
+    { title: "The Optics of Ibn al-Haytham", citation: "Sabra, A. I. (1989). The Optics of Ibn al-Haytham. Kuwait: National Council for Culture, Arts and Letters.", url: "https://example.com/ref1" }
+  ],
+  recentRevisions: [
+    { date: "June 14, 2026", author: "Karim Mansouri", action: "Version 101 - Pending Review", authorUrl: "/profile/1" }
+  ]
 };
 
-/* ─────────────────────── Colors ─────────────────────── */
-const C = {
-  bg: "#FAF9F6",
-  border: "#E0E2DF",
-  primary: "#0b4335",
-  forest: "#285B4B",
-  gold: "#C9A84C",
-  text: "#191c1b",
-  muted: "#5C6360",
-  subtle: "#9EAAA6",
-  white: "#ffffff",
-  hoverBg: "rgba(11,67,53,0.05)",
-  newChipBg: "#0b4335",
-  newChipText: "#ffffff",
-  existingChipBg: "rgba(11,67,53,0.07)",
-  existingChipBorder: "rgba(11,67,53,0.18)",
-  existingChipText: "#0b4335",
-  keptChipBg: "rgba(11,67,53,0.12)",
-  keptChipBorder: "rgba(11,67,53,0.35)",
-  keptChipText: "#0b4335",
-  removedChipBg: "rgba(186,26,26,0.06)",
-  removedChipBorder: "rgba(186,26,26,0.25)",
-  removedChipText: "#ba1a1a",
-  approveBtn: "#0b4335",
-  rejectBtn: "#ba1a1a",
-  rejectBorder: "rgba(186,26,26,0.35)",
-  rejectBg: "rgba(186,26,26,0.05)",
-  stripBg: "#fff",
-  stripText: "#5C6360",
-  editBtn: "#9a6f1a",
-  editBg: "rgba(201,168,76,0.12)",
-  editBorder: "rgba(201,168,76,0.4)",
-};
-
-type DecisionMode = null | "approve" | "reject" | "strip";
-
-/* ─────────────────────── helpers ─────────────────────── */
-// Returns translated label + icon for a media item's action button.
-// tKey is used with the t() function from your i18n context.
-function getMediaViewInfo(m: MediaItem): { tKey: string; icon: string } {
-  if (m.icon === "mic" || m.meta.toLowerCase().includes("audio"))
-    return { tKey: "scholarReview.media.listen",     icon: "headphones" };
-  if (m.icon === "play_circle" || m.meta.toLowerCase().includes("video"))
-    return { tKey: "scholarReview.media.watch",      icon: "play_circle" };
-  if (
-    m.icon === "description" ||
-    m.meta.toLowerCase().includes("pdf") ||
-    m.type.toLowerCase().includes("primary source")
-  )
-    return { tKey: "scholarReview.media.viewPdf",    icon: "picture_as_pdf" };
-  if (m.icon === "photo_library")
-    return { tKey: "scholarReview.media.viewPhotos", icon: "image" };
-  return { tKey: "scholarReview.media.open",         icon: "open_in_new" };
-}
-
-/* ─────────────────────── Component ─────────────────────── */
+/* ------------------------------------------------------------------ */
+/*  Main Component                                                     */
+/* ------------------------------------------------------------------ */
 export default function ScholarReview() {
-  const { id: _scholarId } = useParams();
+  const { id } = useParams<{ id: string }>();
+  const [searchParams] = useSearchParams();
+  const langParam = searchParams.get("lang") as Language | null;
   const navigate = useNavigate();
-  const { t, lang } = useLang();
+  const { lang: siteLang } = useLang();
+  
+  const initialLang = (langParam === "EN" || langParam === "AR" || langParam === "FR") 
+    ? langParam 
+    : (siteLang as Language);
+
+  const [lang, setLang] = useState<Language>(initialLang);
+  const [data, setData] = useState<ScholarDetail | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [showApproveConfirm, setShowApproveConfirm] = useState(false);
+  const [showRejectConfirm, setShowRejectConfirm] = useState(false);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setData(MOCK_SCHOLAR);
+      setIsLoading(false);
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [id, lang]);
+
+  if (isLoading || !data) {
+    return (
+      <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", backgroundColor: colors.creamLight, color: colors.forestGreen }}>
+        <Icon name="hourglass_empty" size={32} />
+      </div>
+    );
+  }
+
   const isRTL = lang === "AR";
+  const thStyle: React.CSSProperties = { fontFamily: fonts.label, fontSize: 11, letterSpacing: "0.06em", fontWeight: 600, color: colors.forestGreen, textAlign: isRTL ? "right" : "left", padding: "12px 14px", borderBottom: `1px solid ${colors.forestGreen}`, textTransform: "uppercase", opacity: 0.8 };
+  const tdStyle: React.CSSProperties = { fontFamily: fonts.body, fontSize: 13, color: colors.forestGreen, padding: "14px", borderBottom: `1px solid ${colors.creamDark}`, textAlign: isRTL ? "right" : "left" };
 
-  const [mode, setMode] = useState<DecisionMode>(null);
-  const [note, setNote] = useState("");
-
-  const [disciplineTags, setDisciplineTags] = useState<DisciplineTag[]>(DETAIL.disciplineTags);
-  const [confirmingId, setConfirmingId] = useState<string | null>(null);
-
-  const [isEditing, setIsEditing] = useState(false);
-  const [scholar, setScholar] = useState<ScholarDetail>(DETAIL);
-  const [draftSnapshot, setDraftSnapshot] = useState<ScholarDetail | null>(null);
-
-  const startEditing = () => { setDraftSnapshot(scholar); setIsEditing(true); };
-  const cancelEditing = () => { if (draftSnapshot) setScholar(draftSnapshot); setDraftSnapshot(null); setIsEditing(false); };
-  const saveEditing = () => { setDraftSnapshot(null); setIsEditing(false); };
-
-  const updateField = <K extends keyof ScholarDetail>(key: K, value: ScholarDetail[K]) =>
-    setScholar((prev) => ({ ...prev, [key]: value }));
-
-  const updateTeacher = (list: "teachers" | "disciples", id: string, field: keyof Teacher, value: string) =>
-    setScholar((prev) => ({ ...prev, [list]: prev[list].map((p) => p.id === id ? { ...p, [field]: value } : p) }));
-
-  const updateWork = (id: string, field: keyof Work, value: string) =>
-    setScholar((prev) => ({ ...prev, works: prev.works.map((w) => w.id === id ? { ...w, [field]: value } : w) }));
-
-  const updateMedia = (id: string, field: keyof MediaItem, value: string) =>
-    setScholar((prev) => ({ ...prev, media: prev.media.map((m) => m.id === id ? { ...m, [field]: value } : m) }));
-
-  const keepNewDiscipline  = (id: string) => setConfirmingId(id);
-  const cancelKeep         = ()           => setConfirmingId(null);
-  const confirmKeep        = (id: string) => { setDisciplineTags((prev) => prev.map((d) => d.id === id ? { ...d, status: "new_kept" } : d)); setConfirmingId(null); };
-  const removeNewDiscipline = (id: string) => { setDisciplineTags((prev) => prev.map((d) => d.id === id ? { ...d, status: "new_removed" } : d)); setConfirmingId(null); };
-  const undoRemove         = (id: string) => setDisciplineTags((prev) => prev.map((d) => d.id === id ? { ...d, status: "new_pending" } : d));
-
-  const handleConfirm = () => {
-    console.log("Review decision:", { scholarId: scholar.id, decision: mode, note, disciplines: disciplineTags.filter((d) => d.status !== "new_removed").map((d) => ({ label: d.label, isNew: d.isNew })) });
+  const handleApprove = () => {
+    console.log("Approved:", data.id);
+    setShowApproveConfirm(false);
     navigate("/admin/pending/scholars");
   };
 
-  // ── Submitted language label — keep these hardcoded to avoid missing-key issue ──
-  const langLabel =
-    scholar.submittedLang === "AR" ? "Arabic (Primary)" :
-    scholar.submittedLang === "FR" ? "Français (Primary)" :
-    "English (Primary)";
-
-  const newKeptCount    = disciplineTags.filter((d) => d.isNew && d.status === "new_kept").length;
-  const newRemovedCount = disciplineTags.filter((d) => d.isNew && d.status === "new_removed").length;
-  const newPendingCount = disciplineTags.filter((d) => d.isNew && d.status === "new_pending").length;
+  const handleReject = () => {
+    console.log("Rejected:", data.id);
+    setShowRejectConfirm(false);
+    navigate("/admin/pending/scholars");
+  };
 
   return (
-    <div
-      dir={isRTL ? "rtl" : "ltr"}
-      style={{ fontFamily: "'Inter', sans-serif", color: C.text, background: C.bg, minHeight: "100vh" }}
-    >
-      <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Source+Serif+4:ital,opsz,wght@0,8..60,400..700;1,8..60,400..700&family=JetBrains+Mono:wght@400;600;700&family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20,400,0,0&display=swap');
+    <div dir={isRTL ? "rtl" : "ltr"} style={{ fontFamily: fonts.body, color: colors.forestGreen, backgroundColor: colors.creamLight, minHeight: "100vh", padding: 24 }}>
+      <div style={{ maxWidth: 1280, margin: "0 auto" }}>
 
-        .ms {
-          font-family: 'Material Symbols Outlined';
-          font-style: normal; font-size: 16px;
-          display: inline-flex; align-items: center;
-          user-select: none; line-height: 1; flex-shrink: 0;
-        }
+        {/* ── Back Navigation ── */}
+        <button
+          onClick={() => navigate("/admin/pending/scholars")}
+          style={{ display: "flex", alignItems: "center", gap: 6, padding: "6px 12px", backgroundColor: "transparent", border: `1px solid ${colors.forestGreen}`, borderRadius: 8, fontFamily: fonts.body, fontSize: 12, color: colors.forestGreen, cursor: "pointer", marginBottom: 16 }}
+        >
+          <Icon name={isRTL ? "arrow_forward" : "arrow_back"} size={14} /> {isRTL ? "العودة إلى قائمة العلماء" : "Back to Pending Scholars"}
+        </button>
 
-        .sr-wrap { padding: 20px 28px 56px; }
-
-        .sr-crumbs {
-          font-size: 12px; color: ${C.muted}; margin-bottom: 14px;
-          display: flex; align-items: center; gap: 5px;
-        }
-        .sr-crumbs a { color: ${C.muted}; text-decoration: none; }
-        .sr-crumbs a:hover { color: ${C.primary}; }
-        .sr-crumbs .ms { font-size: 14px; opacity: 0.5; }
-        .sr-crumbs b { color: ${C.text}; font-weight: 600; }
-
-        /* ── Edit bar ── */
-        .sr-editbar {
-          display: flex; align-items: center; justify-content: space-between;
-          background: ${C.editBg}; border: 1.5px solid ${C.editBorder};
-          border-radius: 8px; padding: 10px 16px; margin-bottom: 16px;
-        }
-        .sr-editbar-label { font-size: 12.5px; font-weight: 600; color: ${C.editBtn}; display: flex; align-items: center; gap: 7px; }
-        .sr-editbar-label .ms { font-size: 16px; }
-        .sr-editbar-actions { display: flex; gap: 8px; }
-        .sr-editbar-btn { font-size: 12.5px; font-weight: 700; padding: 7px 14px; border-radius: 6px; cursor: pointer; border: none; font-family: 'Inter', sans-serif; }
-        .sr-editbar-cancel { background: ${C.white}; color: ${C.muted}; border: 1px solid ${C.border}; }
-        .sr-editbar-cancel:hover { background: #F2F4F2; }
-        .sr-editbar-confirm { background: ${C.primary}; color: #fff; }
-        .sr-editbar-confirm:hover { background: #0e5443; }
-
-        .sr-edit-toggle {
-          display: inline-flex; align-items: center; gap: 6px;
-          font-size: 12.5px; font-weight: 600; padding: 8px 14px;
-          border-radius: 7px; cursor: pointer; border: 1.5px solid ${C.editBorder};
-          background: ${C.white}; color: ${C.editBtn};
-          font-family: 'Inter', sans-serif; white-space: nowrap; flex-shrink: 0;
-        }
-        .sr-edit-toggle:hover { background: ${C.editBg}; }
-        .sr-edit-toggle .ms { font-size: 15px; }
-
-        /* Inline edit inputs */
-        .sr-inline-input {
-          width: 100%; border: 1.5px dashed ${C.editBorder}; border-radius: 5px;
-          padding: 4px 7px; font-family: inherit; font-size: inherit; color: inherit;
-          background: rgba(201,168,76,0.06); box-sizing: border-box;
-        }
-        .sr-inline-input:focus { outline: none; border-color: ${C.editBtn}; border-style: solid; }
-        .sr-inline-textarea {
-          width: 100%; border: 1.5px dashed ${C.editBorder}; border-radius: 6px;
-          padding: 10px 12px; font-family: inherit; font-size: 13.5px; line-height: 1.85;
-          color: inherit; background: rgba(201,168,76,0.06); box-sizing: border-box;
-          resize: vertical; min-height: 160px; direction: rtl; text-align: right;
-        }
-        .sr-inline-textarea:focus { outline: none; border-color: ${C.editBtn}; border-style: solid; }
-
-        /* ── Hero ──
-           Always LTR so layout never flips even when page is AR.
-           Two rows: [avatar | info] on top, [action buttons] below on the same card.
-        */
-        .sr-hero {
-          background: ${C.white}; border: 1px solid ${C.border};
-          border-radius: 10px; padding: 18px 22px; margin-bottom: 20px;
-          direction: ltr;
-        }
-        .sr-hero-top {
-          display: flex; align-items: flex-start; gap: 16px;
-        }
-        .sr-avatar-initials {
-          width: 56px; height: 56px; border-radius: 50%;
-          background: ${C.hoverBg}; border: 2px solid rgba(11,67,53,0.12);
-          display: flex; align-items: center; justify-content: center;
-          font-size: 16px; font-weight: 700; color: ${C.forest}; flex-shrink: 0;
-        }
-        .sr-hero-info { flex: 1; min-width: 0; }
-
-        /* Scholar name row — always LTR, Arabic name isolated */
-        .sr-hero-name {
-          font-size: 17px; font-weight: 700; color: ${C.text};
-          margin-bottom: 6px;
-          display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
-          direction: ltr;
-        }
-        .sr-hero-name-latin { white-space: nowrap; }
-        .sr-hero-name-ar {
-          direction: rtl; unicode-bidi: isolate;
-          font-weight: 400; color: ${C.muted}; font-size: 15px;
-          white-space: nowrap;
-        }
-        .sr-badge-new {
-          font-size: 10px; font-weight: 700; letter-spacing: 0.06em;
-          padding: 2px 9px; border-radius: 4px;
-          background: rgba(11,67,53,0.08); color: ${C.primary};
-          text-transform: uppercase; white-space: nowrap; flex-shrink: 0;
-        }
-
-        /* Meta row — single flex row, items don't wrap individually */
-        .sr-hero-meta {
-          font-size: 12.5px; color: ${C.muted};
-          display: flex; align-items: center; gap: 6px;
-          flex-wrap: wrap; margin-bottom: 4px; direction: ltr;
-        }
-        .sr-hero-meta .ms { font-size: 14px; color: ${C.subtle}; flex-shrink: 0; }
-        .sr-hero-meta strong { color: ${C.text}; white-space: nowrap; }
-        .sr-hero-meta-item { display: inline-flex; align-items: center; gap: 4px; white-space: nowrap; }
-        .sr-hero-meta-dot { color: ${C.subtle}; flex-shrink: 0; }
-
-        .sr-hero-impact {
-          display: inline-flex; align-items: center; gap: 4px;
-          font-size: 11px; font-weight: 700; padding: 2px 9px; border-radius: 4px;
-          background: rgba(201,168,76,0.12); color: #9a6f1a; margin-top: 4px;
-        }
-        .sr-hero-impact .ms { font-size: 13px; color: #C9A84C; }
-
-        /* Action buttons — second row, flush right */
-        .sr-hero-actions {
-          display: flex; align-items: center; justify-content: flex-end;
-          gap: 8px; flex-wrap: wrap; margin-top: 14px; direction: ltr;
-        }
-        .sr-hero-btn {
-          display: inline-flex; align-items: center; gap: 6px;
-          font-size: 12.5px; font-weight: 600; padding: 8px 14px;
-          border-radius: 7px; cursor: pointer; border: 1.5px solid transparent;
-          font-family: 'Inter', sans-serif; transition: opacity .15s, background .15s;
-          white-space: nowrap; flex-shrink: 0;
-        }
-        .sr-hero-btn .ms { font-size: 15px; }
-        .sr-hero-btn:disabled { opacity: 0.4; cursor: not-allowed; }
-        .sr-btn-strip  { background: ${C.white}; color: ${C.stripText}; border-color: ${C.border}; }
-        .sr-btn-strip:hover  { background: #F2F4F2; }
-        .sr-btn-reject { background: ${C.rejectBg}; color: ${C.rejectBtn}; border-color: ${C.rejectBorder}; }
-        .sr-btn-reject:hover { background: rgba(186,26,26,0.10); }
-        .sr-btn-approve { background: ${C.approveBtn}; color: #fff; border-color: transparent; }
-        .sr-btn-approve:hover { background: #0e5443; }
-        .sr-hero-actions.has-mode .sr-hero-btn:not(.active-btn) { opacity: 0.35; }
-
-        /* ── Modal ── */
-        .sr-modal-overlay {
-          position: fixed; inset: 0; background: rgba(15,20,18,0.45);
-          display: flex; align-items: center; justify-content: center;
-          z-index: 50; padding: 20px;
-        }
-        .sr-modal {
-          background: #fff; border-radius: 12px; width: 100%; max-width: 420px;
-          padding: 24px 26px; box-shadow: 0 12px 40px rgba(0,0,0,0.18); direction: ltr;
-        }
-        .sr-modal-icon { width: 44px; height: 44px; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin-bottom: 14px; }
-        .sr-modal-icon .ms { font-size: 24px; }
-        .sr-modal-title { font-size: 16px; font-weight: 700; margin-bottom: 6px; color: ${C.text}; }
-        .sr-modal-sub { font-size: 13px; color: ${C.muted}; line-height: 1.55; margin-bottom: 16px; }
-        .sr-modal-actions { display: flex; gap: 10px; margin-top: 18px; }
-        .sr-modal-btn { flex: 1; font-size: 13px; font-weight: 700; padding: 10px; border-radius: 7px; cursor: pointer; border: none; font-family: 'Inter', sans-serif; }
-        .sr-modal-cancel { background: #F2F4F2; color: ${C.muted}; }
-        .sr-modal-cancel:hover { background: #E8EAE7; }
-
-        /* ── Main grid ── */
-        .sr-grid { display: flex; gap: 20px; align-items: flex-start; }
-        .sr-main { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 16px; }
-        .sr-sidebar { width: 272px; flex-shrink: 0; display: flex; flex-direction: column; gap: 14px; }
-
-        /* ── Card ── */
-        .sr-card { background: ${C.white}; border: 1px solid ${C.border}; border-radius: 10px; padding: 20px 22px; }
-        .sr-card-title {
-          font-size: 10.5px; font-weight: 700; letter-spacing: 0.1em;
-          text-transform: uppercase; color: ${C.muted};
-          display: flex; align-items: center; gap: 7px; margin-bottom: 16px;
-        }
-        .sr-card-title .ms { font-size: 15px; color: ${C.subtle}; }
-
-        /* ── Bio ── */
-        .sr-bio { font-size: 13.5px; line-height: 1.85; color: ${C.text}; margin-bottom: 14px; direction: rtl; text-align: right; }
-        .sr-bio-meta { font-size: 11.5px; color: ${C.subtle}; display: flex; align-items: center; gap: 10px; }
-
-        /* ── Lineage ── */
-        .sr-lineage-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
-        .sr-lineage-col-label { font-size: 10px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: ${C.muted}; margin-bottom: 10px; }
-        .sr-person-card { background: ${C.bg}; border: 1px solid ${C.border}; border-radius: 8px; padding: 10px 12px; display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
-        .sr-person-avatar { width: 36px; height: 36px; border-radius: 50%; background: rgba(11,67,53,0.08); flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; color: ${C.forest}; border: 1.5px solid rgba(11,67,53,0.12); }
-        .sr-person-fields { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px; }
-        .sr-person-name { font-size: 13px; font-weight: 600; color: ${C.text}; }
-        .sr-person-sub  { font-size: 11px; color: ${C.muted}; margin-top: 1px; }
-
-        /* ── Works table ── */
-        .sr-works-table { width: 100%; border-collapse: collapse; }
-        .sr-works-table thead tr { background: #f3f4f1; border-bottom: 1.5px solid ${C.border}; }
-        .sr-works-table th { font-family: 'JetBrains Mono', monospace; padding: 10px 14px; text-align: left; font-size: 9px; color: ${C.muted}; letter-spacing: 0.1em; font-weight: 700; }
-        .sr-works-table td { padding: 12px 14px; border-bottom: 1px solid #f0f1ee; font-size: 13px; }
-        .sr-works-table tr:last-child td { border-bottom: none; }
-        .sr-works-table tr:hover td { background: #f9faf7; }
-        .sr-works-title { font-style: italic; font-weight: 600; color: ${C.text}; font-family: 'Source Serif 4', serif; }
-        .sr-works-year  { color: ${C.muted}; }
-        .sr-format-chip { font-family: 'JetBrains Mono', monospace; font-size: 9px; font-weight: 700; padding: 3px 9px; border-radius: 4px; background: rgba(11,67,53,0.07); color: ${C.primary}; }
-        .sr-format-chip.manu { background: #f3f4f1; color: ${C.muted}; }
-        .sr-access-link { display: inline-flex; align-items: center; gap: 5px; font-family: 'JetBrains Mono', monospace; font-size: 10px; font-weight: 700; color: ${C.primary}; text-decoration: none; padding: 4px 10px; border: 1.5px solid rgba(11,67,53,0.25); border-radius: 5px; transition: background .12s; }
-        .sr-access-link:hover { background: rgba(11,67,53,0.06); }
-        .sr-access-link .ms { font-size: 12px; }
-
-        /* ── Media grid ── */
-        .sr-media-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-        .sr-media-card { background: ${C.bg}; border: 1px solid ${C.border}; border-radius: 8px; padding: 12px 14px; display: flex; align-items: flex-start; gap: 10px; direction: ltr; }
-        .sr-media-icon { width: 38px; height: 38px; border-radius: 8px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
-        .sr-media-icon .ms { font-size: 20px; color: ${C.forest}; }
-        .sr-media-body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px; }
-        .sr-media-title { font-size: 12.5px; font-weight: 600; color: ${C.text}; margin-bottom: 2px; }
-        .sr-media-desc  { font-size: 11px; color: ${C.muted}; line-height: 1.5; margin-bottom: 3px; }
-        .sr-media-meta  { font-size: 10px; color: ${C.subtle}; font-family: 'JetBrains Mono', monospace; }
-        .sr-media-view-btn {
-          display: inline-flex; align-items: center; gap: 5px; margin-top: 6px;
-          font-size: 11px; font-weight: 700; color: ${C.primary}; text-decoration: none;
-          padding: 5px 10px; border: 1.5px solid rgba(11,67,53,0.25); border-radius: 6px;
-          transition: background .12s; align-self: flex-start; white-space: nowrap;
-        }
-        .sr-media-view-btn:hover { background: rgba(11,67,53,0.07); }
-        .sr-media-view-btn .ms { font-size: 14px; }
-        .sr-media-link { display: inline-flex; align-items: center; gap: 4px; margin-top: 2px; font-size: 10.5px; font-weight: 700; color: ${C.primary}; text-decoration: none; }
-        .sr-media-link .ms { font-size: 12px; }
-        .sr-media-link:hover { text-decoration: underline; }
-
-        /* ── References ── */
-        .sr-refs { margin: 0; padding: 0 0 0 18px; display: flex; flex-direction: column; gap: 12px; }
-        .sr-refs li { font-size: 13px; color: ${C.muted}; line-height: 1.65; font-family: 'Source Serif 4', serif; }
-        .sr-refs li span { color: ${C.text}; }
-
-        /* ── Reject textarea ── */
-        .sr-textarea { width: 100%; min-height: 80px; border: 1px solid ${C.border}; border-radius: 7px; padding: 10px 12px; font-size: 13px; font-family: 'Inter', sans-serif; color: ${C.text}; resize: vertical; box-sizing: border-box; background: ${C.bg}; }
-        .sr-textarea:focus { outline: none; border-color: ${C.forest}; }
-
-        /* ── Sidebar ── */
-        .sr-side-card { background: ${C.white}; border: 1px solid ${C.border}; border-radius: 10px; padding: 18px 18px 12px; }
-        .sr-side-title { font-size: 10px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: ${C.subtle}; margin-bottom: 14px; }
-        .sr-vital-table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
-        .sr-vital-table td { padding: 6px 0; border-bottom: 1px solid #F0F1EE; vertical-align: top; }
-        .sr-vital-table td:first-child { color: ${C.muted}; width: 38%; }
-        .sr-vital-table td:last-child { font-weight: 600; color: ${C.text}; text-align: right; }
-        .sr-vital-table tr:last-child td { border-bottom: none; }
-        .sr-vital-input { width: 100%; text-align: right; border: 1.5px dashed ${C.editBorder}; border-radius: 5px; padding: 4px 7px; font-family: inherit; font-size: 12.5px; font-weight: 600; color: ${C.text}; background: rgba(201,168,76,0.06); box-sizing: border-box; }
-        .sr-vital-input:focus { outline: none; border-color: ${C.editBtn}; border-style: solid; }
-
-        /* ── Expertise chips ── */
-        .sr-expertise-chips { display: flex; flex-wrap: wrap; gap: 7px; margin-bottom: 8px; }
-        .sr-chip-base { display: inline-flex; align-items: center; gap: 5px; font-size: 12px; font-weight: 600; padding: 5px 10px; border-radius: 20px; border: 1.5px solid; white-space: nowrap; }
-        .sr-chip-existing  { background: ${C.existingChipBg}; border-color: ${C.existingChipBorder}; color: ${C.existingChipText}; }
-        .sr-chip-new-pending { background: ${C.newChipBg}; border-color: ${C.newChipBg}; color: ${C.newChipText}; padding: 5px 6px 5px 11px; }
-        .sr-chip-kept      { background: ${C.keptChipBg}; border-color: ${C.keptChipBorder}; color: ${C.keptChipText}; }
-        .sr-chip-removed   { background: ${C.removedChipBg}; border-color: ${C.removedChipBorder}; color: ${C.removedChipText}; text-decoration: line-through; opacity: 0.65; }
-        .sr-chip-btn { background: none; border: none; cursor: pointer; padding: 1px; display: inline-flex; align-items: center; border-radius: 50%; transition: background .12s; font-family: 'Material Symbols Outlined'; font-style: normal; font-size: 15px; line-height: 1; user-select: none; color: rgba(255,255,255,0.85); }
-        .sr-chip-btn:hover { background: rgba(255,255,255,0.15); }
-        .sr-chip-btn.remove { color: rgba(255,255,255,0.7); }
-        .sr-chip-btn.remove:hover { background: rgba(255,0,0,0.2); color: #fff; }
-        .sr-chip-confirm { display: inline-flex; align-items: center; gap: 6px; font-size: 11px; font-weight: 600; padding: 4px 10px; border-radius: 20px; background: rgba(201,168,76,0.15); border: 1.5px solid rgba(201,168,76,0.45); color: #9a7d30; white-space: nowrap; }
-        .sr-chip-confirm-yes { font-size: 11px; font-weight: 700; color: ${C.primary}; background: rgba(11,67,53,0.08); border: 1px solid rgba(11,67,53,0.2); border-radius: 4px; padding: 1px 7px; cursor: pointer; font-family: 'Inter', sans-serif; }
-        .sr-chip-confirm-yes:hover { background: rgba(11,67,53,0.15); }
-        .sr-chip-confirm-no { font-size: 11px; font-weight: 600; color: ${C.muted}; background: none; border: none; cursor: pointer; font-family: 'Inter', sans-serif; padding: 1px 4px; }
-        .sr-chip-confirm-no:hover { color: ${C.text}; }
-        .sr-chip-undo { font-size: 10px; font-weight: 700; color: ${C.muted}; background: none; border: none; cursor: pointer; font-family: 'Inter', sans-serif; margin-left: 4px; text-decoration: underline; }
-        .sr-expertise-summary { font-size: 11px; color: ${C.muted}; margin-bottom: 10px; display: flex; align-items: center; gap: 5px; flex-wrap: wrap; }
-        .sr-expertise-summary b { color: ${C.text}; }
-
-        /* ── Submitter note ── */
-        .sr-submitter-note { background: ${C.primary}; border-radius: 8px; padding: 14px 16px; }
-        .sr-submitter-note-title { font-size: 10px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: rgba(255,255,255,0.55); margin-bottom: 8px; display: flex; align-items: center; gap: 6px; }
-        .sr-submitter-note-title .ms { font-size: 14px; color: ${C.gold}; }
-        .sr-submitter-note-text { font-size: 12px; line-height: 1.7; color: rgba(255,255,255,0.85); font-style: italic; }
-
-        @media (max-width: 860px) {
-          .sr-grid { flex-direction: column; }
-          .sr-sidebar { width: 100%; }
-          .sr-lineage-grid { grid-template-columns: 1fr; }
-          .sr-media-grid { grid-template-columns: 1fr; }
-        }
-      `}</style>
-
-      <div className="sr-wrap">
-
-        {/* Breadcrumbs */}
-        <div className="sr-crumbs">
-          <a href="/admin">{t("navbar.dashboard")}</a>
-          <span className="ms">chevron_right</span>
-          <a href="/admin/pending/scholars">{t("scholars.newScholars.title")}</a>
-          <span className="ms">chevron_right</span>
-          <b>{scholar.fullName}</b>
-        </div>
-
-        {/* Edit bar */}
-        {isEditing && (
-          <div className="sr-editbar">
-            <div className="sr-editbar-label">
-              <span className="ms">edit_note</span>
-              {t("scholarReview.editBar.label")}
-            </div>
-            <div className="sr-editbar-actions">
-              <button className="sr-editbar-btn sr-editbar-cancel" onClick={cancelEditing}>{t("scholarReview.editBar.cancel")}</button>
-              <button className="sr-editbar-btn sr-editbar-confirm" onClick={saveEditing}>{t("scholarReview.editBar.confirm")}</button>
-            </div>
-          </div>
-        )}
-
-        {/* ── Hero card ── */}
-        <div className="sr-hero">
-
-          {/* Row 1: avatar + info */}
-          <div className="sr-hero-top">
-            <div className="sr-avatar-initials">{scholar.submitterAvatar}</div>
-            <div className="sr-hero-info">
-
-              {/* Name line */}
-              <div className="sr-hero-name">
-                {isEditing ? (
-                  <input
-                    className="sr-inline-input"
-                    style={{ maxWidth: 220, fontWeight: 700, fontSize: 17 }}
-                    value={scholar.fullName}
-                    onChange={(e) => updateField("fullName", e.target.value)}
-                  />
-                ) : (
-                  <span className="sr-hero-name-latin">{scholar.fullName}</span>
-                )}
-                {isEditing ? (
-                  <input
-                    className="sr-inline-input"
-                    style={{ maxWidth: 180, direction: "rtl", fontWeight: 400, color: C.muted, fontSize: 15 }}
-                    value={scholar.fullNameAr}
-                    onChange={(e) => updateField("fullNameAr", e.target.value)}
-                  />
-                ) : (
-                  <span className="sr-hero-name-ar">· {scholar.fullNameAr}</span>
-                )}
-                <span className="sr-badge-new">NEW SUBMISSION</span>
-              </div>
-
-              {/* Meta line — each segment wrapped to prevent individual word wrapping */}
-              <div className="sr-hero-meta">
-                <span className="sr-hero-meta-item">
-                  <span className="ms">person</span>
-                  Submitter: <strong>{scholar.submittedBy}</strong>
-                </span>
-                <span className="sr-hero-meta-dot">·</span>
-                <span className="sr-hero-meta-item">
-                  <span className="ms">calendar_today</span>
-                  {scholar.date}
-                </span>
-                <span className="sr-hero-meta-dot">·</span>
-                <span className="sr-hero-meta-item">
-                  <span className="ms">translate</span>
-                  {langLabel}
-                </span>
-              </div>
-
-             
-            </div>
-          </div>
-
-          {/* Row 2: action buttons */}
-          <div className={`sr-hero-actions${mode ? " has-mode" : ""}`}>
-            {!isEditing && (
-              <button className="sr-edit-toggle" onClick={startEditing}>
-                <span className="ms">edit</span>
-                {t("scholarReview.actions.editPage")}
-              </button>
-            )}
-            <button
-              className={`sr-hero-btn sr-btn-strip${mode === "strip" ? " active-btn" : ""}`}
-              disabled={isEditing}
-              onClick={() => setMode(mode === "strip" ? null : "strip")}
-            >
-              <span className="ms">person_remove</span>
-              {t("scholars.actions.strip")}
-            </button>
-            <button
-              className={`sr-hero-btn sr-btn-reject${mode === "reject" ? " active-btn" : ""}`}
-              disabled={isEditing}
-              onClick={() => setMode(mode === "reject" ? null : "reject")}
-            >
-              <span className="ms">cancel</span>
-              {t("scholarReview.actions.reject")}
-            </button>
-            <button
-              className={`sr-hero-btn sr-btn-approve${mode === "approve" ? " active-btn" : ""}`}
-              disabled={isEditing}
-              onClick={() => setMode(mode === "approve" ? null : "approve")}
-            >
-              <span className="ms">check_circle</span>
-              {t("scholarReview.actions.approve")}
-            </button>
-          </div>
-        </div>
-
-        {/* Confirmation modal */}
-        {mode && (
-          <div className="sr-modal-overlay" onClick={() => { setMode(null); setNote(""); }}>
-            <div className="sr-modal" onClick={(e) => e.stopPropagation()}>
-              <div className="sr-modal-icon" style={{ background: mode === "approve" ? "rgba(11,67,53,0.1)" : "rgba(186,26,26,0.08)" }}>
-                <span className="ms" style={{ color: mode === "approve" ? C.primary : C.rejectBtn }}>
-                  {mode === "approve" ? "check_circle" : mode === "reject" ? "cancel" : "person_remove"}
-                </span>
-              </div>
-              <div className="sr-modal-title">
-                {mode === "approve" && t("scholarReview.modal.approveTitle")}
-                {mode === "reject"  && t("scholarReview.modal.rejectTitle")}
-                {mode === "strip"   && t("scholarReview.modal.stripTitle")}
-              </div>
-              <div className="sr-modal-sub">
-                {mode === "approve" && <>{t("scholarReview.modal.approveSub").replace("{name}", scholar.fullName)}{newPendingCount > 0 && ` ${newPendingCount} ${t("scholarReview.modal.unreviewed")}`}</>}
-                {mode === "reject"  && t("scholarReview.modal.rejectSub")}
-                {mode === "strip"   && <>{t("scholarReview.modal.stripSub").replace("{name}", scholar.submittedBy)}</>}
-              </div>
-              {mode === "reject" && (
-                <textarea className="sr-textarea" placeholder={t("scholarReview.modal.rejectPlaceholder")} value={note} onChange={(e) => setNote(e.target.value)} style={{ minHeight: 90 }} />
+        {/* ── Profile Header ── */}
+        <section style={{ ...cardStyle, padding: 24, marginBottom: 18 }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 20, flexWrap: "wrap" }}>
+            <div style={{ display: "flex", gap: 18, alignItems: "flex-start" }}>
+              {data.image ? (
+                <img src={data.image} alt={data.name[lang]} style={{ width: 72, height: 72, borderRadius: "50%", objectFit: "cover", border: `2px solid ${colors.forestGreen}`, flexShrink: 0 }} />
+              ) : (
+                <div style={{ width: 72, height: 72, borderRadius: "50%", backgroundColor: colors.forestGreen, color: colors.creamLight, border: `1px solid ${colors.forestGreen}`, display: "flex", alignItems: "center", justifyContent: "center", fontFamily: fonts.headline, fontWeight: 700, fontSize: 28, flexShrink: 0 }}>
+                  {data.name[lang].charAt(0).toUpperCase()}
+                </div>
               )}
-              <div className="sr-modal-actions">
-                <button className="sr-modal-btn sr-modal-cancel" onClick={() => { setMode(null); setNote(""); }}>{t("scholars.review.cancel")}</button>
-                <button className="sr-modal-btn" style={{ background: mode === "approve" ? C.approveBtn : C.rejectBtn, color: "#fff" }} onClick={handleConfirm}>
-                  {mode === "approve" ? t("scholarReview.modal.confirmApprove") : mode === "reject" ? (note.trim() ? t("scholarReview.modal.confirmSendReject") : t("scholarReview.modal.confirmReject")) : t("scholarReview.modal.confirmStrip")}
-                </button>
+              <div>
+                <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 6, flexWrap: "wrap" }}>
+                  <h1 style={{ fontFamily: fonts.headline, fontSize: 24, fontWeight: 700, color: colors.forestGreen, margin: 0 }}>
+                    {data.name[lang]}
+                  </h1>
+                  <StatusBadge status={data.status || "Pending Review"} />
+                  <span style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "4px 10px", borderRadius: 9999, backgroundColor: colors.creamMid, color: colors.forestGreen, fontFamily: fonts.label, fontSize: 11, fontWeight: 600, border: `1px solid ${colors.forestGreen}` }}>
+                    {lang} {isRTL ? "نسخة" : "Version"}
+                  </span>
+                </div>
+                <p style={{ fontFamily: fonts.body, fontSize: 13, color: colors.forestGreen, margin: "0 0 4px", fontStyle: "italic", opacity: 0.8 }}>
+                  {data.subtitle[lang]}
+                </p>
+                <div style={{ display: "flex", gap: 14, flexWrap: "wrap", marginTop: 8 }}>
+                  <span style={{ display: "flex", alignItems: "center", gap: 4, fontFamily: fonts.label, fontSize: 11, color: colors.forestGreen, opacity: 0.8 }}>
+                    <Icon name="person" size={12} /> {data.atAGlance.region}
+                  </span>
+                  <span style={{ display: "flex", alignItems: "center", gap: 4, fontFamily: fonts.label, fontSize: 11, color: colors.forestGreen, opacity: 0.8 }}>
+                    <Icon name="event" size={12} /> {isRTL ? "أرسلت" : "Submitted"}: {data.createdDate} {isRTL ? "بواسطة" : "by"} {data.createdBy}
+                  </span>
+                </div>
               </div>
+            </div>
+
+            <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+              <button onClick={() => setShowRejectConfirm(true)} style={{ display: "flex", alignItems: "center", gap: 6, padding: "8px 14px", backgroundColor: "transparent", border: `1px solid ${colors.red}`, borderRadius: 8, fontFamily: fonts.body, fontSize: 13, fontWeight: 500, color: colors.red, cursor: "pointer" }}>
+                <Icon name="close" size={14} /> {isRTL ? "رفض" : "Reject"}
+              </button>
+              <button style={{ display: "flex", alignItems: "center", gap: 6, padding: "8px 14px", backgroundColor: "transparent", border: `1px solid ${colors.forestGreen}`, borderRadius: 8, fontFamily: fonts.body, fontSize: 13, fontWeight: 500, color: colors.forestGreen, cursor: "pointer" }}>
+                <Icon name="edit" size={14} /> {isRTL ? "طلب تعديلات" : "Request Changes"}
+              </button>
+              <button onClick={() => setShowApproveConfirm(true)} style={{ display: "flex", alignItems: "center", gap: 6, padding: "8px 14px", backgroundColor: colors.forestGreen, border: `1px solid ${colors.forestGreen}`, borderRadius: 8, fontFamily: fonts.body, fontSize: 13, fontWeight: 500, color: colors.creamLight, cursor: "pointer" }}>
+                <Icon name="check" size={14} filled /> {isRTL ? "موافقة على العالم" : "Approve Scholar"}
+              </button>
             </div>
           </div>
-        )}
+        </section>
 
-        {/* Main grid */}
-        <div className="sr-grid">
-          <div className="sr-main">
+       
 
+        {/* ── Two-Column Content ── */}
+        <div style={{ display: "grid", gridTemplateColumns: isRTL ? "1fr 2fr" : "2fr 1fr", gap: 18 }}>
+          
+          {/* Left Column (Main Content) */}
+          <div style={{ display: "flex", flexDirection: "column", gap: 18 }}>
+            
             {/* Biography */}
-            <div className="sr-card">
-              <div className="sr-card-title"><span className="ms">auto_stories</span>{t("scholarReview.sections.biography")}</div>
-              {isEditing
-                ? <textarea className="sr-inline-textarea" value={scholar.bio} onChange={(e) => updateField("bio", e.target.value)} />
-                : <p className="sr-bio">{scholar.bio}</p>}
-              <div className="sr-bio-meta" style={{ marginTop: 14 }}>
-                <span className="ms" style={{ fontSize: 14 }}>text_fields</span>
-                {t("scholarReview.bio.wordCount").replace("{n}", String(scholar.wordCount))}
-                <span style={{ color: C.border }}>·</span>
-                <span className="ms" style={{ fontSize: 14 }}>schedule</span>
-                {t("scholarReview.bio.readingTime").replace("{n}", String(scholar.readingTime))}
-              </div>
-            </div>
+            <section style={{ ...cardStyle, padding: 20 }}>
+              <h2 style={{ fontFamily: fonts.headline, fontSize: 16, fontWeight: 600, color: colors.forestGreen, margin: "0 0 12px", display: "flex", alignItems: "center", gap: 8 }}>
+                <Icon name="person" size={18} filled /> {isRTL ? "السيرة الذاتية" : "Biography"}
+              </h2>
+              <p style={{ fontFamily: fonts.body, fontSize: 13, lineHeight: 1.6, color: colors.forestGreen, margin: "0 0 16px", fontWeight: 500 }}>
+                {data.overviewText[lang]}
+              </p>
+              {(data.body[lang] || []).map((para, i) => (
+                <p key={i} style={{ fontFamily: isRTL ? "'Amiri', serif" : fonts.body, fontSize: isRTL ? 15 : 13, lineHeight: 1.8, color: colors.forestGreen, margin: "0 0 12px", opacity: 0.85 }}>
+                  {para}
+                </p>
+              ))}
+            </section>
 
-            {/* Lineage */}
-            <div className="sr-card">
-              <div className="sr-card-title"><span className="ms">account_tree</span>{t("scholarReview.sections.lineage")}</div>
-              <div className="sr-lineage-grid">
-                {(["teachers", "disciples"] as const).map((listKey) => (
-                  <div key={listKey}>
-                    <div className="sr-lineage-col-label">
-                      {listKey === "teachers" ? t("scholarReview.lineage.teachers") : t("scholarReview.lineage.disciples")}
-                    </div>
-                    {scholar[listKey].map((p) => (
-                      <div key={p.id} className="sr-person-card">
-                        <div className="sr-person-avatar">{p.name.split(" ").map((w) => w[0]).join("").toUpperCase().slice(0, 2)}</div>
-                        {isEditing ? (
-                          <div className="sr-person-fields">
-                            <input className="sr-inline-input" value={p.name} onChange={(e) => updateTeacher(listKey, p.id, "name", e.target.value)} />
-                            <input className="sr-inline-input" style={{ fontSize: 11, color: C.muted }} value={p.subtitle} onChange={(e) => updateTeacher(listKey, p.id, "subtitle", e.target.value)} />
-                          </div>
-                        ) : (
-                          <div><div className="sr-person-name">{p.name}</div><div className="sr-person-sub">{p.subtitle}</div></div>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Bibliography */}
-            <div className="sr-card">
-              <div className="sr-card-title"><span className="ms">menu_book</span>{t("scholarReview.sections.bibliography")}</div>
-              <div style={{ border: `1px solid ${C.border}`, borderRadius: 8, overflow: "hidden" }}>
-                <table className="sr-works-table">
-                  <thead>
+            {/* Works */}
+            <section style={{ ...cardStyle, padding: 20, overflow: "hidden" }}>
+              <h2 style={{ fontFamily: fonts.headline, fontSize: 16, fontWeight: 600, color: colors.forestGreen, margin: "0 0 14px", display: "flex", alignItems: "center", gap: 8 }}>
+                <Icon name="library_books" size={18} filled /> {isRTL ? "الأعمال والمؤلفات" : "Works & Bibliography"}
+              </h2>
+              <div style={{ overflowX: "auto" }}>
+                <table style={{ width: "100%", borderCollapse: "collapse" }}>
+                  <thead style={{ backgroundColor: colors.creamMid }}>
                     <tr>
-                      <th>{t("scholarReview.works.title")}</th>
-                      <th>{t("scholarReview.works.year")}</th>
-                      <th>{t("scholarReview.works.format")}</th>
-                      <th>{t("scholarReview.works.access")}</th>
+                      <th style={thStyle}>{isRTL ? "العنوان" : "Title"}</th>
+                      <th style={thStyle}>{isRTL ? "السنة" : "Year"}</th>
+                      <th style={thStyle}>{isRTL ? "الصيغة" : "Format"}</th>
+                      <th style={thStyle}>{isRTL ? "الوصول" : "Access"}</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {scholar.works.map((w) => (
-                      <tr key={w.id}>
-                        <td className="sr-works-title">
-                          {isEditing
-                            ? <input className="sr-inline-input" style={{ fontStyle: "italic", fontWeight: 600, fontFamily: "'Source Serif 4', serif" }} value={w.title} onChange={(e) => updateWork(w.id, "title", e.target.value)} />
-                            : w.title}
+                    {data.works.map((w, i) => (
+                      <tr key={i} style={{ transition: "background-color 0.15s" }} onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = colors.creamMid)} onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "transparent")}>
+                        <td style={tdStyle}>
+                          <p style={{ margin: 0, fontWeight: 600, fontFamily: fonts.headline, fontSize: 13 }}>{w.title}</p>
+                          {w.uploadedBy && <p style={{ margin: "2px 0 0", fontFamily: fonts.label, fontSize: 10, opacity: 0.7 }}>{isRTL ? "بواسطة" : "by"} {w.uploadedBy}</p>}
                         </td>
-                        <td className="sr-works-year">
-                          {isEditing
-                            ? <input className="sr-inline-input" style={{ maxWidth: 70 }} value={w.year} onChange={(e) => updateWork(w.id, "year", e.target.value)} />
-                            : w.year}
+                        <td style={{ ...tdStyle, fontFamily: fonts.label, fontSize: 12 }}>{w.year}</td>
+                        <td style={tdStyle}>
+                          <span style={{ padding: "3px 8px", borderRadius: 6, backgroundColor: colors.creamMid, border: `1px solid ${colors.creamDark}`, fontFamily: fonts.label, fontSize: 11 }}>
+                            {w.format}
+                          </span>
                         </td>
-                        <td><span className={`sr-format-chip${w.format !== "BOOK" ? " manu" : ""}`}>{w.format}</span></td>
-                        <td>
-  {w.access
-    ? <a href={w.access} target="_blank" rel="noopener noreferrer" className="sr-access-link">
-        <span className="ms">open_in_new</span>
-        {t("scholarReview.works.viewPdf")}
-      </a>
-    : <span style={{ fontSize: 13, color: C.subtle }}>—</span>}
-</td>
+                        <td style={tdStyle}>
+                          {w.accessUrl ? (
+                            <button style={{ display: "flex", alignItems: "center", gap: 4, padding: "4px 10px", backgroundColor: colors.creamLight, border: `1px solid ${colors.forestGreen}`, borderRadius: 6, fontFamily: fonts.label, fontSize: 11, color: colors.forestGreen, cursor: "pointer" }}>
+                              <Icon name={w.accessSource === "upload" ? "download" : "open_in_new"} size={14} />
+                              {w.accessSource === "upload" ? (isRTL ? "تحميل" : "Download") : (isRTL ? "عرض" : "View")}
+                            </button>
+                          ) : (
+                            <span style={{ fontFamily: fonts.label, fontSize: 11, opacity: 0.5 }}>{isRTL ? "لا يوجد" : "None"}</span>
+                          )}
+                        </td>
                       </tr>
                     ))}
                   </tbody>
                 </table>
               </div>
-            </div>
+            </section>
 
             {/* Media */}
-            <div className="sr-card">
-              <div className="sr-card-title"><span className="ms">folder_open</span>{t("scholarReview.sections.media")}</div>
-              <div className="sr-media-grid">
-                {scholar.media.map((m) => {
-                  const vi = getMediaViewInfo(m);
-                  const btnLabel = t(vi.tKey);
-                  return (
-                    <div key={m.id} className="sr-media-card">
-                      <div className="sr-media-icon" style={{ background: m.color }}>
-                        <span className="ms">{m.icon}</span>
-                      </div>
-                      {isEditing ? (
-                        <div className="sr-media-body">
-                          <input className="sr-inline-input" style={{ fontWeight: 600, fontSize: 12.5 }} value={m.title} onChange={(e) => updateMedia(m.id, "title", e.target.value)} />
-                          <input className="sr-inline-input" style={{ fontSize: 11, color: C.muted }} value={m.description} onChange={(e) => updateMedia(m.id, "description", e.target.value)} />
-                          {m.access && (
-                            <a href={m.access} target="_blank" rel="noopener noreferrer" className="sr-media-link">
-                              <span className="ms">{vi.icon}</span>{btnLabel}
-                            </a>
-                          )}
-                        </div>
-                      ) : (
-                        <div className="sr-media-body">
-                          <div className="sr-media-title">{m.title}</div>
-                          <div className="sr-media-desc">{m.description}</div>
-                          <div className="sr-media-meta">{m.meta} · {m.type}</div>
-                          {m.access && (
-                            <a href={m.access} target="_blank" rel="noopener noreferrer" className="sr-media-view-btn">
-                              <span className="ms">{vi.icon}</span>{btnLabel}
-                            </a>
-                          )}
-                        </div>
-                      )}
+            <section style={{ ...cardStyle, padding: 20 }}>
+              <h2 style={{ fontFamily: fonts.headline, fontSize: 16, fontWeight: 600, color: colors.forestGreen, margin: "0 0 14px", display: "flex", alignItems: "center", gap: 8 }}>
+                <Icon name="media_link" size={18} filled /> {isRTL ? "الوسائط المتكاملة" : "Integrated Media"}
+              </h2>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(220px, 1fr))", gap: 14 }}>
+                {data.media.map((m, i) => (
+                  <div key={i} style={{ ...cardStyle, padding: 16, display: "flex", flexDirection: "column", gap: 10, backgroundColor: colors.creamMid, border: `1px solid ${colors.creamDark}` }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+                      <Icon name={m.type === "video" ? "movie" : m.type === "audio" ? "graphic_eq" : "article"} size={24} />
+                      <span style={{ fontFamily: fonts.label, fontSize: 10, padding: "2px 6px", borderRadius: 4, backgroundColor: colors.creamLight, border: `1px solid ${colors.creamDark}` }}>{m.type.toUpperCase()}</span>
                     </div>
-                  );
-                })}
+                    <p style={{ fontFamily: fonts.headline, fontSize: 14, fontWeight: 600, margin: 0, lineHeight: 1.3 }}>{m.title}</p>
+                    <p style={{ fontFamily: fonts.body, fontSize: 12, color: colors.forestGreen, opacity: 0.8, margin: 0, lineHeight: 1.4 }}>{m.description}</p>
+                    {m.accessUrl && (
+                      <a href={m.accessUrl} target="_blank" rel="noopener noreferrer" style={{ textDecoration: "none", marginTop: "auto" }}>
+                        <button style={{ width: "100%", display: "flex", alignItems: "center", justifyContent: "center", gap: 6, padding: "8px", backgroundColor: colors.forestGreen, color: colors.creamLight, border: "none", borderRadius: 6, fontFamily: fonts.body, fontSize: 12, fontWeight: 500, cursor: "pointer" }}>
+                          <Icon name={m.actionIcon} size={16} /> {m.action}
+                        </button>
+                      </a>
+                    )}
+                  </div>
+                ))}
               </div>
-            </div>
-
-            {/* References */}
-            <div className="sr-card">
-              <div className="sr-card-title"><span className="ms">format_quote</span>{t("scholarReview.sections.references")}</div>
-              <ol className="sr-refs">
-                {scholar.references.map((r) => <li key={r.id}><span>{r.text}</span></li>)}
-              </ol>
-            </div>
-
+            </section>
           </div>
 
-          {/* ── Sidebar ── */}
-          <div className="sr-sidebar">
-
-            {/* Vital Stats */}
-            <div className="sr-side-card">
-              <div className="sr-side-title">{t("scholarReview.sidebar.vitalStats")}</div>
-              <table className="sr-vital-table">
-                <tbody>
-                  {(
-                    [
-                      ["name",       scholar.fullName,   "fullName"],
-                      ["region",     scholar.region,     "region"],
-                      ["century",    scholar.century,    "century"],
-                      ["discipline", scholar.discipline, "discipline"],
-                    ] as [string, string, keyof ScholarDetail][]
-                  ).map(([labelKey, val, field]) => (
-                    <tr key={field}>
-                      <td>{t(`scholarReview.sidebar.${labelKey}`)}</td>
-                      <td>{isEditing ? <input className="sr-vital-input" value={val} onChange={(e) => updateField(field, e.target.value)} /> : val}</td>
-                    </tr>
-                  ))}
-                  <tr>
-                    <td>{t("scholarReview.sidebar.born")}</td>
-                    <td>
-                      {isEditing ? (
-                        <div style={{ display: "flex", gap: 4 }}>
-                          <input className="sr-vital-input" style={{ maxWidth: 60 }} value={scholar.birthYear}  onChange={(e) => updateField("birthYear",  e.target.value)} />
-                          <input className="sr-vital-input"                          value={scholar.birthPlace} onChange={(e) => updateField("birthPlace", e.target.value)} />
+          {/* Right Column (Sidebar) */}
+          <div style={{ display: "flex", flexDirection: "column", gap: 18 }}>
+            
+            {/* Relationships */}
+            <section style={{ ...cardStyle, padding: 20 }}>
+              <h2 style={{ fontFamily: fonts.headline, fontSize: 16, fontWeight: 600, color: colors.forestGreen, margin: "0 0 14px", display: "flex", alignItems: "center", gap: 8 }}>
+                <Icon name="account_tree" size={18} filled /> {isRTL ? "العلاقات" : "Relationships"}
+              </h2>
+              <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+                <div>
+                  <p style={{ fontFamily: fonts.label, fontSize: 10, letterSpacing: "0.06em", color: colors.forestGreen, margin: "0 0 8px", opacity: 0.7 }}>{isRTL ? "السلسلة الفكرية" : "INTELLECTUAL LINEAGE"}</p>
+                  <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                    {data.intellectualLineage.map((p, i) => (
+                      <a key={i} href={p.profileUrl} style={{ display: "flex", alignItems: "center", gap: 10, textDecoration: "none", padding: 8, borderRadius: 8, transition: "background 0.15s" }} onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = colors.creamMid)} onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "transparent")}>
+                        <div style={{ width: 32, height: 32, borderRadius: "50%", backgroundColor: p.color, color: p.textColor, display: "flex", alignItems: "center", justifyContent: "center", fontFamily: fonts.headline, fontWeight: 700, fontSize: 12, flexShrink: 0 }}>{p.initials}</div>
+                        <div>
+                          <p style={{ fontFamily: fonts.body, fontSize: 13, fontWeight: 600, color: colors.forestGreen, margin: 0 }}>{p.name}</p>
+                          <p style={{ fontFamily: fonts.label, fontSize: 10, color: colors.forestGreen, opacity: 0.7, margin: 0 }}>{p.role}</p>
                         </div>
-                      ) : `${scholar.birthYear}, ${scholar.birthPlace}`}
-                    </td>
-                  </tr>
-                  <tr>
-                    <td>{t("scholarReview.sidebar.died")}</td>
-                    <td>
-                      {isEditing ? (
-                        <div style={{ display: "flex", gap: 4 }}>
-                          <input className="sr-vital-input" style={{ maxWidth: 60 }} value={scholar.deathYear}  onChange={(e) => updateField("deathYear",  e.target.value)} />
-                          <input className="sr-vital-input"                          value={scholar.deathPlace} onChange={(e) => updateField("deathPlace", e.target.value)} />
-                        </div>
-                      ) : `${scholar.deathYear}, ${scholar.deathPlace}`}
-                    </td>
-                  </tr>
-                  <tr>
-                    <td>{t("scholarReview.sidebar.lifespan")}</td>
-                    <td style={{ fontSize: 11, fontWeight: 500, color: C.muted }}>
-                      {isEditing
-                        ? <input className="sr-vital-input" style={{ fontSize: 11, fontWeight: 500 }} value={scholar.lifespan} onChange={(e) => updateField("lifespan", e.target.value)} />
-                        : scholar.lifespan}
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-
-            {/* Expertise Clusters */}
-            <div className="sr-side-card">
-              <div className="sr-side-title">{t("scholarReview.sidebar.expertiseClusters")}</div>
-              {(newKeptCount > 0 || newRemovedCount > 0 || newPendingCount > 0) && (
-                <div className="sr-expertise-summary">
-                  {newKeptCount    > 0 && <><b style={{ color: C.primary  }}>{newKeptCount}</b>    {t("scholarReview.chips.kept")}</>}
-                  {newRemovedCount > 0 && <><b style={{ color: C.rejectBtn }}>{newRemovedCount}</b> {t("scholarReview.chips.removed")}</>}
-                  {newPendingCount > 0 && <><b>{newPendingCount}</b> {t("scholarReview.chips.pending")}</>}
+                      </a>
+                    ))}
+                  </div>
                 </div>
-              )}
-              <div className="sr-expertise-chips">
-                {disciplineTags.map((d) => {
-                  if (!d.isNew) return <span key={d.id} className="sr-chip-base sr-chip-existing">{d.label}</span>;
-                  if (confirmingId === d.id) return (
-                    <span key={d.id} className="sr-chip-confirm">
-                      <span className="ms" style={{ fontSize: 13, color: C.gold }}>help</span>
-                      {t("scholarReview.chips.keepPrompt").replace("{label}", d.label)}
-                      <button className="sr-chip-confirm-yes" onClick={() => confirmKeep(d.id)}>{t("scholarReview.chips.yesAdd")}</button>
-                      <button className="sr-chip-confirm-no"  onClick={cancelKeep}>{t("scholars.review.cancel")}</button>
-                    </span>
-                  );
-                  if (d.status === "new_kept") return (
-                    <span key={d.id} className="sr-chip-base sr-chip-kept">
-                      <span className="ms" style={{ fontSize: 13 }}>check</span>{d.label}
-                    </span>
-                  );
-                  if (d.status === "new_removed") return (
-                    <span key={d.id} style={{ display: "inline-flex", alignItems: "center", gap: 3 }}>
-                      <span className="sr-chip-base sr-chip-removed">{d.label}</span>
-                      <button className="sr-chip-undo" onClick={() => undoRemove(d.id)}>{t("scholarReview.chips.undo")}</button>
-                    </span>
-                  );
-                  return (
-                    <span key={d.id} className="sr-chip-base sr-chip-new-pending">
-                      <span className="ms" style={{ fontSize: 13, color: C.gold, marginRight: 2 }}>add</span>
-                      {d.label}
-                      <span style={{ display: "inline-flex", gap: 2, marginLeft: 4 }}>
-                        <button className="sr-chip-btn"        title={t("scholarReview.chips.keepTitle")}   onClick={() => keepNewDiscipline(d.id)}>check</button>
-                        <button className="sr-chip-btn remove" title={t("scholarReview.chips.removeTitle")} onClick={() => removeNewDiscipline(d.id)}>close</button>
-                      </span>
-                    </span>
-                  );
-                })}
+                <div style={{ borderTop: `1px dashed ${colors.creamDark}`, paddingTop: 16 }}>
+                  <p style={{ fontFamily: fonts.label, fontSize: 10, letterSpacing: "0.06em", color: colors.forestGreen, margin: "0 0 8px", opacity: 0.7 }}>{isRTL ? "أبرز التلامذة" : "NOTABLE DISCIPLES"}</p>
+                  <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                    {data.notableDisciples.map((p, i) => (
+                      <a key={i} href={p.profileUrl} style={{ display: "flex", alignItems: "center", gap: 10, textDecoration: "none", padding: 8, borderRadius: 8, transition: "background 0.15s" }} onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = colors.creamMid)} onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "transparent")}>
+                        <div style={{ width: 32, height: 32, borderRadius: "50%", backgroundColor: p.color, color: p.textColor, display: "flex", alignItems: "center", justifyContent: "center", fontFamily: fonts.headline, fontWeight: 700, fontSize: 12, flexShrink: 0 }}>{p.initials}</div>
+                        <div>
+                          <p style={{ fontFamily: fonts.body, fontSize: 13, fontWeight: 600, color: colors.forestGreen, margin: 0 }}>{p.name}</p>
+                          <p style={{ fontFamily: fonts.label, fontSize: 10, color: colors.forestGreen, opacity: 0.7, margin: 0 }}>{p.role}</p>
+                        </div>
+                      </a>
+                    ))}
+                  </div>
+                </div>
               </div>
-              <div style={{ fontSize: 11, color: C.subtle, marginTop: 6, lineHeight: 1.5 }}>
-                <span style={{ color: C.gold, fontWeight: 700 }}>+</span> {t("scholarReview.chips.hint")}
-              </div>
-            </div>
+            </section>
 
-            {/* Submitter Note */}
-            <div className="sr-submitter-note">
-              <div className="sr-submitter-note-title">
-                <span className="ms">format_quote</span>
-                {t("scholarReview.sidebar.submitterNote")}
+            {/* Academic References */}
+            <section style={{ ...cardStyle, padding: 20 }}>
+              <h2 style={{ fontFamily: fonts.headline, fontSize: 16, fontWeight: 600, color: colors.forestGreen, margin: "0 0 14px", display: "flex", alignItems: "center", gap: 8 }}>
+                <Icon name="menu_book" size={18} filled /> {isRTL ? "المراجع" : "References"}
+              </h2>
+              <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+                {data.academicReferences.map((r, i) => (
+                  <div key={i} style={{ padding: 12, backgroundColor: colors.creamMid, border: `1px solid ${colors.creamDark}`, borderRadius: 8 }}>
+                    <p style={{ fontFamily: fonts.headline, fontSize: 13, fontWeight: 600, color: colors.forestGreen, margin: "0 0 4px" }}>{r.title}</p>
+                    <p style={{ fontFamily: fonts.body, fontSize: 12, color: colors.forestGreen, opacity: 0.8, margin: "0 0 6px", lineHeight: 1.5 }}>{r.citation}</p>
+                    {r.url && (
+                      <a href={r.url} target="_blank" rel="noopener noreferrer" style={{ display: "inline-flex", alignItems: "center", gap: 4, fontFamily: fonts.label, fontSize: 11, color: colors.forestGreen, textDecoration: "underline" }}>
+                        <Icon name="link" size={12} /> {isRTL ? "عرض المصدر" : "View Source"}
+                      </a>
+                    )}
+                  </div>
+                ))}
               </div>
-              <div className="sr-submitter-note-text">{scholar.submitterNote}</div>
-            </div>
+            </section>
 
+            {/* Activity Timeline */}
+            <section style={{ ...cardStyle, padding: 20 }}>
+              <h2 style={{ fontFamily: fonts.headline, fontSize: 16, fontWeight: 600, color: colors.forestGreen, margin: "0 0 14px", display: "flex", alignItems: "center", gap: 8 }}>
+                <Icon name="history" size={18} filled /> {isRTL ? "النشاط" : "Activity"}
+              </h2>
+              <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+                {data.recentRevisions.map((a, i) => (
+                  <div key={i} style={{ display: "flex", gap: 10, alignItems: "flex-start" }}>
+                    <div style={{ width: 24, height: 24, borderRadius: "50%", backgroundColor: colors.creamMid, color: colors.forestGreen, border: `1px solid ${colors.forestGreen}`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                      <Icon name="upload" size={13} />
+                    </div>
+                    <div>
+                      <p style={{ fontFamily: fonts.body, fontSize: 12, fontWeight: 500, color: colors.forestGreen, margin: 0 }}>{a.action}</p>
+                      <p style={{ fontFamily: fonts.label, fontSize: 10, color: colors.forestGreen, margin: "2px 0 0", opacity: 0.7 }}>
+                        {a.date} {isRTL ? "بواسطة" : "by"} {a.author}
+                      </p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </section>
           </div>
         </div>
+
+        {/* ─ Approve Confirmation Modal ── */}
+        {showApproveConfirm && (
+          <div style={{ position: "fixed", inset: 0, backgroundColor: "rgba(11, 67, 53, 0.5)", zIndex: 100, display: "flex", alignItems: "center", justifyContent: "center", backdropFilter: "blur(4px)" }} onClick={() => setShowApproveConfirm(false)}>
+            <div style={{ ...cardStyle, backgroundColor: colors.creamLight, width: 440, maxWidth: "90vw", padding: 32, boxShadow: "0 20px 60px rgba(0,0,0,0.18)" }} onClick={(e) => e.stopPropagation()}>
+              <div style={{ width: 56, height: 56, borderRadius: "50%", backgroundColor: colors.forestGreen, color: colors.creamLight, display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 20, border: `1px solid ${colors.forestGreen}` }}>
+                <Icon name="check_circle" size={28} filled />
+              </div>
+              <h2 style={{ fontFamily: fonts.headline, fontSize: 20, fontWeight: 700, color: colors.forestGreen, marginBottom: 12 }}>{isRTL ? "موافقة على العالم" : "Approve Scholar"}</h2>
+              <p style={{ fontFamily: fonts.body, fontSize: 14, color: colors.forestGreen, lineHeight: 1.6, marginBottom: 28, opacity: 0.8 }}>
+                {isRTL ? `هل أنت متأكد من الموافقة على "${data.name[lang]}"؟ سيتم نشر ملف العالم على البوابة.` : `Are you sure you want to approve "${data.name[lang]}"? This will publish the scholar profile to the portal.`}
+              </p>
+              <div style={{ display: "flex", gap: 12, justifyContent: "flex-end" }}>
+                <button onClick={() => setShowApproveConfirm(false)} style={{ padding: "10px 24px", borderRadius: 8, cursor: "pointer", border: `1px solid ${colors.forestGreen}`, backgroundColor: colors.creamLight, fontFamily: fonts.body, fontSize: 13, fontWeight: 600, color: colors.forestGreen }}>{isRTL ? "إلغاء" : "Cancel"}</button>
+                <button onClick={handleApprove} style={{ padding: "10px 24px", borderRadius: 8, cursor: "pointer", border: `1px solid ${colors.forestGreen}`, backgroundColor: colors.forestGreen, fontFamily: fonts.body, fontSize: 13, fontWeight: 700, color: colors.creamLight }}>{isRTL ? "تأكيد الموافقة" : "Confirm Approve"}</button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ── Reject Confirmation Modal ── */}
+        {showRejectConfirm && (
+          <div style={{ position: "fixed", inset: 0, backgroundColor: "rgba(11, 67, 53, 0.5)", zIndex: 100, display: "flex", alignItems: "center", justifyContent: "center", backdropFilter: "blur(4px)" }} onClick={() => setShowRejectConfirm(false)}>
+            <div style={{ ...cardStyle, backgroundColor: colors.creamLight, width: 440, maxWidth: "90vw", padding: 32, boxShadow: "0 20px 60px rgba(0,0,0,0.18)" }} onClick={(e) => e.stopPropagation()}>
+              <div style={{ width: 56, height: 56, borderRadius: "50%", backgroundColor: colors.red, color: colors.creamLight, display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 20, border: `1px solid ${colors.red}` }}>
+                <Icon name="cancel" size={28} filled />
+              </div>
+              <h2 style={{ fontFamily: fonts.headline, fontSize: 20, fontWeight: 700, color: colors.forestGreen, marginBottom: 12 }}>{isRTL ? "رفض الطلب" : "Reject Submission"}</h2>
+              <p style={{ fontFamily: fonts.body, fontSize: 14, color: colors.forestGreen, lineHeight: 1.6, marginBottom: 28, opacity: 0.8 }}>
+                {isRTL ? `هل أنت متأكد من رفض "${data.name[lang]}"؟ سيتم إشعار المساهم.` : `Are you sure you want to reject "${data.name[lang]}"? The contributor will be notified.`}
+                <br /><b style={{ color: colors.red }}>{isRTL ? "لا يمكن التراجع عن هذا الإجراء." : "This action cannot be undone."}</b>
+              </p>
+              <div style={{ display: "flex", gap: 12, justifyContent: "flex-end" }}>
+                <button onClick={() => setShowRejectConfirm(false)} style={{ padding: "10px 24px", borderRadius: 8, cursor: "pointer", border: `1px solid ${colors.forestGreen}`, backgroundColor: colors.creamLight, fontFamily: fonts.body, fontSize: 13, fontWeight: 600, color: colors.forestGreen }}>{isRTL ? "إلغاء" : "Cancel"}</button>
+                <button onClick={handleReject} style={{ padding: "10px 24px", borderRadius: 8, cursor: "pointer", border: `1px solid ${colors.red}`, backgroundColor: colors.red, fontFamily: fonts.body, fontSize: 13, fontWeight: 700, color: colors.creamLight }}>{isRTL ? "تأكيد الرفض" : "Confirm Reject"}</button>
+              </div>
+            </div>
+          </div>
+        )}
+
       </div>
     </div>
   );

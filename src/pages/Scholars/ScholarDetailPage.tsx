@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, useSearchParams } from "react-router-dom";
 import { useLang } from "../../context/LanguageContext"; 
 import { scholarsApi } from "../../api/scholarsApi";
 import DOMPurify from 'dompurify';
@@ -104,12 +104,14 @@ type TabId = "works" | "media" | "relations" | "more";
 
 interface Contributor { name: string; contributions: number; profileUrl?: string; }
 interface Work {
+  work_id?: number;
   title: string; year: number; format: "BOOK" | "ARTICLE" | "TREATISE" | "MANUSCRIPT" | "LECTURE" | "SERMON" | "FATWA" | "POEM" | "LETTER" | "COMMENTARY" | "TRANSLATION" | "RESEARCH" | "COURSE" | "DEVICE" | "INVENTION" | "SOFTWARE" | "MAP" | "OTHER";
   digitalAccess?: "pdf" | "audio" | "file" | null;
   accessUrl?: string; accessFileName?: string; accessSource?: "upload" | "link";
   uploadedBy?: string; uploadedByUrl?: string;
 }
 interface MediaItem {
+   media_id?: number;
   type: "pdf" | "audio" | "video"; title: string; description: string;
   viewCount: number; likeCount: number; action: string; actionIcon: string;
   accessUrl?: string; accessSource?: "upload" | "link"; accessFileName?: string;
@@ -361,6 +363,7 @@ const transformBackendToUI = (data: BackendScholarResponse["data"], lang: Langua
   const url: string | null = w.media_url || w.file_path || w.url || null;
   const format: Work["format"] = (WORK_FORMATS.includes(w.format) ? w.format : "OTHER");
   return {
+    work_id: w.work_id,
     title: w.title, 
     year: w.year || 0, 
     format,
@@ -376,6 +379,7 @@ const transformBackendToUI = (data: BackendScholarResponse["data"], lang: Langua
     media: versions.flatMap((v) => v.media || []).map((m): MediaItem => {
       const fileType = (m.file_type || "pdf") as MediaItem["type"];
       return {
+        media_id: m.media_id, // ✅ Added
         type: fileType,
         title: m.title && m.title.trim() !== "" ? m.title : (m.file_name || "Untitled Media"),
         description: m.description || `${(m.file_type || "pdf").toUpperCase()} file`,
@@ -1386,9 +1390,19 @@ const ScholarDetailPage: React.FC = () => {
   const navigate = useNavigate();
   const { lang: siteLang } = useLang();
   const { id: scholarIdStr } = useParams<{ id: string }>();
+  const [searchParams] = useSearchParams(); // ✅ Added
+  
+  const focusParam = searchParams.get("focus"); // ✅ Added
+  const langParam = searchParams.get("lang");   // ✅ Added
+
   const scholarId = scholarIdStr ? parseInt(scholarIdStr, 10) : 1;
   
-  const [lang, setLang] = useState<Language>(siteLang as Language);
+  // ✅ Use URL lang param if valid, otherwise fallback to siteLang
+  const initialLang = (langParam?.toUpperCase() === "EN" || langParam?.toUpperCase() === "AR" || langParam?.toUpperCase() === "FR") 
+    ? (langParam.toUpperCase() as Language) 
+    : (siteLang as Language);
+
+  const [lang, setLang] = useState<Language>(initialLang);
   const [activeTab, setActiveTab] = useState<TabId>("works");
   const [contributorsOpen, setContributorsOpen] = useState(true);
   const [imgGray, setImgGray] = useState(true);
@@ -1405,14 +1419,26 @@ const ScholarDetailPage: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+    // ✅ Sync lang state with URL param
+  useEffect(() => {
+    if (langParam) {
+      const upperLang = langParam.toUpperCase();
+      if (upperLang === "EN" || upperLang === "AR" || upperLang === "FR") {
+        setLang(upperLang as Language);
+      }
+    }
+  }, [langParam]);
+
   useEffect(() => {
     const fetchData = async () => {
       setIsLoading(true);
       setError(null);
       try {
+        // ✅ Try the language from URL first
         let response = await scholarsApi.getById(scholarId, lang.toLowerCase());
         setS(transformBackendToUI(response.data, lang));
       } catch (err: any) {
+        // ✅ Fallback chain: EN -> AR -> FR
         try {
           let response = await scholarsApi.getById(scholarId, "en");
           setS(transformBackendToUI(response.data, lang));
@@ -1434,8 +1460,62 @@ const ScholarDetailPage: React.FC = () => {
       }
     };
     fetchData();
-  }, [scholarId, lang]);
+  }, [scholarId, lang, langParam]); // ✅ Added langParam to trigger refetch when URL changes
 
+    // ✅ ROBUST AUTO-SCROLL with debugging
+  useEffect(() => {
+    if (!focusParam || !s) {
+      console.log("❌ Auto-scroll skipped: focusParam=", focusParam, "s=", s);
+      return;
+    }
+
+    console.log("🎯 Auto-scroll triggered for:", focusParam);
+
+    // 1. Determine which tab holds the element
+    const targetTab = focusParam.startsWith("work-") ? "works" : "media";
+    console.log("📑 Target tab:", targetTab, "Current tab:", activeTab);
+
+    // 2. If the tab isn't open yet, open it and STOP.
+    if (activeTab !== targetTab) {
+      console.log(" Switching to tab:", targetTab);
+      setActiveTab(targetTab);
+      return; 
+    }
+
+    // 3. Tab is OPEN, wait for DOM to render
+    const timer = setTimeout(() => {
+      const element = document.getElementById(focusParam);
+      console.log("🔍 Element found:", element ? "YES" : "NO");
+      
+      if (element) {
+        // Scroll into view
+        element.scrollIntoView({ 
+          behavior: "smooth", 
+          block: "center",
+          inline: "nearest" 
+        });
+        
+        // Add highlight
+        element.classList.add("highlight-focus");
+        console.log("✨ Highlight added");
+        
+        // Remove highlight after animation
+        setTimeout(() => {
+          element.classList.remove("highlight-focus");
+          console.log(" Highlight removed");
+        }, 2500);
+      } else {
+        console.error("❌ Element not found in DOM!");
+        // List all elements with IDs starting with work- or media-
+        const allElements = document.querySelectorAll("[id^='work-'], [id^='media-']");
+        console.log("📋 Available elements:", Array.from(allElements).map(el => el.id));
+      }
+    }, 800); // ✅ Increased delay
+
+    return () => clearTimeout(timer);
+  }, [activeTab, s, focusParam]);
+
+  
   if (isLoading) {
     return <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", backgroundColor: "#f9faf7" }}><Icon name="hourglass_empty" size={32} /></div>;
   }
@@ -1474,7 +1554,18 @@ const ScholarDetailPage: React.FC = () => {
         .tab-btn:hover { color: #0b4335; } .tab-btn.active { border-bottom-color: #0b4335; color: #0b4335; background: rgba(11,67,53,0.04); }
         .person-card:hover .person-name { color: #0b4335; } .action-link { background: none; border: none; padding: 0; cursor: pointer; font-family: 'JetBrains Mono', monospace; font-size: 10px; font-weight: 700; letter-spacing: 0.1em; color: #0b4335; display: inline-flex; align-items: center; gap: 4px; }
         .action-link:hover { text-decoration: underline; }
-      `}</style>
+              @keyframes highlightPulse {
+          0% { box-shadow: 0 0 0 0 rgba(201, 168, 76, 0.7); background-color: rgba(201, 168, 76, 0.15); }
+          50% { box-shadow: 0 0 0 8px rgba(201, 168, 76, 0); background-color: rgba(201, 168, 76, 0.25); }
+          100% { box-shadow: 0 0 0 0 rgba(201, 168, 76, 0); background-color: transparent; }
+        }
+        .highlight-focus {
+          animation: highlightPulse 2.5s ease-out;
+          border-radius: 8px;
+          position: relative;
+          z-index: 10;
+        }
+        `}</style>
 
       {/* ✅ WORK MODAL: onAdd is empty so it doesn't add statically */}
       {showAddWork && (
@@ -1585,7 +1676,21 @@ const ScholarDetailPage: React.FC = () => {
             <div style={{ display: "flex", gap: "4px", padding: "4px 8px", backgroundColor: "rgba(11,67,53,0.04)", border: "1px solid rgba(11,67,53,0.1)", borderRadius: "999px" }}>
               {(["AR", "EN", "FR"] as Language[]).map((l) => {
                 const active = lang === l;
-                return (<button key={l} onClick={() => setLang(l)} style={{ ...MONO, fontSize: "10px", fontWeight: 700, letterSpacing: "0.08em", padding: "4px 12px", borderRadius: "999px", border: "1px solid", borderColor: active ? "#0b4335" : "rgba(192,201,195,0.5)", backgroundColor: active ? "#0b4335" : "transparent", color: active ? "#fff" : "#707974", cursor: "pointer", transition: "all 0.15s" }}>{l === "AR" ? "ARABIC" : l === "EN" ? "ENGLISH" : "FRENCH"}</button>);
+                return (
+                  <button 
+                    key={l} 
+                    onClick={() => {
+                      setLang(l);
+                      // ✅ Update URL params when language changes
+                      const params = new URLSearchParams(searchParams);
+                      params.set("lang", l.toLowerCase());
+                      navigate({ search: params.toString() }, { replace: true });
+                    }} 
+                    style={{ ...MONO, fontSize: "10px", fontWeight: 700, letterSpacing: "0.08em", padding: "4px 12px", borderRadius: "999px", border: "1px solid", borderColor: active ? "#0b4335" : "rgba(192,201,195,0.5)", backgroundColor: active ? "#0b4335" : "transparent", color: active ? "#fff" : "#707974", cursor: "pointer", transition: "all 0.15s" }}
+                  >
+                    {l === "AR" ? "ARABIC" : l === "EN" ? "ENGLISH" : "FRENCH"}
+                  </button>
+                );
               })}
             </div>
             <HoverBtn onClick={() => navigate(hasLangContent ? `/scholars/${s.id}/edit/${lang}` : `/scholars/${s.id}/submit/${lang}`)} style={{ borderColor: hasLangContent ? "#0b4335" : "#735c00", color: hasLangContent ? "#0b4335" : "#735c00" }}>
@@ -1699,7 +1804,12 @@ const ScholarDetailPage: React.FC = () => {
                     <tbody>
                       {s.works.map((w, i) => {
                         return (
-                          <tr key={i} className="row-hover" style={{ borderBottom: "1px solid #f0f1ee", transition: "background 0.12s" }}>
+                                                    <tr 
+                            key={w.work_id || i} 
+                            id={w.work_id ? `work-${w.work_id}` : undefined} // ✅ This should be work-22 for example
+                            className="row-hover" 
+                            style={{ borderBottom: "1px solid #f0f1ee", transition: "background 0.12s" }}
+                          >
                             <td style={{ ...SERIF, padding: "14px 16px", fontSize: "14px", fontWeight: 700, fontStyle: "italic", color: "#191c1b" }}>
                               {w.title}
                               {w.uploadedBy && (<div style={{ ...MONO, fontSize: "9px", fontStyle: "normal", fontWeight: 400, color: "#c0c9c3", marginTop: "3px" }}>added by <ProfileLink name={w.uploadedBy} url={w.uploadedByUrl ?? "#"} /></div>)}
@@ -1733,8 +1843,12 @@ const ScholarDetailPage: React.FC = () => {
                   <h2 style={{ ...SERIF, fontSize: "24px", fontWeight: 700, color: "#0b4335", margin: 0 }}>{t.mediaTitle}</h2>
                   <HoverBtn onClick={() => setShowAddMedia(true)}><Icon name="add_circle" size={14} />{t.addMedia}</HoverBtn>
                 </div>
-                <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: "20px" }}>
-                  {s.media.map((m, i) => (<MediaCard key={i} item={m} mediaIconName={mediaIconName} />))}
+                                <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: "20px" }}>
+                  {s.media.map((m, i) => (
+                    <div key={m.media_id || i} id={m.media_id ? `media-${m.media_id}` : undefined}>
+                      <MediaCard item={m} mediaIconName={mediaIconName} />
+                    </div>
+                  ))}
                 </div>
               </div>
             )}

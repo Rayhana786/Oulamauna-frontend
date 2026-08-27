@@ -1,13 +1,22 @@
-// src/context/AuthContext.tsx
 import React, { createContext, useContext, useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 
 const API_URL = `${import.meta.env.VITE_API_URL}/api/auth`;
 
+// ✅ 1. DEFINE THE USER TYPE (Matches your new backend response)
+export interface User {
+  id: number;
+  username: string;
+  email: string;
+  role_name: string; // "user" | "contributor" | "admin"
+  allowed_to_contribute: boolean;
+  is_banned?: boolean;
+}
+
 type AuthContextType = {
-  user: any;
+  user: User | null; // ✅ 2. Replaced 'any' with 'User | null'
   isLoggedIn: boolean;
-  login: (userData: any, redirectTo?: string) => void;
+  login: (userData: User, redirectTo?: string) => void;
   logout: () => Promise<void>;
   checkUserStatus: () => Promise<boolean>;
   loading: boolean;
@@ -16,12 +25,12 @@ type AuthContextType = {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [user, setUser] = useState<any>(null);
+  const [user, setUser] = useState<User | null>(null);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
 
-  const fetchMe = useCallback(async (): Promise<any> => {
+  const fetchMe = useCallback(async (): Promise<User | null | undefined> => {
     try {
       const response = await fetch(`${API_URL}/me`, {
         method: "GET",
@@ -30,7 +39,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       });
 
       if (response.ok) {
-        const data = await response.json();
+        const data: User = await response.json();
         return data;
       }
 
@@ -49,7 +58,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const checkUserStatus = useCallback(async (): Promise<boolean> => {
     const userData = await fetchMe();
 
-    if (userData && (userData.id || userData._id)) {
+    if (userData && (userData.id)) {
       // ✅ Got valid user data
       setUser(userData);
       setIsLoggedIn(true);
@@ -79,7 +88,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return () => { mounted = false; };
   }, [checkUserStatus]);
 
-  const login = useCallback((userData: any, redirectTo?: string) => {
+  const login = useCallback((userData: User, redirectTo?: string) => {
     setUser(userData);
     setIsLoggedIn(true);
     if (redirectTo) {

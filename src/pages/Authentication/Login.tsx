@@ -101,36 +101,26 @@ const Login: React.FC = () => {
          credentials: "include",
       });
 
-      const data = await response.json();
-if (response.ok) {
-  // نمرر الـ user والـ token معاً لدالة الـ login كما يتوقع الـ Context
-  login(data.user, data.token); 
+           const data = await response.json();
 
-  
+      if (response.ok) {
+        // ✅ 1. Call login ONCE with the user data and token
+        login(data.user, data.token);
 
-  if (response.ok) {
-  login(data.user, data.token);
-
-  if (response.ok) {
-  login(data.user);
-  if (data.user.role_id === 1) {
-    navigate("/admin");
-  } else {
-    navigate("/");
-  }
-}
-}
-}else {
-
-  if (data.code === "EMAIL_NOT_VERIFIED") {
-    navigate(
-      `/verify-email-pending?email=${encodeURIComponent(data.email)}`
-    );
-    return;
-  }
-
-  setErrors({ password: t.errInvalidAuth });
-}
+        // ✅ 2. Redirect based on the NEW role_name string (not role_id)
+        if (data.user.role_name === "admin") {
+          navigate("/admin");
+        } else {
+          navigate("/"); // Redirect normal users/contributors to home or dashboard
+        }
+      } else {
+        // ✅ 3. Handle email verification or invalid password
+        if (data.code === "EMAIL_NOT_VERIFIED") {
+          navigate(`/verify-email-pending?email=${encodeURIComponent(data.email)}`);
+          return;
+        }
+        setErrors({ password: t.errInvalidAuth });
+      }
     } catch (error) {
       setErrors({ general: t.errServer });
     } finally {

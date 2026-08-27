@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
-import { useParams, Link, useNavigate } from "react-router-dom";
+import { useParams, Link, useNavigate, useSearchParams } from "react-router-dom";
 import { useLang } from "../../context/LanguageContext";
 import { scholarsApi } from "../../api/scholarsApi";
 
@@ -383,6 +383,8 @@ function PersonLinkSection({
 ───────────────────────────────────────────── */
 const EditScholarPage: React.FC = () => {
   const { lang, id } = useParams<{ lang: Language; id: string }>();
+  const [searchParams] = useSearchParams();
+  const urlDraftId = searchParams.get("draftId"); // ✅ Get draftId from URL
   const navigate = useNavigate();
   const { t, setLang } = useLang();
   
@@ -428,7 +430,23 @@ const EditScholarPage: React.FC = () => {
     ...formData.new_students.map(s => s.scholar_id).filter((id): id is number => id !== null),
   ];
 
+    // ✅ PREVENT ACCIDENTAL TAB CLOSURE IF THERE ARE UNSAVED CHANGES
   useEffect(() => {
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      // Only warn if we have data and it's different from a blank state
+      if (formData.canonical_name.trim() !== "" || formData.biography.trim() !== "") {
+        e.preventDefault();
+        e.returnValue = ""; // Required for Chrome to show the warning
+      }
+    };
+
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    return () => window.removeEventListener("beforeunload", handleBeforeUnload);
+  }, [formData.canonical_name, formData.biography]);
+
+ 
+
+    useEffect(() => {
     const fetchData = async () => {
       setLoading(true);
       try {
@@ -477,20 +495,75 @@ const EditScholarPage: React.FC = () => {
           new_refs: [],
           new_teachers: [],
           new_students: [],
-          // ✅ ADDED: Load current image
           portraitFile: null,
           currentImageUrl: version.image_url || null,
         };
 
-        const localDraft = loadLocalDraft(id!, activeLang);
-        if (localDraft) {
-          setFormData(prev => ({ ...prev, ...localDraft.formData }));
-          setDraftVersionId(localDraft.draftVersionId);
-          setDraftRestored(true);
+        let finalFormData = initialFormData;
+        let finalDraftVersionId: number | null = null;
+
+        // ✅ CHECK 1: If URL has draftId, fetch it from backend
+        if (urlDraftId) {
+          try {
+            const draftRes = await scholarsApi.getDraftById(Number(urlDraftId));
+            const draft = draftRes.data;
+            
+            const birthGregDraft = draft.scholar_dates?.find((d: any) => d.date_type === "birth" && d.calendar === "gregorian");
+            const birthHijriDraft = draft.scholar_dates?.find((d: any) => d.date_type === "birth" && d.calendar === "hijri");
+            const deathGregDraft = draft.scholar_dates?.find((d: any) => d.date_type === "death" && d.calendar === "gregorian");
+            const deathHijriDraft = draft.scholar_dates?.find((d: any) => d.date_type === "death" && d.calendar === "hijri");
+
+            finalFormData = {
+              canonical_name: draft.canonical_name || initialFormData.canonical_name,
+              aliases: draft.scholar_aliases?.map((a: any) => a.alias_name) || initialFormData.aliases,
+              region_id: draft.region_id ?? initialFormData.region_id,
+              discipline_ids: draft.scholar_disciplines?.map((d: any) => d.discipline_id) || initialFormData.discipline_ids,
+              century_hijri_start: draft.century_hijri_start ?? initialFormData.century_hijri_start,
+              century_hijri_end: draft.century_hijri_end ?? initialFormData.century_hijri_end,
+              century_gregorian_start: draft.century_gregorian_start ?? initialFormData.century_gregorian_start,
+              century_gregorian_end: draft.century_gregorian_end ?? initialFormData.century_gregorian_end,
+              biography: draft.biography || initialFormData.biography,
+              birth_date_gregorian: birthGregDraft?.year?.toString() || initialFormData.birth_date_gregorian,
+              birth_date_hijri: birthHijriDraft?.year?.toString() || initialFormData.birth_date_hijri,
+              death_date_gregorian: deathGregDraft?.year?.toString() || initialFormData.death_date_gregorian,
+              death_date_hijri: deathHijriDraft?.year?.toString() || initialFormData.death_date_hijri,
+              new_refs: draft.scholar_references?.map((r: any) => ({ title: r.title, citation: r.citation, url: r.url || "" })) || [],
+              new_teachers: draft.scholar_relationships_as_source?.filter((r: any) => r.relation_type === "teacher").map((r: any) => ({
+                scholar_id: r.related_version_id,
+                scholar_name: r.related_scholar_version?.canonical_name || ""
+              })) || [],
+              new_students: draft.scholar_relationships_as_source?.filter((r: any) => r.relation_type === "student").map((r: any) => ({
+                scholar_id: r.related_version_id,
+                scholar_name: r.related_scholar_version?.canonical_name || ""
+              })) || [],
+              portraitFile: null,
+              currentImageUrl: version.image_url || null,
+            };
+            finalDraftVersionId = draft.version_id;
+            setDraftRestored(true);
+          } catch (err) {
+            console.error("Draft was deleted or not found:", err);
+            // ✅ If draft was deleted, just use the original scholar data
+            // Don't show an error - just continue with fresh form
+            finalFormData = initialFormData;
+            finalDraftVersionId = null;
+            setDraftRestored(false);
+            
+            // ✅ Remove the draftId from URL to prevent this error again
+            navigate(`/scholars/${id}/edit/${activeLang.toLowerCase()}`, { replace: true });
+          }
         } else {
-          setFormData(initialFormData);
+          // ✅ CHECK 2: Fallback to localStorage
+          const localDraft = loadLocalDraft(id!, activeLang);
+          if (localDraft) {
+            finalFormData = { ...initialFormData, ...localDraft.formData };
+            finalDraftVersionId = localDraft.draftVersionId;
+            setDraftRestored(true);
+          }
         }
 
+        setFormData(finalFormData);
+        setDraftVersionId(finalDraftVersionId);
         setData(scholarData);
       } catch (err) {
         console.error("Failed to fetch scholar data", err);
@@ -501,7 +574,7 @@ const EditScholarPage: React.FC = () => {
     
     fetchData();
     if (activeLang) setLang(activeLang);
-  }, [id, activeLang, setLang]);
+  }, [id, activeLang, setLang, urlDraftId]); // ✅ Added urlDraftId to dependencies
 
   useEffect(() => {
     if (!data) return;
@@ -548,7 +621,7 @@ const EditScholarPage: React.FC = () => {
       const newDraftId = response?.data?.draft_version_id;
       if (newDraftId) {
         setDraftVersionId(newDraftId);
-        clearLocalDraft(id!, activeLang);
+        
       }
 
       setDraftSavedPulse(true);

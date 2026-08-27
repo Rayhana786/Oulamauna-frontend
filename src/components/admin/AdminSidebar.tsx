@@ -1,442 +1,294 @@
-import { useState } from "react";
+import React from "react";
 import { Link, useLocation } from "react-router-dom";
-import oulamaunaLogo from "../../assets/OOLOGO.png";
 import { useLang } from "../../context/LanguageContext";
-import bgImage from "../../assets/bg4.png";
 
-/* ─────────────────────── Types ─────────────────────── */
-interface Child {
-  label: string;
-  to: string;
-  badge?: number;
-}
+/* ------------------------------------------------------------------ */
+/*  Design tokens — Oulamnauna admin palette                          */
+/* ------------------------------------------------------------------ */
+const colors = {
+  creamLight: "#fcfaf5",
+  creamMid: "#f3ebd6",
+  creamDark: "#e5d5a8",
+  forestGreen: "#0b4335",
+};
 
-interface ChildGroup {
-  groupLabelKey: string;
-  groupIcon: string;
-  children: Child[];
-}
+const fonts = {
+  headline: "'Hanken Grotesk', sans-serif",
+  body: "'Inter', sans-serif",
+  label: "'JetBrains Mono', monospace",
+};
 
-interface NavItem {
-  type: "link" | "expandable" | "expandable-grouped" | "section";
-  icon?: string;
-  label?: string;
-  labelKey?: string;
-  to?: string;
-  badge?: number;
-  children?: Child[];
-  groups?: ChildGroup[];
-}
+/* ------------------------------------------------------------------ */
+/*  Icon                                                                */
+/* ------------------------------------------------------------------ */
+const Icon: React.FC<{ name: string; size?: number; filled?: boolean }> = ({
+  name,
+  size = 18,
+  filled = false,
+}) => (
+  <span
+    className="material-symbols-outlined"
+    style={{
+      fontSize: size,
+      lineHeight: 1,
+      fontVariationSettings: `'FILL' ${filled ? 1 : 0}, 'wght' 400, 'GRAD' 0, 'opsz' 24`,
+    }}
+  >
+    {name}
+  </span>
+);
 
-/* ─────────────────────── Nav data ─────────────────────── */
-const NAV: NavItem[] = [
-  { type: "link", icon: "grid_view", labelKey: "sidebar.dashboard", to: "/admin/dashboard" },
+/* ------------------------------------------------------------------ */
+/*  Nav structure                                                       */
+/* ------------------------------------------------------------------ */
+type NavLink = { icon: string; labelKey: string; to: string };
+type NavGroup = { sectionKey?: string; links: NavLink[] };
 
-  { type: "section", labelKey: "sidebar.section.archives" },
+const navGroups: NavGroup[] = [
   {
-    type: "expandable", icon: "history_edu", labelKey: "sidebar.scholars",
-    children: [
-      { label: "sidebar.allScholars", to: "/admin/scholars" },
-      { label: "sidebar.addScholar",  to: "/admin/scholars/new" },
+    links: [{ icon: "grid_view", labelKey: "navbar.dashboard", to: "/admin/dashboard" }],
+  },
+  {
+    sectionKey: "sidebar.section.scholars",
+    links: [
+      { icon: "school", labelKey: "sidebar.allScholars", to: "/admin/scholars" },
+      { icon: "person_add", labelKey: "sidebar.addScholar", to: "/admin/scholars/new" },
     ],
   },
   {
-    type: "expandable-grouped", icon: "contract_edit", labelKey: "sidebar.reviewDesk", badge: 48,
-    groups: [
-      {
-        groupLabelKey: "sidebar.activeReview",
-        groupIcon: "pending_actions",
-        children: [
-          { label: "sidebar.newScholars",       to: "/admin/pending/scholars", badge: 12 },
-          { label: "sidebar.pendingEdits",      to: "/admin/pending/edits",    badge: 20 },
-          { label: "sidebar.mediaVerification", to: "/admin/pending/media",    badge: 7  },
-          { label: "sidebar.worksVerification", to: "/admin/pending/works",    badge: 9  },
-        ],
-      },
-      {
-        groupLabelKey: "sidebar.archive",
-        groupIcon: "inventory_2",
-        children: [
-          { label: "sidebar.changesRequested", to: "/admin/pending/changes" },
-          { label: "sidebar.rejected",         to: "/admin/pending/rejected" },
-        ],
-      },
+    sectionKey: "sidebar.section.review",
+    links: [
+      // ✅ UPDATED: Clearly separated "New" vs "Edits" to match backend
+      { icon: "how_to_reg", labelKey: "sidebar.pendingNewScholars", to: "/admin/pending/scholars" },
+      { icon: "edit_document", labelKey: "sidebar.pendingScholarEdits", to: "/admin/pending/edits" },
+      { icon: "menu_book", labelKey: "sidebar.pendingWorks", to: "/admin/pending/works" },
+      { icon: "perm_media", labelKey: "sidebar.mediaVerification", to: "/admin/pending/media" },
+      { icon: "block", labelKey: "sidebar.rejected", to: "/admin/rejected" },
     ],
   },
-  { type: "link", icon: "menu_book", labelKey: "sidebar.disciplines", to: "/admin/disciplines" },
-
-  { type: "section", labelKey: "sidebar.section.engagement" },
   {
-    type: "expandable", icon: "forum", labelKey: "sidebar.communityHub",
-    children: [
-      { label: "sidebar.allPosts", to: "/admin/blog" },
-      { label: "sidebar.reported", to: "/admin/blog/reported", badge: 3 },
+    links: [{ icon: "category", labelKey: "sidebar.disciplines", to: "/admin/disciplines" }],
+  },
+  {
+    sectionKey: "sidebar.section.blog",
+    links: [
+      { icon: "article", labelKey: "sidebar.allPosts", to: "/admin/blog" },
+      { icon: "flag", labelKey: "sidebar.reported", to: "/admin/blog/reported" },
     ],
   },
-
-  { type: "section", labelKey: "sidebar.section.administration" },
   {
-    type: "expandable", icon: "group", labelKey: "sidebar.userManagement",
-    children: [
-      { label: "sidebar.contributors", to: "/admin/users/contributors" },
-      { label: "sidebar.bannedUsers",  to: "/admin/users/banned" },
+    sectionKey: "sidebar.section.community",
+    links: [
+      { icon: "group", labelKey: "sidebar.contributors", to: "/admin/users/contributors" },
+      { icon: "person_off", labelKey: "sidebar.bannedUsers", to: "/admin/users/banned" },
     ],
   },
-  { type: "link", icon: "flag",          labelKey: "sidebar.reports",       to: "/admin/reports",       badge: 5 },
-  { type: "link", icon: "notifications", labelKey: "sidebar.notifications", to: "/admin/notifications", badge: 7 },
   {
-    type: "expandable", icon: "settings", labelKey: "sidebar.settings",
-    children: [
-      { label: "sidebar.translation", to: "/admin/settings/translation" },
-      { label: "sidebar.regions",     to: "/admin/settings/regions" },
-      { label: "sidebar.backups",     to: "/admin/settings/backups" },
+    links: [
+      { icon: "summarize", labelKey: "sidebar.reports", to: "/admin/reports" },
+      { icon: "notifications", labelKey: "sidebar.notifications", to: "/admin/notifications" },
+    ],
+  },
+  {
+    sectionKey: "sidebar.section.system",
+    links: [
+      { icon: "translate", labelKey: "sidebar.translation", to: "/admin/settings/translation" },
+      { icon: "public", labelKey: "sidebar.regions", to: "/admin/settings/regions" },
+      { icon: "backup", labelKey: "sidebar.backups", to: "/admin/settings/backups" },
     ],
   },
 ];
 
-/* ─────────────────────── Colors ─────────────────────── */
-const C = {
-  bg:       "#FAF9F6",
-  border:   "#D9DAD8",
-  primary:  "#0b4335",
-  forest:   "#285B4B",
-  gold:     "#C9A84C",
-  text:     "#191c1b",
-  muted:    "#404945",
-  subtle:   "#c0c9c3",
-  activeBg: "rgba(40,91,75,0.08)",
-  hoverBg:  "rgba(11,67,53,0.06)",
-};
-
-/* ─────────────────────── Component ─────────────────────── */
-export default function AdminSidebar() {
+/* ------------------------------------------------------------------ */
+/*  Sidebar                                                             */
+/* ------------------------------------------------------------------ */
+const AdminSidebar: React.FC = () => {
   const location = useLocation();
   const { t, lang } = useLang();
   const isRTL = lang === "AR";
 
-  const [open, setOpen] = useState<Record<string, boolean>>({
-    "sidebar.reviewDesk": true,
-    "sidebar.activeReview": true,
-  });
-
-  const toggle = (key: string) => setOpen((o) => ({ ...o, [key]: !o[key] }));
-
-  const isActive = (to: string) =>
-    location.pathname === to || location.pathname.startsWith(to + "/");
-
   return (
-    <>
-      <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@500;600&family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20,300,0,0&display=swap" rel="stylesheet" />
-
+    <nav
+      style={{
+        width: 248,
+        height: "100vh",
+        position: "fixed",
+        top: 0,
+        left: isRTL ? "auto" : 0,
+        right: isRTL ? 0 : "auto",
+        borderRight: isRTL ? "none" : `1px solid ${colors.forestGreen}`,
+        borderLeft: isRTL ? `1px solid ${colors.forestGreen}` : "none",
+        backgroundColor: colors.creamLight,
+        boxShadow: "0px 4px 20px rgba(11, 67, 53, 0.08)",
+        zIndex: 50,
+        display: "flex",
+        flexDirection: "column",
+        justifyContent: "space-between",
+        paddingTop: 18,
+        paddingBottom: 12,
+        overflowY: "auto",
+      }}
+    >
       <style>{`
-        .ms {
+        @import url('https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap');
+        .material-symbols-outlined {
           font-family: 'Material Symbols Outlined';
-          font-style: normal; font-size: 19px;
-          display: inline-flex; align-items: center;
-          user-select: none; line-height: 1;
+          font-weight: normal;
+          font-style: normal;
+          display: inline-block;
+          white-space: nowrap;
+          word-wrap: normal;
+          direction: ltr;
+          -webkit-font-smoothing: antialiased;
         }
-
-        .sb-item {
-          display: flex; align-items: center; gap: 12px;
-          padding: 11px 16px; margin: 3px 10px;
-          border-radius: 4px;
-          color: ${C.forest}; font-size: 13.5px; font-weight: 400;
-          font-family: 'Inter', sans-serif;
-          cursor: pointer; text-decoration: none;
-          transition: background 0.15s, color 0.15s;
-          border-left: 3px solid transparent;
-          box-sizing: border-box;
-        }
-        [dir="rtl"] .sb-item {
-          border-left: none; border-right: 3px solid transparent;
-        }
-        .sb-item:hover { background: ${C.hoverBg}; color: ${C.primary}; }
-        .sb-item:hover .sb-icon { color: ${C.primary}; opacity: 1; }
-        .sb-item.active {
-          background: ${C.activeBg}; color: ${C.primary};
-          font-weight: 600; border-left: 3px solid ${C.gold};
-        }
-        [dir="rtl"] .sb-item.active {
-          border-left: none; border-right: 3px solid ${C.gold};
-        }
-        .sb-item.active .sb-icon { color: ${C.primary}; opacity: 1; }
-
-        .sb-icon { color: ${C.forest}; opacity: 0.5; flex-shrink: 0; transition: color .15s, opacity .15s; }
-        .sb-chev { font-size: 16px; color: ${C.forest}; opacity: 0.32; flex-shrink: 0; transition: transform .2s; }
-        .sb-chev.open { transform: rotate(180deg); }
-
-        /* ── Level 1 children (direct under expandable) ── */
-        .sb-sub {
-          display: flex; align-items: center; justify-content: space-between;
-          padding: 9px 16px 9px 48px; margin: 2px 10px;
-          border-radius: 4px; font-size: 13px;
-          font-family: 'Inter', sans-serif; color: ${C.muted};
-          cursor: pointer; text-decoration: none;
-          transition: color .15s, background .15s;
-          border-left: 3px solid transparent;
-        }
-        [dir="rtl"] .sb-sub {
-          padding: 9px 48px 9px 16px;
-          border-left: none; border-right: 3px solid transparent;
-        }
-        .sb-sub:hover { color: ${C.primary}; background: ${C.hoverBg}; }
-        .sb-sub.active {
-          background: ${C.activeBg}; color: ${C.primary};
-          font-weight: 600; border-left: 3px solid ${C.gold};
-        }
-        [dir="rtl"] .sb-sub.active { border-left: none; border-right: 3px solid ${C.gold}; }
-
-        /* ── Group header row (level 1.5) ── */
-        .sb-group-header {
-          display: flex; align-items: center; gap: 8px;
-          padding: 8px 16px 8px 32px; margin: 2px 10px;
-          border-radius: 4px; font-size: 11.5px; font-weight: 600;
-          font-family: 'Inter', sans-serif;
-          color: ${C.forest}; opacity: 0.75;
-          cursor: pointer;
-          transition: background .15s, opacity .15s;
-          letter-spacing: 0.01em;
-        }
-        [dir="rtl"] .sb-group-header {
-          padding: 8px 32px 8px 16px;
-        }
-        .sb-group-header:hover { background: ${C.hoverBg}; opacity: 1; }
-        .sb-group-icon { font-size: 15px; opacity: 0.6; }
-        .sb-group-chev { font-size: 14px; opacity: 0.4; margin-left: auto; transition: transform .2s; flex-shrink: 0; }
-        [dir="rtl"] .sb-group-chev { margin-left: 0; margin-right: auto; }
-        .sb-group-chev.open { transform: rotate(180deg); }
-
-        /* ── Level 2 children (under group) ── */
-        .sb-sub2 {
-          display: flex; align-items: center; justify-content: space-between;
-          padding: 8px 16px 8px 60px; margin: 2px 10px;
-          border-radius: 4px; font-size: 12.5px;
-          font-family: 'Inter', sans-serif; color: ${C.muted};
-          cursor: pointer; text-decoration: none;
-          transition: color .15s, background .15s;
-          border-left: 3px solid transparent;
-        }
-        [dir="rtl"] .sb-sub2 {
-          padding: 8px 60px 8px 16px;
-          border-left: none; border-right: 3px solid transparent;
-        }
-        .sb-sub2:hover { color: ${C.primary}; background: ${C.hoverBg}; }
-        .sb-sub2.active {
-          background: ${C.activeBg}; color: ${C.primary};
-          font-weight: 600; border-left: 3px solid ${C.gold};
-        }
-        [dir="rtl"] .sb-sub2.active { border-left: none; border-right: 3px solid ${C.gold}; }
-
-        .badge { font-size: 10px; font-weight: 700; background: ${C.gold}; color: #fff;
-                 border-radius: 99px; padding: 2px 8px; flex-shrink: 0;
-                 font-family: 'Inter', sans-serif; line-height: 1.5; }
-        .badge-sm { font-size: 10px; font-weight: 600;
-                    background: rgba(201,168,76,0.18); color: #9a7d30;
-                    border-radius: 99px; padding: 2px 8px; font-family: 'Inter', sans-serif; }
-
-        .sb-section {
-          padding: 22px 18px 6px; font-size: 9px; font-weight: 600;
-          letter-spacing: 0.2em; text-transform: uppercase;
-          color: rgba(40,91,75,0.42); font-family: 'JetBrains Mono', monospace;
-        }
-
-        .sb-signout {
-          display: flex; align-items: center; gap: 12px;
-          padding: 13px 18px; margin: 8px 10px;
-          border-radius: 4px; border: 1.5px solid rgba(186,26,26,0.2);
-          background: rgba(186,26,26,0.04);
-          color: #ba1a1a; font-size: 13px; font-weight: 600;
-          font-family: 'Inter', sans-serif;
-          cursor: pointer; text-decoration: none;
-          transition: background .15s, border-color .15s;
-        }
-        .sb-signout:hover { background: rgba(186,26,26,0.08); border-color: rgba(186,26,26,0.35); }
-
-        .sb-inner { overflow-y: auto; flex: 1; padding: 4px 0 100px 0; }
-        .sb-inner::-webkit-scrollbar { width: 3px; }
-        .sb-inner::-webkit-scrollbar-thumb { background: rgba(11,67,53,0.12); border-radius: 99px; }
+        .admin-sidebar-scroll::-webkit-scrollbar { width: 5px; }
+        .admin-sidebar-scroll::-webkit-scrollbar-thumb { background: ${colors.creamDark}; border-radius: 10px; }
       `}</style>
 
-      <aside
-        dir={isRTL ? "rtl" : "ltr"}
-        style={{
-          width: 272,
-          height: "100vh",
-          position: "fixed",
-          top: 0,
-          left: isRTL ? "auto" : 0,
-          right: isRTL ? 0 : "auto",
-          zIndex: 40,
-          backgroundImage: `url(${bgImage})`,
-          backgroundSize: "cover",
-          backgroundPosition: "center",
-          backgroundRepeat: "no-repeat",
-          backgroundColor: C.bg,
-          borderRight: isRTL ? "none" : `1px solid ${C.border}`,
-          borderLeft: isRTL ? `1px solid ${C.border}` : "none",
-          display: "flex",
-          flexDirection: "column",
-          fontFamily: "'Inter', sans-serif",
-        }}
-      >
-        {/* ── Header ── */}
-        <div style={{
-          padding: "24px 20px 18px",
-          borderBottom: `1px solid ${C.border}`,
-          flexShrink: 0,
-        }}>
-          <img
-            src={oulamaunaLogo}
-            alt="Oulamauna"
+      <div>
+        {/* Logo / header */}
+        <Link
+          to="/admin/dashboard"
+          style={{
+            padding: "0 18px",
+            marginBottom: 20,
+            display: "flex",
+            alignItems: "center",
+            gap: 9,
+            textDecoration: "none",
+          }}
+        >
+          <div
             style={{
-              height: 48,
-              width: "auto",
-              objectFit: "contain",
-              objectPosition: isRTL ? "right center" : "left center",
-              display: "block",
-              marginBottom: 14,
+              width: 26,
+              height: 26,
+              borderRadius: "50%",
+              border: `1px solid ${colors.forestGreen}`,
+              backgroundColor: colors.forestGreen,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              color: colors.creamLight,
+              fontFamily: fonts.headline,
+              fontWeight: 700,
+              fontSize: 12,
+              flexShrink: 0,
             }}
-          />
-          <div style={{
-            fontSize: 17, fontWeight: 700, color: C.text,
-            letterSpacing: "-0.01em", marginBottom: 3,
-            fontFamily: "'Inter', sans-serif",
-          }}>
-            {t("sidebar.brandName")}
+          >
+            ع
           </div>
-          <div style={{
-            fontSize: 9, fontWeight: 600, letterSpacing: "0.22em",
-            textTransform: "uppercase", color: "rgba(40,91,75,0.42)",
-            fontFamily: "'JetBrains Mono', monospace",
-          }}>
-            {t("sidebar.role")}
-          </div>
-        </div>
+          <span
+            style={{
+              fontFamily: fonts.headline,
+              fontSize: 18,
+              lineHeight: "24px",
+              fontWeight: 700,
+              color: colors.forestGreen,
+            }}
+          >
+            Oulamnauna
+          </span>
+        </Link>
 
-        {/* ── Scrollable nav ── */}
-        <div className="sb-inner">
-          <nav style={{ paddingTop: 8 }}>
-            {NAV.map((item: NavItem, i: number) => {
-
-              /* ── Section header ── */
-              if (item.type === "section" && item.labelKey) {
-                return <div key={i} className="sb-section">{t(item.labelKey)}</div>;
-              }
-
-              /* ── Plain link ── */
-              if (item.type === "link" && item.to && item.labelKey) {
-                return (
-                  <Link
-                    key={i}
-                    to={item.to}
-                    className={`sb-item${isActive(item.to) ? " active" : ""}`}
-                  >
-                    <span className="ms sb-icon">{item.icon}</span>
-                    <span style={{ flex: 1 }}>{t(item.labelKey)}</span>
-                    {item.badge !== undefined && <span className="badge">{item.badge}</span>}
-                  </Link>
-                );
-              }
-
-              /* ── Expandable flat ── */
-              if (item.type === "expandable" && item.labelKey) {
-                const isOpen = !!open[item.labelKey];
-                const anyChildActive = item.children?.some((c) => isActive(c.to)) ?? false;
-
-                return (
-                  <div key={i}>
-                    <div
-                      className={`sb-item${anyChildActive ? " active" : ""}`}
-                      onClick={() => toggle(item.labelKey!)}
-                    >
-                      <span className="ms sb-icon">{item.icon}</span>
-                      <span style={{ flex: 1 }}>{t(item.labelKey)}</span>
-                      {item.badge !== undefined && (
-                        <span className="badge" style={{ marginRight: 6 }}>{item.badge}</span>
-                      )}
-                      <span className={`ms sb-chev${isOpen ? " open" : ""}`}>expand_more</span>
-                    </div>
-
-                    {isOpen && item.children?.map((c: Child, j: number) => (
+        {/* Nav groups */}
+        <div className="admin-sidebar-scroll" style={{ display: "flex", flexDirection: "column", gap: 12, padding: "0 8px" }}>
+          {navGroups.map((group, idx) => (
+            <div key={group.sectionKey ?? `group-${idx}`}>
+              {group.sectionKey && (
+                <p
+                  style={{
+                    fontFamily: fonts.label,
+                    fontSize: 10,
+                    letterSpacing: "0.05em",
+                    textTransform: "uppercase",
+                    color: colors.forestGreen,
+                    opacity: 0.55,
+                    margin: "0 0 4px",
+                    padding: "0 8px",
+                  }}
+                >
+                  {t(group.sectionKey)}
+                </p>
+              )}
+              <ul style={{ listStyle: "none", display: "flex", flexDirection: "column", gap: 1, margin: 0, padding: 0 }}>
+                {group.links.map((item) => {
+                  // ✅ FIX: Use startsWith so the link stays active when viewing a specific scholar (e.g., /admin/pending/scholars/123)
+                  const active = location.pathname === item.to || location.pathname.startsWith(item.to + "/");
+                  
+                  return (
+                    <li key={item.to}>
                       <Link
-                        key={j}
-                        to={c.to}
-                        className={`sb-sub${isActive(c.to) ? " active" : ""}`}
+                        to={item.to}
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          gap: 9,
+                          padding: "7px 9px",
+                          borderRadius: 7,
+                          fontFamily: fonts.body,
+                          fontSize: 13,
+                          textDecoration: "none",
+                          transition: "background-color 0.15s, color 0.15s",
+                          ...(active
+                            ? { backgroundColor: colors.forestGreen, color: colors.creamLight }
+                            : { color: colors.forestGreen }),
+                        }}
+                        onMouseEnter={(e) => {
+                          if (!active) {
+                            e.currentTarget.style.backgroundColor = colors.creamMid;
+                          }
+                        }}
+                        onMouseLeave={(e) => {
+                          if (!active) {
+                            e.currentTarget.style.backgroundColor = "transparent";
+                          }
+                        }}
                       >
-                        <span>{t(c.label)}</span>
-                        {c.badge !== undefined && <span className="badge-sm">{c.badge}</span>}
+                        <Icon name={item.icon} size={16} filled={active} />
+                        <span>{t(item.labelKey)}</span>
                       </Link>
-                    ))}
-                  </div>
-                );
-              }
-
-              /* ── Expandable grouped (nested) ── */
-              if (item.type === "expandable-grouped" && item.labelKey) {
-                const isOpen = !!open[item.labelKey];
-                const anyChildActive = item.groups?.some(
-                  (g) => g.children.some((c) => isActive(c.to))
-                ) ?? false;
-
-                return (
-                  <div key={i}>
-                    {/* Top-level row */}
-                    <div
-                      className={`sb-item${anyChildActive ? " active" : ""}`}
-                      onClick={() => toggle(item.labelKey!)}
-                    >
-                      <span className="ms sb-icon">{item.icon}</span>
-                      <span style={{ flex: 1 }}>{t(item.labelKey)}</span>
-                      {item.badge !== undefined && (
-                        <span className="badge" style={{ marginRight: 6 }}>{item.badge}</span>
-                      )}
-                      <span className={`ms sb-chev${isOpen ? " open" : ""}`}>expand_more</span>
-                    </div>
-
-                    {/* Groups */}
-                    {isOpen && item.groups?.map((group: ChildGroup, gi: number) => {
-                      const groupKey = group.groupLabelKey;
-                      const isGroupOpen = open[groupKey] !== false; // default open
-                      const anyGroupChildActive = group.children.some((c) => isActive(c.to));
-
-                      return (
-                        <div key={gi}>
-                          {/* Group header */}
-                          <div
-                            className="sb-group-header"
-                            style={{ color: anyGroupChildActive ? C.primary : undefined }}
-                            onClick={() => toggle(groupKey)}
-                          >
-                            <span className="ms sb-group-icon">{group.groupIcon}</span>
-                            <span>{t(group.groupLabelKey)}</span>
-                            <span className={`ms sb-group-chev${isGroupOpen ? " open" : ""}`}>
-                              expand_more
-                            </span>
-                          </div>
-
-                          {/* Group children */}
-                          {isGroupOpen && group.children.map((c: Child, ci: number) => (
-                            <Link
-                              key={ci}
-                              to={c.to}
-                              className={`sb-sub2${isActive(c.to) ? " active" : ""}`}
-                            >
-                              <span>{t(c.label)}</span>
-                              {c.badge !== undefined && <span className="badge-sm">{c.badge}</span>}
-                            </Link>
-                          ))}
-                        </div>
-                      );
-                    })}
-                  </div>
-                );
-              }
-
-              return null;
-            })}
-          </nav>
+                    </li>
+                  );
+                })}
+              </ul>
+            </div>
+          ))}
         </div>
-      </aside>
-    </>
+      </div>
+
+      {/* User profile */}
+      <div style={{ padding: "12px 18px 0", borderTop: `1px solid ${colors.forestGreen}`, display: "flex", alignItems: "center", gap: 9, cursor: "pointer" }}>
+        <div
+          style={{
+            width: 32,
+            height: 32,
+            borderRadius: "50%",
+            border: `1px solid ${colors.forestGreen}`,
+            backgroundColor: colors.creamDark,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            fontFamily: fonts.headline,
+            fontWeight: 600,
+            color: colors.forestGreen,
+            flexShrink: 0,
+            fontSize: 13,
+          }}
+        >
+          A
+        </div>
+        <div style={{ display: "flex", flexDirection: "column" }}>
+          <span style={{ fontFamily: fonts.body, fontSize: 12, fontWeight: 600, color: colors.forestGreen }}>
+            Hello Aarav
+          </span>
+          <span style={{ fontFamily: fonts.label, fontSize: 10, color: colors.forestGreen }}>
+            Director of Research
+          </span>
+        </div>
+      </div>
+    </nav>
   );
-}
+};
+
+export default AdminSidebar;

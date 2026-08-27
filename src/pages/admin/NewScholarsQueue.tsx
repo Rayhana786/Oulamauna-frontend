@@ -1,8 +1,90 @@
-import { useState, useMemo } from "react";
+import React, { useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { useLang } from "../../context/LanguageContext";
 
-/* ─────────────────────── Types ─────────────────────── */
+/* ------------------------------------------------------------------ */
+/*  Design tokens — Oulamnauna admin palette                          */
+/* ------------------------------------------------------------------ */
+const colors = {
+  creamLight: "#fcfaf5",
+  creamMid: "#f6efdc",
+  creamDark: "#e5d5a8",
+  forestGreen: "#0b4335",
+  amber: "#b8860b",
+  red: "#8b2c2c",
+};
+
+const fonts = {
+  headline: "'Hanken Grotesk', sans-serif",
+  body: "'Inter', sans-serif",
+  label: "'JetBrains Mono', monospace",
+};
+
+const cardStyle: React.CSSProperties = {
+  backgroundColor: colors.creamLight,
+  borderRadius: 12,
+  boxShadow: "0px 4px 20px rgba(11, 67, 53, 0.08)",
+  border: `1px solid ${colors.forestGreen}`,
+};
+
+/* ------------------------------------------------------------------ */
+/*  Reusable UI Components                                             */
+/* ------------------------------------------------------------------ */
+const Icon: React.FC<{ name: string; size?: number; filled?: boolean }> = ({
+  name,
+  size = 18,
+  filled = false,
+}) => (
+  <span
+    className="material-symbols-outlined"
+    style={{
+      fontSize: size,
+      lineHeight: 1,
+      fontVariationSettings: `'FILL' ${filled ? 1 : 0}, 'wght' 400, 'GRAD' 0, 'opsz' 24`,
+    }}
+  >
+    {name}
+  </span>
+);
+
+const Avatar: React.FC<{ name: string; size?: number; filled?: boolean }> = ({
+  name,
+  size = 36,
+  filled = false,
+}) => {
+  const initials = name
+    .split(" ")
+    .map((p) => p[0])
+    .slice(0, 2)
+    .join("")
+    .toUpperCase();
+  return (
+    <div
+      style={{
+        width: size,
+        height: size,
+        borderRadius: "50%",
+        backgroundColor: filled ? colors.forestGreen : colors.creamMid,
+        color: filled ? colors.creamLight : colors.forestGreen,
+        border: `1px solid ${colors.forestGreen}`,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        fontFamily: fonts.headline,
+        fontWeight: 700,
+        fontSize: size * 0.4,
+        letterSpacing: "0.02em",
+        flexShrink: 0,
+      }}
+    >
+      {initials}
+    </div>
+  );
+};
+
+/* ------------------------------------------------------------------ */
+/*  Types & Mock data                                                  */
+/* ------------------------------------------------------------------ */
 type LangCode = "EN" | "AR" | "FR";
 type SortOption = "newest" | "oldest" | "name";
 
@@ -17,136 +99,21 @@ interface ScholarSubmission {
   submittedAt: Date;
 }
 
-/* ─────────────────────── Mock data ─────────────────────── */
 const SUBMISSIONS: ScholarSubmission[] = [
-  {
-    id: "sch_001_en",
-    name: "Ibn al-Haytham",
-    language: "EN",
-    submittedBy: "Karim Mansouri",
-    contributorId: "user_karim",
-    date: "June 14, 2026",
-    discipline: "Optics & Mathematics",
-    submittedAt: new Date("2026-06-14"),
-  },
-  {
-    id: "sch_001_ar",
-    name: "ابن الهيثم",
-    language: "AR",
-    submittedBy: "Karim Mansouri",
-    contributorId: "user_karim",
-    date: "June 14, 2026",
-    discipline: "Optics & Mathematics",
-    submittedAt: new Date("2026-06-14"),
-  },
-  {
-    id: "sch_002_en",
-    name: "Fatima al-Fihriya",
-    language: "EN",
-    submittedBy: "Sara Al-Rashid",
-    contributorId: "user_sara",
-    date: "June 13, 2026",
-    discipline: "Education & Theology",
-    submittedAt: new Date("2026-06-13"),
-  },
-  {
-    id: "sch_002_ar",
-    name: "فاطمة الفهرية",
-    language: "AR",
-    submittedBy: "Sara Al-Rashid",
-    contributorId: "user_sara",
-    date: "June 13, 2026",
-    discipline: "Education & Theology",
-    submittedAt: new Date("2026-06-13"),
-  },
-  {
-    id: "sch_002_fr",
-    name: "Fatima al-Fihriya",
-    language: "FR",
-    submittedBy: "Pedro Alves",
-    contributorId: "user_pedro",
-    date: "June 12, 2026",
-    discipline: "Education & Theology",
-    submittedAt: new Date("2026-06-12"),
-  },
-  {
-    id: "sch_003_en",
-    name: "Al-Zahrawi",
-    language: "EN",
-    submittedBy: "Pedro Alves",
-    contributorId: "user_pedro",
-    date: "June 11, 2026",
-    discipline: "Medicine & Surgery",
-    submittedAt: new Date("2026-06-11"),
-  },
-  {
-    id: "sch_003_fr",
-    name: "Abulcasis",
-    language: "FR",
-    submittedBy: "Pedro Alves",
-    contributorId: "user_pedro",
-    date: "June 11, 2026",
-    discipline: "Medicine & Surgery",
-    submittedAt: new Date("2026-06-11"),
-  },
-  {
-    id: "sch_004_en",
-    name: "Maryam al-Asturlabiya",
-    language: "EN",
-    submittedBy: "Karim Mansouri",
-    contributorId: "user_karim",
-    date: "June 9, 2026",
-    discipline: "Astronomy",
-    submittedAt: new Date("2026-06-09"),
-  },
-  {
-    id: "sch_004_ar",
-    name: "مريم الأسطرلابية",
-    language: "AR",
-    submittedBy: "Karim Mansouri",
-    contributorId: "user_karim",
-    date: "June 9, 2026",
-    discipline: "Astronomy",
-    submittedAt: new Date("2026-06-09"),
-  },
+  { id: "sch_001_en", name: "Ibn al-Haytham", language: "EN", submittedBy: "Karim Mansouri", contributorId: "user_karim", date: "June 14, 2026", discipline: "Optics & Mathematics", submittedAt: new Date("2026-06-14") },
+  { id: "sch_001_ar", name: "ابن الهيثم", language: "AR", submittedBy: "Karim Mansouri", contributorId: "user_karim", date: "June 14, 2026", discipline: "Optics & Mathematics", submittedAt: new Date("2026-06-14") },
+  { id: "sch_002_en", name: "Fatima al-Fihriya", language: "EN", submittedBy: "Sara Al-Rashid", contributorId: "user_sara", date: "June 13, 2026", discipline: "Education & Theology", submittedAt: new Date("2026-06-13") },
+  { id: "sch_002_ar", name: "فاطمة الفهرية", language: "AR", submittedBy: "Sara Al-Rashid", contributorId: "user_sara", date: "June 13, 2026", discipline: "Education & Theology", submittedAt: new Date("2026-06-13") },
+  { id: "sch_002_fr", name: "Fatima al-Fihriya", language: "FR", submittedBy: "Pedro Alves", contributorId: "user_pedro", date: "June 12, 2026", discipline: "Education & Theology", submittedAt: new Date("2026-06-12") },
+  { id: "sch_003_en", name: "Al-Zahrawi", language: "EN", submittedBy: "Pedro Alves", contributorId: "user_pedro", date: "June 11, 2026", discipline: "Medicine & Surgery", submittedAt: new Date("2026-06-11") },
+  { id: "sch_003_fr", name: "Abulcasis", language: "FR", submittedBy: "Pedro Alves", contributorId: "user_pedro", date: "June 11, 2026", discipline: "Medicine & Surgery", submittedAt: new Date("2026-06-11") },
+  { id: "sch_004_en", name: "Maryam al-Asturlabiya", language: "EN", submittedBy: "Karim Mansouri", contributorId: "user_karim", date: "June 9, 2026", discipline: "Astronomy", submittedAt: new Date("2026-06-09") },
+  { id: "sch_004_ar", name: "مريم الأسطرلابية", language: "AR", submittedBy: "Karim Mansouri", contributorId: "user_karim", date: "June 9, 2026", discipline: "Astronomy", submittedAt: new Date("2026-06-09") },
 ];
 
-/* ─────────────────────── Colors ─────────────────────── */
-const C = {
-  pageBg: "#f9faf7",
-  cardBg: "#f3f4f1",
-  white: "#ffffff",
-  tableSectionBg: "#f3f4f1",
-  tableHeaderBg: "#eaebe8",
-  border: "#c0c9c3",
-  text: "#191c1b",
-  muted: "#404945",
-  subtle: "#707974",
-  primary: "#0b4335",
-  forest: "#285B4B",
-  gold: "#fed65b",
-  goldIconColor: "#7c5e12",
-  rejectText: "#ba1a1a",
-  rejectBorder: "rgba(186,26,26,0.3)",
-  rejectBg: "#ffdad6",
-  approveBorder: "rgba(40,91,75,0.3)",
-  activeBg: "rgba(11,67,53,0.08)",
-  hoverBg: "rgba(11,67,53,0.04)",
-  overdueIconBg: "#fce8e8",
-  todayIconBg: "rgba(254,214,91,0.22)",
-  defaultIconBg: "rgba(11,67,53,0.10)",
-  timeIconBg: "#e8e9e6",
-  avatarBg: "#fed65b",
-  avatarText: "#3a2c00",
-};
-
-const LANG_VERSION_LABEL: Record<LangCode, string> = {
-  EN: "English version",
-  AR: "Arabic version",
-  FR: "French version",
-};
-
-/* ─────────────────────── Stats helper ─────────────────────── */
+/* ------------------------------------------------------------------ */
+/*  Stats helper                                                       */
+/* ------------------------------------------------------------------ */
 function getStats(rows: ScholarSubmission[]) {
   const now = new Date();
   const total = rows.length;
@@ -165,9 +132,11 @@ function getStats(rows: ScholarSubmission[]) {
   return { total, overdue, newToday, thisWeek, avgTime: "2h 15m" };
 }
 
-/* ─────────────────────── Component ─────────────────────── */
+/* ------------------------------------------------------------------ */
+/*  Main Component                                                     */
+/* ------------------------------------------------------------------ */
 export default function NewScholarsQueue() {
-  const navigate = useNavigate();
+  const navigate = useNavigate(); // Restored for proper routing
   const { t, lang } = useLang();
   const isRTL = lang === "AR";
 
@@ -200,7 +169,11 @@ export default function NewScholarsQueue() {
     return result;
   }, [rows, filterLanguage, sortBy, filterDiscipline, filterType]);
 
-  const goToReview = (s: ScholarSubmission) => navigate(`/admin/pending/scholars/${s.id}?lang=${s.language}`);
+  // FIXED: Properly navigates to your existing <Route path="/admin/pending/scholars/:id" />
+  const goToReview = (s: ScholarSubmission) => {
+    navigate(`/admin/pending/scholars/${s.id}?lang=${s.language}`);
+  };
+
   const handleApprove = (id: string) => console.log("Approved:", id);
   const handleReject  = (id: string) => console.log("Rejected:", id);
   const confirmStrip  = () => { if (!stripTarget) return; setStripTarget(null); };
@@ -214,705 +187,213 @@ export default function NewScholarsQueue() {
 
   const hasActiveFilters = filterLanguage !== "all" || filterDiscipline !== "all" || filterType !== "all";
 
-  // Helper for language name display
   const getLangName = (code: LangCode) => {
     switch (code) {
-      case "EN": return t("reviewQueue.lang.en");
-      case "AR": return t("reviewQueue.lang.ar");
-      case "FR": return t("reviewQueue.lang.fr");
+      case "EN": return t("reviewQueue.lang.en") || "English";
+      case "AR": return t("reviewQueue.lang.ar") || "Arabic";
+      case "FR": return t("reviewQueue.lang.fr") || "French";
     }
   };
 
+  const thStyle: React.CSSProperties = {
+    fontFamily: fonts.label,
+    fontSize: 11,
+    letterSpacing: "0.06em",
+    fontWeight: 600,
+    color: colors.forestGreen,
+    textAlign: isRTL ? "right" : "left",
+    padding: "12px 14px",
+    borderBottom: `1px solid ${colors.forestGreen}`,
+    textTransform: "uppercase",
+    opacity: 0.8,
+  };
+
+  const tdStyle: React.CSSProperties = {
+    fontFamily: fonts.body,
+    fontSize: 13,
+    color: colors.forestGreen,
+    padding: "14px",
+    borderBottom: `1px solid ${colors.creamDark}`,
+    textAlign: isRTL ? "right" : "left",
+  };
+
+  const statItems = [
+    { icon: "pending_actions", label: t("reviewQueue.stats.totalPending") || "Total Pending", value: stats.total.toString(), delta: "Awaiting action", filled: true },
+    { icon: "priority_high", label: t("reviewQueue.stats.overdue") || "Overdue", value: stats.overdue.toString(), delta: "Requires attention", filled: false, isOverdue: true },
+    { icon: "schedule", label: t("reviewQueue.stats.avgTime") || "Avg Time", value: stats.avgTime, delta: "Target: < 24h", filled: false },
+    { icon: "calendar_today", label: t("reviewQueue.stats.thisWeek") || "This Week", value: stats.thisWeek.toString(), delta: "Last 7 days", filled: false },
+  ];
+
   return (
-    <div
-      dir={isRTL ? "rtl" : "ltr"}
-      style={{ fontFamily: "'Inter', sans-serif", color: C.text, background: C.pageBg, minHeight: "100vh" }}
-    >
-      <style>{`
-        .nsq-wrap {
-          padding: 40px;
-          max-width: 1400px;
-          margin: 0 auto;
-        }
-
-        /* ── Header ── */
-        .nsq-header { margin-bottom: 32px; }
-        .nsq-header h2 {
-          font-size: 32px;
-          font-weight: 700;
-          color: ${C.primary};
-          margin-bottom: 8px;
-        }
-        .nsq-subtitle {
-          font-size: 14px;
-          color: ${C.muted};
-          max-width: 800px;
-          line-height: 1.6;
-        }
-
-        /* ── Stats Grid ── */
-        .nsq-stats {
-          display: grid;
-          grid-template-columns: repeat(5, 1fr);
-          gap: 14px;
-          margin-bottom: 20px;
-        }
-        .nsq-stat-card {
-          background: ${C.cardBg};
-          border: 1px solid ${C.border};
-          border-radius: 12px;
-          padding: 22px 20px;
-          min-height: 90px;
-          display: flex;
-          align-items: center;
-          gap: 14px;
-          overflow: hidden;
-          transition: transform 0.15s, box-shadow 0.15s;
-        }
-        .nsq-stat-card:hover {
-          transform: translateY(-1px);
-          box-shadow: 0 4px 12px rgba(11,67,53,0.08);
-        }
-        .nsq-stat-icon {
-          width: 44px;
-          height: 44px;
-          border-radius: 12px;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          flex-shrink: 0;
-        }
-        .nsq-stat-icon .ms { font-size: 22px; }
-        .nsq-stat-icon.default  { background: ${C.defaultIconBg}; color: ${C.primary}; }
-        .nsq-stat-icon.overdue  { background: ${C.overdueIconBg}; color: ${C.rejectText}; }
-        .nsq-stat-icon.today    { background: ${C.todayIconBg};   color: ${C.goldIconColor}; }
-        .nsq-stat-icon.time     { background: ${C.timeIconBg};    color: ${C.primary}; }
-        .nsq-stat-icon.week     { background: ${C.defaultIconBg}; color: ${C.primary}; }
-
-        .nsq-stat-content {
-          display: flex;
-          flex-direction: column;
-          gap: 5px;
-          min-width: 0;
-        }
-        .nsq-stat-label {
-          font-size: 10px;
-          font-weight: 700;
-          letter-spacing: 0.06em;
-          text-transform: uppercase;
-          color: ${C.subtle};
-          white-space: normal;
-          line-height: 1.3;
-        }
-        .nsq-stat-value {
-          font-size: 28px;
-          font-weight: 800;
-          color: ${C.primary};
-          line-height: 1;
-          letter-spacing: -0.02em;
-          white-space: nowrap;
-        }
-        .nsq-stat-card.overdue .nsq-stat-value { color: ${C.rejectText}; }
-
-        /* ── Filter box ── */
-        .nsq-filters {
-          background: ${C.cardBg};
-          border: 1px solid ${C.border};
-          border-radius: 10px;
-          padding: 16px 20px;
-          margin-bottom: 20px;
-        }
-        .nsq-filters-head {
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-          margin-bottom: 12px;
-        }
-        .nsq-filters-title {
-          font-size: 13px;
-          font-weight: 700;
-          color: ${C.primary};
-          display: flex;
-          align-items: center;
-          gap: 6px;
-        }
-        .nsq-filters-title .ms { font-size: 16px; }
-        .nsq-clear-link {
-          font-size: 11px;
-          font-weight: 700;
-          letter-spacing: 0.04em;
-          text-transform: uppercase;
-          color: ${C.rejectText};
-          background: none;
-          border: none;
-          cursor: pointer;
-          padding: 0;
-        }
-        .nsq-clear-link:hover { text-decoration: underline; }
-        .nsq-filters-row {
-          display: flex;
-          gap: 20px;
-          align-items: flex-start;
-          flex-wrap: wrap;
-        }
-        .nsq-filter-group {
-          display: flex;
-          flex-direction: column;
-          gap: 5px;
-        }
-        .nsq-filter-label {
-          font-size: 10px;
-          font-weight: 700;
-          color: ${C.subtle};
-          text-transform: uppercase;
-          letter-spacing: 0.06em;
-        }
-        .nsq-filter-select {
-          padding: 10px 12px;
-          border: 1px solid ${C.border};
-          border-radius: 8px;
-          font-size: 13.5px;
-          background: ${C.white};
-          color: ${C.text};
-          cursor: pointer;
-          outline: none;
-          transition: border-color 0.2s;
-          min-width: 150px;
-          height: 42px;
-          font-family: 'Inter', sans-serif;
-        }
-        .nsq-filter-select:hover { border-color: ${C.primary}; }
-        .nsq-filter-select:focus {
-          border-color: ${C.primary};
-          box-shadow: 0 0 0 3px rgba(11,67,53,0.1);
-        }
-
-        /* ── Table card ── */
-        .nsq-table-card {
-          background: ${C.tableSectionBg};
-          border: 1px solid ${C.border};
-          border-radius: 12px;
-          overflow: hidden;
-        }
-        .nsq-table-header {
-          padding: 16px 24px;
-          border-bottom: 1px solid ${C.border};
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          background: ${C.tableSectionBg};
-        }
-        .nsq-table-title {
-          font-size: 16px;
-          font-weight: 600;
-          color: ${C.primary};
-          display: flex;
-          align-items: center;
-          gap: 8px;
-        }
-        .nsq-table-title .ms { font-size: 20px; }
-        .nsq-updated-badge {
-          font-size: 12px;
-          padding: 5px 14px;
-          background: ${C.cardBg};
-          color: ${C.subtle};
-          border-radius: 99px;
-          font-weight: 600;
-          border: 1px solid ${C.border};
-        }
-        .nsq-table-scroll { overflow-x: auto; }
-
-        table.nsq-table {
-          width: 100%;
-          border-collapse: collapse;
-          min-width: 800px;
-        }
-        table.nsq-table th {
-          text-align: ${isRTL ? "right" : "left"};
-          font-size: 11px;
-          font-weight: 700;
-          letter-spacing: 0.08em;
-          text-transform: uppercase;
-          color: ${C.subtle};
-          padding: 10px 20px;
-          background: ${C.pageBg};
-          border-bottom: 1px solid ${C.border};
-          white-space: nowrap;
-        }
-        table.nsq-table td {
-          padding: 10px 20px;
-          font-size: 13.5px;
-          color: ${C.text};
-          border-bottom: 1px solid ${C.border};
-          vertical-align: middle;
-          background: ${C.pageBg};
-          white-space: nowrap;
-        }
-        table.nsq-table tr:last-child td { border-bottom: none; }
-        table.nsq-table tr:hover td { background: rgba(11,67,53,0.04); }
-
-        .nsq-scholar-cell {
-          display: flex;
-          align-items: center;
-          gap: 10px;
-        }
-        .nsq-scholar-avatar {
-          width: 36px;
-          height: 36px;
-          border-radius: 8px;
-          overflow: hidden;
-          flex-shrink: 0;
-          border: 1.5px solid ${C.border};
-        }
-        .nsq-scholar-avatar img {
-          width: 100%;
-          height: 100%;
-          object-fit: cover;
-        }
-        .nsq-name {
-          font-weight: 600;
-          color: ${C.text};
-          margin-bottom: 2px;
-          font-size: 13.5px;
-          white-space: nowrap;
-        }
-        .nsq-meta-row {
-          display: flex;
-          align-items: center;
-          gap: 5px;
-          font-size: 11px;
-          color: ${C.subtle};
-          font-weight: 500;
-          white-space: nowrap;
-        }
-        .nsq-meta-dot {
-          width: 3px;
-          height: 3px;
-          border-radius: 50%;
-          background: ${C.border};
-        }
-
-        .nsq-contributor-cell {
-          display: flex;
-          align-items: center;
-          gap: 8px;
-        }
-        .nsq-contributor-avatar {
-          width: 28px;
-          height: 28px;
-          border-radius: 50%;
-          background: ${C.avatarBg};
-          color: ${C.avatarText};
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          font-size: 10px;
-          font-weight: 700;
-          flex-shrink: 0;
-        }
-
-        .nsq-actions {
-          display: flex;
-          gap: 8px;
-          align-items: center;
-        }
-        .nsq-action-btn {
-          width: 36px;
-          height: 36px;
-          border-radius: 8px;
-          cursor: pointer;
-          border: 1.5px solid ${C.border};
-          background: ${C.white};
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          transition: all 0.18s;
-          flex-shrink: 0;
-        }
-        .nsq-action-btn .ms { font-size: 18px; }
-        .nsq-action-btn.view   { color: ${C.subtle}; }
-        .nsq-action-btn.view:hover {
-          background: ${C.cardBg};
-          border-color: ${C.primary};
-          color: ${C.primary};
-        }
-        .nsq-action-btn.approve {
-          color: ${C.forest};
-          border-color: ${C.approveBorder};
-        }
-        .nsq-action-btn.approve:hover {
-          background: ${C.activeBg};
-          border-color: ${C.forest};
-        }
-        .nsq-action-btn.reject {
-          color: ${C.rejectText};
-          border-color: ${C.rejectBorder};
-        }
-        .nsq-action-btn.reject:hover {
-          background: ${C.rejectBg};
-          border-color: ${C.rejectText};
-        }
-        .nsq-action-btn.strip { color: ${C.muted}; }
-        .nsq-action-btn.strip:hover {
-          background: ${C.rejectText};
-          color: white;
-          border-color: ${C.rejectText};
-        }
-
-        .nsq-pagination {
-          padding: 14px 24px;
-          background: ${C.tableSectionBg};
-          border-top: 1px solid ${C.border};
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-        }
-        .nsq-pagination-info { font-size: 12px; color: ${C.muted}; }
-        .nsq-pagination-buttons { display: flex; gap: 6px; }
-        .nsq-page-btn {
-          min-width: 36px;
-          height: 36px;
-          padding: 0 12px;
-          border-radius: 8px;
-          border: 1px solid ${C.border};
-          background: ${C.white};
-          font-size: 13px;
-          font-weight: 600;
-          cursor: pointer;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          transition: all 0.18s;
-          color: ${C.text};
-        }
-        .nsq-page-btn.active {
-          background: ${C.primary};
-          color: white;
-          border-color: ${C.primary};
-        }
-        .nsq-page-btn:hover:not(.active) { background: ${C.cardBg}; }
-        .nsq-page-btn:disabled { opacity: 0.4; cursor: default; }
-
-        .nsq-empty {
-          padding: 80px 20px;
-          text-align: center;
-          color: ${C.muted};
-          font-size: 14px;
-          background: ${C.white};
-        }
-        .nsq-empty .ms {
-          font-size: 48px;
-          display: block;
-          margin-bottom: 16px;
-          opacity: 0.3;
-        }
-
-        .nsq-modal-overlay {
-          position: fixed;
-          inset: 0;
-          background: rgba(11,20,17,0.5);
-          z-index: 100;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          backdrop-filter: blur(4px);
-        }
-        .nsq-modal {
-          background: ${C.white};
-          border-radius: 16px;
-          width: 440px;
-          max-width: 90vw;
-          padding: 32px;
-          box-shadow: 0 20px 60px rgba(0,0,0,0.18);
-        }
-        .nsq-modal-icon {
-          width: 56px;
-          height: 56px;
-          border-radius: 50%;
-          background: ${C.rejectBg};
-          color: ${C.rejectText};
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          margin-bottom: 20px;
-        }
-        .nsq-modal-title  { font-size: 20px; font-weight: 700; margin-bottom: 12px; }
-        .nsq-modal-body   { font-size: 14px; color: ${C.muted}; line-height: 1.6; margin-bottom: 28px; }
-        .nsq-modal-actions { display: flex; gap: 12px; justify-content: flex-end; }
-        .nsq-modal-cancel {
-          padding: 10px 24px;
-          border-radius: 8px;
-          cursor: pointer;
-          border: 1px solid ${C.border};
-          background: ${C.white};
-          font-weight: 600;
-          transition: all 0.18s;
-          color: ${C.text};
-        }
-        .nsq-modal-cancel:hover { background: ${C.cardBg}; }
-        .nsq-modal-confirm {
-          padding: 10px 24px;
-          border-radius: 8px;
-          cursor: pointer;
-          border: none;
-          color: white;
-          background: ${C.rejectText};
-          font-weight: 700;
-          transition: all 0.18s;
-        }
-        .nsq-modal-confirm:hover { background: #9e1717; }
-
-        .ms {
-          font-family: 'Material Symbols Outlined';
-          font-style: normal;
-          font-size: 18px;
-          display: inline-flex;
-          align-items: center;
-          user-select: none;
-          line-height: 1;
-        }
-      `}</style>
-
-      <link
-        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20,700,0..1,0&display=swap"
-        rel="stylesheet"
-      />
-
-      <div className="nsq-wrap">
-
-        {/* ── Header ── */}
-        <div className="nsq-header">
-          <h2>{t("reviewQueue.title")}</h2>
-          <div className="nsq-subtitle">
-            {t("reviewQueue.subtitle")}
-          </div>
-        </div>
-
-        {/* ── Stats Grid ── */}
-        <div className="nsq-stats">
-          <div className="nsq-stat-card">
-            <div className="nsq-stat-icon default">
-              <span className="ms">pending_actions</span>
-            </div>
-            <div className="nsq-stat-content">
-              <span className="nsq-stat-label">{t("reviewQueue.stats.totalPending")}</span>
-              <span className="nsq-stat-value">{stats.total}</span>
+    <div dir={isRTL ? "rtl" : "ltr"} style={{ fontFamily: fonts.body, color: colors.forestGreen, backgroundColor: colors.creamLight, minHeight: "100vh", padding: 24 }}>
+      <div style={{ maxWidth: 1280, margin: "0 auto" }}>
+        
+        {/* ── Page Header ── */}
+        <div style={{ marginBottom: 20 }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 18, flexWrap: "wrap", gap: 12 }}>
+            <div>
+              <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
+                <span style={{ fontFamily: fonts.label, fontSize: 11, letterSpacing: "0.08em", color: colors.forestGreen, opacity: 0.7 }}>
+                  ADMIN / NEW SCHOLARS QUEUE
+                </span>
+              </div>
+              <h1 style={{ fontFamily: fonts.headline, fontSize: 28, fontWeight: 700, color: colors.forestGreen, margin: 0, lineHeight: 1.1 }}>
+                {t("reviewQueue.title") || "New Scholars Queue"}
+              </h1>
+              <p style={{ fontFamily: fonts.body, fontSize: 13, color: colors.forestGreen, opacity: 0.75, margin: "6px 0 0" }}>
+                {t("reviewQueue.subtitle") || "Review and approve new scholar submissions for the portal."}
+              </p>
             </div>
           </div>
 
-          <div className="nsq-stat-card overdue">
-            <div className="nsq-stat-icon overdue">
-              <span className="ms">priority_high</span>
-            </div>
-            <div className="nsq-stat-content">
-              <span className="nsq-stat-label">{t("reviewQueue.stats.overdue")}</span>
-              <span className="nsq-stat-value">{stats.overdue}</span>
-            </div>
-          </div>
+          {/* ── Filter Bar ── */}
+          <div style={{ ...cardStyle, padding: 12, display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 10, flex: 1, minWidth: 240, flexWrap: "wrap" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 6, padding: "6px 10px", backgroundColor: colors.creamMid, border: `1px solid ${colors.forestGreen}`, borderRadius: 8, cursor: "pointer" }}>
+                <select value={filterLanguage} onChange={(e) => setFilterLanguage(e.target.value as any)} style={{ border: "none", outline: "none", background: "transparent", fontFamily: fonts.body, fontSize: 13, color: colors.forestGreen, cursor: "pointer", minWidth: 120 }}>
+                  <option value="all">{t("reviewQueue.filters.allLanguages") || "All Languages"}</option>
+                  <option value="EN">English</option>
+                  <option value="AR">Arabic</option>
+                  <option value="FR">French</option>
+                </select>
+                <Icon name="expand_more" size={16} />
+              </div>
 
-          <div className="nsq-stat-card">
-            <div className="nsq-stat-icon today">
-              <span className="ms">new_releases</span>
-            </div>
-            <div className="nsq-stat-content">
-              <span className="nsq-stat-label">{t("reviewQueue.stats.newToday")}</span>
-              <span className="nsq-stat-value">{stats.newToday}</span>
-            </div>
-          </div>
+              <div style={{ display: "flex", alignItems: "center", gap: 6, padding: "6px 10px", backgroundColor: colors.creamMid, border: `1px solid ${colors.forestGreen}`, borderRadius: 8, cursor: "pointer" }}>
+                <select value={filterDiscipline} onChange={(e) => setFilterDiscipline(e.target.value)} style={{ border: "none", outline: "none", background: "transparent", fontFamily: fonts.body, fontSize: 13, color: colors.forestGreen, cursor: "pointer", minWidth: 140 }}>
+                  <option value="all">{t("reviewQueue.filters.allDisciplines") || "All Disciplines"}</option>
+                  {disciplines.map((d) => <option key={d} value={d}>{d}</option>)}
+                </select>
+                <Icon name="expand_more" size={16} />
+              </div>
 
-          <div className="nsq-stat-card">
-            <div className="nsq-stat-icon time">
-              <span className="ms">schedule</span>
-            </div>
-            <div className="nsq-stat-content">
-              <span className="nsq-stat-label">{t("reviewQueue.stats.avgTime")}</span>
-              <span className="nsq-stat-value" style={{ fontSize: 22 }}>{stats.avgTime}</span>
-            </div>
-          </div>
+              <div style={{ display: "flex", alignItems: "center", gap: 6, padding: "6px 10px", backgroundColor: colors.creamMid, border: `1px solid ${colors.forestGreen}`, borderRadius: 8, cursor: "pointer" }}>
+                <select value={filterType} onChange={(e) => setFilterType(e.target.value)} style={{ border: "none", outline: "none", background: "transparent", fontFamily: fonts.body, fontSize: 13, color: colors.forestGreen, cursor: "pointer", minWidth: 120 }}>
+                  <option value="all">{t("reviewQueue.filters.allTypes") || "All Types"}</option>
+                  <option value="new">{t("reviewQueue.filters.newProfile") || "New Profile"}</option>
+                  <option value="edit">{t("reviewQueue.filters.contentEdit") || "Content Edit"}</option>
+                </select>
+                <Icon name="expand_more" size={16} />
+              </div>
 
-          <div className="nsq-stat-card">
-            <div className="nsq-stat-icon week">
-              <span className="ms">calendar_today</span>
-            </div>
-            <div className="nsq-stat-content">
-              <span className="nsq-stat-label">{t("reviewQueue.stats.thisWeek")}</span>
-              <span className="nsq-stat-value">{stats.thisWeek}</span>
+              <div style={{ display: "flex", alignItems: "center", gap: 6, padding: "6px 10px", backgroundColor: colors.creamMid, border: `1px solid ${colors.forestGreen}`, borderRadius: 8, cursor: "pointer" }}>
+                <select value={sortBy} onChange={(e) => setSortBy(e.target.value as any)} style={{ border: "none", outline: "none", background: "transparent", fontFamily: fonts.body, fontSize: 13, color: colors.forestGreen, cursor: "pointer", minWidth: 120 }}>
+                  <option value="newest">{t("reviewQueue.sort.newest") || "Newest"}</option>
+                  <option value="oldest">{t("reviewQueue.sort.oldest") || "Oldest"}</option>
+                  <option value="name">{t("reviewQueue.sort.nameAZ") || "Name A-Z"}</option>
+                </select>
+                <Icon name="expand_more" size={16} />
+              </div>
+
+              {hasActiveFilters && (
+                <button onClick={clearFilters} style={{ display: "flex", alignItems: "center", gap: 4, padding: "6px 10px", backgroundColor: "transparent", border: `1px solid ${colors.red}`, borderRadius: 8, fontFamily: fonts.body, fontSize: 12, fontWeight: 500, color: colors.red, cursor: "pointer" }}>
+                  <Icon name="close" size={14} /> Clear
+                </button>
+              )}
             </div>
           </div>
         </div>
 
-        {/* ── Filters ── */}
-        <div className="nsq-filters">
-          <div className="nsq-filters-head">
-            <div className="nsq-filters-title">
-              <span className="ms">tune</span>
-              {t("reviewQueue.filters.title")}
+        {/* ── Stat Cards ── */}
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 14, marginBottom: 18 }}>
+          {statItems.map((s) => (
+            <div key={s.label} style={{ ...cardStyle, padding: 16 }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 12 }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 12 }}>
+  <div style={{ width: 28, height: 28, borderRadius: 6, backgroundColor: colors.creamMid, color: colors.forestGreen, border: `1px solid ${colors.forestGreen}`, display: "flex", alignItems: "center", justifyContent: "center" }}>
+    <Icon name={s.icon} size={16} />
+  </div>
+</div>
+                <Icon name="more_horiz" size={16} />
+              </div>
+              <p style={{ fontFamily: fonts.label, fontSize: 11, letterSpacing: "0.05em", color: colors.forestGreen, margin: "0 0 4px", opacity: 0.7 }}>{s.label}</p>
+              <p style={{ fontFamily: fonts.headline, fontSize: 24, fontWeight: 700, color: s.isOverdue ? colors.red : colors.forestGreen, margin: "0 0 4px", lineHeight: 1 }}>{s.value}</p>
+              <p style={{ fontFamily: fonts.body, fontSize: 11, color: colors.forestGreen, margin: 0, opacity: 0.7 }}>{s.delta}</p>
             </div>
-            {hasActiveFilters && (
-              <button className="nsq-clear-link" onClick={clearFilters}>{t("reviewQueue.filters.clearAll")}</button>
-            )}
-          </div>
-          <div className="nsq-filters-row">
-            <div className="nsq-filter-group">
-              <span className="nsq-filter-label">{t("reviewQueue.filters.language")}</span>
-              <select
-                className="nsq-filter-select"
-                value={filterLanguage}
-                onChange={(e) => setFilterLanguage(e.target.value as LangCode | "all")}
-              >
-                <option value="all">{t("reviewQueue.filters.allLanguages")}</option>
-                <option value="EN">{t("reviewQueue.lang.en")}</option>
-                <option value="AR">{t("reviewQueue.lang.ar")}</option>
-                <option value="FR">{t("reviewQueue.lang.fr")}</option>
-              </select>
-            </div>
-
-            <div className="nsq-filter-group">
-              <span className="nsq-filter-label">{t("reviewQueue.filters.discipline")}</span>
-              <select
-                className="nsq-filter-select"
-                value={filterDiscipline}
-                onChange={(e) => setFilterDiscipline(e.target.value)}
-              >
-                <option value="all">{t("reviewQueue.filters.allDisciplines")}</option>
-                {disciplines.map((d) => (
-                  <option key={d} value={d}>{d}</option>
-                ))}
-              </select>
-            </div>
-
-            <div className="nsq-filter-group">
-              <span className="nsq-filter-label">{t("reviewQueue.filters.type")}</span>
-              <select
-                className="nsq-filter-select"
-                value={filterType}
-                onChange={(e) => setFilterType(e.target.value)}
-              >
-                <option value="all">{t("reviewQueue.filters.allTypes")}</option>
-                <option value="new">{t("reviewQueue.filters.newProfile")}</option>
-                <option value="edit">{t("reviewQueue.filters.contentEdit")}</option>
-              </select>
-            </div>
-
-            <div className="nsq-filter-group">
-              <span className="nsq-filter-label">{t("reviewQueue.filters.sort")}</span>
-              <select
-                className="nsq-filter-select"
-                value={sortBy}
-                onChange={(e) => setSortBy(e.target.value as SortOption)}
-              >
-                <option value="newest">{t("reviewQueue.sort.newest")}</option>
-                <option value="oldest">{t("reviewQueue.sort.oldest")}</option>
-                <option value="name">{t("reviewQueue.sort.nameAZ")}</option>
-              </select>
-            </div>
-          </div>
+          ))}
         </div>
 
-        {/* ── Table ── */}
-        <div className="nsq-table-card">
-          <div className="nsq-table-header">
-            <h3 className="nsq-table-title">
-              {t("reviewQueue.table.title")}
-            </h3>
-            <span className="nsq-updated-badge">{t("reviewQueue.table.updated")}</span>
-          </div>
-
-          <div className="nsq-table-scroll">
-            <table className="nsq-table">
-              <thead>
+        {/* ── Table View ── */}
+        <section style={{ ...cardStyle, overflow: "hidden" }}>
+          <div style={{ overflowX: "auto" }}>
+            <table style={{ width: "100%", borderCollapse: "collapse" }}>
+              <thead style={{ backgroundColor: colors.creamMid }}>
                 <tr>
-                  <th>{t("reviewQueue.table.scholarType")}</th>
-                  <th>{t("reviewQueue.table.submitter")}</th>
-                  <th>{t("reviewQueue.table.discipline")}</th>
-                  <th>{t("reviewQueue.table.submitted")}</th>
-                  <th style={{ textAlign: isRTL ? "left" : "right" }}>{t("reviewQueue.table.actions")}</th>
+                  <th style={thStyle}>Scholar</th>
+                  <th style={thStyle}>Submitter</th>
+                  <th style={thStyle}>Discipline</th>
+                  <th style={thStyle}>Submitted</th>
+                  <th style={{ ...thStyle, textAlign: isRTL ? "left" : "right" }}>Actions</th>
                 </tr>
               </thead>
               <tbody>
                 {filtered.length === 0 ? (
                   <tr>
-                    <td colSpan={5}>
-                      <div className="nsq-empty">
-                        <span className="ms">inbox</span>
-                        {t("reviewQueue.table.empty")}
-                      </div>
+                    <td colSpan={5} style={{ padding: 40, textAlign: "center", color: colors.forestGreen, opacity: 0.7 }}>
+                      <Icon name="inbox" size={48} />
+                      <p style={{ fontFamily: fonts.body, fontSize: 14, marginTop: 12 }}>{t("reviewQueue.table.empty") || "No submissions found matching your filters."}</p>
                     </td>
                   </tr>
                 ) : (
                   filtered.map((s) => {
-                    const initials = s.submittedBy
-                      .split(" ")
-                      .slice(0, 2)
-                      .map((w) => w[0])
-                      .join("")
-                      .toUpperCase();
-
-                    const scholarImage = `https://ui-avatars.com/api/?name=${encodeURIComponent(s.name)}&background=285B4B&color=fff&size=44`;
-
+                    const langColor = s.language === "AR" ? colors.amber : s.language === "FR" ? "#4a7fcb" : colors.forestGreen;
                     return (
-                      <tr key={s.id}>
-                        <td>
-                          <div className="nsq-scholar-cell">
-                            <div className="nsq-scholar-avatar">
-                              <img src={scholarImage} alt={s.name} />
+                      <tr key={s.id} style={{ cursor: "pointer", transition: "background-color 0.15s" }} onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = colors.creamMid)} onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "transparent")}>
+                        <td style={tdStyle}>
+                          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                            <div style={{ width: 36, height: 36, borderRadius: "50%", backgroundColor: colors.creamMid, border: `1px solid ${colors.forestGreen}`, display: "flex", alignItems: "center", justifyContent: "center", fontFamily: fonts.headline, fontWeight: 700, fontSize: 14, color: colors.forestGreen, flexShrink: 0 }}>
+                              {s.name.charAt(0).toUpperCase()}
                             </div>
                             <div>
-                              <div className="nsq-name">{s.name}</div>
-                              <div className="nsq-meta-row">
-                                <span style={{
-                                  display: "inline-flex",
-                                  alignItems: "center",
-                                  gap: "5px",
-                                  padding: "2px 8px",
-                                  borderRadius: "99px",
-                                  fontSize: "11px",
-                                  fontWeight: 600,
-                                  background: C.cardBg,
-                                  color: C.muted,
-                                  border: `1px solid ${C.border}`,
-                                }}>
-                                  <span style={{
-                                    width: "6px",
-                                    height: "6px",
-                                    borderRadius: "50%",
-                                    background: s.language === "AR" ? C.gold : s.language === "FR" ? "#4a7fcb" : C.primary,
-                                    flexShrink: 0,
-                                  }} />
-                                  {getLangName(s.language)}
-                                </span>
+                              <p style={{ margin: 0, fontWeight: 600, fontFamily: fonts.headline, fontSize: 13, color: colors.forestGreen }}>{s.name}</p>
+                              <div style={{ display: "inline-flex", alignItems: "center", gap: 4, padding: "2px 8px", borderRadius: 9999, backgroundColor: colors.creamLight, border: `1px solid ${colors.creamDark}`, marginTop: 4 }}>
+                                <span style={{ width: 6, height: 6, borderRadius: "50%", backgroundColor: langColor }} />
+                                <span style={{ fontFamily: fonts.label, fontSize: 10, color: colors.forestGreen, opacity: 0.8 }}>{getLangName(s.language)}</span>
                               </div>
                             </div>
                           </div>
                         </td>
-
-                        <td>
-                          <div className="nsq-contributor-cell">
-                            <div className="nsq-contributor-avatar">{initials}</div>
-                            <span style={{ fontSize: 13 }}>{s.submittedBy}</span>
+                        <td style={tdStyle}>
+                          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                            <Avatar name={s.submittedBy} size={28} />
+                            <span style={{ fontFamily: fonts.body, fontSize: 13, color: colors.forestGreen }}>{s.submittedBy}</span>
                           </div>
                         </td>
-
-                        <td style={{ color: C.muted }}>{s.discipline}</td>
-
-                        <td style={{ color: C.subtle, fontSize: 13 }}>{s.date}</td>
-
-                        <td>
-                          <div
-                            className="nsq-actions"
-                            style={{ justifyContent: isRTL ? "flex-start" : "flex-end" }}
-                          >
-                            <button className="nsq-action-btn view" onClick={() => goToReview(s)} title={t("reviewQueue.actions.review")}>
-                              <span className="ms">visibility</span>
+                        <td style={tdStyle}>
+                          <span style={{ fontFamily: fonts.body, fontSize: 12, padding: "3px 8px", borderRadius: 6, backgroundColor: colors.creamMid, border: `1px solid ${colors.creamDark}`, color: colors.forestGreen }}>
+                            {s.discipline}
+                          </span>
+                        </td>
+                        <td style={{ ...tdStyle, fontFamily: fonts.label, fontSize: 12, color: colors.forestGreen }}>{s.date}</td>
+                                                <td style={{ ...tdStyle, textAlign: isRTL ? "left" : "right" }}>
+                          <div style={{ display: "flex", justifyContent: isRTL ? "flex-start" : "flex-end", gap: 6 }}>
+                            <button 
+                              onClick={(e) => { e.stopPropagation(); goToReview(s); }} 
+                              title="Review"
+                              style={{ width: "32px", height: "32px", display: "flex", alignItems: "center", justifyContent: "center", backgroundColor: "transparent", border: `1px solid ${colors.forestGreen}`, borderRadius: 6, color: colors.forestGreen, cursor: "pointer" }}
+                            >
+                              <Icon name="visibility" size={18} />
                             </button>
-                            <button className="nsq-action-btn approve" onClick={() => handleApprove(s.id)} title={t("reviewQueue.actions.approve")}>
-                              <span className="ms">check_circle</span>
+                            <button 
+                              onClick={(e) => { e.stopPropagation(); handleApprove(s.id); }} 
+                              title="Approve"
+                              style={{ width: "32px", height: "32px", display: "flex", alignItems: "center", justifyContent: "center", backgroundColor: colors.forestGreen, border: `1px solid ${colors.forestGreen}`, borderRadius: 6, color: colors.creamLight, cursor: "pointer" }}
+                            >
+                              <Icon name="check" size={18} filled />
                             </button>
-                            <button className="nsq-action-btn reject" onClick={() => handleReject(s.id)} title={t("reviewQueue.actions.reject")}>
-                              <span className="ms">cancel</span>
+                            <button 
+                              onClick={(e) => { e.stopPropagation(); handleReject(s.id); }} 
+                              title="Reject"
+                              style={{ width: "32px", height: "32px", display: "flex", alignItems: "center", justifyContent: "center", backgroundColor: "transparent", border: `1px solid ${colors.red}`, borderRadius: 6, color: colors.red, cursor: "pointer" }}
+                            >
+                              <Icon name="close" size={18} />
                             </button>
-                            <button className="nsq-action-btn strip" onClick={() => setStripTarget(s)} title={t("reviewQueue.actions.strip")}>
-                              <span className="ms">person_remove</span>
+                            <button 
+                              onClick={(e) => { e.stopPropagation(); setStripTarget(s); }} 
+                              title="Strip"
+                              style={{ width: "32px", height: "32px", display: "flex", alignItems: "center", justifyContent: "center", backgroundColor: "transparent", border: `1px solid ${colors.forestGreen}`, borderRadius: 6, color: colors.forestGreen, cursor: "pointer" }}
+                            >
+                              <Icon name="person_remove" size={18} />
                             </button>
                           </div>
                         </td>
@@ -924,48 +405,50 @@ export default function NewScholarsQueue() {
             </table>
           </div>
 
-          <div className="nsq-pagination">
-            <span className="nsq-pagination-info">
-              {t("reviewQueue.pagination.showing")
-                .replace("{start}", "1")
-                .replace("{end}", String(Math.min(10, filtered.length)))
-                .replace("{total}", String(filtered.length))}
+          {/* ── Pagination ── */}
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "12px 14px", borderTop: `1px solid ${colors.forestGreen}`, backgroundColor: colors.creamMid }}>
+            <span style={{ fontFamily: fonts.label, fontSize: 11, color: colors.forestGreen, opacity: 0.8 }}>
+              {t("reviewQueue.pagination.showing") ? t("reviewQueue.pagination.showing").replace("{start}", "1").replace("{end}", String(Math.min(10, filtered.length))).replace("{total}", String(filtered.length)) : `Showing 1-${Math.min(10, filtered.length)} of ${filtered.length}`}
             </span>
-            <div className="nsq-pagination-buttons">
-              <button className="nsq-page-btn" disabled>
-                <span className="ms" style={{ fontSize: 16 }}>chevron_left</span>
+            <div style={{ display: "flex", gap: 4 }}>
+              <button style={{ padding: "4px 10px", border: `1px solid ${colors.forestGreen}`, borderRadius: 6, backgroundColor: colors.creamLight, color: colors.forestGreen, fontFamily: fonts.body, fontSize: 12, cursor: "pointer", display: "flex", alignItems: "center" }}>
+                <Icon name="chevron_left" size={16} />
               </button>
-              <button className="nsq-page-btn active">1</button>
-              {filtered.length > 10 && <button className="nsq-page-btn">2</button>}
-              {filtered.length > 20 && <button className="nsq-page-btn">3</button>}
-              <button className="nsq-page-btn">
-                <span className="ms" style={{ fontSize: 16 }}>chevron_right</span>
+              <button style={{ padding: "4px 10px", border: `1px solid ${colors.forestGreen}`, borderRadius: 6, backgroundColor: colors.forestGreen, color: colors.creamLight, fontFamily: fonts.body, fontSize: 12, cursor: "pointer" }}>1</button>
+              {filtered.length > 10 && <button style={{ padding: "4px 10px", border: `1px solid ${colors.forestGreen}`, borderRadius: 6, backgroundColor: colors.creamLight, color: colors.forestGreen, fontFamily: fonts.body, fontSize: 12, cursor: "pointer" }}>2</button>}
+              <button style={{ padding: "4px 10px", border: `1px solid ${colors.forestGreen}`, borderRadius: 6, backgroundColor: colors.creamLight, color: colors.forestGreen, fontFamily: fonts.body, fontSize: 12, cursor: "pointer", display: "flex", alignItems: "center" }}>
+                <Icon name="chevron_right" size={16} />
               </button>
             </div>
           </div>
-        </div>
-      </div>
+        </section>
 
-      {/* ── Strip modal ── */}
-      {stripTarget && (
-        <div className="nsq-modal-overlay" onClick={() => setStripTarget(null)}>
-          <div className="nsq-modal" onClick={(e) => e.stopPropagation()}>
-            <div className="nsq-modal-icon">
-              <span className="ms">person_remove</span>
-            </div>
-            <div className="nsq-modal-title">{t("reviewQueue.modal.title")}</div>
-            <div className="nsq-modal-body">
-              {t("reviewQueue.modal.body").replace("{name}", stripTarget.submittedBy)}
-              <br />
-              <b>{t("reviewQueue.modal.warning")}</b>
-            </div>
-            <div className="nsq-modal-actions">
-              <button className="nsq-modal-cancel" onClick={() => setStripTarget(null)}>{t("reviewQueue.modal.cancel")}</button>
-              <button className="nsq-modal-confirm" onClick={confirmStrip}>{t("reviewQueue.modal.confirm")}</button>
+        {/* ── Strip Modal ── */}
+        {stripTarget && (
+          <div style={{ position: "fixed", inset: 0, backgroundColor: "rgba(11, 67, 53, 0.5)", zIndex: 100, display: "flex", alignItems: "center", justifyContent: "center", backdropFilter: "blur(4px)" }} onClick={() => setStripTarget(null)}>
+            <div style={{ ...cardStyle, backgroundColor: colors.creamLight, width: 440, maxWidth: "90vw", padding: 32, boxShadow: "0 20px 60px rgba(0,0,0,0.18)" }} onClick={(e) => e.stopPropagation()}>
+              <div style={{ width: 56, height: 56, borderRadius: "50%", backgroundColor: colors.red, color: colors.creamLight, display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 20, border: `1px solid ${colors.red}` }}>
+                <Icon name="person_remove" size={28} filled />
+              </div>
+              <h2 style={{ fontFamily: fonts.headline, fontSize: 20, fontWeight: 700, color: colors.forestGreen, marginBottom: 12 }}>{t("reviewQueue.modal.title") || "Strip Contributor"}</h2>
+              <p style={{ fontFamily: fonts.body, fontSize: 14, color: colors.forestGreen, lineHeight: 1.6, marginBottom: 28, opacity: 0.8 }}>
+                {t("reviewQueue.modal.body")?.replace("{name}", stripTarget.submittedBy) || `Are you sure you want to strip ${stripTarget.submittedBy} of this contribution?`}
+                <br />
+                <b style={{ color: colors.red }}>{t("reviewQueue.modal.warning") || "This action cannot be undone."}</b>
+              </p>
+              <div style={{ display: "flex", gap: 12, justifyContent: "flex-end" }}>
+                <button onClick={() => setStripTarget(null)} style={{ padding: "10px 24px", borderRadius: 8, cursor: "pointer", border: `1px solid ${colors.forestGreen}`, backgroundColor: colors.creamLight, fontFamily: fonts.body, fontSize: 13, fontWeight: 600, color: colors.forestGreen }}>
+                  {t("reviewQueue.modal.cancel") || "Cancel"}
+                </button>
+                <button onClick={confirmStrip} style={{ padding: "10px 24px", borderRadius: 8, cursor: "pointer", border: `1px solid ${colors.red}`, backgroundColor: colors.red, fontFamily: fonts.body, fontSize: 13, fontWeight: 700, color: colors.creamLight }}>
+                  {t("reviewQueue.modal.confirm") || "Confirm"}
+                </button>
+              </div>
             </div>
           </div>
-        </div>
-      )}
+        )}
+
+      </div>
     </div>
   );
 }

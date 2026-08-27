@@ -1,16 +1,17 @@
 // src/pages/Authentication/DashboardPage.tsx
 
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import { useLang } from "../../context/LanguageContext";
 import { useAuth } from "../../context/AuthContext";
+import { scholarsApi } from "../../api/scholarsApi";
 import ProfileSidebar from "../../components/ProfileSidebar";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 
 /* ─────────────────────────────────────────────
    Oulamauna — Dashboard (User / Contributor)
 ───────────────────────────────────────────── */
 
-type Status = "DRAFT" | "PENDING" | "APPROVED" | "REJECTED";
+type Status = "DRAFT" | "PENDING" | "APPROVED" | "REJECTED" | "SUPERSEDED";
 type SubmissionKind = "new" | "edit";
 type UserTab = "overview" | "notifications" | "watchlist";
 type ContributorTab = UserTab | "submissions" | "media" | "works";
@@ -34,40 +35,111 @@ const BTN_PRIMARY: React.CSSProperties = {
   transition: "background 0.15s, color 0.15s", ...MONO,
 };
 
-/* ── Mock data (clearly marked, until backend endpoints exist) ───── */
+/* ── Types ───── */
 interface Submission {
-  id: number;
+  id: number; // version_id
+  scholarId: number;
   kind: SubmissionKind;
-  scholarName: string;      // for "new" this is the scholar being created; for "edit" the scholar being edited
+  scholarName: string;
   lang: string;
   version: number;
   date: string;
   status: Status;
 }
 
-const MOCK = {
-  stats: { scholars: 2, versions: 5, media: 3, works: 4 },
-  recentActivity: [
-    { text: "Scholar version submitted for review", detail: "Malek Bennabi — French", date: "2 days ago" },
-    { text: "Media uploaded", detail: "Lecture.mp3 — Malek Bennabi", date: "4 days ago" },
-    { text: "Contribution approved", detail: "Abdelhamid Ben Badis — English", date: "1 week ago" },
-  ],
-  submissions: [
-    { id: 1, kind: "new", scholarName: "Abdelhamid Ben Badis", lang: "English", version: 1, date: "7/27/2026", status: "PENDING" },
-    { id: 2, kind: "new", scholarName: "Malek Bennabi", lang: "English", version: 1, date: "6/12/2026", status: "APPROVED" },
-    { id: 3, kind: "edit", scholarName: "Malek Bennabi", lang: "French", version: 2, date: "7/2/2026", status: "APPROVED" },
-    { id: 4, kind: "edit", scholarName: "Malek Bennabi", lang: "Arabic", version: 3, date: "7/29/2026", status: "PENDING" },
-    { id: 5, kind: "new", scholarName: "Ibn Badis Draft Notes", lang: "Arabic", version: 1, date: "8/10/2026", status: "DRAFT" },
-    { id: 6, kind: "edit", scholarName: "Abdelhamid Ben Badis", lang: "French", version: 2, date: "8/12/2026", status: "DRAFT" },
-    { id: 7, kind: "edit", scholarName: "Malek Bennabi", lang: "English", version: 1, date: "5/2/2026", status: "REJECTED" },
-  ] as Submission[],
-  works: [
-    { title: "Conditions of the Renaissance", scholar: "Malek Bennabi", type: "Reference", date: "7/18/2026", status: "PENDING" as Status },
-  ],
-  media: [
-    { file: "Lecture.mp3", scholar: "Malek Bennabi", type: "Audio", date: "7/22/2026", status: "PENDING" as Status },
-  ],
-};
+interface TableRow { 
+  primary: string; 
+  secondary: React.ReactNode;
+  tertiary?: string; 
+  date: string; 
+  status: Status; 
+  scholarId?: number;
+  link?: string;
+}
+
+/* ── Modals ─────────────────────────────────────── */
+function PreviewModal({ item, onClose }: { item: any; onClose: () => void }) {
+  const isSubmission = 'kind' in item;
+  const title = isSubmission ? item.scholarName : item.primary;
+  const detail = isSubmission ? `${item.kind === 'new' ? 'New Scholar' : 'Edit Proposal'} • ${item.lang}` : `${item.secondary} • ${item.tertiary || 'Unknown'}`;
+  
+  return (
+    <div style={{ position: "fixed", inset: 0, zIndex: 200, backgroundColor: "rgba(25,28,27,0.6)", display: "flex", alignItems: "center", justifyContent: "center", backdropFilter: "blur(4px)" }} onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}>
+      <div style={{ backgroundColor: "#fff", borderRadius: "16px", padding: "32px", width: "480px", maxWidth: "calc(100vw - 32px)", boxShadow: "0 20px 60px rgba(0,0,0,0.2)", border: "1px solid rgba(192,201,195,0.3)" }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "24px" }}>
+          <h2 style={{ ...SERIF, fontSize: "20px", fontWeight: 700, color: "#0b4335", margin: 0 }}>Submission Details</h2>
+          <button onClick={onClose} style={{ background: "none", border: "none", cursor: "pointer", color: "#707974", fontSize: "20px" }}>✕</button>
+        </div>
+        <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+          <div>
+            <p style={{ ...MONO, fontSize: "9px", color: "#707974", letterSpacing: "0.1em", marginBottom: "4px" }}>TITLE / NAME</p>
+            <p style={{ fontSize: "15px", fontWeight: 700, color: "#191c1b", margin: 0 }}>{title}</p>
+          </div>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
+            <div>
+              <p style={{ ...MONO, fontSize: "9px", color: "#707974", letterSpacing: "0.1em", marginBottom: "4px" }}>DETAILS</p>
+              <p style={{ fontSize: "13px", color: "#404945", margin: 0 }}>{detail}</p>
+            </div>
+            <div>
+              <p style={{ ...MONO, fontSize: "9px", color: "#707974", letterSpacing: "0.1em", marginBottom: "4px" }}>DATE</p>
+              <p style={{ fontSize: "13px", color: "#404945", margin: 0 }}>{item.date}</p>
+            </div>
+          </div>
+          <div style={{ padding: "16px", backgroundColor: "rgba(115,92,0,0.08)", border: "1px solid rgba(115,92,0,0.2)", borderRadius: "8px", display: "flex", alignItems: "center", gap: "12px" }}>
+            <span style={{ fontSize: "20px" }}>⏳</span>
+            <div>
+              <p style={{ ...MONO, fontSize: "10px", fontWeight: 700, color: "#735c00", margin: 0, letterSpacing: "0.05em" }}>WAITING FOR REVIEW</p>
+              <p style={{ fontSize: "12px", color: "#735c00", margin: "4px 0 0", lineHeight: 1.4 }}>An admin is currently reviewing this submission. You will be notified once a decision is made.</p>
+            </div>
+          </div>
+        </div>
+        <div style={{ display: "flex", justifyContent: "flex-end", marginTop: "28px" }}>
+          <button onClick={onClose} style={{ padding: "8px 20px", borderRadius: "6px", border: "1.5px solid #0b4335", backgroundColor: "#0b4335", color: "#fff", ...MONO, fontSize: "10px", fontWeight: 700, letterSpacing: "0.1em", cursor: "pointer" }}>CLOSE</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function SupersededModal({ item, onClose }: { item: Submission; onClose: () => void }) {
+  return (
+    <div style={{ position: "fixed", inset: 0, zIndex: 200, backgroundColor: "rgba(25,28,27,0.6)", display: "flex", alignItems: "center", justifyContent: "center", backdropFilter: "blur(4px)" }} onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}>
+      <div style={{ backgroundColor: "#fff", borderRadius: "16px", padding: "32px", width: "480px", maxWidth: "calc(100vw - 32px)", boxShadow: "0 20px 60px rgba(0,0,0,0.2)", border: "1px solid rgba(192,201,195,0.3)" }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "24px" }}>
+          <h2 style={{ ...SERIF, fontSize: "20px", fontWeight: 700, color: "#0b4335", margin: 0 }}>Version Superseded</h2>
+          <button onClick={onClose} style={{ background: "none", border: "none", cursor: "pointer", color: "#707974", fontSize: "20px" }}>✕</button>
+        </div>
+        <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+          <div>
+            <p style={{ ...MONO, fontSize: "9px", color: "#707974", letterSpacing: "0.1em", marginBottom: "4px" }}>SCHOLAR NAME</p>
+            <p style={{ fontSize: "15px", fontWeight: 700, color: "#191c1b", margin: 0 }}>{item.scholarName}</p>
+          </div>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
+            <div>
+              <p style={{ ...MONO, fontSize: "9px", color: "#707974", letterSpacing: "0.1em", marginBottom: "4px" }}>LANGUAGE</p>
+              <p style={{ fontSize: "13px", color: "#404945", margin: 0 }}>{item.lang}</p>
+            </div>
+            <div>
+              <p style={{ ...MONO, fontSize: "9px", color: "#707974", letterSpacing: "0.1em", marginBottom: "4px" }}>DATE</p>
+              <p style={{ fontSize: "13px", color: "#404945", margin: 0 }}>{item.date}</p>
+            </div>
+          </div>
+          <div style={{ padding: "16px", backgroundColor: "rgba(112,121,116,0.08)", border: "1px solid rgba(112,121,116,0.2)", borderRadius: "8px", display: "flex", alignItems: "center", gap: "12px" }}>
+            <span style={{ fontSize: "20px" }}>⚠️</span>
+            <div>
+              <p style={{ ...MONO, fontSize: "10px", fontWeight: 700, color: "#707974", margin: 0, letterSpacing: "0.05em" }}>SUPERSEDED BY NEWER VERSION</p>
+              <p style={{ fontSize: "12px", color: "#707974", margin: "4px 0 0", lineHeight: 1.4 }}>This version has been replaced by a newer, approved version. It is kept here for your historical records.</p>
+            </div>
+          </div>
+        </div>
+        <div style={{ display: "flex", justifyContent: "flex-end", gap: "10px", marginTop: "28px" }}>
+          <button onClick={onClose} style={{ padding: "8px 20px", borderRadius: "6px", border: "1.5px solid #c0c9c3", backgroundColor: "transparent", color: "#707974", ...MONO, fontSize: "10px", fontWeight: 700, letterSpacing: "0.1em", cursor: "pointer" }}>CLOSE</button>
+          <button onClick={() => { onClose(); window.location.href = `/scholars/${item.scholarId}?lang=${item.lang}`; }} style={{ padding: "8px 20px", borderRadius: "6px", border: "1.5px solid #0b4335", backgroundColor: "#0b4335", color: "#fff", ...MONO, fontSize: "10px", fontWeight: 700, letterSpacing: "0.1em", cursor: "pointer" }}>VIEW LIVE VERSION</button>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 /* ── Small components ─────────────────────────────────────── */
 function Icon({ name, size = 18 }: { name: string; size?: number }) {
@@ -119,6 +191,7 @@ function StatusBadge({ status, t }: { status: Status; t: (k: string) => string }
     PENDING: { bg: "rgba(115,92,0,0.08)", color: "#735c00", border: "rgba(115,92,0,0.2)" },
     APPROVED: { bg: GREEN_LIGHT, color: GREEN, border: GREEN_BORDER },
     REJECTED: { bg: "rgba(179,38,30,0.06)", color: RED, border: "rgba(179,38,30,0.18)" },
+    SUPERSEDED: { bg: "rgba(112,121,116,0.08)", color: MUTED, border: "rgba(112,121,116,0.2)" },
   };
   const s = map[status];
   return (
@@ -174,14 +247,12 @@ function FilterChip({ active, onClick, children, count }: { active: boolean; onC
   );
 }
 
-/* ── Generic status table (used by Works & Media) ─────────── */
-interface TableRow { primary: string; secondary: string; tertiary?: string; date: string; status: Status; }
-
 function StatusTable({
-  rows, emptyText, t, colPrimary, colSecondary, colTertiary, isRTL,
+  rows, emptyText, t, colPrimary, colSecondary, colTertiary, isRTL, onView,
 }: {
   rows: TableRow[]; emptyText: string; t: (k: string) => string;
   colPrimary: string; colSecondary: string; colTertiary?: string; isRTL: boolean;
+  onView: (item: TableRow) => void;
 }) {
   if (rows.length === 0) return <EmptyRow text={emptyText} />;
   const th: React.CSSProperties = { ...MONO, fontSize: "9px", fontWeight: 700, letterSpacing: "0.08em", color: MUTED, textAlign: isRTL ? "right" : "left", padding: "0 0 10px", borderBottom: `1.5px solid ${BORDER}`, textTransform: "uppercase" };
@@ -196,7 +267,8 @@ function StatusTable({
             <th style={th}>{colSecondary}</th>
             {colTertiary && <th style={th}>{colTertiary}</th>}
             <th style={th}>{t("dashboard.table.date")}</th>
-            <th style={{ ...th, textAlign: isRTL ? "left" : "right" }}>{t("dashboard.table.status")}</th>
+            <th style={th}>{t("dashboard.table.status")}</th>
+            <th style={{ ...th, textAlign: isRTL ? "left" : "right" }}>{t("dashboard.table.actions")}</th>
           </tr>
         </thead>
         <tbody>
@@ -206,7 +278,15 @@ function StatusTable({
               <td style={{ ...td, ...MONO, fontSize: "11px", color: MUTED }}>{r.secondary}</td>
               {colTertiary && <td style={{ ...td, ...MONO, fontSize: "11px", color: MUTED }}>{r.tertiary ?? "—"}</td>}
               <td style={{ ...td, ...MONO, fontSize: "11px", color: MUTED, whiteSpace: "nowrap" }}>{r.date}</td>
-              <td style={{ ...td, textAlign: isRTL ? "left" : "right" }}><StatusBadge status={r.status} t={t} /></td>
+              <td style={td}><StatusBadge status={r.status} t={t} /></td>
+              <td style={{ ...td, textAlign: isRTL ? "left" : "right" }}>
+                <button 
+                  onClick={() => onView(r)}
+                  style={{ background: "none", border: "none", color: GREEN, fontWeight: 600, fontSize: "11px", cursor: "pointer", ...MONO, padding: 0 }}
+                >
+                  {t("dashboard.actions.view")} →
+                </button>
+              </td>
             </tr>
           ))}
         </tbody>
@@ -215,7 +295,6 @@ function StatusTable({
   );
 }
 
-/* ── Submissions table: new + edit + drafts + versions, with row actions ── */
 function SubmissionsTable({ rows, t, isRTL, onAction }: {
   rows: Submission[]; t: (k: string) => string; isRTL: boolean;
   onAction: (action: "continue" | "delete" | "view" | "history" | "resubmit", row: Submission) => void;
@@ -245,14 +324,18 @@ function SubmissionsTable({ rows, t, isRTL, onAction }: {
               <td style={{ ...td, ...MONO, fontSize: "10px", fontWeight: 700, color: r.kind === "new" ? GREEN : "#8a6d00" }}>
                 {r.kind === "new" ? t("dashboard.kind.new") : t("dashboard.kind.edit")}
               </td>
-              <td style={{ ...td, ...SERIF, fontWeight: 700 }}>{r.scholarName}</td>
+              <td style={{ ...td, ...SERIF, fontWeight: 700 }}>
+                <Link to={`/scholars/${r.scholarId}?lang=${r.lang}&focus=version-${r.id}`} style={{ color: "inherit", textDecoration: "none" }}>
+                  {r.scholarName}
+                </Link>
+              </td>
               <td style={{ ...td, ...MONO, fontSize: "11px", color: MUTED }}>{r.lang}</td>
               <td style={{ ...td, ...MONO, fontSize: "11px", color: MUTED }}>v{r.version}</td>
               <td style={{ ...td, ...MONO, fontSize: "11px", color: MUTED, whiteSpace: "nowrap" }}>{r.date}</td>
               <td style={td}><StatusBadge status={r.status} t={t} /></td>
               <td style={{ ...td, textAlign: isRTL ? "left" : "right" }}>
                 <div style={{ display: "inline-flex", gap: "6px", flexWrap: "wrap", justifyContent: isRTL ? "flex-start" : "flex-end" }}>
-                  {r.status === "DRAFT" && (
+                  {(r.status === "DRAFT" || r.status === "REJECTED") && (
                     <>
                       <HoverBtn variant="primary" onClick={() => onAction("continue", r)}>{t("dashboard.actions.continue")}</HoverBtn>
                       <HoverBtn danger onClick={() => onAction("delete", r)}>{t("dashboard.actions.delete")}</HoverBtn>
@@ -267,11 +350,8 @@ function SubmissionsTable({ rows, t, isRTL, onAction }: {
                       <HoverBtn onClick={() => onAction("history", r)}>{t("dashboard.actions.history")}</HoverBtn>
                     </>
                   )}
-                  {r.status === "REJECTED" && (
-                    <>
-                      <HoverBtn onClick={() => onAction("view", r)}>{t("dashboard.actions.view")}</HoverBtn>
-                      <HoverBtn variant="primary" onClick={() => onAction("resubmit", r)}>{t("dashboard.actions.resubmit")}</HoverBtn>
-                    </>
+                  {r.status === "SUPERSEDED" && (
+                    <HoverBtn onClick={() => onAction("view", r)}>{t("dashboard.actions.view")}</HoverBtn>
                   )}
                 </div>
               </td>
@@ -284,7 +364,7 @@ function SubmissionsTable({ rows, t, isRTL, onAction }: {
 }
 
 /* ─────────────────────────────────────────────
-   MAIN
+   MAIN COMPONENT
 ───────────────────────────────────────────── */
 export default function DashboardPage() {
   const { lang, t } = useLang();
@@ -292,43 +372,164 @@ export default function DashboardPage() {
   const navigate = useNavigate();
   const isRTL = lang === "AR";
 
-  // ── TEMP TEST OVERRIDE ────────────────────────────────────────
-  // ?asContributor=true / ?asContributor=false forces the view for testing.
-  // DELETE once user.allowed_to_contribute is real.
-  const forceContributor = new URLSearchParams(window.location.search).get("asContributor");
-  const isContributor: boolean =
-    forceContributor !== null
-      ? forceContributor === "true"
-      : !!(user as any)?.allowed_to_contribute || (user as any)?.role === "contributor";
-  // ────────────────────────────────────────────────────────────
-
+  const isContributor = user?.role_name === "contributor" || user?.role_name === "admin";
   const username = (user as any)?.username ?? (user as any)?.displayName ?? "there";
 
   const [tab, setTab] = useState<ContributorTab>("overview");
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("ALL");
 
+  // ✅ REAL DATA STATES
+  const [submissions, setSubmissions] = useState<Submission[]>([]);
+  const [works, setWorks] = useState<TableRow[]>([]);
+  const [media, setMedia] = useState<TableRow[]>([]);
+  const [isLoadingData, setIsLoadingData] = useState(false);
+
+  // ✅ MODAL STATES
+  const [previewItem, setPreviewItem] = useState<any>(null);
+  const [supersededItem, setSupersededItem] = useState<Submission | null>(null);
+
+  // ✅ FETCH DATA FROM BACKEND
+  useEffect(() => {
+    if (isContributor && (tab === "submissions" || tab === "media" || tab === "works" || tab === "overview")) {
+      const fetchData = async () => {
+        setIsLoadingData(true);
+        try {
+          const result = await scholarsApi.mySubmissions();
+          const data = result.data;
+
+                   const mappedSubmissions: Submission[] = data.scholar_versions.map((v: any) => {
+            // ✅ DEBUG: Check exactly what language the backend is returning for this draft
+            const langCode = v.languages?.code || "en";
+            console.log("🔍 DRAFT CHECK -> ID:", v.version_id, "| Lang:", langCode, "| Full Lang Object:", v.languages);
+            
+            return {
+              id: v.version_id,
+              scholarId: v.scholar_id,
+              kind: v.version_type === "creation" ? "new" : "edit",
+              scholarName: v.canonical_name || "Unknown Scholar",
+              lang: langCode, // ⚠️ THIS is what builds the URL route!
+              version: 1,
+              date: new Date(v.created_at).toLocaleDateString(),
+              status: v.status.toUpperCase() as Status,
+            };
+          });
+
+          const mappedWorks: TableRow[] = data.works.map((w: any) => {
+            const langCode = w.scholar_versions?.languages?.code || "en";
+            return {
+              primary: w.title,
+              secondary: w.scholar_versions?.canonical_name || "Unknown",
+              tertiary: w.format,
+              date: new Date(w.created_at || Date.now()).toLocaleDateString(),
+              status: w.status.toUpperCase() as Status,
+              scholarId: w.scholar_versions?.scholar_id,
+              link: `/scholars/${w.scholar_versions?.scholar_id}?lang=${langCode}&focus=work-${w.work_id}`,
+            };
+          });
+
+          const mappedMedia: TableRow[] = data.media.map((m: any) => {
+            const langCode = m.scholar_versions?.languages?.code || "en";
+            return {
+              primary: m.title || m.file_name || "Untitled",
+              secondary: m.scholar_versions?.canonical_name || "Unknown",
+              tertiary: m.file_type || "Media",
+              date: new Date(m.uploaded_at || m.created_at || Date.now()).toLocaleDateString(),
+              status: m.status.toUpperCase() as Status,
+              scholarId: m.scholar_versions?.scholar_id,
+              link: `/scholars/${m.scholar_versions?.scholar_id}?lang=${langCode}&focus=media-${m.media_id}`,
+            };
+          });
+
+          setSubmissions(mappedSubmissions);
+          setWorks(mappedWorks);
+          setMedia(mappedMedia);
+        } catch (error) {
+          console.error("Failed to fetch dashboard data:", error);
+        } finally {
+          setIsLoadingData(false);
+        }
+      };
+
+      fetchData();
+    }
+  }, [isContributor, tab]);
+
+  // ✅ FILTER & COUNT LOGIC
   const filteredSubmissions = useMemo(() => {
-    if (statusFilter === "ALL") return MOCK.submissions;
-    return MOCK.submissions.filter((s) => s.status === statusFilter);
-  }, [statusFilter]);
+    if (statusFilter === "ALL") return submissions;
+    return submissions.filter((s) => s.status === statusFilter);
+  }, [statusFilter, submissions]);
 
   const counts = useMemo(() => {
-    const c: Record<StatusFilter, number> = { ALL: MOCK.submissions.length, DRAFT: 0, PENDING: 0, APPROVED: 0, REJECTED: 0 };
-    MOCK.submissions.forEach((s) => { c[s.status]++; });
+    const c: Record<StatusFilter, number> = { ALL: submissions.length, DRAFT: 0, PENDING: 0, APPROVED: 0, REJECTED: 0, SUPERSEDED: 0 };
+    submissions.forEach((s) => { if (c[s.status] !== undefined) c[s.status]++; });
     return c;
-  }, []);
+  }, [submissions]);
+    const handleSubmissionAction = async (action: "continue" | "delete" | "view" | "history" | "resubmit", row: Submission) => {
+    
+    // ✅ DETERMINE THE EXACT ROUTE BASED ON YOUR 3 CASES (Using UPPERCASE lang)
+    let targetRoute = "";
+    const langUpper = row.lang.toUpperCase(); // ✅ FORCE UPPERCASE TO MATCH ROUTE TYPE
+    
+    if (row.kind === "new" && !row.scholarId) {
+      // CASE 1: Brand New Scholar
+      targetRoute = `/scholars/submit/${langUpper}?draftId=${row.id}`;
+    } else if (row.kind === "new" && row.scholarId) {
+      // CASE 2: Creating a New Version for an Existing Scholar
+      targetRoute = `/scholars/${row.scholarId}/submit/${langUpper}?draftId=${row.id}`;
+    } else if (row.kind === "edit") {
+      // CASE 3: Editing an Existing Version
+      targetRoute = `/scholars/${row.scholarId}/edit/${langUpper}?draftId=${row.id}`;
+    } else {
+      // Fallback
+      targetRoute = `/scholars/submit/${langUpper}?draftId=${row.id}`;
+    }
 
-  // Mock-only handlers — wire these to real routes/API calls once the backend exists.
-  const handleSubmissionAction = (action: "continue" | "delete" | "view" | "history" | "resubmit", row: Submission) => {
+    // ✅ EXECUTE THE ACTION
     if (action === "continue" || action === "resubmit") {
-      navigate(row.kind === "new" ? "/scholars/submit/" : `/scholars/edit/${encodeURIComponent(row.scholarName)}`);
-    } else if (action === "view") {
-      navigate(`/scholars/${encodeURIComponent(row.scholarName)}`);
-    } else if (action === "history") {
-      navigate(`/scholars/${encodeURIComponent(row.scholarName)}/history`);
-    } else if (action === "delete") {
-      // TODO: confirm dialog + real delete call once backend exists
-      console.log("delete draft", row.id);
+      navigate(targetRoute);
+    } 
+    else if (action === "delete") {
+      if (window.confirm(`Are you sure you want to permanently delete this draft?`)) {
+        try {
+          await scholarsApi.deleteDraft(row.id);
+          setSubmissions((prev) => prev.filter((s) => s.id !== row.id));
+          
+          // ✅ Clear localStorage so the "ghost" draft doesn't reappear!
+          const langLower = row.lang.toLowerCase();
+          localStorage.removeItem(`oulamauna_edit_draft_${row.scholarId}_${langLower}`);
+          localStorage.removeItem(`oulamauna_scholar_draft_v_${row.id}`);
+          localStorage.removeItem("oulamauna_draft_session");
+          
+          alert("Draft deleted successfully!"); 
+        } catch (error) {
+          console.error("Failed to delete draft:", error);
+          alert("Failed to delete draft. Please try again.");
+        }
+      }
+    } 
+    else if (action === "view") {
+      if (row.status === "APPROVED") {
+        navigate(`/scholars/${row.scholarId}?lang=${row.lang.toLowerCase()}&focus=version-${row.id}`);
+      } else if (row.status === "PENDING") {
+        setPreviewItem(row);
+      } else if (row.status === "SUPERSEDED") {
+        setSupersededItem(row);
+      } else if (row.status === "REJECTED" || row.status === "DRAFT") {
+        navigate(targetRoute); // ✅ Goes to the exact correct route with UPPERCASE lang
+      }
+    } 
+    else if (action === "history") {
+      navigate(`/scholars/${row.scholarId}/history`);
+    }
+  };
+  const handleViewItem = (item: TableRow) => {
+    if (item.status === "APPROVED") {
+      if (item.link) navigate(item.link);
+    } else if (item.status === "PENDING") {
+      setPreviewItem(item);
+    } else if (item.status === "REJECTED") {
+      if (item.scholarId) navigate(`/scholars/edit/${item.scholarId}`);
     }
   };
 
@@ -337,6 +538,7 @@ export default function DashboardPage() {
     { id: "notifications", label: t("dashboard.tabs.notifications"), icon: "notifications" },
     { id: "watchlist", label: t("dashboard.tabs.watchlist"), icon: "bookmark" },
   ];
+  
   const contributorTabs: { id: ContributorTab; label: string; icon: string }[] = [
     { id: "overview", label: t("dashboard.tabs.overview"), icon: "grid_view" },
     { id: "submissions", label: t("dashboard.tabs.submissions"), icon: "outbox" },
@@ -345,8 +547,8 @@ export default function DashboardPage() {
     { id: "notifications", label: t("dashboard.tabs.notifications"), icon: "notifications" },
     { id: "watchlist", label: t("dashboard.tabs.watchlist"), icon: "bookmark" },
   ];
+  
   const tabs = isContributor ? contributorTabs : userTabs;
-
   const cardStyle: React.CSSProperties = { padding: "24px 28px" };
 
   return (
@@ -366,7 +568,17 @@ export default function DashboardPage() {
         .material-symbols-outlined { font-variation-settings: 'FILL' 0,'wght' 400,'GRAD' 0,'opsz' 24; font-family: 'Material Symbols Outlined'; display: inline-block; vertical-align: middle; }
         .op-tabs { display: flex; gap: 2px; overflow-x: auto; border-bottom: 1.5px solid rgba(192,201,195,0.4); }
         .op-tabs::-webkit-scrollbar { display: none; }
+        @keyframes highlightPulse {
+          0% { box-shadow: 0 0 0 0 rgba(201, 168, 76, 0.7); background-color: rgba(201, 168, 76, 0.15); transform: scale(1); }
+          50% { box-shadow: 0 0 0 12px rgba(201, 168, 76, 0); background-color: rgba(201, 168, 76, 0.25); transform: scale(1.01); }
+          100% { box-shadow: 0 0 0 0 rgba(201, 168, 76, 0); background-color: transparent; transform: scale(1); }
+        }
+        .highlight-focus { animation: highlightPulse 2.5s ease-out; border-radius: 8px; position: relative; z-index: 10; }
       `}</style>
+
+      {/* ✅ MODALS */}
+      {previewItem && <PreviewModal item={previewItem} onClose={() => setPreviewItem(null)} />}
+      {supersededItem && <SupersededModal item={supersededItem} onClose={() => setSupersededItem(null)} />}
 
       <div style={{ maxWidth: "1150px", margin: "0 auto", padding: "24px 32px 40px", display: "flex", gap: "32px" }}>
         <ProfileSidebar role={isContributor ? "contributor" : "user"} active="dashboard" />
@@ -403,10 +615,10 @@ export default function DashboardPage() {
               {isContributor && (
                 <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "16px" }}>
                   {[
-                    [t("dashboard.stats.scholars"), MOCK.stats.scholars],
-                    [t("dashboard.stats.versions"), MOCK.stats.versions],
-                    [t("dashboard.stats.media"), MOCK.stats.media],
-                    [t("dashboard.stats.works"), MOCK.stats.works],
+                    [t("dashboard.stats.scholars"), submissions.length],
+                    [t("dashboard.stats.versions"), submissions.length],
+                    [t("dashboard.stats.media"), media.length],
+                    [t("dashboard.stats.works"), works.length],
                   ].map(([label, val]) => (
                     <HoverCard key={label as string} style={{ padding: "18px 20px" }}>
                       <p style={{ ...MONO, fontSize: "9px", color: MUTED, letterSpacing: "0.1em", margin: "0 0 6px" }}>{(label as string).toUpperCase()}</p>
@@ -437,15 +649,18 @@ export default function DashboardPage() {
                 <HoverCard style={cardStyle}>
                   <SectionTitle icon="history" title={t("dashboard.overview.recentActivity")} />
                   <div>
-                    {MOCK.recentActivity.map((a, i) => (
-                      <div key={i} style={{ display: "flex", justifyContent: "space-between", padding: "10px 0", borderBottom: i === MOCK.recentActivity.length - 1 ? "none" : "1px solid #f0f1ee" }}>
+                    {submissions.slice(0, 3).map((a, i) => (
+                      <div key={i} style={{ display: "flex", justifyContent: "space-between", padding: "10px 0", borderBottom: i === 2 ? "none" : "1px solid #f0f1ee" }}>
                         <div>
-                          <p style={{ fontSize: "13px", color: "#191c1b", margin: "0 0 2px", fontWeight: 600 }}>{a.text}</p>
-                          <p style={{ ...MONO, fontSize: "10px", color: MUTED, margin: 0 }}>{a.detail}</p>
+                          <p style={{ fontSize: "13px", color: "#191c1b", margin: "0 0 2px", fontWeight: 600 }}>
+                            {a.kind === "new" ? "New scholar submitted" : "Edit proposed"}
+                          </p>
+                          <p style={{ ...MONO, fontSize: "10px", color: MUTED, margin: 0 }}>{a.scholarName} — {a.lang}</p>
                         </div>
                         <span style={{ ...MONO, fontSize: "10px", color: "#c0c9c3", whiteSpace: "nowrap" }}>{a.date}</span>
                       </div>
                     ))}
+                    {submissions.length === 0 && <EmptyRow text="No recent activity" />}
                   </div>
                 </HoverCard>
               )}
@@ -467,7 +682,7 @@ export default function DashboardPage() {
             </div>
           )}
 
-          {/* ── MY SUBMISSIONS (unified: new + edit + drafts + versions) ── */}
+          {/* ── MY SUBMISSIONS ── */}
           {tab === "submissions" && isContributor && (
             <HoverCard style={cardStyle}>
               <SectionTitle
@@ -491,46 +706,62 @@ export default function DashboardPage() {
                 <FilterChip active={statusFilter === "PENDING"} onClick={() => setStatusFilter("PENDING")} count={counts.PENDING}>{t("dashboard.status.pending")}</FilterChip>
                 <FilterChip active={statusFilter === "APPROVED"} onClick={() => setStatusFilter("APPROVED")} count={counts.APPROVED}>{t("dashboard.status.approved")}</FilterChip>
                 <FilterChip active={statusFilter === "REJECTED"} onClick={() => setStatusFilter("REJECTED")} count={counts.REJECTED}>{t("dashboard.status.rejected")}</FilterChip>
+                {/* ✅ ADDED: SUPERSEDED Filter Chip */}
+                <FilterChip active={statusFilter === "SUPERSEDED"} onClick={() => setStatusFilter("SUPERSEDED")} count={counts.SUPERSEDED}>{t("dashboard.status.superseded")}</FilterChip>
               </div>
 
-              <SubmissionsTable rows={filteredSubmissions} t={t} isRTL={isRTL} onAction={handleSubmissionAction} />
+              {isLoadingData ? (
+                <EmptyRow text="Loading submissions..." />
+              ) : (
+                <SubmissionsTable rows={filteredSubmissions} t={t} isRTL={isRTL} onAction={handleSubmissionAction} />
+              )}
             </HoverCard>
           )}
 
-          {/* ── MEDIA WORKSPACE ─────────────────────────────── */}
+          {/* ── MEDIA WORKSPACE ── */}
           {tab === "media" && isContributor && (
             <HoverCard style={cardStyle}>
-              <SectionTitle icon="perm_media" title={t("dashboard.tabs.media")} action={<HoverBtn variant="primary"><Icon name="add_circle" size={13} /> {t("dashboard.media.addButton")}</HoverBtn>} />
+              <SectionTitle icon="perm_media" title={t("dashboard.tabs.media")} />
               <p style={{ ...MONO, fontSize: "9px", color: "#c0c9c3", letterSpacing: "0.06em", marginBottom: "12px", fontStyle: "italic" }}>
                 {t("dashboard.media.tempNote")}
               </p>
-              <StatusTable
-                t={t} isRTL={isRTL}
-                colPrimary={t("dashboard.table.file")}
-                colSecondary={t("dashboard.table.scholar")}
-                colTertiary={t("dashboard.table.type")}
-                emptyText={t("dashboard.empty.media")}
-                rows={MOCK.media.map((m) => ({ primary: m.file, secondary: m.scholar, tertiary: m.type, date: m.date, status: m.status }))}
-              />
+              {isLoadingData ? (
+                <EmptyRow text="Loading media..." />
+              ) : (
+                <StatusTable
+                  t={t} isRTL={isRTL}
+                  colPrimary={t("dashboard.table.file")}
+                  colSecondary={t("dashboard.table.scholar")}
+                  colTertiary={t("dashboard.table.type")}
+                  emptyText={t("dashboard.empty.media")}
+                  rows={media}
+                  onView={handleViewItem}
+                />
+              )}
             </HoverCard>
           )}
 
-          {/* ── WORKS & REFERENCES WORKSPACE ─────────────────────────────── */}
+          {/* ── WORKS & REFERENCES WORKSPACE ── */}
           {tab === "works" && isContributor && (
             <HoverCard style={cardStyle}>
-              <SectionTitle icon="menu_book" title={t("dashboard.tabs.works")} action={<HoverBtn variant="primary"><Icon name="add_circle" size={13} /> {t("dashboard.works.addButton")}</HoverBtn>} />
-              <StatusTable
-                t={t} isRTL={isRTL}
-                colPrimary={t("dashboard.table.title")}
-                colSecondary={t("dashboard.table.scholar")}
-                colTertiary={t("dashboard.table.type")}
-                emptyText={t("dashboard.empty.works")}
-                rows={MOCK.works.map((w) => ({ primary: w.title, secondary: w.scholar, tertiary: w.type, date: w.date, status: w.status }))}
-              />
+              <SectionTitle icon="menu_book" title={t("dashboard.tabs.works")} />
+              {isLoadingData ? (
+                <EmptyRow text="Loading works..." />
+              ) : (
+                <StatusTable
+                  t={t} isRTL={isRTL}
+                  colPrimary={t("dashboard.table.title")}
+                  colSecondary={t("dashboard.table.scholar")}
+                  colTertiary={t("dashboard.table.type")}
+                  emptyText={t("dashboard.empty.works")}
+                  rows={works}
+                  onView={handleViewItem}
+                />
+              )}
             </HoverCard>
           )}
 
-          {/* ── NOTIFICATIONS ─────────────────────────────── */}
+          {/* ── NOTIFICATIONS ── */}
           {tab === "notifications" && (
             <HoverCard style={cardStyle}>
               <SectionTitle icon="notifications" title={t("dashboard.tabs.notifications")} />
@@ -538,7 +769,7 @@ export default function DashboardPage() {
             </HoverCard>
           )}
 
-          {/* ── WATCHLIST ─────────────────────────────── */}
+          {/* ── WATCHLIST ── */}
           {tab === "watchlist" && (
             <HoverCard style={cardStyle}>
               <SectionTitle icon="bookmark" title={t("dashboard.tabs.watchlist")} />
