@@ -384,7 +384,8 @@ function PersonLinkSection({
 const EditScholarPage: React.FC = () => {
   const { lang, id } = useParams<{ lang: Language; id: string }>();
   const [searchParams] = useSearchParams();
-  const urlDraftId = searchParams.get("draftId"); // ✅ Get draftId from URL
+  const urlDraftId = searchParams.get("draftId"); 
+  const urlRejectedId = searchParams.get("rejectedId"); // ✅ NEW: Get rejectedId from URL
   const navigate = useNavigate();
   const { t, setLang } = useLang();
   
@@ -502,10 +503,12 @@ const EditScholarPage: React.FC = () => {
         let finalFormData = initialFormData;
         let finalDraftVersionId: number | null = null;
 
-        // ✅ CHECK 1: If URL has draftId, fetch it from backend
-        if (urlDraftId) {
+               // ✅ CHECK 1: If URL has draftId or rejectedId, fetch it from backend
+        if (urlDraftId || urlRejectedId) {
           try {
-            const draftRes = await scholarsApi.getDraftById(Number(urlDraftId));
+            const versionIdToFetch = Number(urlDraftId || urlRejectedId);
+            // ✅ Use getVersionById which works for BOTH drafts and rejected versions!
+            const draftRes = await scholarsApi.getVersionById(versionIdToFetch);
             const draft = draftRes.data;
             
             const birthGregDraft = draft.scholar_dates?.find((d: any) => d.date_type === "birth" && d.calendar === "gregorian");
@@ -537,30 +540,19 @@ const EditScholarPage: React.FC = () => {
                 scholar_name: r.related_scholar_version?.canonical_name || ""
               })) || [],
               portraitFile: null,
-              currentImageUrl: version.image_url || null,
+              currentImageUrl: draft.image_url || version.image_url || null,
             };
             finalDraftVersionId = draft.version_id;
             setDraftRestored(true);
           } catch (err) {
-            console.error("Draft was deleted or not found:", err);
-            // ✅ If draft was deleted, just use the original scholar data
-            // Don't show an error - just continue with fresh form
+            console.error("Version was deleted or not found:", err);
             finalFormData = initialFormData;
             finalDraftVersionId = null;
             setDraftRestored(false);
-            
-            // ✅ Remove the draftId from URL to prevent this error again
             navigate(`/scholars/${id}/edit/${activeLang.toLowerCase()}`, { replace: true });
           }
-        } else {
-          // ✅ CHECK 2: Fallback to localStorage
-          const localDraft = loadLocalDraft(id!, activeLang);
-          if (localDraft) {
-            finalFormData = { ...initialFormData, ...localDraft.formData };
-            finalDraftVersionId = localDraft.draftVersionId;
-            setDraftRestored(true);
-          }
         }
+        // ✅ We REMOVED the localStorage fallback entirely so it doesn't auto-restore and confuse you!
 
         setFormData(finalFormData);
         setDraftVersionId(finalDraftVersionId);
@@ -576,15 +568,8 @@ const EditScholarPage: React.FC = () => {
     if (activeLang) setLang(activeLang);
   }, [id, activeLang, setLang, urlDraftId]); // ✅ Added urlDraftId to dependencies
 
-  useEffect(() => {
-    if (!data) return;
-    const timeout = setTimeout(() => {
-      saveLocalDraft(id!, activeLang, formData, draftVersionId);
-    }, 500);
-    return () => clearTimeout(timeout);
-  }, [formData, draftVersionId, id, data]);
-
-  const handleSaveDraft = async () => {
+ 
+    const handleSaveDraft = async () => {
     try {
       const version = data!.scholar_versions[0];
       
@@ -599,6 +584,38 @@ const EditScholarPage: React.FC = () => {
         ...formData.new_students.filter(s => s.scholar_id !== null).map(s => ({ related_version_id: s.scholar_id, relation_type: "student" })),
       ];
 
+      // ✅ 1. If editing a rejected version, save it back as a draft AND navigate away
+      if (urlRejectedId) {
+        const payload = {
+          draft_version_id: draftVersionId,
+          scholar_id: Number(id),
+          language_id: version.language_id,
+          canonical_name: formData.canonical_name || null,
+          region_id: formData.region_id,
+          century_hijri_start: formData.century_hijri_start ? Number(formData.century_hijri_start) : null,
+          century_hijri_end: formData.century_hijri_end ? Number(formData.century_hijri_end) : null,
+          century_gregorian_start: formData.century_gregorian_start ? Number(formData.century_gregorian_start) : null,
+          century_gregorian_end: formData.century_gregorian_end ? Number(formData.century_gregorian_end) : null,
+          biography: formData.biography || null,
+          aliases: formData.aliases,
+          discipline_ids: formData.discipline_ids,
+          dates: datesPayload.length > 0 ? datesPayload : undefined,
+          references: formData.new_refs.filter(r => r.title || r.citation).map(r => ({ title: r.title, citation: r.citation, url: r.url || null })),
+          relationships: relationshipsPayload.length > 0 ? relationshipsPayload : undefined,
+          target_status: "draft" // ✅ Tell backend to save as draft
+        };
+
+        await scholarsApi.updateRejected(Number(urlRejectedId), payload);
+        
+        // ✅ Clear local storage immediately
+        clearLocalDraft(id!, activeLang);
+        
+        alert("Saved as draft successfully!");
+        navigate('/dashboard'); // ✅ Redirect to dashboard
+        return;
+      }
+
+      // ✅ 2. Normal Draft Save
       const payload = {
         draft_version_id: draftVersionId,
         scholar_id: Number(id),
@@ -621,11 +638,16 @@ const EditScholarPage: React.FC = () => {
       const newDraftId = response?.data?.draft_version_id;
       if (newDraftId) {
         setDraftVersionId(newDraftId);
-        
       }
 
-      setDraftSavedPulse(true);
-      setTimeout(() => setDraftSavedPulse(false), 1800);
+      // ✅ Clear localStorage immediately after successful backend save
+      clearLocalDraft(id!, activeLang);
+
+      alert("Saved as draft successfully!");
+      
+      // ✅ Navigate to dashboard immediately
+      navigate('/dashboard');
+
     } catch (error: any) {
       console.error("Failed to save draft:", error);
       alert(error.message || "Could not save draft.");

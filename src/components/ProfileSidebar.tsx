@@ -181,9 +181,9 @@ export default function ProfileSidebar({
           <HoverCard style={{ padding: "18px", backgroundColor: "#0b4335", borderRadius: "12px", border: "none" }}>
             <h3 style={{ ...SERIF, fontSize: "15px", fontWeight: 700, color: "#fff", margin: "0 0 6px" }}>{t("editProfile.becomeContributor")}</h3>
             <p style={{ ...SANS, fontSize: "12px", color: "rgba(255,255,255,0.85)", margin: "0 0 14px", lineHeight: 1.55 }}>{t("editProfile.upgradeHint")}</p>
-            <button onMouseEnter={() => setUpgradeHov(true)} onMouseLeave={() => setUpgradeHov(false)} style={upgradeBtnStyle}>
-              {t("editProfile.upgradeNow")}
-            </button>
+            <Link to="/scholars/submit/" onMouseEnter={() => setUpgradeHov(true)} onMouseLeave={() => setUpgradeHov(false)} style={{ ...upgradeBtnStyle, display: "block", textAlign: "center", textDecoration: "none" }}>
+  {t("editProfile.upgradeNow")}
+</Link>
           </HoverCard>
         </>
       )}

@@ -20,6 +20,17 @@ export interface ScholarVersion {
   status: 'pending' | 'approved' | 'rejected' | 'superseded';
   version_type: 'creation' | 'edition';
   canonical_name: string;
+  
+  // ✅ ADDED: Missing fields from your backend JSON response
+  biography?: string | null;
+  century_gregorian_start?: number | null;
+  century_gregorian_end?: number | null;
+  century_hijri_start?: number | null;
+  century_hijri_end?: number | null;
+  region_id?: number | null;
+  image_status?: string | null;
+  image_uploaded_by?: number | null;
+  
   created_by: number | null;
   created_at: string;
   image_url?: string | null;
@@ -32,6 +43,14 @@ export interface ScholarVersion {
   scholar_works?: any[];
   media?: any[];
   img_versions?: any[];
+  
+  // ✅ MOVED TO ROOT: Matches backend response exactly
+  scholar_disciplines?: Array<{
+    disciplines?: { name: string };
+  }>;
+  
+  // ✅ ADDED: So TypeScript knows about relationships
+  scholar_relationships_as_source?: any[];
 }
 
 export interface DashboardStats {
@@ -39,6 +58,7 @@ export interface DashboardStats {
   overdue: number;
   new_today: number;
   this_week: number;
+  avg_review_time?: string; // ✅ ADD THIS LINE
 }
 
 // Standard API Response Wrapper from your backend
@@ -54,13 +74,15 @@ export interface ApiResponse<T = any> {
 // ==========================================
 
 // Adjust the baseURL based on your environment (Vite, Next.js, CRA)
-const API_BASE_URL = (import.meta as any).env?.VITE_API_URL  || 'http://localhost:5000/api/admin';
-
+// ✅ NEW CODE
+const BASE_URL = (import.meta as any).env?.VITE_API_URL || 'http://localhost:5444';
+const API_BASE_URL = `${BASE_URL}/api/admin`;
 const api: AxiosInstance = axios.create({
   baseURL: API_BASE_URL,
   headers: {
     'Content-Type': 'application/json',
   },
+  withCredentials: true, 
 });
 
 // Request Interceptor: Attach JWT Token
@@ -109,8 +131,13 @@ export const adminApi = {
       api.get<ApiResponse<ScholarVersion[]>>('/scholars/pending/created'),
     getPendingEdited: () => 
       api.get<ApiResponse<{ proposed: ScholarVersion; current: ScholarVersion | null }[]>>('/scholars/pending/edited'),
-    approve: (id: number) => 
-      api.put<ApiResponse<ScholarVersion>>(`/scholars/${id}/approve`),
+    approve: (id: number, payload?: { 
+      reject_images?: number[]; 
+      reject_works?: number[]; 
+      reject_references?: number[]; 
+      reject_media?: number[] 
+    }) => 
+      api.put<ApiResponse<ScholarVersion>>(`/scholars/${id}/approve`, payload || {}),
     reject: (id: number, reason: string = '') => 
       api.put<ApiResponse<ScholarVersion>>(`/scholars/${id}/reject`, { reason }),
     getVersions: (id: number, lang?: string) => 

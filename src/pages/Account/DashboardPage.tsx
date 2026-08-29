@@ -6,14 +6,14 @@ import { useAuth } from "../../context/AuthContext";
 import { scholarsApi } from "../../api/scholarsApi";
 import ProfileSidebar from "../../components/ProfileSidebar";
 import { useNavigate, Link } from "react-router-dom";
-
+import DOMPurify from 'dompurify';
 /* ─────────────────────────────────────────────
    Oulamauna — Dashboard (User / Contributor)
 ───────────────────────────────────────────── */
 
 type Status = "DRAFT" | "PENDING" | "APPROVED" | "REJECTED" | "SUPERSEDED";
 type SubmissionKind = "new" | "edit";
-type UserTab = "overview" | "notifications" | "watchlist";
+type UserTab = "overview" | "notifications";
 type ContributorTab = UserTab | "submissions" | "media" | "works";
 type StatusFilter = "ALL" | Status;
 
@@ -47,54 +47,420 @@ interface Submission {
   status: Status;
 }
 
-interface TableRow { 
-  primary: string; 
+// ✅ FIX: TableRow now carries the item's OWN file/id info, so a
+// media/work item can be viewed using its own status — independent
+// of whatever status the parent scholar version happens to be in.
+interface TableRow {
+  id?: number;             // work_id or media_id
+  primary: string;
   secondary: React.ReactNode;
-  tertiary?: string; 
-  date: string; 
-  status: Status; 
+  tertiary?: string;
+  date: string;
+  status: Status;
   scholarId?: number;
-  link?: string;
+  link?: string;           // live scholar page link (only meaningful when APPROVED)
+  mediaUrl?: string;
+  filePath?: string;
+  fileType?: string;
+  fileName?: string;
+  sourceType?: string;     // "upload" | "link" etc.
+  description?: string;
 }
 
 /* ── Modals ─────────────────────────────────────── */
 function PreviewModal({ item, onClose }: { item: any; onClose: () => void }) {
-  const isSubmission = 'kind' in item;
-  const title = isSubmission ? item.scholarName : item.primary;
-  const detail = isSubmission ? `${item.kind === 'new' ? 'New Scholar' : 'Edit Proposal'} • ${item.lang}` : `${item.secondary} • ${item.tertiary || 'Unknown'}`;
-  
+  const [versionData, setVersionData] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+  const [viewingFile, setViewingFile] = useState<string | null>(null);
+  const [downloadingFile, setDownloadingFile] = useState<string | null>(null);
+
+  useEffect(() => {
+    scholarsApi.getVersionById(item.id)
+      .then((res) => {
+        setVersionData(res.data);
+        setLoading(false);
+      })
+      .catch((err) => {
+        console.error("Failed to load preview:", err);
+        setLoading(false);
+      });
+  }, [item.id]);
+
+  const MONO = { fontFamily: "'JetBrains Mono', monospace" };
+  const SERIF = { fontFamily: "'Source Serif 4', serif" };
+  const GREEN = "#0b4335";
+  const BORDER = "rgba(192,201,195,0.4)";
+  const MUTED = "#707974";
+
+  const handleViewFile = async (url: string, fileType: string, id: string) => {
+    setViewingFile(id);
+    try {
+      const response = await fetch(url);
+      const blob = await response.blob();
+      const correctType = fileType?.includes("audio") ? "audio/mpeg" : 
+                        fileType?.includes("video") ? "video/mp4" : 
+                        "application/pdf";
+      const typedBlob = new Blob([blob], { type: correctType });
+      const blobUrl = URL.createObjectURL(typedBlob);
+      window.open(blobUrl, "_blank");
+      setTimeout(() => URL.revokeObjectURL(blobUrl), 60000);
+    } catch (error) {
+      console.error("View failed:", error);
+      window.open(url, "_blank");
+    } finally {
+      setViewingFile(null);
+    }
+  };
+
+  const handleDownloadFile = async (url: string, filename: string, id: string) => {
+    setDownloadingFile(id);
+    try {
+      const response = await fetch(url);
+      const blob = await response.blob();
+      const blobUrl = window.URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = blobUrl;
+      link.download = filename || "file.pdf";
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(blobUrl);
+    } catch (error) {
+      console.error("Download failed:", error);
+      window.open(url, "_blank");
+    } finally {
+      setDownloadingFile(null);
+    }
+  };
+
   return (
-    <div style={{ position: "fixed", inset: 0, zIndex: 200, backgroundColor: "rgba(25,28,27,0.6)", display: "flex", alignItems: "center", justifyContent: "center", backdropFilter: "blur(4px)" }} onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}>
-      <div style={{ backgroundColor: "#fff", borderRadius: "16px", padding: "32px", width: "480px", maxWidth: "calc(100vw - 32px)", boxShadow: "0 20px 60px rgba(0,0,0,0.2)", border: "1px solid rgba(192,201,195,0.3)" }}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "24px" }}>
-          <h2 style={{ ...SERIF, fontSize: "20px", fontWeight: 700, color: "#0b4335", margin: 0 }}>Submission Details</h2>
-          <button onClick={onClose} style={{ background: "none", border: "none", cursor: "pointer", color: "#707974", fontSize: "20px" }}>✕</button>
+    <div 
+      style={{ 
+        position: "fixed", inset: 0, zIndex: 200, 
+        backgroundColor: "rgba(25,28,27,0.85)", 
+        display: "flex", alignItems: "center", justifyContent: "center", 
+        backdropFilter: "blur(6px)" 
+      }} 
+      onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
+    >
+      <div 
+        style={{ 
+          backgroundColor: "#fff", borderRadius: "20px", 
+          width: "95%", maxWidth: "1200px", height: "90vh", 
+          display: "flex", flexDirection: "row", // Split view
+          boxShadow: "0 25px 80px rgba(0,0,0,0.4)", border: `1px solid ${BORDER}`,
+          overflow: "hidden"
+        }}
+      >
+        {/* ─────────────────────────────────────────────
+            LEFT SIDEBAR (Sticky Profile Info)
+        ───────────────────────────────────────────── */}
+        <div style={{ 
+          width: "320px", flexShrink: 0, 
+          borderRight: `1px solid ${BORDER}`, 
+          backgroundColor: "#fafbf8",
+          display: "flex", flexDirection: "column",
+          overflowY: "auto"
+        }}>
+          {/* Portrait */}
+          <div style={{ 
+            width: "100%", aspectRatio: "3/4", 
+            backgroundColor: "#e7e8e6", borderBottom: `1px solid ${BORDER}`
+          }}>
+            {versionData?.image_url ? (
+              <img 
+                src={versionData.image_url} 
+                alt={versionData.canonical_name} 
+                style={{ width: "100%", height: "100%", objectFit: "cover" }}
+              />
+            ) : (
+              <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center", color: "#c0c9c3" }}>
+                <span className="material-symbols-outlined" style={{ fontSize: "80px" }}>account_circle</span>
+              </div>
+            )}
+          </div>
+
+          {/* Sidebar Content */}
+          <div style={{ padding: "24px", flex: 1, display: "flex", flexDirection: "column", gap: "24px" }}>
+            
+            {/* Basic Info */}
+            {versionData?.regions && (
+              <div>
+                <h4 style={{ ...MONO, fontSize: "10px", color: MUTED, letterSpacing: "0.12em", marginBottom: "8px", textTransform: "uppercase" }}>Region</h4>
+                <p style={{ fontSize: "15px", fontWeight: 600, color: "#191c1b", margin: 0 }}>{versionData.regions.name}</p>
+              </div>
+            )}
+            
+            {versionData?.scholar_dates && versionData.scholar_dates.length > 0 && (
+              <div>
+                <h4 style={{ ...MONO, fontSize: "10px", color: MUTED, letterSpacing: "0.12em", marginBottom: "8px", textTransform: "uppercase" }}>Dates</h4>
+                {versionData.scholar_dates.map((d: any, i: number) => (
+                  <div key={i} style={{ fontSize: "14px", color: "#404945", marginBottom: "4px" }}>
+                    <span style={{ textTransform: "capitalize", fontWeight: 600 }}>{d.date_type}</span>: {d.year} ({d.calendar})
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {versionData?.scholar_aliases && versionData.scholar_aliases.length > 0 && (
+              <div>
+                <h4 style={{ ...MONO, fontSize: "10px", color: MUTED, letterSpacing: "0.12em", marginBottom: "8px", textTransform: "uppercase" }}>Also Known As</h4>
+                <div style={{ display: "flex", flexWrap: "wrap", gap: "6px" }}>
+                  {versionData.scholar_aliases.map((alias: any, i: number) => (
+                    <span key={i} style={{ 
+                      padding: "4px 10px", backgroundColor: GREEN, color: "#fff", 
+                      borderRadius: "12px", fontSize: "11px", fontWeight: 600
+                    }}>{alias.alias_name}</span>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Status Badge (Pushed to bottom) */}
+            <div style={{ marginTop: "auto", paddingTop: "24px", borderTop: `1px solid ${BORDER}` }}>
+              <div style={{ 
+                padding: "16px", backgroundColor: "rgba(115,92,0,0.05)", 
+                borderRadius: "12px", border: "1px solid rgba(115,92,0,0.2)",
+                display: "flex", alignItems: "center", gap: "12px"
+              }}>
+                <div style={{ 
+                  width: "36px", height: "36px", borderRadius: "50%", 
+                  backgroundColor: "rgba(115,92,0,0.15)", 
+                  display: "flex", alignItems: "center", justifyContent: "center", fontSize: "20px"
+                }}></div>
+                <div>
+                  <p style={{ ...MONO, fontSize: "9px", fontWeight: 700, color: "#735c00", margin: 0, letterSpacing: "0.1em" }}>WAITING FOR REVIEW</p>
+                  <p style={{ fontSize: "11px", color: "#735c00", margin: "4px 0 0", lineHeight: 1.4 }}>An admin is currently reviewing this submission.</p>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
-        <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
-          <div>
-            <p style={{ ...MONO, fontSize: "9px", color: "#707974", letterSpacing: "0.1em", marginBottom: "4px" }}>TITLE / NAME</p>
-            <p style={{ fontSize: "15px", fontWeight: 700, color: "#191c1b", margin: 0 }}>{title}</p>
-          </div>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
+
+        {/* ─────────────────────────────────────────────
+            RIGHT MAIN AREA (Scrollable Content)
+        ───────────────────────────────────────────── */}
+        <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}>
+          
+          {/* Header */}
+          <div style={{ 
+            padding: "24px 32px", 
+            borderBottom: `1px solid ${BORDER}`, 
+            display: "flex", justifyContent: "space-between", alignItems: "center",
+            backgroundColor: "#fff"
+          }}>
             <div>
-              <p style={{ ...MONO, fontSize: "9px", color: "#707974", letterSpacing: "0.1em", marginBottom: "4px" }}>DETAILS</p>
-              <p style={{ fontSize: "13px", color: "#404945", margin: 0 }}>{detail}</p>
+              <h2 style={{ ...SERIF, fontSize: "28px", fontWeight: 700, color: GREEN, margin: 0 }}>
+                {versionData?.canonical_name || item.scholarName || "Untitled Submission"}
+              </h2>
+              <p style={{ ...MONO, fontSize: "11px", color: MUTED, marginTop: "6px", letterSpacing: "0.05em" }}>
+                {item.kind === 'new' ? 'New Scholar Submission' : 'Edit Proposal'} • {item.lang.toUpperCase()} • Submitted {item.date}
+              </p>
             </div>
-            <div>
-              <p style={{ ...MONO, fontSize: "9px", color: "#707974", letterSpacing: "0.1em", marginBottom: "4px" }}>DATE</p>
-              <p style={{ fontSize: "13px", color: "#404945", margin: 0 }}>{item.date}</p>
-            </div>
+            <button 
+              onClick={onClose} 
+              style={{ 
+                background: "none", border: "none", cursor: "pointer", 
+                color: MUTED, fontSize: "24px", padding: "8px", borderRadius: "50%",
+                display: "flex", alignItems: "center", justifyContent: "center", transition: "all 0.2s"
+              }}
+              onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.backgroundColor = "rgba(179,38,30,0.1)"; (e.currentTarget as HTMLButtonElement).style.color = "#b3261e"; }}
+              onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.backgroundColor = "transparent"; (e.currentTarget as HTMLButtonElement).style.color = MUTED; }}
+            >
+              <span className="material-symbols-outlined">close</span>
+            </button>
           </div>
-          <div style={{ padding: "16px", backgroundColor: "rgba(115,92,0,0.08)", border: "1px solid rgba(115,92,0,0.2)", borderRadius: "8px", display: "flex", alignItems: "center", gap: "12px" }}>
-            <span style={{ fontSize: "20px" }}>⏳</span>
-            <div>
-              <p style={{ ...MONO, fontSize: "10px", fontWeight: 700, color: "#735c00", margin: 0, letterSpacing: "0.05em" }}>WAITING FOR REVIEW</p>
-              <p style={{ fontSize: "12px", color: "#735c00", margin: "4px 0 0", lineHeight: 1.4 }}>An admin is currently reviewing this submission. You will be notified once a decision is made.</p>
-            </div>
+
+          {/* Scrollable Content */}
+          <div style={{ flex: 1, overflowY: "auto", padding: "32px" }}>
+            {loading ? (
+              <div style={{ textAlign: "center", padding: "80px 40px", color: MUTED }}>
+                <div style={{ fontSize: "48px", marginBottom: "20px" }}></div>
+                <p style={{ fontSize: "16px", fontWeight: 600 }}>Loading submission details...</p>
+              </div>
+            ) : versionData ? (
+              <div style={{ maxWidth: "800px", margin: "0 auto" }}>
+                
+                {/* Biography Section */}
+                {versionData.biography && (
+                  <section style={{ marginBottom: "48px" }}>
+                    <h3 style={{ 
+                      ...MONO, fontSize: "11px", color: GREEN, letterSpacing: "0.15em", 
+                      marginBottom: "16px", paddingBottom: "12px", 
+                      borderBottom: `2px solid ${GREEN}`, textTransform: "uppercase" 
+                    }}>Biography</h3>
+                    <div 
+                      style={{ 
+                        fontSize: "15px", lineHeight: "1.8", color: "#191c1b", 
+                        fontFamily: SERIF.fontFamily,
+                        padding: "24px", backgroundColor: "rgba(11,67,53,0.02)",
+                        borderRadius: "12px", border: `1px solid ${BORDER}`
+                      }}
+                      dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(versionData.biography) }} 
+                    />
+                  </section>
+                )}
+
+                {/* Works Section */}
+                {versionData.scholar_works && versionData.scholar_works.length > 0 && (
+                  <section style={{ marginBottom: "48px" }}>
+                    <h3 style={{ 
+                      ...MONO, fontSize: "11px", color: GREEN, letterSpacing: "0.15em", 
+                      marginBottom: "16px", paddingBottom: "12px", 
+                      borderBottom: `2px solid ${GREEN}`, textTransform: "uppercase" 
+                    }}>Works & Publications ({versionData.scholar_works.length})</h3>
+                    <div style={{ border: `1px solid ${BORDER}`, borderRadius: "12px", overflow: "hidden", backgroundColor: "#fff" }}>
+                      <table style={{ width: "100%", borderCollapse: "collapse" }}>
+                        <thead>
+                          <tr style={{ backgroundColor: "#f3f4f1", borderBottom: "1.5px solid rgba(192,201,195,0.4)" }}>
+                            <th style={{ ...MONO, padding: "12px 16px", textAlign: "left", fontSize: "9px", color: MUTED, letterSpacing: "0.1em", fontWeight: 700 }}>TITLE</th>
+                            <th style={{ ...MONO, padding: "12px 16px", textAlign: "left", fontSize: "9px", color: MUTED, letterSpacing: "0.1em", fontWeight: 700, width: "80px" }}>YEAR</th>
+                            <th style={{ ...MONO, padding: "12px 16px", textAlign: "left", fontSize: "9px", color: MUTED, letterSpacing: "0.1em", fontWeight: 700, width: "120px" }}>FORMAT</th>
+                            <th style={{ ...MONO, padding: "12px 16px", textAlign: "left", fontSize: "9px", color: MUTED, letterSpacing: "0.1em", fontWeight: 700, width: "140px" }}>ACCESS</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {versionData.scholar_works.map((w: any, i: number) => {
+                            const hasFile = w.media_url || w.file_path;
+                            const isUpload = w.source_type === "upload";
+                            const fileId = `work-${i}`;
+                            
+                            return (
+                              <tr key={i} style={{ borderBottom: i === versionData.scholar_works.length - 1 ? "none" : "1px solid #f0f1ee" }}>
+                                <td style={{ ...SERIF, padding: "14px 16px", fontSize: "14px", fontWeight: 700, fontStyle: "italic", color: "#191c1b" }}>
+                                  {w.title}
+                                  {w.description && <div style={{ ...MONO, fontSize: "11px", fontStyle: "normal", fontWeight: 400, color: MUTED, marginTop: "4px" }}>{w.description}</div>}
+                                </td>
+                                <td style={{ padding: "14px 16px", fontSize: "13px", color: MUTED }}>{w.year || "—"}</td>
+                                <td style={{ padding: "14px 16px" }}>
+                                  <span style={{ ...MONO, fontSize: "9px", fontWeight: 700, padding: "3px 10px", borderRadius: "4px", backgroundColor: "rgba(11,67,53,0.08)", color: GREEN }}>
+                                    {w.format}
+                                  </span>
+                                </td>
+                                <td style={{ padding: "14px 16px" }}>
+                                  {hasFile ? (
+                                    <div style={{ display: "flex", gap: "6px", alignItems: "center" }}>
+                                      {isUpload ? (
+                                        <>
+                                          <button 
+                                            title="View" disabled={viewingFile === fileId}
+                                            onClick={() => handleViewFile(w.media_url || w.file_path, w.file_type, fileId)}
+                                            style={{ 
+                                              display: "flex", alignItems: "center", justifyContent: "center",
+                                              width: "32px", height: "32px", borderRadius: "6px",
+                                              border: `1.5px solid ${GREEN}`, backgroundColor: viewingFile === fileId ? "#c0c9c3" : "transparent", 
+                                              color: viewingFile === fileId ? "#fff" : GREEN, cursor: "pointer", transition: "all 0.15s"
+                                            }}
+                                          >
+                                            <span className="material-symbols-outlined" style={{ fontSize: "18px" }}>{viewingFile === fileId ? "hourglass_empty" : "visibility"}</span>
+                                          </button>
+                                          <button 
+                                            title="Download" disabled={downloadingFile === fileId}
+                                            onClick={() => handleDownloadFile(w.media_url || w.file_path, w.file_name || w.title, fileId)}
+                                            style={{ 
+                                              display: "flex", alignItems: "center", justifyContent: "center",
+                                              width: "32px", height: "32px", borderRadius: "6px",
+                                              border: `1.5px solid ${GREEN}`, backgroundColor: downloadingFile === fileId ? "#c0c9c3" : GREEN, 
+                                              color: "#fff", cursor: "pointer", transition: "all 0.15s"
+                                            }}
+                                          >
+                                            <span className="material-symbols-outlined" style={{ fontSize: "18px" }}>{downloadingFile === fileId ? "hourglass_empty" : "download"}</span>
+                                          </button>
+                                        </>
+                                      ) : (
+                                        <a href={w.media_url} target="_blank" rel="noopener noreferrer"
+                                          style={{ display: "inline-flex", alignItems: "center", gap: "4px", ...MONO, fontSize: "9px", fontWeight: 700, color: GREEN, textDecoration: "none", padding: "6px 10px", border: `1.5px solid ${GREEN}`, borderRadius: "6px" }}>
+                                          <span className="material-symbols-outlined" style={{ fontSize: "14px" }}>open_in_new</span> VIEW
+                                        </a>
+                                      )}
+                                    </div>
+                                  ) : <span style={{ fontSize: "13px", color: "#c0c9c3" }}>—</span>}
+                                </td>
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
+                  </section>
+                )}
+
+                {/* Media Section */}
+                {versionData.media && versionData.media.length > 0 && (
+                  <section style={{ marginBottom: "48px" }}>
+                    <h3 style={{ 
+                      ...MONO, fontSize: "11px", color: GREEN, letterSpacing: "0.15em", 
+                      marginBottom: "16px", paddingBottom: "12px", 
+                      borderBottom: `2px solid ${GREEN}`, textTransform: "uppercase" 
+                    }}>Media Library ({versionData.media.length})</h3>
+                    <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(240px, 1fr))", gap: "16px" }}>
+                      {versionData.media.map((m: any, i: number) => {
+                        const hasFile = m.media_url || m.file_path;
+                        const isUpload = m.source_type === "upload";
+                        const mediaType = m.file_type || "pdf";
+                        const icon = mediaType.includes("audio") ? "graphic_eq" : mediaType.includes("video") ? "movie" : "article";
+                        const fileId = `media-${i}`;
+                        
+                        return (
+                          <div key={i} style={{ padding: "20px", backgroundColor: "#fafbf8", borderRadius: "12px", border: `1px solid ${BORDER}`, display: "flex", flexDirection: "column", gap: "12px" }}>
+                            <span className="material-symbols-outlined" style={{ fontSize: "32px", color: GREEN }}>{icon}</span>
+                            <div>
+                              <p style={{ margin: "0 0 4px", fontWeight: 700, fontSize: "15px", color: "#191c1b" }}>{m.title}</p>
+                              {m.description && <p style={{ margin: "0 0 8px", fontSize: "13px", color: MUTED, lineHeight: "1.5" }}>{m.description}</p>}
+                              <p style={{ margin: 0, fontSize: "11px", color: MUTED, ...MONO }}>{m.year && <span>{m.year} • </span>}{mediaType.toUpperCase()}</p>
+                            </div>
+                            {hasFile && (
+                              <div style={{ display: "flex", gap: "8px", marginTop: "auto" }}>
+                                {isUpload ? (
+                                  <>
+                                    <button onClick={() => handleViewFile(m.media_url || m.file_path, m.file_type, fileId)} disabled={viewingFile === fileId}
+                                      style={{ flex: 1, padding: "8px", border: `1.5px solid ${GREEN}`, backgroundColor: viewingFile === fileId ? "#c0c9c3" : "transparent", color: viewingFile === fileId ? "#fff" : GREEN, borderRadius: "6px", fontSize: "9px", fontWeight: 700, ...MONO, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: "4px" }}>
+                                      <span className="material-symbols-outlined" style={{ fontSize: "14px" }}>{viewingFile === fileId ? "hourglass_empty" : "visibility"}</span> VIEW
+                                    </button>
+                                    <button onClick={() => handleDownloadFile(m.media_url || m.file_path, m.file_name || m.title, fileId)} disabled={downloadingFile === fileId}
+                                      style={{ flex: 1, padding: "8px", border: `1.5px solid ${GREEN}`, backgroundColor: downloadingFile === fileId ? "#c0c9c3" : GREEN, color: "#fff", borderRadius: "6px", fontSize: "9px", fontWeight: 700, ...MONO, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: "4px" }}>
+                                      <span className="material-symbols-outlined" style={{ fontSize: "14px" }}>{downloadingFile === fileId ? "hourglass_empty" : "download"}</span> DL
+                                    </button>
+                                  </>
+                                ) : (
+                                  <a href={m.media_url} target="_blank" rel="noopener noreferrer"
+                                    style={{ flex: 1, padding: "8px", backgroundColor: GREEN, color: "#fff", borderRadius: "6px", fontSize: "9px", fontWeight: 700, ...MONO, textDecoration: "none", textAlign: "center", display: "flex", alignItems: "center", justifyContent: "center", gap: "4px" }}>
+                                    <span className="material-symbols-outlined" style={{ fontSize: "14px" }}>open_in_new</span> OPEN
+                                  </a>
+                                )}
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </section>
+                )}
+
+                {/* References Section */}
+                {versionData.scholar_references && versionData.scholar_references.length > 0 && (
+                  <section style={{ marginBottom: "48px" }}>
+                    <h3 style={{ ...MONO, fontSize: "11px", color: GREEN, letterSpacing: "0.15em", marginBottom: "16px", paddingBottom: "12px", borderBottom: `2px solid ${GREEN}`, textTransform: "uppercase" }}>References ({versionData.scholar_references.length})</h3>
+                    <div style={{ display: "grid", gap: "12px" }}>
+                      {versionData.scholar_references.map((r: any, i: number) => (
+                        <div key={i} style={{ padding: "16px 20px", backgroundColor: "#fafbf8", borderRadius: "8px", border: `1px solid ${BORDER}`, borderLeft: `4px solid ${GREEN}` }}>
+                          <strong style={{ fontSize: "14px", color: "#191c1b" }}>{r.title}</strong>
+                          {r.citation && <p style={{ margin: "4px 0 0", fontSize: "13px", color: MUTED, fontStyle: "italic" }}>{r.citation}</p>}
+                          {r.url && <p style={{ margin: "8px 0 0", fontSize: "12px", color: GREEN }}>{r.url}</p>}
+                        </div>
+                      ))}
+                    </div>
+                  </section>
+                )}
+
+              </div>
+            ) : (
+              <div style={{ textAlign: "center", padding: "80px 40px", color: "#b3261e" }}>
+                <div style={{ fontSize: "48px", marginBottom: "20px" }}>⚠️</div>
+                <p style={{ fontSize: "16px", fontWeight: 600 }}>Failed to load submission data.</p>
+              </div>
+            )}
           </div>
-        </div>
-        <div style={{ display: "flex", justifyContent: "flex-end", marginTop: "28px" }}>
-          <button onClick={onClose} style={{ padding: "8px 20px", borderRadius: "6px", border: "1.5px solid #0b4335", backgroundColor: "#0b4335", color: "#fff", ...MONO, fontSize: "10px", fontWeight: 700, letterSpacing: "0.1em", cursor: "pointer" }}>CLOSE</button>
         </div>
       </div>
     </div>
@@ -102,39 +468,540 @@ function PreviewModal({ item, onClose }: { item: any; onClose: () => void }) {
 }
 
 function SupersededModal({ item, onClose }: { item: Submission; onClose: () => void }) {
+  const [versionData, setVersionData] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+  const [viewingFile, setViewingFile] = useState<string | null>(null);
+  const [downloadingFile, setDownloadingFile] = useState<string | null>(null);
+
+  useEffect(() => {
+    // ✅ Fetch the superseded version data
+    scholarsApi.getVersionById(item.id)
+      .then((res) => {
+        setVersionData(res.data);
+        setLoading(false);
+      })
+      .catch((err) => {
+        console.error("Failed to load superseded version:", err);
+        setLoading(false);
+      });
+  }, [item.id]);
+
+  const MONO = { fontFamily: "'JetBrains Mono', monospace" };
+  const SERIF = { fontFamily: "'Source Serif 4', serif" };
+  const GREEN = "#0b4335";
+  const BORDER = "rgba(192,201,195,0.4)";
+  const MUTED = "#707974";
+
+  const handleViewFile = async (url: string, fileType: string, id: string) => {
+    setViewingFile(id);
+    try {
+      const response = await fetch(url);
+      const blob = await response.blob();
+      const correctType = fileType?.includes("audio") ? "audio/mpeg" : 
+                        fileType?.includes("video") ? "video/mp4" : 
+                        "application/pdf";
+      const typedBlob = new Blob([blob], { type: correctType });
+      const blobUrl = URL.createObjectURL(typedBlob);
+      window.open(blobUrl, "_blank");
+      setTimeout(() => URL.revokeObjectURL(blobUrl), 60000);
+    } catch (error) {
+      console.error("View failed:", error);
+      window.open(url, "_blank");
+    } finally {
+      setViewingFile(null);
+    }
+  };
+
+  const handleDownloadFile = async (url: string, filename: string, id: string) => {
+    setDownloadingFile(id);
+    try {
+      const response = await fetch(url);
+      const blob = await response.blob();
+      const blobUrl = window.URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = blobUrl;
+      link.download = filename || "file.pdf";
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(blobUrl);
+    } catch (error) {
+      console.error("Download failed:", error);
+      window.open(url, "_blank");
+    } finally {
+      setDownloadingFile(null);
+    }
+  };
+
   return (
-    <div style={{ position: "fixed", inset: 0, zIndex: 200, backgroundColor: "rgba(25,28,27,0.6)", display: "flex", alignItems: "center", justifyContent: "center", backdropFilter: "blur(4px)" }} onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}>
-      <div style={{ backgroundColor: "#fff", borderRadius: "16px", padding: "32px", width: "480px", maxWidth: "calc(100vw - 32px)", boxShadow: "0 20px 60px rgba(0,0,0,0.2)", border: "1px solid rgba(192,201,195,0.3)" }}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "24px" }}>
-          <h2 style={{ ...SERIF, fontSize: "20px", fontWeight: 700, color: "#0b4335", margin: 0 }}>Version Superseded</h2>
-          <button onClick={onClose} style={{ background: "none", border: "none", cursor: "pointer", color: "#707974", fontSize: "20px" }}>✕</button>
+    <div 
+      style={{ 
+        position: "fixed", inset: 0, zIndex: 200, 
+        backgroundColor: "rgba(25,28,27,0.85)", 
+        display: "flex", alignItems: "center", justifyContent: "center", 
+        backdropFilter: "blur(6px)" 
+      }} 
+      onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
+    >
+      <div 
+        style={{ 
+          backgroundColor: "#fff", borderRadius: "20px", 
+          width: "95%", maxWidth: "1200px", height: "90vh", 
+          display: "flex", flexDirection: "row",
+          boxShadow: "0 25px 80px rgba(0,0,0,0.4)", border: `1px solid ${BORDER}`,
+          overflow: "hidden"
+        }}
+      >
+        {/* ─────────────────────────────────────────────
+            LEFT SIDEBAR (Sticky Profile Info)
+        ───────────────────────────────────────────── */}
+        <div style={{ 
+          width: "320px", flexShrink: 0, 
+          borderRight: `1px solid ${BORDER}`, 
+          backgroundColor: "#fafbf8",
+          display: "flex", flexDirection: "column",
+          overflowY: "auto"
+        }}>
+          {/* Portrait */}
+          <div style={{ 
+            width: "100%", aspectRatio: "3/4", 
+            backgroundColor: "#e7e8e6", borderBottom: `1px solid ${BORDER}`
+          }}>
+            {versionData?.image_url ? (
+              <img 
+                src={versionData.image_url} 
+                alt={versionData.canonical_name} 
+                style={{ width: "100%", height: "100%", objectFit: "cover" }}
+              />
+            ) : (
+              <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center", color: "#c0c9c3" }}>
+                <span className="material-symbols-outlined" style={{ fontSize: "80px" }}>account_circle</span>
+              </div>
+            )}
+          </div>
+
+          {/* Sidebar Content */}
+          <div style={{ padding: "24px", flex: 1, display: "flex", flexDirection: "column", gap: "24px" }}>
+            
+            {/* Basic Info */}
+            {versionData?.regions && (
+              <div>
+                <h4 style={{ ...MONO, fontSize: "10px", color: MUTED, letterSpacing: "0.12em", marginBottom: "8px", textTransform: "uppercase" }}>Region</h4>
+                <p style={{ fontSize: "15px", fontWeight: 600, color: "#191c1b", margin: 0 }}>{versionData.regions.name}</p>
+              </div>
+            )}
+            
+            {versionData?.scholar_dates && versionData.scholar_dates.length > 0 && (
+              <div>
+                <h4 style={{ ...MONO, fontSize: "10px", color: MUTED, letterSpacing: "0.12em", marginBottom: "8px", textTransform: "uppercase" }}>Dates</h4>
+                {versionData.scholar_dates.map((d: any, i: number) => (
+                  <div key={i} style={{ fontSize: "14px", color: "#404945", marginBottom: "4px" }}>
+                    <span style={{ textTransform: "capitalize", fontWeight: 600 }}>{d.date_type}</span>: {d.year} ({d.calendar})
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {versionData?.scholar_aliases && versionData.scholar_aliases.length > 0 && (
+              <div>
+                <h4 style={{ ...MONO, fontSize: "10px", color: MUTED, letterSpacing: "0.12em", marginBottom: "8px", textTransform: "uppercase" }}>Also Known As</h4>
+                <div style={{ display: "flex", flexWrap: "wrap", gap: "6px" }}>
+                  {versionData.scholar_aliases.map((alias: any, i: number) => (
+                    <span key={i} style={{ 
+                      padding: "4px 10px", backgroundColor: MUTED, color: "#fff", 
+                      borderRadius: "12px", fontSize: "11px", fontWeight: 600
+                    }}>{alias.alias_name}</span>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Status Badge (Pushed to bottom) */}
+            <div style={{ marginTop: "auto", paddingTop: "24px", borderTop: `1px solid ${BORDER}` }}>
+              <div style={{ 
+                padding: "16px", backgroundColor: "rgba(112,121,116,0.08)", 
+                borderRadius: "12px", border: "1px solid rgba(112,121,116,0.2)",
+                display: "flex", alignItems: "center", gap: "12px"
+              }}>
+                <div style={{ 
+                  width: "36px", height: "36px", borderRadius: "50%", 
+                  backgroundColor: "rgba(112,121,116,0.15)", 
+                  display: "flex", alignItems: "center", justifyContent: "center", fontSize: "20px"
+                }}>⚠️</div>
+                <div>
+                  <p style={{ ...MONO, fontSize: "9px", fontWeight: 700, color: MUTED, margin: 0, letterSpacing: "0.1em" }}>SUPERSEDED</p>
+                  <p style={{ fontSize: "11px", color: MUTED, margin: "4px 0 0", lineHeight: 1.4 }}>This version was replaced by a newer approved version.</p>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
-        <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+
+        {/* ────────────────────────────────────────────
+            RIGHT MAIN AREA (Scrollable Content)
+        ───────────────────────────────────────────── */}
+        <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}>
+          
+          {/* Header */}
+          <div style={{ 
+            padding: "24px 32px", 
+            borderBottom: `1px solid ${BORDER}`, 
+            display: "flex", justifyContent: "space-between", alignItems: "center",
+            backgroundColor: "#fff"
+          }}>
+            <div>
+              <h2 style={{ ...SERIF, fontSize: "28px", fontWeight: 700, color: MUTED, margin: 0 }}>
+                {versionData?.canonical_name || item.scholarName || "Untitled Submission"}
+              </h2>
+              <p style={{ ...MONO, fontSize: "11px", color: MUTED, marginTop: "6px", letterSpacing: "0.05em" }}>
+                {item.kind === 'new' ? 'New Scholar Submission' : 'Edit Proposal'} • {item.lang.toUpperCase()} • Submitted {item.date}
+              </p>
+            </div>
+            <div style={{ display: "flex", gap: "8px" }}>
+              <button 
+                onClick={() => { onClose(); window.location.href = `/scholars/${item.scholarId}?lang=${item.lang}`; }}
+                style={{ 
+                  padding: "8px 16px", borderRadius: "6px", border: `1.5px solid ${GREEN}`, 
+                  backgroundColor: GREEN, color: "#fff", ...MONO, fontSize: "10px", 
+                  fontWeight: 700, letterSpacing: "0.1em", cursor: "pointer",
+                  display: "flex", alignItems: "center", gap: "6px"
+                }}
+              >
+                <Icon name="check_circle" size={14} /> VIEW LIVE VERSION
+              </button>
+              <button 
+                onClick={onClose} 
+                style={{ 
+                  background: "none", border: "none", cursor: "pointer", 
+                  color: MUTED, fontSize: "24px", padding: "8px", borderRadius: "50%",
+                  display: "flex", alignItems: "center", justifyContent: "center", transition: "all 0.2s"
+                }}
+                onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.backgroundColor = "rgba(179,38,30,0.1)"; (e.currentTarget as HTMLButtonElement).style.color = "#b3261e"; }}
+                onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.backgroundColor = "transparent"; (e.currentTarget as HTMLButtonElement).style.color = MUTED; }}
+              >
+                <span className="material-symbols-outlined">close</span>
+              </button>
+            </div>
+          </div>
+
+          {/* Scrollable Content */}
+          <div style={{ flex: 1, overflowY: "auto", padding: "32px" }}>
+            {loading ? (
+              <div style={{ textAlign: "center", padding: "80px 40px", color: MUTED }}>
+                <div style={{ fontSize: "48px", marginBottom: "20px" }}></div>
+                <p style={{ fontSize: "16px", fontWeight: 600 }}>Loading superseded version...</p>
+              </div>
+            ) : versionData ? (
+              <div style={{ maxWidth: "800px", margin: "0 auto" }}>
+                
+                {/* Biography Section */}
+                {versionData.biography && (
+                  <section style={{ marginBottom: "48px" }}>
+                    <h3 style={{ 
+                      ...MONO, fontSize: "11px", color: MUTED, letterSpacing: "0.15em", 
+                      marginBottom: "16px", paddingBottom: "12px", 
+                      borderBottom: `2px solid ${MUTED}`, textTransform: "uppercase" 
+                    }}>Biography (Archived)</h3>
+                    <div 
+                      style={{ 
+                        fontSize: "15px", lineHeight: "1.8", color: "#191c1b", 
+                        fontFamily: SERIF.fontFamily,
+                        padding: "24px", backgroundColor: "rgba(112,121,116,0.04)",
+                        borderRadius: "12px", border: `1px solid ${BORDER}`,
+                        opacity: 0.8
+                      }}
+                      dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(versionData.biography) }} 
+                    />
+                  </section>
+                )}
+
+                {/* Works Section */}
+                {versionData.scholar_works && versionData.scholar_works.length > 0 && (
+                  <section style={{ marginBottom: "48px" }}>
+                    <h3 style={{ 
+                      ...MONO, fontSize: "11px", color: MUTED, letterSpacing: "0.15em", 
+                      marginBottom: "16px", paddingBottom: "12px", 
+                      borderBottom: `2px solid ${MUTED}`, textTransform: "uppercase" 
+                    }}>Works & Publications ({versionData.scholar_works.length})</h3>
+                    <div style={{ border: `1px solid ${BORDER}`, borderRadius: "12px", overflow: "hidden", backgroundColor: "#fff", opacity: 0.8 }}>
+                      <table style={{ width: "100%", borderCollapse: "collapse" }}>
+                        <thead>
+                          <tr style={{ backgroundColor: "#f3f4f1", borderBottom: "1.5px solid rgba(192,201,195,0.4)" }}>
+                            <th style={{ ...MONO, padding: "12px 16px", textAlign: "left", fontSize: "9px", color: MUTED, letterSpacing: "0.1em", fontWeight: 700 }}>TITLE</th>
+                            <th style={{ ...MONO, padding: "12px 16px", textAlign: "left", fontSize: "9px", color: MUTED, letterSpacing: "0.1em", fontWeight: 700, width: "80px" }}>YEAR</th>
+                            <th style={{ ...MONO, padding: "12px 16px", textAlign: "left", fontSize: "9px", color: MUTED, letterSpacing: "0.1em", fontWeight: 700, width: "120px" }}>FORMAT</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {versionData.scholar_works.map((w: any, i: number) => (
+                            <tr key={i} style={{ borderBottom: i === versionData.scholar_works.length - 1 ? "none" : "1px solid #f0f1ee" }}>
+                              <td style={{ ...SERIF, padding: "14px 16px", fontSize: "14px", fontWeight: 700, fontStyle: "italic", color: "#191c1b" }}>
+                                {w.title}
+                              </td>
+                              <td style={{ padding: "14px 16px", fontSize: "13px", color: MUTED }}>{w.year || "—"}</td>
+                              <td style={{ padding: "14px 16px" }}>
+                                <span style={{ ...MONO, fontSize: "9px", fontWeight: 700, padding: "3px 10px", borderRadius: "4px", backgroundColor: "rgba(112,121,116,0.08)", color: MUTED }}>
+                                  {w.format}
+                                </span>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </section>
+                )}
+
+                {/* Media Section */}
+                {versionData.media && versionData.media.length > 0 && (
+                  <section style={{ marginBottom: "48px" }}>
+                    <h3 style={{ 
+                      ...MONO, fontSize: "11px", color: MUTED, letterSpacing: "0.15em", 
+                      marginBottom: "16px", paddingBottom: "12px", 
+                      borderBottom: `2px solid ${MUTED}`, textTransform: "uppercase" 
+                    }}>Media Library ({versionData.media.length})</h3>
+                    <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(240px, 1fr))", gap: "16px" }}>
+                      {versionData.media.map((m: any, i: number) => {
+                        const mediaType = m.file_type || "pdf";
+                        const icon = mediaType.includes("audio") ? "graphic_eq" : mediaType.includes("video") ? "movie" : "article";
+                        
+                        return (
+                          <div key={i} style={{ padding: "20px", backgroundColor: "#fafbf8", borderRadius: "12px", border: `1px solid ${BORDER}`, display: "flex", flexDirection: "column", gap: "12px", opacity: 0.8 }}>
+                            <span className="material-symbols-outlined" style={{ fontSize: "32px", color: MUTED }}>{icon}</span>
+                            <div>
+                              <p style={{ margin: "0 0 4px", fontWeight: 700, fontSize: "15px", color: "#191c1b" }}>{m.title}</p>
+                              {m.description && <p style={{ margin: "0 0 8px", fontSize: "13px", color: MUTED, lineHeight: "1.5" }}>{m.description}</p>}
+                              <p style={{ margin: 0, fontSize: "11px", color: MUTED, ...MONO }}>{m.year && <span>{m.year} • </span>}{mediaType.toUpperCase()}</p>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </section>
+                )}
+
+                {/* References Section */}
+                {versionData.scholar_references && versionData.scholar_references.length > 0 && (
+                  <section style={{ marginBottom: "48px" }}>
+                    <h3 style={{ ...MONO, fontSize: "11px", color: MUTED, letterSpacing: "0.15em", marginBottom: "16px", paddingBottom: "12px", borderBottom: `2px solid ${MUTED}`, textTransform: "uppercase" }}>References ({versionData.scholar_references.length})</h3>
+                    <div style={{ display: "grid", gap: "12px" }}>
+                      {versionData.scholar_references.map((r: any, i: number) => (
+                        <div key={i} style={{ padding: "16px 20px", backgroundColor: "#fafbf8", borderRadius: "8px", border: `1px solid ${BORDER}`, borderLeft: `4px solid ${MUTED}`, opacity: 0.8 }}>
+                          <strong style={{ fontSize: "14px", color: "#191c1b" }}>{r.title}</strong>
+                          {r.citation && <p style={{ margin: "4px 0 0", fontSize: "13px", color: MUTED, fontStyle: "italic" }}>{r.citation}</p>}
+                          {r.url && <p style={{ margin: "8px 0 0", fontSize: "12px", color: MUTED }}>{r.url}</p>}
+                        </div>
+                      ))}
+                    </div>
+                  </section>
+                )}
+
+              </div>
+            ) : (
+              <div style={{ textAlign: "center", padding: "80px 40px", color: "#b3261e" }}>
+                <div style={{ fontSize: "48px", marginBottom: "20px" }}>⚠️</div>
+                <p style={{ fontSize: "16px", fontWeight: 600 }}>Failed to load superseded version.</p>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ✅ NEW: Lightweight modal for a single Work/Media row.
+// No API call — it uses the file fields that mySubmissions() already
+// returned. Shows View/Download when a file exists, and only shows
+// the "View Live Page" link when THIS item's own status is APPROVED
+// (independent of whatever the parent scholar version's status is).
+function FileDetailModal({ item, onClose }: { item: TableRow; onClose: () => void }) {
+  const [viewingFile, setViewingFile] = useState(false);
+  const [downloadingFile, setDownloadingFile] = useState(false);
+
+  const hasFile = !!(item.mediaUrl || item.filePath);
+  const isUpload = item.sourceType === "upload";
+  const fileUrl = item.mediaUrl || item.filePath || "";
+
+  const statusCopy: Record<Status, { title: string; desc: string; bg: string; color: string; border: string }> = {
+    DRAFT: { title: "DRAFT", desc: "This item hasn't been submitted for review yet.", bg: "rgba(112,121,116,0.08)", color: MUTED, border: "rgba(112,121,116,0.2)" },
+    PENDING: { title: "WAITING FOR REVIEW", desc: "An admin is currently reviewing this item.", bg: "rgba(115,92,0,0.05)", color: "#735c00", border: "rgba(115,92,0,0.2)" },
+    APPROVED: { title: "APPROVED", desc: "This item is live on the scholar's page.", bg: GREEN_LIGHT, color: GREEN, border: GREEN_BORDER },
+    REJECTED: { title: "REJECTED", desc: "This item was not approved.", bg: "rgba(179,38,30,0.06)", color: RED, border: "rgba(179,38,30,0.18)" },
+    SUPERSEDED: { title: "SUPERSEDED", desc: "This item was replaced by a newer version.", bg: "rgba(112,121,116,0.08)", color: MUTED, border: "rgba(112,121,116,0.2)" },
+  };
+  const sc = statusCopy[item.status];
+
+  const handleViewFile = async () => {
+    setViewingFile(true);
+    try {
+      const response = await fetch(fileUrl);
+      const blob = await response.blob();
+      const correctType = item.fileType?.includes("audio") ? "audio/mpeg" :
+                        item.fileType?.includes("video") ? "video/mp4" :
+                        "application/pdf";
+      const typedBlob = new Blob([blob], { type: correctType });
+      const blobUrl = URL.createObjectURL(typedBlob);
+      window.open(blobUrl, "_blank");
+      setTimeout(() => URL.revokeObjectURL(blobUrl), 60000);
+    } catch (error) {
+      console.error("View failed:", error);
+      window.open(fileUrl, "_blank");
+    } finally {
+      setViewingFile(false);
+    }
+  };
+
+  const handleDownloadFile = async () => {
+    setDownloadingFile(true);
+    try {
+      const response = await fetch(fileUrl);
+      const blob = await response.blob();
+      const blobUrl = window.URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = blobUrl;
+      link.download = item.fileName || item.primary || "file.pdf";
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(blobUrl);
+    } catch (error) {
+      console.error("Download failed:", error);
+      window.open(fileUrl, "_blank");
+    } finally {
+      setDownloadingFile(false);
+    }
+  };
+
+  return (
+    <div
+      style={{
+        position: "fixed", inset: 0, zIndex: 200,
+        backgroundColor: "rgba(25,28,27,0.85)",
+        display: "flex", alignItems: "center", justifyContent: "center",
+        backdropFilter: "blur(6px)"
+      }}
+      onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
+    >
+      <div
+        style={{
+          backgroundColor: "#fff", borderRadius: "20px",
+          width: "95%", maxWidth: "560px",
+          boxShadow: "0 25px 80px rgba(0,0,0,0.4)", border: `1px solid ${BORDER}`,
+          overflow: "hidden"
+        }}
+      >
+        {/* Header */}
+        <div style={{
+          padding: "24px 28px",
+          borderBottom: `1px solid ${BORDER}`,
+          display: "flex", justifyContent: "space-between", alignItems: "flex-start",
+        }}>
           <div>
-            <p style={{ ...MONO, fontSize: "9px", color: "#707974", letterSpacing: "0.1em", marginBottom: "4px" }}>SCHOLAR NAME</p>
-            <p style={{ fontSize: "15px", fontWeight: 700, color: "#191c1b", margin: 0 }}>{item.scholarName}</p>
+            <h2 style={{ ...SERIF, fontSize: "22px", fontWeight: 700, color: GREEN, margin: 0 }}>
+              {item.primary}
+            </h2>
+            <p style={{ ...MONO, fontSize: "11px", color: MUTED, marginTop: "6px", letterSpacing: "0.05em" }}>
+              {item.secondary} {item.tertiary ? `• ${item.tertiary}` : ""} • {item.date}
+            </p>
           </div>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
-            <div>
-              <p style={{ ...MONO, fontSize: "9px", color: "#707974", letterSpacing: "0.1em", marginBottom: "4px" }}>LANGUAGE</p>
-              <p style={{ fontSize: "13px", color: "#404945", margin: 0 }}>{item.lang}</p>
-            </div>
-            <div>
-              <p style={{ ...MONO, fontSize: "9px", color: "#707974", letterSpacing: "0.1em", marginBottom: "4px" }}>DATE</p>
-              <p style={{ fontSize: "13px", color: "#404945", margin: 0 }}>{item.date}</p>
-            </div>
-          </div>
-          <div style={{ padding: "16px", backgroundColor: "rgba(112,121,116,0.08)", border: "1px solid rgba(112,121,116,0.2)", borderRadius: "8px", display: "flex", alignItems: "center", gap: "12px" }}>
-            <span style={{ fontSize: "20px" }}>⚠️</span>
-            <div>
-              <p style={{ ...MONO, fontSize: "10px", fontWeight: 700, color: "#707974", margin: 0, letterSpacing: "0.05em" }}>SUPERSEDED BY NEWER VERSION</p>
-              <p style={{ fontSize: "12px", color: "#707974", margin: "4px 0 0", lineHeight: 1.4 }}>This version has been replaced by a newer, approved version. It is kept here for your historical records.</p>
-            </div>
-          </div>
+          <button
+            onClick={onClose}
+            style={{
+              background: "none", border: "none", cursor: "pointer",
+              color: MUTED, fontSize: "22px", padding: "6px", borderRadius: "50%",
+              display: "flex", alignItems: "center", justifyContent: "center",
+            }}
+          >
+            <span className="material-symbols-outlined">close</span>
+          </button>
         </div>
-        <div style={{ display: "flex", justifyContent: "flex-end", gap: "10px", marginTop: "28px" }}>
-          <button onClick={onClose} style={{ padding: "8px 20px", borderRadius: "6px", border: "1.5px solid #c0c9c3", backgroundColor: "transparent", color: "#707974", ...MONO, fontSize: "10px", fontWeight: 700, letterSpacing: "0.1em", cursor: "pointer" }}>CLOSE</button>
-          <button onClick={() => { onClose(); window.location.href = `/scholars/${item.scholarId}?lang=${item.lang}`; }} style={{ padding: "8px 20px", borderRadius: "6px", border: "1.5px solid #0b4335", backgroundColor: "#0b4335", color: "#fff", ...MONO, fontSize: "10px", fontWeight: 700, letterSpacing: "0.1em", cursor: "pointer" }}>VIEW LIVE VERSION</button>
+
+        {/* Body */}
+        <div style={{ padding: "28px" }}>
+          {item.description && (
+            <p style={{ fontSize: "13px", color: "#404945", lineHeight: 1.6, margin: "0 0 20px" }}>
+              {item.description}
+            </p>
+          )}
+
+          {/* Status banner */}
+          <div style={{
+            padding: "14px 16px", backgroundColor: sc.bg,
+            borderRadius: "10px", border: `1px solid ${sc.border}`,
+            marginBottom: "20px",
+          }}>
+            <p style={{ ...MONO, fontSize: "9px", fontWeight: 700, color: sc.color, margin: 0, letterSpacing: "0.1em" }}>{sc.title}</p>
+            <p style={{ fontSize: "11px", color: sc.color, margin: "4px 0 0", lineHeight: 1.4 }}>{sc.desc}</p>
+          </div>
+
+          {/* File actions */}
+          {hasFile ? (
+            <div style={{ display: "flex", gap: "10px" }}>
+              {isUpload ? (
+                <>
+                  <button
+                    onClick={handleViewFile}
+                    disabled={viewingFile}
+                    style={{
+                      flex: 1, padding: "10px", border: `1.5px solid ${GREEN}`,
+                      backgroundColor: viewingFile ? "#c0c9c3" : "transparent",
+                      color: viewingFile ? "#fff" : GREEN, borderRadius: "6px",
+                      fontSize: "10px", fontWeight: 700, ...MONO, cursor: "pointer",
+                      display: "flex", alignItems: "center", justifyContent: "center", gap: "6px",
+                    }}
+                  >
+                    <span className="material-symbols-outlined" style={{ fontSize: "16px" }}>{viewingFile ? "hourglass_empty" : "visibility"}</span>
+                    VIEW FILE
+                  </button>
+                  <button
+                    onClick={handleDownloadFile}
+                    disabled={downloadingFile}
+                    style={{
+                      flex: 1, padding: "10px", border: `1.5px solid ${GREEN}`,
+                      backgroundColor: downloadingFile ? "#c0c9c3" : GREEN, color: "#fff",
+                      borderRadius: "6px", fontSize: "10px", fontWeight: 700, ...MONO, cursor: "pointer",
+                      display: "flex", alignItems: "center", justifyContent: "center", gap: "6px",
+                    }}
+                  >
+                    <span className="material-symbols-outlined" style={{ fontSize: "16px" }}>{downloadingFile ? "hourglass_empty" : "download"}</span>
+                    DOWNLOAD
+                  </button>
+                </>
+              ) : (
+                <a
+                  href={fileUrl} target="_blank" rel="noopener noreferrer"
+                  style={{
+                    flex: 1, padding: "10px", backgroundColor: GREEN, color: "#fff",
+                    borderRadius: "6px", fontSize: "10px", fontWeight: 700, ...MONO,
+                    textDecoration: "none", textAlign: "center",
+                    display: "flex", alignItems: "center", justifyContent: "center", gap: "6px",
+                  }}
+                >
+                  <span className="material-symbols-outlined" style={{ fontSize: "16px" }}>open_in_new</span>
+                  OPEN LINK
+                </a>
+              )}
+            </div>
+          ) : (
+            <p style={{ fontSize: "13px", color: "#c0c9c3", fontStyle: "italic", margin: 0 }}>No file attached.</p>
+          )}
+
+          {/* Live link — only when THIS item is approved */}
+          {item.status === "APPROVED" && item.link && (
+            <button
+              onClick={() => { onClose(); window.location.href = item.link as string; }}
+              style={{
+                marginTop: "14px", width: "100%", padding: "10px",
+                border: `1.5px solid ${GREEN}`, backgroundColor: "transparent", color: GREEN,
+                borderRadius: "6px", fontSize: "10px", fontWeight: 700, ...MONO, cursor: "pointer",
+                display: "flex", alignItems: "center", justifyContent: "center", gap: "6px",
+              }}
+            >
+              <span className="material-symbols-outlined" style={{ fontSize: "16px" }}>check_circle</span>
+              VIEW ON SCHOLAR PAGE
+            </button>
+          )}
         </div>
       </div>
     </div>
@@ -297,7 +1164,7 @@ function StatusTable({
 
 function SubmissionsTable({ rows, t, isRTL, onAction }: {
   rows: Submission[]; t: (k: string) => string; isRTL: boolean;
-  onAction: (action: "continue" | "delete" | "view" | "history" | "resubmit", row: Submission) => void;
+  onAction: (action: "continue" | "delete" | "view" | "history" | "resubmit" | "editRejected" | "deleteRejected", row: Submission) => void;
 }) {
   if (rows.length === 0) return <EmptyRow text={t("dashboard.empty.submissions")} />;
 
@@ -335,20 +1202,24 @@ function SubmissionsTable({ rows, t, isRTL, onAction }: {
               <td style={td}><StatusBadge status={r.status} t={t} /></td>
               <td style={{ ...td, textAlign: isRTL ? "left" : "right" }}>
                 <div style={{ display: "inline-flex", gap: "6px", flexWrap: "wrap", justifyContent: isRTL ? "flex-start" : "flex-end" }}>
-                  {(r.status === "DRAFT" || r.status === "REJECTED") && (
+                  {r.status === "DRAFT" && (
                     <>
                       <HoverBtn variant="primary" onClick={() => onAction("continue", r)}>{t("dashboard.actions.continue")}</HoverBtn>
                       <HoverBtn danger onClick={() => onAction("delete", r)}>{t("dashboard.actions.delete")}</HoverBtn>
+                    </>
+                  )}
+                  {/* ✅ NEW: Dedicated buttons for REJECTED */}
+                  {r.status === "REJECTED" && (
+                    <>
+                      <HoverBtn variant="primary" onClick={() => onAction("editRejected", r)}>Edit</HoverBtn>
+                      <HoverBtn danger onClick={() => onAction("deleteRejected", r)}>{t("dashboard.actions.delete")}</HoverBtn>
                     </>
                   )}
                   {r.status === "PENDING" && (
                     <HoverBtn onClick={() => onAction("view", r)}>{t("dashboard.actions.view")}</HoverBtn>
                   )}
                   {r.status === "APPROVED" && (
-                    <>
-                      <HoverBtn onClick={() => onAction("view", r)}>{t("dashboard.actions.view")}</HoverBtn>
-                      <HoverBtn onClick={() => onAction("history", r)}>{t("dashboard.actions.history")}</HoverBtn>
-                    </>
+                    <HoverBtn onClick={() => onAction("view", r)}>{t("dashboard.actions.view")}</HoverBtn>
                   )}
                   {r.status === "SUPERSEDED" && (
                     <HoverBtn onClick={() => onAction("view", r)}>{t("dashboard.actions.view")}</HoverBtn>
@@ -387,10 +1258,13 @@ export default function DashboardPage() {
   // ✅ MODAL STATES
   const [previewItem, setPreviewItem] = useState<any>(null);
   const [supersededItem, setSupersededItem] = useState<Submission | null>(null);
+  const [fileItem, setFileItem] = useState<TableRow | null>(null); // ✅ NEW: works/media detail modal
 
   // ✅ FETCH DATA FROM BACKEND
   useEffect(() => {
-    if (isContributor && (tab === "submissions" || tab === "media" || tab === "works" || tab === "overview")) {
+    // ✅ FIX: fetch for every user now, not just contributors — a normal
+    // user can submit via the Contribute button and should see their own data.
+    if (tab === "submissions" || tab === "media" || tab === "works" || tab === "overview") {
       const fetchData = async () => {
         setIsLoadingData(true);
         try {
@@ -414,31 +1288,61 @@ export default function DashboardPage() {
             };
           });
 
-          const mappedWorks: TableRow[] = data.works.map((w: any) => {
-            const langCode = w.scholar_versions?.languages?.code || "en";
-            return {
-              primary: w.title,
-              secondary: w.scholar_versions?.canonical_name || "Unknown",
-              tertiary: w.format,
-              date: new Date(w.created_at || Date.now()).toLocaleDateString(),
-              status: w.status.toUpperCase() as Status,
-              scholarId: w.scholar_versions?.scholar_id,
-              link: `/scholars/${w.scholar_versions?.scholar_id}?lang=${langCode}&focus=work-${w.work_id}`,
-            };
-          });
+ const mappedWorks: TableRow[] = data.works.map((w: any) => {
+  // ✅ scholar_versions IS the version object directly
+  const version = w.scholar_versions;
+  
+  // ✅ Map language_id to language code
+  const langCode = version?.language_id === 1 ? 'en' : 
+                   version?.language_id === 3 ? 'ar' : 
+                   version?.language_id === 2 ? 'fr' : 'en';
+  
+  return {
+    id: w.work_id, // ✅ FIX: item's own id, used for its own status/file — not the version's
+    primary: w.title,
+    secondary: version?.canonical_name || "Unknown",
+    tertiary: w.format,
+    date: new Date(w.created_at || Date.now()).toLocaleDateString(),
+    status: w.status.toUpperCase() as Status,
+    scholarId: version?.scholar_id, // ✅ Use scholar_id from version
+    link: `/scholars/${version?.scholar_id}?lang=${langCode}&focus=work-${w.work_id}`,
+    // ✅ FIX: carry the file fields already returned by mySubmissions()
+    mediaUrl: w.media_url,
+    filePath: w.file_path,
+    fileType: w.file_type,
+    fileName: w.file_name,
+    sourceType: w.source_type,
+    description: w.description,
+  };
+});
 
-          const mappedMedia: TableRow[] = data.media.map((m: any) => {
-            const langCode = m.scholar_versions?.languages?.code || "en";
-            return {
-              primary: m.title || m.file_name || "Untitled",
-              secondary: m.scholar_versions?.canonical_name || "Unknown",
-              tertiary: m.file_type || "Media",
-              date: new Date(m.uploaded_at || m.created_at || Date.now()).toLocaleDateString(),
-              status: m.status.toUpperCase() as Status,
-              scholarId: m.scholar_versions?.scholar_id,
-              link: `/scholars/${m.scholar_versions?.scholar_id}?lang=${langCode}&focus=media-${m.media_id}`,
-            };
-          });
+const mappedMedia: TableRow[] = data.media.map((m: any) => {
+  // ✅ scholar_versions IS the version object directly
+  const version = m.scholar_versions;
+  
+  // ✅ Map language_id to language code
+  const langCode = version?.language_id === 1 ? 'en' : 
+                   version?.language_id === 3 ? 'ar' : 
+                   version?.language_id === 2 ? 'fr' : 'en';
+  
+  return {
+    id: m.media_id, // ✅ FIX: item's own id
+    primary: m.title || m.file_name || "Untitled",
+    secondary: version?.canonical_name || "Unknown",
+    tertiary: m.file_type || "Media",
+    date: new Date(m.uploaded_at || m.created_at || Date.now()).toLocaleDateString(),
+    status: m.status.toUpperCase() as Status,
+    scholarId: version?.scholar_id, // ✅ Use scholar_id from version
+    link: `/scholars/${version?.scholar_id}?lang=${langCode}&focus=media-${m.media_id}`,
+    // ✅ FIX: carry the file fields already returned by mySubmissions()
+    mediaUrl: m.media_url,
+    filePath: m.file_path,
+    fileType: m.file_type,
+    fileName: m.file_name,
+    sourceType: m.source_type,
+    description: m.description,
+  };
+});
 
           setSubmissions(mappedSubmissions);
           setWorks(mappedWorks);
@@ -452,7 +1356,7 @@ export default function DashboardPage() {
 
       fetchData();
     }
-  }, [isContributor, tab]);
+  }, [tab]);
 
   // ✅ FILTER & COUNT LOGIC
   const filteredSubmissions = useMemo(() => {
@@ -465,23 +1369,19 @@ export default function DashboardPage() {
     submissions.forEach((s) => { if (c[s.status] !== undefined) c[s.status]++; });
     return c;
   }, [submissions]);
-    const handleSubmissionAction = async (action: "continue" | "delete" | "view" | "history" | "resubmit", row: Submission) => {
+    const handleSubmissionAction = async (action: "continue" | "delete" | "view" | "history" | "resubmit" | "editRejected" | "deleteRejected", row: Submission) => {
     
     // ✅ DETERMINE THE EXACT ROUTE BASED ON YOUR 3 CASES (Using UPPERCASE lang)
     let targetRoute = "";
     const langUpper = row.lang.toUpperCase(); // ✅ FORCE UPPERCASE TO MATCH ROUTE TYPE
     
     if (row.kind === "new" && !row.scholarId) {
-      // CASE 1: Brand New Scholar
       targetRoute = `/scholars/submit/${langUpper}?draftId=${row.id}`;
     } else if (row.kind === "new" && row.scholarId) {
-      // CASE 2: Creating a New Version for an Existing Scholar
       targetRoute = `/scholars/${row.scholarId}/submit/${langUpper}?draftId=${row.id}`;
     } else if (row.kind === "edit") {
-      // CASE 3: Editing an Existing Version
       targetRoute = `/scholars/${row.scholarId}/edit/${langUpper}?draftId=${row.id}`;
     } else {
-      // Fallback
       targetRoute = `/scholars/submit/${langUpper}?draftId=${row.id}`;
     }
 
@@ -489,13 +1389,20 @@ export default function DashboardPage() {
     if (action === "continue" || action === "resubmit") {
       navigate(targetRoute);
     } 
+    else if (action === "editRejected") {
+      // ✅ Handle REJECTED Edit: Routes to submit/edit with rejectedId
+      if (row.kind === "new") {
+        navigate(`/scholars/submit/${langUpper}?rejectedId=${row.id}`);
+      } else {
+        navigate(`/scholars/${row.scholarId}/edit/${langUpper}?rejectedId=${row.id}`);
+      }
+    }
     else if (action === "delete") {
       if (window.confirm(`Are you sure you want to permanently delete this draft?`)) {
         try {
           await scholarsApi.deleteDraft(row.id);
           setSubmissions((prev) => prev.filter((s) => s.id !== row.id));
           
-          // ✅ Clear localStorage so the "ghost" draft doesn't reappear!
           const langLower = row.lang.toLowerCase();
           localStorage.removeItem(`oulamauna_edit_draft_${row.scholarId}_${langLower}`);
           localStorage.removeItem(`oulamauna_scholar_draft_v_${row.id}`);
@@ -507,6 +1414,19 @@ export default function DashboardPage() {
           alert("Failed to delete draft. Please try again.");
         }
       }
+    }
+    else if (action === "deleteRejected") {
+      // ✅ Handle REJECTED Delete: Uses the new dedicated backend endpoint
+      if (window.confirm(`Are you sure you want to permanently delete this rejected submission?`)) {
+        try {
+          await scholarsApi.deleteRejected(row.id);
+          setSubmissions((prev) => prev.filter((s) => s.id !== row.id));
+          alert("Rejected submission deleted successfully!"); 
+        } catch (error) {
+          console.error("Failed to delete rejected submission:", error);
+          alert("Failed to delete. Please try again.");
+        }
+      }
     } 
     else if (action === "view") {
       if (row.status === "APPROVED") {
@@ -515,40 +1435,38 @@ export default function DashboardPage() {
         setPreviewItem(row);
       } else if (row.status === "SUPERSEDED") {
         setSupersededItem(row);
-      } else if (row.status === "REJECTED" || row.status === "DRAFT") {
-        navigate(targetRoute); // ✅ Goes to the exact correct route with UPPERCASE lang
+      } else if (row.status === "DRAFT") {
+        navigate(targetRoute); 
       }
+      // Note: REJECTED is now handled by editRejected, so it's removed from here
     } 
     else if (action === "history") {
       navigate(`/scholars/${row.scholarId}/history`);
     }
   };
+
+  // ✅ FIX: works/media rows now always open FileDetailModal, which
+  // reads the item's OWN status and file fields — no more depending
+  // on getVersionById / the parent scholar version's status.
+  // REJECTED still routes straight to edit, since there's nothing to "view" there.
   const handleViewItem = (item: TableRow) => {
-    if (item.status === "APPROVED") {
-      if (item.link) navigate(item.link);
-    } else if (item.status === "PENDING") {
-      setPreviewItem(item);
-    } else if (item.status === "REJECTED") {
+    if (item.status === "REJECTED") {
       if (item.scholarId) navigate(`/scholars/edit/${item.scholarId}`);
+      return;
     }
+    setFileItem(item);
   };
 
-  const userTabs: { id: UserTab; label: string; icon: string }[] = [
-    { id: "overview", label: t("dashboard.tabs.overview"), icon: "grid_view" },
-    { id: "notifications", label: t("dashboard.tabs.notifications"), icon: "notifications" },
-    { id: "watchlist", label: t("dashboard.tabs.watchlist"), icon: "bookmark" },
-  ];
-  
-  const contributorTabs: { id: ContributorTab; label: string; icon: string }[] = [
+  // ✅ FIX: same tab set for everyone now — normal users see
+  // Submissions/Media/Works too, they just start out empty.
+  const tabs: { id: ContributorTab; label: string; icon: string }[] = [
     { id: "overview", label: t("dashboard.tabs.overview"), icon: "grid_view" },
     { id: "submissions", label: t("dashboard.tabs.submissions"), icon: "outbox" },
     { id: "media", label: t("dashboard.tabs.media"), icon: "perm_media" },
     { id: "works", label: t("dashboard.tabs.works"), icon: "menu_book" },
     { id: "notifications", label: t("dashboard.tabs.notifications"), icon: "notifications" },
-    { id: "watchlist", label: t("dashboard.tabs.watchlist"), icon: "bookmark" },
+   
   ];
-  
-  const tabs = isContributor ? contributorTabs : userTabs;
   const cardStyle: React.CSSProperties = { padding: "24px 28px" };
 
   return (
@@ -579,6 +1497,7 @@ export default function DashboardPage() {
       {/* ✅ MODALS */}
       {previewItem && <PreviewModal item={previewItem} onClose={() => setPreviewItem(null)} />}
       {supersededItem && <SupersededModal item={supersededItem} onClose={() => setSupersededItem(null)} />}
+      {fileItem && <FileDetailModal item={fileItem} onClose={() => setFileItem(null)} />}
 
       <div style={{ maxWidth: "1150px", margin: "0 auto", padding: "24px 32px 40px", display: "flex", gap: "32px" }}>
         <ProfileSidebar role={isContributor ? "contributor" : "user"} active="dashboard" />
@@ -598,6 +1517,26 @@ export default function DashboardPage() {
             </p>
           </div>
 
+          {/* ✅ FIX: persistent Contribute banner — shown on every tab, not just Overview */}
+          {!isContributor && (
+            <HoverCard style={{
+              padding: "14px 20px", backgroundColor: GREEN, border: "none",
+              display: "flex", alignItems: "center", justifyContent: "space-between",
+              gap: "16px", flexWrap: "wrap",
+            }}>
+              <div>
+                <p style={{ ...SERIF, fontSize: "15px", fontWeight: 700, color: "#fff", margin: 0 }}>{t("dashboard.cta.title")}</p>
+                <p style={{ fontSize: "12px", color: "rgba(255,255,255,0.85)", margin: "2px 0 0" }}>{t("dashboard.cta.desc")}</p>
+              </div>
+              <button
+                onClick={() => navigate("/scholars/submit/")}
+                style={{ ...BTN_PRIMARY, backgroundColor: "#fff", color: GREEN, border: "1.5px solid #fff", whiteSpace: "nowrap" }}
+              >
+                <Icon name="add_circle" size={14} /> {t("dashboard.cta.button")}
+              </button>
+            </HoverCard>
+          )}
+
           {/* Tabs */}
           <div className="op-tabs">
             {tabs.map((tb) => (
@@ -610,80 +1549,47 @@ export default function DashboardPage() {
           </div>
 
           {/* ── OVERVIEW ─────────────────────────────── */}
+          {/* ✅ FIX: same overview for everyone now — stats + recent activity.
+              A normal user with 0 submissions just sees zeros and an empty
+              activity list, same shape as a contributor mid-way through their first submission. */}
           {tab === "overview" && (
             <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
-              {isContributor && (
-                <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "16px" }}>
-                  {[
-                    [t("dashboard.stats.scholars"), submissions.length],
-                    [t("dashboard.stats.versions"), submissions.length],
-                    [t("dashboard.stats.media"), media.length],
-                    [t("dashboard.stats.works"), works.length],
-                  ].map(([label, val]) => (
-                    <HoverCard key={label as string} style={{ padding: "18px 20px" }}>
-                      <p style={{ ...MONO, fontSize: "9px", color: MUTED, letterSpacing: "0.1em", margin: "0 0 6px" }}>{(label as string).toUpperCase()}</p>
-                      <p style={{ ...SERIF, fontSize: "26px", fontWeight: 700, color: GREEN, margin: 0 }}>{val}</p>
-                    </HoverCard>
-                  ))}
-                </div>
-              )}
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "16px" }}>
+                {[
+                  [t("dashboard.stats.scholars"), submissions.length],
+                  [t("dashboard.stats.versions"), submissions.length],
+                  [t("dashboard.stats.media"), media.length],
+                  [t("dashboard.stats.works"), works.length],
+                ].map(([label, val]) => (
+                  <HoverCard key={label as string} style={{ padding: "18px 20px" }}>
+                    <p style={{ ...MONO, fontSize: "9px", color: MUTED, letterSpacing: "0.1em", margin: "0 0 6px" }}>{(label as string).toUpperCase()}</p>
+                    <p style={{ ...SERIF, fontSize: "26px", fontWeight: 700, color: GREEN, margin: 0 }}>{val}</p>
+                  </HoverCard>
+                ))}
+              </div>
 
-              {!isContributor && (
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "16px" }}>
-                  <HoverCard style={cardStyle}>
-                    <SectionTitle icon="person" title={t("dashboard.overview.profileTitle")} />
-                    <p style={{ fontSize: "12px", color: MUTED, margin: 0 }}>{t("dashboard.overview.profileDesc")}</p>
-                  </HoverCard>
-                  <HoverCard style={cardStyle}>
-                    <SectionTitle icon="bookmark" title={t("dashboard.overview.watchlistTitle")} />
-                    <p style={{ fontSize: "12px", color: MUTED, margin: 0 }}>{t("dashboard.overview.watchlistDesc")}</p>
-                  </HoverCard>
-                  <HoverCard style={cardStyle}>
-                    <SectionTitle icon="notifications" title={t("dashboard.overview.notificationsTitle")} />
-                    <p style={{ fontSize: "12px", color: MUTED, margin: 0 }}>{t("dashboard.overview.notificationsDesc")}</p>
-                  </HoverCard>
-                </div>
-              )}
-
-              {isContributor && (
-                <HoverCard style={cardStyle}>
-                  <SectionTitle icon="history" title={t("dashboard.overview.recentActivity")} />
-                  <div>
-                    {submissions.slice(0, 3).map((a, i) => (
-                      <div key={i} style={{ display: "flex", justifyContent: "space-between", padding: "10px 0", borderBottom: i === 2 ? "none" : "1px solid #f0f1ee" }}>
-                        <div>
-                          <p style={{ fontSize: "13px", color: "#191c1b", margin: "0 0 2px", fontWeight: 600 }}>
-                            {a.kind === "new" ? "New scholar submitted" : "Edit proposed"}
-                          </p>
-                          <p style={{ ...MONO, fontSize: "10px", color: MUTED, margin: 0 }}>{a.scholarName} — {a.lang}</p>
-                        </div>
-                        <span style={{ ...MONO, fontSize: "10px", color: "#c0c9c3", whiteSpace: "nowrap" }}>{a.date}</span>
+              <HoverCard style={cardStyle}>
+                <SectionTitle icon="history" title={t("dashboard.overview.recentActivity")} />
+                <div>
+                  {submissions.slice(0, 3).map((a, i) => (
+                    <div key={i} style={{ display: "flex", justifyContent: "space-between", padding: "10px 0", borderBottom: i === 2 ? "none" : "1px solid #f0f1ee" }}>
+                      <div>
+                        <p style={{ fontSize: "13px", color: "#191c1b", margin: "0 0 2px", fontWeight: 600 }}>
+                          {a.kind === "new" ? "New scholar submitted" : "Edit proposed"}
+                        </p>
+                        <p style={{ ...MONO, fontSize: "10px", color: MUTED, margin: 0 }}>{a.scholarName} — {a.lang}</p>
                       </div>
-                    ))}
-                    {submissions.length === 0 && <EmptyRow text="No recent activity" />}
-                  </div>
-                </HoverCard>
-              )}
-
-              {!isContributor && (
-                <HoverCard style={{ ...cardStyle, backgroundColor: GREEN, border: "none" }}>
-                  <h2 style={{ ...SERIF, fontSize: "18px", fontWeight: 700, color: "#fff", margin: "0 0 6px" }}>{t("dashboard.cta.title")}</h2>
-                  <p style={{ fontSize: "13px", color: "rgba(255,255,255,0.85)", margin: "0 0 18px", lineHeight: 1.6 }}>
-                    {t("dashboard.cta.desc")}
-                  </p>
-                  <button
-                    onClick={() => navigate("/scholars/submit/")}
-                    style={{ ...BTN_PRIMARY, backgroundColor: "#fff", color: GREEN, border: "1.5px solid #fff" }}
-                  >
-                    <Icon name="add_circle" size={14} /> {t("dashboard.cta.button")}
-                  </button>
-                </HoverCard>
-              )}
+                      <span style={{ ...MONO, fontSize: "10px", color: "#c0c9c3", whiteSpace: "nowrap" }}>{a.date}</span>
+                    </div>
+                  ))}
+                  {submissions.length === 0 && <EmptyRow text="No recent activity" />}
+                </div>
+              </HoverCard>
             </div>
           )}
 
           {/* ── MY SUBMISSIONS ── */}
-          {tab === "submissions" && isContributor && (
+          {tab === "submissions" && (
             <HoverCard style={cardStyle}>
               <SectionTitle
                 icon="outbox"
@@ -693,9 +1599,7 @@ export default function DashboardPage() {
                     <HoverBtn onClick={() => navigate("/scholars/submit/")}>
                       <Icon name="add_circle" size={12} /> {t("dashboard.actions.newScholar")}
                     </HoverBtn>
-                    <HoverBtn onClick={() => navigate("/scholars/search?mode=edit")}>
-                      <Icon name="edit" size={12} /> {t("dashboard.actions.editExisting")}
-                    </HoverBtn>
+                  
                   </div>
                 }
               />
@@ -719,7 +1623,7 @@ export default function DashboardPage() {
           )}
 
           {/* ── MEDIA WORKSPACE ── */}
-          {tab === "media" && isContributor && (
+          {tab === "media" && (
             <HoverCard style={cardStyle}>
               <SectionTitle icon="perm_media" title={t("dashboard.tabs.media")} />
               <p style={{ ...MONO, fontSize: "9px", color: "#c0c9c3", letterSpacing: "0.06em", marginBottom: "12px", fontStyle: "italic" }}>
@@ -742,7 +1646,7 @@ export default function DashboardPage() {
           )}
 
           {/* ── WORKS & REFERENCES WORKSPACE ── */}
-          {tab === "works" && isContributor && (
+          {tab === "works" && (
             <HoverCard style={cardStyle}>
               <SectionTitle icon="menu_book" title={t("dashboard.tabs.works")} />
               {isLoadingData ? (
@@ -769,13 +1673,7 @@ export default function DashboardPage() {
             </HoverCard>
           )}
 
-          {/* ── WATCHLIST ── */}
-          {tab === "watchlist" && (
-            <HoverCard style={cardStyle}>
-              <SectionTitle icon="bookmark" title={t("dashboard.tabs.watchlist")} />
-              <EmptyRow text={t("dashboard.empty.watchlist")} />
-            </HoverCard>
-          )}
+        
         </div>
       </div>
     </div>

@@ -52,6 +52,8 @@ import PendingEditsQueue from "./pages/admin/PendingEditsQueue";
 import PendingEditReview from "./pages/admin/PendingEditReview";
 import MediaPendingQueue from "./pages/admin/MediaPendingQueue";
 import WorksPendingQueue from "./pages/admin/WorksPendingQueue";
+import DisciplineManagement from "./pages/admin/DisciplineManagement"; 
+import RegionManagement from "./pages/admin/RegionManagement";
 // import AdminScholars from "./pages/admin/AdminScholars"; // add as you build them
 
 function App() {
@@ -111,6 +113,8 @@ function App() {
                 <Route path="/admin/pending/edits/:id" element={<PendingEditReview />} />
                 <Route path="/admin/pending/media" element={<MediaPendingQueue />} />
                 <Route path="/admin/pending/works" element={<WorksPendingQueue />} />
+                <Route path="/admin/disciplines" element={<DisciplineManagement />} /> {/* ✅ ADDED: Discipline Management page */}
+                <Route path="/admin/settings/regions" element={<RegionManagement />} /> {/* ✅ ADDED: Region Management page */}
                 {/* Add more admin routes here as you build them: */}
                 {/* <Route path="scholars" element={<AdminScholars />} /> */}
                 {/* <Route path="scholars/new" element={<AdminAddScholar />} /> */}

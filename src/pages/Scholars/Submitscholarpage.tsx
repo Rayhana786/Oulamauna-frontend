@@ -487,7 +487,8 @@ const SubmitScholarPage: React.FC = () => {
   const { t, setLang } = useLang();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const urlDraftId = searchParams.get("draftId"); // ✅ Get draftId from URL
+  const urlDraftId = searchParams.get("draftId"); 
+  const urlRejectedId = searchParams.get("rejectedId"); // ✅ NEW: Get rejectedId from URL
 
   const tt = (key: string, fallback: string) => {
     const val = t(key);
@@ -550,59 +551,60 @@ const SubmitScholarPage: React.FC = () => {
     const draftLoadAttempted = useRef(false);
 
   // ✅ UNIFIED DRAFT LOADING LOGIC (Strictly isolated by versionId OR lang)
+    // ✅ UNIFIED VERSION LOADING LOGIC (Handles both Drafts AND Rejected)
   useEffect(() => {
     if (phase !== "form" || draftLoadAttempted.current) return;
     draftLoadAttempted.current = true;
 
-    const fetchAndMapDraft = async (idToFetch: number) => {
+    const fetchAndMapVersion = async (idToFetch: number) => {
       try {
-        const response = await scholarsApi.getDraftById(idToFetch);
-        const draft = response.data;
+        // ✅ Use getVersionById which works for BOTH drafts and rejected versions!
+        const response = await scholarsApi.getVersionById(idToFetch);
+        const version = response.data;
         
         const mappedForm: Partial<FormState> = {
-          canonical_name: draft.canonical_name || "",
-          region_id: draft.region_id,
-          birth_date_gregorian: draft.scholar_dates?.find((d: any) => d.date_type === "birth" && d.calendar === "gregorian")?.year?.toString() || "",
-          birth_date_hijri: draft.scholar_dates?.find((d: any) => d.date_type === "birth" && d.calendar === "hijri")?.year?.toString() || "",
-          death_date_gregorian: draft.scholar_dates?.find((d: any) => d.date_type === "death" && d.calendar === "gregorian")?.year?.toString() || "",
-          death_date_hijri: draft.scholar_dates?.find((d: any) => d.date_type === "death" && d.calendar === "hijri")?.year?.toString() || "",
-          century_hijri_start: draft.century_hijri_start,
-          century_hijri_end: draft.century_hijri_end,
-          century_gregorian_start: draft.century_gregorian_start,
-          century_gregorian_end: draft.century_gregorian_end,
-          biography: draft.biography || "",
-          aliases: draft.scholar_aliases?.map((a: any) => a.alias_name) || [],
-          discipline_ids: draft.scholar_disciplines?.map((d: any) => d.discipline_id) || [],
-          teachers: draft.scholar_relationships_as_source?.filter((r: any) => r.relation_type === "teacher").map((r: any) => ({
+          canonical_name: version.canonical_name || "",
+          region_id: version.region_id,
+          birth_date_gregorian: version.scholar_dates?.find((d: any) => d.date_type === "birth" && d.calendar === "gregorian")?.year?.toString() || "",
+          birth_date_hijri: version.scholar_dates?.find((d: any) => d.date_type === "birth" && d.calendar === "hijri")?.year?.toString() || "",
+          death_date_gregorian: version.scholar_dates?.find((d: any) => d.date_type === "death" && d.calendar === "gregorian")?.year?.toString() || "",
+          death_date_hijri: version.scholar_dates?.find((d: any) => d.date_type === "death" && d.calendar === "hijri")?.year?.toString() || "",
+          century_hijri_start: version.century_hijri_start,
+          century_hijri_end: version.century_hijri_end,
+          century_gregorian_start: version.century_gregorian_start,
+          century_gregorian_end: version.century_gregorian_end,
+          biography: version.biography || "",
+          aliases: version.scholar_aliases?.map((a: any) => a.alias_name) || [],
+          discipline_ids: version.scholar_disciplines?.map((d: any) => d.discipline_id) || [],
+          teachers: version.scholar_relationships_as_source?.filter((r: any) => r.relation_type === "teacher").map((r: any) => ({
             scholar_id: r.related_version_id,
             scholar_name: r.related_scholar_version?.canonical_name || ""
           })) || [],
-          students: draft.scholar_relationships_as_source?.filter((r: any) => r.relation_type === "student").map((r: any) => ({
+          students: version.scholar_relationships_as_source?.filter((r: any) => r.relation_type === "student").map((r: any) => ({
             scholar_id: r.related_version_id,
             scholar_name: r.related_scholar_version?.canonical_name || ""
           })) || [],
-          works: draft.scholar_works?.map((w: any) => ({
+          works: version.scholar_works?.map((w: any) => ({
             title: w.title || "", year: w.year?.toString() || "", type: w.format || "BOOK",
             desc: w.description || "", accessMode: w.media_url ? "link" : "none", file: null, url: w.media_url || "",
           })) || [],
-          media: draft.media?.map((m: any) => ({
+          media: version.media?.map((m: any) => ({
             title: m.title || "", type: m.file_type || "pdf", year: m.year?.toString() || "",
             desc: m.description || "", accessMode: m.media_url ? "link" : "upload", file: null, url: m.media_url || "",
           })) || [],
-          refs: draft.scholar_references?.map((r: any) => ({ title: r.title || "", citation: r.citation || "", url: r.url || "" })) || [],
+          refs: version.scholar_references?.map((r: any) => ({ title: r.title || "", citation: r.citation || "", url: r.url || "" })) || [],
         };
 
         setForm(f => ({ ...f, ...mappedForm }));
-        setDraftVersionId(draft.version_id);
+        setDraftVersionId(version.version_id);
         setDraftRestored(true);
-        saveSession(scholarId, draft.version_id, lang);
+        saveSession(scholarId, version.version_id, lang);
 
         if (routeLang && (["en", "ar", "fr"] as string[]).includes(routeLang.toLowerCase())) {
            setPickedLang(routeLang.toUpperCase() as Language);
         }
       } catch (error) {
-        console.error("Draft not found or deleted:", error);
-        // ✅ If draft was deleted, just show a fresh form instead of error
+        console.error("Version not found or deleted:", error);
         setForm({
           canonical_name: "", region_id: null, birth_date_gregorian: "", birth_date_hijri: "", 
           death_date_gregorian: "", death_date_hijri: "", century_hijri_start: null, century_hijri_end: null, 
@@ -612,13 +614,12 @@ const SubmitScholarPage: React.FC = () => {
         });
         setDraftVersionId(null);
         setDraftRestored(false);
-        // Clear the URL parameter
         navigate(`/scholars/submit/${lang.toLowerCase()}`, { replace: true });
       }
     };
 
-    const loadLocalDraft = (versionId: number) => {
-      const localDraft = loadDraft(scholarId, versionId, lang); // ✅ Pass lang
+    const loadLocalVersion = (versionId: number) => {
+      const localDraft = loadDraft(scholarId, versionId, lang);
       if (localDraft && localDraft.form) {
         setForm(f => ({ ...f, ...localDraft.form }));
         setStep(localDraft.step || 0);
@@ -630,11 +631,11 @@ const SubmitScholarPage: React.FC = () => {
       return false;
     };
 
-    // 1. Priority: URL param (from Dashboard "Continue")
-    if (urlDraftId) {
-      const versionId = parseInt(urlDraftId, 10);
-      if (!loadLocalDraft(versionId)) {
-        fetchAndMapDraft(versionId);
+    // 1. Priority: URL param (from Dashboard "Continue" OR "Edit Rejected")
+    if (urlDraftId || urlRejectedId) {
+      const versionId = parseInt(urlDraftId || urlRejectedId!, 10);
+      if (!loadLocalVersion(versionId)) {
+        fetchAndMapVersion(versionId);
       }
       return; 
     }
@@ -642,14 +643,14 @@ const SubmitScholarPage: React.FC = () => {
     // 2. Fallback: Check Session Marker (for Page Refresh)
     const session = loadSession();
     if (session?.versionId) {
-      if (!loadLocalDraft(session.versionId)) {
-        fetchAndMapDraft(session.versionId);
+      if (!loadLocalVersion(session.versionId)) {
+        fetchAndMapVersion(session.versionId);
       }
       return;
     }
 
     // 3. Last Resort: Local Storage (for brand new unsaved drafts)
-    const draft = loadDraft(session?.scholarId || scholarId, null, lang); // ✅ Pass lang
+    const draft = loadDraft(session?.scholarId || scholarId, null, lang);
     if (draft) {
       const isStaleUnsavedNewDraft = !session?.scholarId && !draft.draftVersionId;
       if (isStaleUnsavedNewDraft) {
@@ -662,133 +663,9 @@ const SubmitScholarPage: React.FC = () => {
         saveSession(session?.scholarId || scholarId, draft.draftVersionId, lang);
       }
     }
-  }, [phase, urlDraftId, scholarId, navigate, routeLang, lang]); // ✅ Added lang
+  }, [phase, urlDraftId, urlRejectedId, scholarId, navigate, routeLang, lang]); // ✅ Added urlRejectedId
 
-  
-    const prevLangRef = useRef<Language | null>(null);
 
-  // ✅ UNIFIED DRAFT LOADING LOGIC (Strictly separates "New Scholar" from "Add Version")
-  useEffect(() => {
-    if (phase !== "form") return;
-
-    // 1. If language changed, wipe the slate clean for the new language
-    if (prevLangRef.current !== null && prevLangRef.current !== lang) {
-      setForm({
-        canonical_name: "", region_id: null, birth_date_gregorian: "", birth_date_hijri: "", 
-        death_date_gregorian: "", death_date_hijri: "", century_hijri_start: null, century_hijri_end: null, 
-        century_gregorian_start: null, century_gregorian_end: null, biography: "", aliases: [], 
-        discipline_ids: [], portraitUrl: null, portraitFile: null, pageTitle: "", summary: "", quote: "",
-        teachers: [], students: [], works: [], media: [], refs: [], confirmed: false,
-      });
-      setStep(0);
-      setDraftVersionId(null);
-      setDraftRestored(false);
-    }
-    prevLangRef.current = lang;
-
-    // 2. Load draft strictly based on the CURRENT route
-    const loadDraftForLang = async () => {
-      const applyDraft = (formData: Partial<FormState>, step: number, versionId: number | null) => {
-        setForm(f => ({ ...f, ...formData }));
-        setStep(step);
-        setDraftVersionId(versionId);
-        setDraftRestored(true);
-        saveSession(scholarId, versionId, lang);
-      };
-
-      const mapBackendDraft = (draft: any) => ({
-        canonical_name: draft.canonical_name || "",
-        region_id: draft.region_id,
-        birth_date_gregorian: draft.scholar_dates?.find((d: any) => d.date_type === "birth" && d.calendar === "gregorian")?.year?.toString() || "",
-        birth_date_hijri: draft.scholar_dates?.find((d: any) => d.date_type === "birth" && d.calendar === "hijri")?.year?.toString() || "",
-        death_date_gregorian: draft.scholar_dates?.find((d: any) => d.date_type === "death" && d.calendar === "gregorian")?.year?.toString() || "",
-        death_date_hijri: draft.scholar_dates?.find((d: any) => d.date_type === "death" && d.calendar === "hijri")?.year?.toString() || "",
-        century_hijri_start: draft.century_hijri_start,
-        century_hijri_end: draft.century_hijri_end,
-        century_gregorian_start: draft.century_gregorian_start,
-        century_gregorian_end: draft.century_gregorian_end,
-        biography: draft.biography || "",
-        aliases: draft.scholar_aliases?.map((a: any) => a.alias_name) || [],
-        discipline_ids: draft.scholar_disciplines?.map((d: any) => d.discipline_id) || [],
-        teachers: draft.scholar_relationships_as_source?.filter((r: any) => r.relation_type === "teacher").map((r: any) => ({
-          scholar_id: r.related_version_id,
-          scholar_name: r.related_scholar_version?.canonical_name || ""
-        })) || [],
-        students: draft.scholar_relationships_as_source?.filter((r: any) => r.relation_type === "student").map((r: any) => ({
-          scholar_id: r.related_version_id,
-          scholar_name: r.related_scholar_version?.canonical_name || ""
-        })) || [],
-        works: draft.scholar_works?.map((w: any) => ({
-          title: w.title || "", year: w.year?.toString() || "", type: w.format || "BOOK",
-          desc: w.description || "", accessMode: w.media_url ? "link" : "none", file: null, url: w.media_url || "",
-        })) || [],
-        media: draft.media?.map((m: any) => ({
-          title: m.title || "", type: m.file_type || "pdf", year: m.year?.toString() || "",
-          desc: m.description || "", accessMode: m.media_url ? "link" : "upload", file: null, url: m.media_url || "",
-        })) || [],
-        refs: draft.scholar_references?.map((r: any) => ({ title: r.title || "", citation: r.citation || "", url: r.url || "" })) || [],
-      });
-
-      // A. URL Draft ID (Highest priority: user clicked "Continue" from dashboard)
-      if (urlDraftId) {
-        const versionId = parseInt(urlDraftId, 10);
-        const local = loadDraft(scholarId, versionId, lang);
-        if (local?.form) {
-          applyDraft(local.form, local.step || 0, versionId);
-          return;
-        }
-        try {
-          const response = await scholarsApi.getDraftById(versionId);
-          applyDraft(mapBackendDraft(response.data), 0, response.data.version_id);
-        } catch (error) {
-          console.error("Failed to fetch draft:", error);
-        }
-        return;
-      }
-
-      // B. ROUTE-AWARE LOADING (Prevents mixing "New" and "Existing" scholar drafts)
-      if (scholarId) {
-        // MODE 1: Adding a version to an EXISTING scholar
-        const session = loadSession();
-        if (session?.versionId && session.scholarId === scholarId && session.lang === lang) {
-          const local = loadDraft(scholarId, session.versionId, lang);
-          if (local?.form) {
-            applyDraft(local.form, local.step || 0, session.versionId);
-            return;
-          }
-          try {
-            const response = await scholarsApi.getDraftById(session.versionId);
-            applyDraft(mapBackendDraft(response.data), 0, response.data.version_id);
-          } catch (error) { /* ignore */ }
-        }
-        
-        // Check for unsaved local draft for this specific scholar + lang
-        const localNewVersion = loadDraft(scholarId, null, lang);
-        if (localNewVersion?.form) {
-          applyDraft(localNewVersion.form, localNewVersion.step || 0, localNewVersion.draftVersionId);
-        }
-      } else {
-        // MODE 2: Creating a BRAND NEW scholar
-        const session = loadSession();
-        // Only use session if it's explicitly for a NEW scholar (no scholarId) in this lang
-        if (session && !session.scholarId && session.lang === lang && session.versionId) {
-          const local = loadDraft(undefined, session.versionId, lang);
-          if (local?.form) {
-            applyDraft(local.form, local.step || 0, session.versionId);
-            return;
-          }
-        }
-
-        // Fallback to generic new scholar draft for this lang
-        const localNew = loadDraft(undefined, null, lang);
-        if (localNew?.form) {
-          applyDraft(localNew.form, localNew.step || 0, localNew.draftVersionId);
-        }
-      }
-    };
-
-    loadDraftForLang();
-  }, [phase, urlDraftId, scholarId, navigate, routeLang, lang]);
   const buildDraftPayload = () => {
     const selectedLang = LANGUAGES.find(l => l.code === lang.toLowerCase());
 
@@ -837,25 +714,48 @@ const SubmitScholarPage: React.FC = () => {
     return payload;
   };
 
-  const manualSaveDraft = async () => {
-    saveDraft(scholarId, form, step, draftVersionId, lang);
+    const manualSaveDraft = async () => {
+    // 1. Handle Rejected Version
+    if (urlRejectedId) {
+      try {
+        const payload = { ...buildDraftPayload(), target_status: "draft" };
+        await scholarsApi.updateRejected(parseInt(urlRejectedId), payload);
+        
+        // ✅ Clear local storage immediately so it doesn't linger
+        clearDraft(scholarId, parseInt(urlRejectedId), lang);
+        
+        alert("Saved as draft successfully!");
+        navigate('/dashboard'); // ✅ Redirect to dashboard
+        return;
+      } catch (error: any) {
+        console.error("Failed to save rejected as draft:", error);
+        setDraftSaveError(extractErrorMessage(error, "Could not save."));
+        return;
+      }
+    }
 
+    // 2. Handle Normal Draft
     try {
       setDraftSaveError(null);
       const payload = buildDraftPayload();
       const response = await scholarsApi.saveDraft(payload);
       const newDraftVersionId = response?.data?.draft_version_id;
+      
       if (newDraftVersionId) {
         setDraftVersionId(newDraftVersionId);
       }
 
-      clearDraft(scholarId, draftVersionId,lang);
+      // ✅ Clear localStorage and session immediately after successful backend save
+      clearDraft(scholarId, newDraftVersionId || draftVersionId, lang);
 
-      setDraftSavedPulse(true);
-      setTimeout(() => setDraftSavedPulse(false), 1800);
+      alert("Saved as draft successfully!");
+      
+      // ✅ Navigate to dashboard immediately, preventing localStorage restore confusion
+      navigate('/dashboard');
+      
     } catch (error: any) {
       console.error("Failed to save draft to server:", error);
-      setDraftSaveError(extractErrorMessage(error, "Could not save draft to server. Your progress is still saved on this device."));
+      setDraftSaveError(extractErrorMessage(error, "Could not save draft to server."));
     }
   };
 
@@ -951,13 +851,35 @@ const SubmitScholarPage: React.FC = () => {
   useEffect(() => { if (validRouteLang) setLang(validRouteLang); }, [validRouteLang, setLang]);
   useEffect(() => { if (!validRouteLang) setLang(pickedLang); }, [pickedLang, validRouteLang, setLang]);
 
-  const handleSubmit = async () => {
+     const handleSubmit = async () => {
     const stepErrors = validateStep(6);
     if (Object.keys(stepErrors).length > 0) {
       setErrors(stepErrors);
       scrollTop();
       return;
     }
+
+    // ✅ NEW: If editing a rejected version, resubmit it to "pending"
+    if (urlRejectedId) {
+      try {
+        setIsSubmitting(true);
+        setSubmitError(null);
+        
+        const payload = { ...buildDraftPayload(), target_status: "pending" };
+        await scholarsApi.updateRejected(parseInt(urlRejectedId), payload);
+        
+        clearDraft(scholarId, parseInt(urlRejectedId), lang);
+        setPhase("success");
+        return; // Exit early, don't run normal submit logic
+      } catch (error: any) {
+        console.error("Failed to resubmit rejected version:", error);
+        setSubmitError(extractErrorMessage(error, "Failed to resubmit."));
+        setIsSubmitting(false);
+        return; // ✅ FIX: Just return and show the error, do NOT navigate away
+      }
+    }
+
+    // Normal submit logic
     setErrors({});
     setSubmitError(null);
     setIsSubmitting(true);
@@ -1030,7 +952,7 @@ const SubmitScholarPage: React.FC = () => {
       }
 
       setSuccessMessage(response.message || "Submission successful!");
-      clearDraft(scholarId, draftVersionId); // ✅ Clear the specific version's draft
+      clearDraft(scholarId, draftVersionId);
       setPhase("success");
     } catch (error: any) {
       console.error("Failed to submit scholar:", error);

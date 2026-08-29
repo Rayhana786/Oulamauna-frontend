@@ -109,7 +109,7 @@ const Login: React.FC = () => {
 
         // ✅ 2. Redirect based on the NEW role_name string (not role_id)
         if (data.user.role_name === "admin") {
-          navigate("/admin");
+          navigate("/admin/dashboard");
         } else {
           navigate("/"); // Redirect normal users/contributors to home or dashboard
         }

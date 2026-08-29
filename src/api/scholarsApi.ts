@@ -251,6 +251,18 @@ export const scholarsApi = {
   submitDraft: (versionId: number): Promise<any> =>
     request(`/draft/${versionId}/submit`, { method: "POST" }),
 
+  getVersionById: (versionId: number): Promise<any> =>
+    request(`/version/${versionId}`),
+    // ✅ Dedicated Rejected Endpoints
+  updateRejected: (versionId: number, payload: any): Promise<any> =>
+    request(`/rejected/${versionId}`, { 
+      method: "PUT", 
+      body: JSON.stringify(payload) 
+    }),
+
+  deleteRejected: (versionId: number): Promise<any> =>
+    request(`/rejected/${versionId}`, { method: "DELETE" }),
+
   addRelationship: (payload: { version_id: number; related_version_id: number; relation_type: string }): Promise<any> =>
     request("/relationships", { method: "POST", body: JSON.stringify(payload) }),  
 
