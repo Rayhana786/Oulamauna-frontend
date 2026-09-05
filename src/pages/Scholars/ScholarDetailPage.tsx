@@ -49,8 +49,6 @@ interface BackendVersion {  version_id: number; scholar_id: number; language_id:
   internal_links: any[];
   scholar_disciplines?: { discipline_id: number; disciplines: { discipline_id: number; name: string; language_id: number } }[];
   comments?: { comment_id: number; content: string; created_at: string; users: { id: number; username: string } }[];
-  
-  // ✅ ADDED: Relationships now belong to the version
   scholar_relationships_as_source?: BackendRelation[];
 }
 interface BackendDiscipline {
@@ -89,8 +87,8 @@ interface BackendScholarResponse {
     bibliography: BackendBibliography[];
     works: BackendWork[];
     scholar_contributors: BackendContributor[];
-        scholar_relationships_as_source: BackendRelation[];
-        references: BackendReference[];
+    scholar_relationships_as_source: BackendRelation[];
+    references: BackendReference[];
     history: BackendHistory[];
     available_languages: BackendLanguage[];
   };
@@ -162,8 +160,8 @@ interface UITranslation {
   colTitle: string; colYear: string; colFormat: string; colAccess: string;
   mediaTitle: string; addMedia: string; intellectualLineage: string;
   notableDisciples: string; relatedByField: string; academicReferences: string;
-  recentRevisions: string; viewAllEdits: string; academicDiscussion: string;
-  joinDialogue: string; reply: string; vote: string; report: string;
+  recentRevisions: string; viewAllEdits: string; viewMore: string; showLess: string;
+  academicDiscussion: string; joinDialogue: string; reply: string; vote: string; report: string;
   noContent: string; noDiscussion: string; startDiscussion: string;
   contribute: string; createdBy: string; lastUpdated: string; sharedNote: string; addWork: string;
   addNewWork: string; addMediaModal: string; title: string; year: string; format: string;
@@ -190,8 +188,9 @@ const T: Record<Language, UITranslation> = {
     mediaTitle: "Integrated Media Library", addMedia: "ADD MEDIA", intellectualLineage: "Intellectual Lineage",
     notableDisciples: "Notable Disciples", relatedByField: "Related Scholars by Field",
     academicReferences: "Academic References", recentRevisions: "Recent Revisions",
-    viewAllEdits: "View all edits", academicDiscussion: "Academic Discussion",
-    joinDialogue: "Join the scholarly dialogue in English...", reply: "REPLY", vote: "VOTE", report: "REPORT",
+    viewAllEdits: "View all edits", viewMore: "View more", showLess: "Show less",
+    academicDiscussion: "Academic Discussion", joinDialogue: "Join the scholarly dialogue in English...", 
+    reply: "REPLY", vote: "VOTE", report: "REPORT",
     noContent: "This page has not yet been contributed in", noDiscussion: "No discussion yet in English.",
     startDiscussion: "Start the conversation →", contribute: "Contribute now →",
     createdBy: "CREATED BY", lastUpdated: "LAST UPDATED BY", sharedNote: "Shared across all languages", addWork: "ADD WORK",
@@ -216,8 +215,9 @@ const T: Record<Language, UITranslation> = {
     mediaTitle: "مكتبة الوسائط المتكاملة", addMedia: "إضافة وسائط", intellectualLineage: "السلسلة الفكرية",
     notableDisciples: "أبرز التلامذة", relatedByField: "علماء ذوو صلة بالمجال",
     academicReferences: "المراجع الأكاديمية", recentRevisions: "أحدث المراجعات",
-    viewAllEdits: "عرض كل التعديلات", academicDiscussion: "النقاش الأكاديمي",
-    joinDialogue: "انضم إلى الحوار العلمي بالعربية...", reply: "ردّ", vote: "تصويت", report: "إبلاغ",
+    viewAllEdits: "عرض كل التعديلات", viewMore: "عرض المزيد", showLess: "عرض أقل",
+    academicDiscussion: "النقاش الأكاديمي", joinDialogue: "انضم إلى الحوار العلمي بالعربية...", 
+    reply: "ردّ", vote: "تصويت", report: "إبلاغ",
     noContent: "لم يتم المساهمة في هذه الصفحة بعد باللغة", noDiscussion: "لا توجد نقاشات بالعربية بعد.",
     startDiscussion: "ابدأ المحادثة →", contribute: "ساهم الآن →",
     createdBy: "أنشأه", lastUpdated: "آخر تحديث بواسطة", sharedNote: "مشترك بين جميع اللغات", addWork: "إضافة عمل",
@@ -242,8 +242,9 @@ const T: Record<Language, UITranslation> = {
     mediaTitle: "Médiathèque Intégrée", addMedia: "AJOUTER MÉDIA", intellectualLineage: "LIGNÉE INTELLECTUELLE",
     notableDisciples: "DISCIPLES NOTABLES", relatedByField: "SAVANTS LIÉS PAR DOMAINE",
     academicReferences: "RÉFÉRENCES ACADÉMIQUES", recentRevisions: "RÉVISIONS RÉCENTES",
-    viewAllEdits: "VOIR TOUTES LES MODIFICATIONS", academicDiscussion: "Discussion Académique",
-    joinDialogue: "Rejoindre le dialogue savant en français...", reply: "RÉPONDRE", vote: "VOTER", report: "SIGNALER",
+    viewAllEdits: "VOIR TOUTES LES MODIFICATIONS", viewMore: "Voir plus", showLess: "Voir moins",
+    academicDiscussion: "Discussion Académique", joinDialogue: "Rejoindre le dialogue savant en français...", 
+    reply: "RÉPONDRE", vote: "VOTER", report: "SIGNALER",
     noContent: "Cette page n'a pas encore été contribuée en", noDiscussion: "Aucune discussion en français pour l'instant.",
     startDiscussion: "Démarrer la conversation →", contribute: "Contribuer maintenant →",
     createdBy: "CRÉÉ PAR", lastUpdated: "MIS À JOUR PAR", sharedNote: "Partagé entre toutes les langues", addWork: "AJOUTER ŒUVRE",
@@ -323,7 +324,7 @@ const transformBackendToUI = (data: BackendScholarResponse["data"], lang: Langua
     .filter(Boolean)
     .join(", ");
 
-    const mapRelations = (rels: any[], color1: string, color2: string) => rels.map((r, i) => {
+  const mapRelations = (rels: any[], color1: string, color2: string) => rels.map((r, i) => {
     const target = r.related_scholar_version;
     const name = target?.canonical_name || `Scholar #${target?.scholar_id}`;
     return {
@@ -360,26 +361,25 @@ const transformBackendToUI = (data: BackendScholarResponse["data"], lang: Langua
     },
     contributors: (data.scholar_contributors || []).map((c) => ({ name: c.users?.username || "Unknown", contributions: 1, profileUrl: `/profile/${c.users?.id}` })),
     works: (data.works && data.works.length > 0 ? data.works : (data.bibliography as any[]) || []).map((w: any): Work => {
-  const url: string | null = w.media_url || w.file_path || w.url || null;
-  const format: Work["format"] = (WORK_FORMATS.includes(w.format) ? w.format : "OTHER");
-  return {
-    work_id: w.work_id,
-    title: w.title, 
-    year: w.year || 0, 
-    format,
-    digitalAccess: url ? getAccessType(url) : null,
-    accessUrl: url || undefined,
-    accessSource: url ? (w.source_type === "upload" ? "upload" : "link") : undefined,
-    
-    accessFileName: w.file_name || undefined,
-    uploadedBy: w.users?.username,
-    uploadedByUrl: w.users?.id ? `/profile/${w.users.id}` : undefined,
-  };
-}),
+      const url: string | null = w.media_url || w.file_path || w.url || null;
+      const format: Work["format"] = (WORK_FORMATS.includes(w.format) ? w.format : "OTHER");
+      return {
+        work_id: w.work_id,
+        title: w.title, 
+        year: w.year || 0, 
+        format,
+        digitalAccess: url ? getAccessType(url) : null,
+        accessUrl: url || undefined,
+        accessSource: url ? (w.source_type === "upload" ? "upload" : "link") : undefined,
+        accessFileName: w.file_name || undefined,
+        uploadedBy: w.users?.username,
+        uploadedByUrl: w.users?.id ? `/profile/${w.users.id}` : undefined,
+      };
+    }),
     media: versions.flatMap((v) => v.media || []).map((m): MediaItem => {
       const fileType = (m.file_type || "pdf") as MediaItem["type"];
       return {
-        media_id: m.media_id, // ✅ Added
+        media_id: m.media_id,
         type: fileType,
         title: m.title && m.title.trim() !== "" ? m.title : (m.file_name || "Untitled Media"),
         description: m.description || `${(m.file_type || "pdf").toUpperCase()} file`,
@@ -394,13 +394,13 @@ const transformBackendToUI = (data: BackendScholarResponse["data"], lang: Langua
         uploadedByUrl: m.users?.id ? `/profile/${m.users.id}` : undefined,
       };
     }),
-        // ✅ CHANGED: Read relationships from the activeVersion, not the root data object
-    intellectualLineage: mapRelations((activeVersion?.scholar_relationships_as_source || []).filter((r: any) => r.relation_type === 'teacher' || r.relation_type === 'historical_influence'), "#0b4335", "#d9dad8"),
-    notableDisciples: mapRelations((activeVersion?.scholar_relationships_as_source || []).filter((r: any) => r.relation_type === 'student' || r.relation_type === 'disciple'), "#735c00", "#5c2e29"),
+    intellectualLineage: mapRelations((activeVersion?.scholar_relationships_as_source || []).filter((r: any) => r.relation_type === 'teacher' || r.relation_type === 'historical_influence'), "#1e4d3a", "#C9A84C"),
+    notableDisciples: mapRelations((activeVersion?.scholar_relationships_as_source || []).filter((r: any) => r.relation_type === 'student' || r.relation_type === 'disciple'), "#C9A84C", "#1e4d3a"),
     relatedScholars: [],
     academicReferences: (data.references || []).map((r) => ({ title: r.title, citation: r.citation, url: r.url })),
     revisionHistory: [],
-    recentRevisions: history.slice(0, 5).map((h) => ({ date: new Date(h.created_at).toLocaleDateString(), author: h.users?.username || "Unknown", action: `Version ${h.version_id} - ${h.status}`, authorUrl: `/profile/${h.users?.id}` })),
+    // Changed from .slice(0, 5) to .map() so the UI component can handle pagination
+    recentRevisions: history.map((h) => ({ date: new Date(h.created_at).toLocaleDateString(), author: h.users?.username || "Unknown", action: `Version ${h.version_id} - ${h.status}`, authorUrl: `/profile/${h.users?.id}` })),
     comments: (activeVersion?.comments || []).map((c: any) => ({
       id: c.comment_id, author: c.users?.username || "Unknown", role: null,
       text: c.content || "", time: new Date(c.created_at).toLocaleDateString(), votes: 0, replies: []
@@ -409,25 +409,51 @@ const transformBackendToUI = (data: BackendScholarResponse["data"], lang: Langua
 };
 
 /* ─────────────────────────────────────────────
+   RESPONSIVE HELPER
+───────────────────────────────────────────── */
+function useIsMobile(breakpoint = 768): boolean {
+  const [isMobile, setIsMobile] = useState<boolean>(() =>
+    typeof window !== "undefined" ? window.innerWidth <= breakpoint : false
+  );
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const handleResize = () => setIsMobile(window.innerWidth <= breakpoint);
+    handleResize();
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, [breakpoint]);
+  return isMobile;
+}
+
+/* ─────────────────────────────────────────────
    SHARED STYLE CONSTANTS & SMALL COMPONENTS
 ───────────────────────────────────────────── */
 const MONO: React.CSSProperties = { fontFamily: "'JetBrains Mono', monospace" };
-const SERIF: React.CSSProperties = { fontFamily: "'Source Serif 4', serif" };
+const SERIF: React.CSSProperties = { fontFamily: "'Amiri', serif" };
+const SANS: React.CSSProperties = { fontFamily: "'Inter', sans-serif" };
+const HEADING: React.CSSProperties = { fontFamily: "'Hanken Grotesk', sans-serif" };
+
+// Colors from Forum/ScholarsPage
+const PRIMARY_GREEN = "#1e4d3a";
+const ACCENT_GOLD = "#C9A84C";
+const BG_CREM = "#fbf9f4";
+const CARD_BG = "#F5F3EC";
+
 const BTN_PRIMARY: React.CSSProperties = {
-  display: "inline-flex", alignItems: "center", gap: "6px", padding: "6px 16px",
-  border: "1.5px solid #0b4335", borderRadius: "6px", backgroundColor: "transparent", color: "#0b4335",
-  fontSize: "10px", fontWeight: 700, letterSpacing: "0.1em", cursor: "pointer", transition: "background 0.15s, color 0.15s", ...MONO,
+  display: "inline-flex", alignItems: "center", gap: "6px", padding: "8px 16px",
+  border: "1.5px solid #1e4d3a", borderRadius: "8px", backgroundColor: "transparent", color: "#1e4d3a",
+  fontSize: "11px", fontWeight: 700, letterSpacing: "0.05em", cursor: "pointer", transition: "all 0.3s ease", ...MONO,
 };
 
 function Icon({ name, size = 20 }: { name: string; size?: number }) {
   return <span className="material-symbols-outlined" style={{ fontSize: `${size}px`, lineHeight: 1, userSelect: "none" }}>{name}</span>;
 }
 
-function ProfileLink({ name, url, color = "#0b4335" }: { name: string; url: string; color?: string }) {
+function ProfileLink({ name, url, color = "#1e4d3a" }: { name: string; url: string; color?: string }) {
   const [hover, setHover] = useState(false);
   return (
     <a href={url} onMouseEnter={() => setHover(true)} onMouseLeave={() => setHover(false)}
-      style={{ color: hover ? "#285b4b" : color, fontWeight: 600, textDecoration: hover ? "underline" : "none", textUnderlineOffset: "2px", transition: "color 0.15s", cursor: "pointer" }}>
+      style={{ color: hover ? "#C9A84C" : color, fontWeight: 600, textDecoration: hover ? "underline" : "none", textUnderlineOffset: "2px", transition: "color 0.2s ease", cursor: "pointer" }}>
       {name}
     </a>
   );
@@ -437,7 +463,15 @@ function HoverBtn({ children, onClick, style }: { children: React.ReactNode; onC
   const [hov, setHov] = useState(false);
   return (
     <button onClick={onClick} onMouseEnter={() => setHov(true)} onMouseLeave={() => setHov(false)}
-      style={{ ...BTN_PRIMARY, backgroundColor: hov ? "#0b4335" : "transparent", color: hov ? "#fff" : "#0b4335", ...style }}>
+      style={{ 
+        display: "inline-flex", alignItems: "center", gap: "8px", padding: "10px 20px",
+        border: "2px solid #1e4d3a", borderRadius: "8px", 
+        backgroundColor: hov ? "#fbf9f4" : "#1e4d3a", 
+        color: hov ? "#1e4d3a" : "#fff",
+        fontFamily: "'Hanken Grotesk', sans-serif", fontSize: "12px", fontWeight: 700, letterSpacing: "0.05em", cursor: "pointer", 
+        boxShadow: hov ? "none" : "0 2px 10px rgba(30,77,58,0.18)",
+        transition: "all 0.3s ease", ...style 
+      }}>
       {children}
     </button>
   );
@@ -445,10 +479,10 @@ function HoverBtn({ children, onClick, style }: { children: React.ReactNode; onC
 
 function EmptyLangState({ lang, t, onContribute }: { lang: Language; t: UITranslation; onContribute: () => void }) {
   return (
-    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: "16px", padding: "64px 32px", textAlign: "center", border: "2px dashed #c0c9c3", borderRadius: "12px", margin: "32px 0" }}>
-      <Icon name="translate" size={40} />
-      <p style={{ color: "#707974", fontSize: "15px", lineHeight: 1.6 }}>{t.noContent} <strong>{LANG_LABELS[lang]}</strong>.</p>
-      <button onClick={onContribute} style={{ background: "none", border: "none", padding: 0, color: "#0b4335", fontWeight: 700, fontSize: "13px", textDecoration: "underline", textUnderlineOffset: "3px", cursor: "pointer" }}>{t.contribute}</button>
+    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: "16px", padding: "64px 32px", textAlign: "center", border: "2px dashed rgba(30,77,58,0.25)", borderRadius: "16px", margin: "32px 0", backgroundColor: "#F5F3EC" }}>
+      <Icon name="translate" size={40} style={{ color: "#1e4d3a66" }} />
+      <p style={{ color: "#1e4d3a99", fontSize: "15px", lineHeight: 1.6, ...SANS }}>{t.noContent} <strong style={{ color: "#1e4d3a" }}>{LANG_LABELS[lang]}</strong>.</p>
+      <button onClick={onContribute} style={{ background: "none", border: "none", padding: 0, color: "#1e4d3a", fontWeight: 700, fontSize: "13px", textDecoration: "underline", textUnderlineOffset: "3px", cursor: "pointer", transition: "color 0.2s ease" }} onMouseEnter={(e) => (e.currentTarget.style.color = "#C9A84C")} onMouseLeave={(e) => (e.currentTarget.style.color = "#1e4d3a")}>{t.contribute}</button>
     </div>
   );
 }
@@ -463,6 +497,7 @@ interface ToastProps {
 }
 
 function Toast({ message, type, onClose }: ToastProps) {
+  const isMobile = useIsMobile();
   useEffect(() => {
     const timer = setTimeout(() => {
       onClose();
@@ -473,9 +508,10 @@ function Toast({ message, type, onClose }: ToastProps) {
   return (
     <div style={{
       position: "fixed",
-      bottom: "24px",
-      right: "24px",
-      backgroundColor: type === "success" ? "#0b4335" : "#b3261e",
+      bottom: isMobile ? "84px" : "24px",
+      right: isMobile ? "12px" : "24px",
+      left: isMobile ? "12px" : "auto",
+      backgroundColor: type === "success" ? "#1e4d3a" : "#b23b3b",
       color: "#fff",
       padding: "12px 20px",
       borderRadius: "8px",
@@ -489,7 +525,7 @@ function Toast({ message, type, onClose }: ToastProps) {
       maxWidth: "400px"
     }}>
       <Icon name={type === "success" ? "check_circle" : "error"} size={20} />
-      <span style={{ fontSize: "13px", fontWeight: 500, flex: 1 }}>{message}</span>
+      <span style={{ fontSize: "13px", fontWeight: 500, flex: 1, ...SANS }}>{message}</span>
       <button 
         onClick={onClose} 
         style={{ background: "none", border: "none", color: "#fff", cursor: "pointer", padding: "4px", display: "flex", alignItems: "center" }}
@@ -525,14 +561,6 @@ function getAccessType(filename: string): Work["digitalAccess"] {
   return "pdf";
 }
 
-function getAccessLabel(work: Work): { label: string; icon: string; color?: string } {
-  if (!work.accessUrl) return { label: "—", icon: "" };
-  const isUpload = work.accessSource === "upload";
-  if (work.digitalAccess === "audio") return { label: isUpload ? "DOWNLOAD AUDIO" : "LISTEN AUDIO", icon: isUpload ? "download" : "play_circle", color: "#735c00" };
-  if (work.digitalAccess === "file") return { label: "DOWNLOAD FILE", icon: "download", color: "#735c00" };
-  return { label: isUpload ? "DOWNLOAD PDF" : "VIEW PDF", icon: isUpload ? "download" : "open_in_new" };
-}
-
 interface UploadZoneProps { file: File | null; onFile: (f: File) => void; onRemove: () => void; accept?: string; hint?: string; }
 function UploadZone({ file, onFile, onRemove, accept, hint }: UploadZoneProps) {
   const inputRef = useRef<HTMLInputElement>(null);
@@ -540,13 +568,13 @@ function UploadZone({ file, onFile, onRemove, accept, hint }: UploadZoneProps) {
   const handleDrop = (e: React.DragEvent) => { e.preventDefault(); setDragOver(false); const f = e.dataTransfer.files?.[0]; if (f) onFile(f); };
   if (file) {
     return (
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "12px 16px", backgroundColor: "rgba(11,67,53,0.05)", border: "1.5px solid rgba(11,67,53,0.2)", borderRadius: "8px" }}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "12px 16px", backgroundColor: "rgba(30,77,58,0.05)", border: "1.5px solid rgba(30,77,58,0.25)", borderRadius: "8px" }}>
         <div style={{ display: "flex", alignItems: "center", gap: "10px", minWidth: 0 }}>
           <Icon name={getFileIcon(file.name)} size={20} />
-          <span style={{ fontSize: "13px", color: "#191c1b", fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{file.name}</span>
-          <span style={{ ...MONO, fontSize: "9px", color: "#707974", whiteSpace: "nowrap" }}>{(file.size / 1024 / 1024).toFixed(1)} MB</span>
+          <span style={{ fontSize: "13px", color: "#1e4d3a", fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", ...SANS }}>{file.name}</span>
+          <span style={{ ...MONO, fontSize: "9px", color: "#1e4d3a66", whiteSpace: "nowrap" }}>{(file.size / 1024 / 1024).toFixed(1)} MB</span>
         </div>
-        <button onClick={onRemove} style={{ background: "none", border: "none", cursor: "pointer", color: "#707974", flexShrink: 0, display: "flex", alignItems: "center" }} title="Remove file"><Icon name="close" size={16} /></button>
+        <button onClick={onRemove} style={{ background: "none", border: "none", cursor: "pointer", color: "#1e4d3a66", flexShrink: 0, display: "flex", alignItems: "center" }} title="Remove file"><Icon name="close" size={16} /></button>
       </div>
     );
   }
@@ -554,10 +582,10 @@ function UploadZone({ file, onFile, onRemove, accept, hint }: UploadZoneProps) {
     <>
       <input ref={inputRef} type="file" accept={accept} style={{ display: "none" }} onChange={(e) => { const f = e.target.files?.[0]; if (f) onFile(f); }} />
       <div onClick={() => inputRef.current?.click()} onDragOver={(e) => { e.preventDefault(); setDragOver(true); }} onDragLeave={() => setDragOver(false)} onDrop={handleDrop}
-        style={{ border: `2px dashed ${dragOver ? "#0b4335" : "rgba(192,201,195,0.7)"}`, borderRadius: "10px", padding: "28px 20px", textAlign: "center", cursor: "pointer", backgroundColor: dragOver ? "rgba(11,67,53,0.04)" : "#fafbf8", transition: "all 0.15s" }}>
-        <Icon name="cloud_upload" size={32} />
-        <p style={{ fontSize: "13px", color: "#404945", margin: "10px 0 4px", fontWeight: 600 }}>Drop a file here, or <span style={{ color: "#0b4335", textDecoration: "underline" }}>browse</span></p>
-        <p style={{ ...MONO, fontSize: "9px", color: "#c0c9c3", margin: 0 }}>{hint ?? "PDF, Audio, Video, ePub, Word — up to 100 MB"}</p>
+        style={{ border: `2px dashed ${dragOver ? "#1e4d3a" : "rgba(30,77,58,0.25)"}`, borderRadius: "10px", padding: "28px 20px", textAlign: "center", cursor: "pointer", backgroundColor: dragOver ? "rgba(30,77,58,0.05)" : "#F5F3EC", transition: "all 0.2s ease" }}>
+        <Icon name="cloud_upload" size={32} style={{ color: dragOver ? "#1e4d3a" : "#1e4d3a66" }} />
+        <p style={{ fontSize: "13px", color: "#1e4d3acc", margin: "10px 0 4px", fontWeight: 600, ...SANS }}>Drop a file here, or <span style={{ color: "#1e4d3a", textDecoration: "underline" }}>browse</span></p>
+        <p style={{ ...MONO, fontSize: "9px", color: "#1e4d3a66", margin: 0 }}>{hint ?? "PDF, Audio, Video, ePub, Word — up to 100 MB"}</p>
       </div>
     </>
   );
@@ -608,7 +636,6 @@ function WorkActions({ work }: { work: Work }) {
       const link = document.createElement('a');
       link.href = blobUrl;
       
-      // ✅ EXACTLY LIKE MEDIA - Use accessFileName first
       const filename = work.accessFileName || work.title || 'file.pdf';
       link.download = filename;
       
@@ -625,7 +652,7 @@ function WorkActions({ work }: { work: Work }) {
   };
 
   if (!work.accessUrl) {
-    return <span style={{ fontSize: "13px", color: "#c0c9c3", fontWeight: 400 }}>—</span>;
+    return <span style={{ fontSize: "13px", color: "#1e4d3a66", fontWeight: 400, ...SANS }}>—</span>;
   }
 
   return (
@@ -637,10 +664,10 @@ function WorkActions({ work }: { work: Work }) {
         style={{ 
           display: "flex", alignItems: "center", justifyContent: "center",
           width: "32px", height: "32px", borderRadius: "6px",
-          border: "1.5px solid #0b4335", backgroundColor: "transparent", color: "#0b4335",
-          cursor: isViewing ? "wait" : "pointer", transition: "all 0.15s"
+          border: "1.5px solid #1e4d3a", backgroundColor: "transparent", color: "#1e4d3a",
+          cursor: isViewing ? "wait" : "pointer", transition: "all 0.2s ease"
         }}
-        onMouseEnter={(e) => { if (!isViewing) e.currentTarget.style.backgroundColor = "rgba(11,67,53,0.05)"; }}
+        onMouseEnter={(e) => { if (!isViewing) e.currentTarget.style.backgroundColor = "rgba(30,77,58,0.05)"; }}
         onMouseLeave={(e) => { if (!isViewing) e.currentTarget.style.backgroundColor = "transparent"; }}
       >
         {isViewing ? <Icon name="hourglass_empty" size={16} /> : <Icon name="visibility" size={18} />}
@@ -653,11 +680,11 @@ function WorkActions({ work }: { work: Work }) {
         style={{ 
           display: "flex", alignItems: "center", justifyContent: "center",
           width: "32px", height: "32px", borderRadius: "6px",
-          border: "1.5px solid #0b4335", backgroundColor: isDownloading ? "#0b4335" : "transparent", color: isDownloading ? "#fff" : "#0b4335",
-          cursor: isDownloading ? "wait" : "pointer", transition: "all 0.15s"
+          border: "1.5px solid #1e4d3a", backgroundColor: isDownloading ? "#1e4d3a" : "transparent", color: isDownloading ? "#fff" : "#1e4d3a",
+          cursor: isDownloading ? "wait" : "pointer", transition: "all 0.2s ease"
         }}
-        onMouseEnter={(e) => { if (!isDownloading) { e.currentTarget.style.backgroundColor = "#0b4335"; e.currentTarget.style.color = "#fff"; } }}
-        onMouseLeave={(e) => { if (!isDownloading) { e.currentTarget.style.backgroundColor = "transparent"; e.currentTarget.style.color = "#0b4335"; } }}
+        onMouseEnter={(e) => { if (!isDownloading) { e.currentTarget.style.backgroundColor = "#1e4d3a"; e.currentTarget.style.color = "#fff"; } }}
+        onMouseLeave={(e) => { if (!isDownloading) { e.currentTarget.style.backgroundColor = "transparent"; e.currentTarget.style.color = "#1e4d3a"; } }}
       >
         {isDownloading ? <Icon name="hourglass_empty" size={16} /> : <Icon name="download" size={18} />}
       </button>
@@ -678,6 +705,7 @@ interface AddWorkModalProps {
 }
 
 function AddWorkModal({ onClose, onAdd, t, lang, versionId, onSuccess }: AddWorkModalProps) {
+  const isMobile = useIsMobile();
   const [title, setTitle] = useState(""); 
   const [year, setYear] = useState<string>(""); 
   const [format, setFormat] = useState<Work["format"]>("BOOK");
@@ -687,9 +715,9 @@ function AddWorkModal({ onClose, onAdd, t, lang, versionId, onSuccess }: AddWork
   const [error, setError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const inputStyle: React.CSSProperties = { width: "100%", padding: "10px 14px", border: "1.5px solid rgba(192,201,195,0.6)", borderRadius: "8px", fontSize: "13px", color: "#191c1b", backgroundColor: "#fafbf8", fontFamily: "'Source Sans 3', sans-serif", outline: "none", transition: "border-color 0.15s" };
-  const labelStyle: React.CSSProperties = { ...MONO, fontSize: "9px", color: "#707974", letterSpacing: "0.12em", display: "block", marginBottom: "6px" };
-  const modeTabStyle = (active: boolean): React.CSSProperties => ({ flex: 1, padding: "9px 0", textAlign: "center" as const, ...MONO, fontSize: "10px", fontWeight: 700, letterSpacing: "0.08em", borderTop: "1.5px solid", borderBottom: "1.5px solid", borderColor: active ? "#0b4335" : "rgba(192,201,195,0.5)", backgroundColor: active ? "#0b4335" : "transparent", color: active ? "#fff" : "#707974", cursor: "pointer", transition: "all 0.15s", display: "flex", alignItems: "center", justifyContent: "center", gap: "6px" });
+  const inputStyle: React.CSSProperties = { width: "100%", padding: "10px 14px", border: "1.5px solid rgba(30,77,58,0.25)", borderRadius: "8px", fontSize: "13px", color: "#1e4d3a", backgroundColor: "#fff", fontFamily: "'Inter', sans-serif", outline: "none", transition: "border-color 0.2s ease" };
+  const labelStyle: React.CSSProperties = { ...MONO, fontSize: "10px", color: "#1e4d3a66", letterSpacing: "0.1em", display: "block", marginBottom: "6px", fontWeight: 600 };
+  const modeTabStyle = (active: boolean): React.CSSProperties => ({ flex: 1, padding: "9px 0", textAlign: "center" as const, ...MONO, fontSize: "10px", fontWeight: 700, letterSpacing: "0.08em", borderTop: "1.5px solid", borderBottom: "1.5px solid", borderColor: active ? "#1e4d3a" : "rgba(30,77,58,0.25)", backgroundColor: active ? "#1e4d3a" : "transparent", color: active ? "#fff" : "#1e4d3a99", cursor: "pointer", transition: "all 0.2s ease", display: "flex", alignItems: "center", justifyContent: "center", gap: "6px" });
   
   const handleSubmit = async () => {
     if (!title.trim()) { setError(t.titleRequired); return; }
@@ -701,7 +729,7 @@ function AddWorkModal({ onClose, onAdd, t, lang, versionId, onSuccess }: AddWork
     setIsSubmitting(true);
     setError("");
 
-        try {
+    try {
       if (accessMode === "upload" && uploadedFile) {
         const MAX_FILE_SIZE_MB = 100;
         const fileSizeInMB = uploadedFile.size / (1024 * 1024);
@@ -720,18 +748,6 @@ function AddWorkModal({ onClose, onAdd, t, lang, versionId, onSuccess }: AddWork
         
         const response = await scholarsApi.addWork(versionId, formData);
         
-        const newWork: Work = {
-          title: response.data.title || title.trim(),
-          year: yr,
-          format,
-          digitalAccess: getAccessType(uploadedFile.name),
-          accessUrl: response.data.file_path,
-          accessFileName: uploadedFile.name,
-          accessSource: "upload",
-          uploadedBy: response.data.users?.username,
-          uploadedByUrl: response.data.users?.id ? `/profile/${response.data.users.id}` : undefined,
-        };
-
         onSuccess("Work added successfully!");
         onClose();
 
@@ -746,43 +762,19 @@ function AddWorkModal({ onClose, onAdd, t, lang, versionId, onSuccess }: AddWork
 
         const response = await scholarsApi.addWorkUrl(versionId, workData);
         
-        const newWork: Work = {
-          title: response.data.title || title.trim(),
-          year: yr,
-          format,
-          digitalAccess: getAccessType(linkUrl.trim()),
-          accessUrl: linkUrl.trim(),
-          accessSource: "link",
-          uploadedBy: response.data.users?.username,
-          uploadedByUrl: response.data.users?.id ? `/profile/${response.data.users.id}` : undefined,
-        };
-
         onSuccess("Work added successfully!");
         onClose();
 
       } else if (accessMode === "none") {
-        // ✅ NEW: Handle the "None" case for Works
         const workData = {
           version_id: versionId,
           title: title.trim(),
           year: yr,
           format,
-          // No media_url or file needed
         };
 
         const response = await scholarsApi.addWorkUrl(versionId, workData);
         
-        const newWork: Work = {
-          title: response.data.title || title.trim(),
-          year: yr,
-          format,
-          digitalAccess: null,
-          accessUrl: undefined,
-          accessSource: undefined,
-          uploadedBy: response.data.users?.username,
-          uploadedByUrl: response.data.users?.id ? `/profile/${response.data.users.id}` : undefined,
-        };
-
         onSuccess("Work added successfully!");
         onClose();
       }
@@ -795,39 +787,55 @@ function AddWorkModal({ onClose, onAdd, t, lang, versionId, onSuccess }: AddWork
   };
  
   return (
-    <div style={{ position: "fixed", inset: 0, zIndex: 200, backgroundColor: "rgba(25,28,27,0.45)", display: "flex", alignItems: "center", justifyContent: "center", backdropFilter: "blur(4px)" }} onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}>
-      <div style={{ backgroundColor: "#fff", borderRadius: "16px", padding: "36px", width: "520px", maxWidth: "calc(100vw - 32px)", boxShadow: "0 20px 60px rgba(0,0,0,0.18)", border: "1px solid rgba(192,201,195,0.3)", maxHeight: "90vh", overflowY: "auto" }}>
+    <div style={{ position: "fixed", inset: 0, zIndex: 200, backgroundColor: "rgba(30,77,58,0.4)", display: "flex", alignItems: "center", justifyContent: "center", backdropFilter: "blur(4px)" }} onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}>
+      <div style={{ backgroundColor: "#fff", borderRadius: "16px", padding: isMobile ? "24px 18px" : "36px", width: "520px", maxWidth: "calc(100vw - 32px)", boxShadow: "0 20px 60px rgba(30,77,58,0.14)", border: "1px solid rgba(30,77,58,0.12)", maxHeight: "90vh", overflowY: "auto" }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "28px" }}>
-          <h2 style={{ ...SERIF, fontSize: "20px", fontWeight: 700, color: "#0b4335", margin: 0, display: "flex", alignItems: "center", gap: "10px" }}><Icon name="add_circle" size={20} /> {t.addNewWork}</h2>
-          <button onClick={onClose} style={{ background: "none", border: "none", cursor: "pointer", color: "#707974", padding: "4px", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center" }} onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#f0f1ee")} onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "transparent")}><Icon name="close" size={20} /></button>
+          <h2 style={{ fontFamily: "'Hanken Grotesk', sans-serif", fontSize: isMobile ? "17px" : "20px", fontWeight: 700, color: "#1e4d3a", margin: 0, display: "flex", alignItems: "center", gap: "10px" }}><Icon name="add_circle" size={20} /> {t.addNewWork}</h2>
+          <button onClick={onClose} style={{ background: "none", border: "none", cursor: "pointer", color: "#1e4d3a66", padding: "4px", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center" }} onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#F5F3EC")} onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "transparent")}><Icon name="close" size={20} /></button>
         </div>
         <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
-          <div><label style={labelStyle}>{t.title} *</label><input type="text" value={title} onChange={(e) => { setTitle(e.target.value); setError(""); }} placeholder={t.workTitlePlaceholder} style={inputStyle} onFocus={(e) => (e.currentTarget.style.borderColor = "#0b4335")} onBlur={(e) => (e.currentTarget.style.borderColor = "rgba(192,201,195,0.6)")} /></div>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
-            <div><label style={labelStyle}>{t.year} *</label><input type="number" value={year} onChange={(e) => { setYear(e.target.value); setError(""); }} placeholder={t.yearPlaceholder} min={600} max={new Date().getFullYear()} style={inputStyle} onFocus={(e) => (e.currentTarget.style.borderColor = "#0b4335")} onBlur={(e) => (e.currentTarget.style.borderColor = "rgba(192,201,195,0.6)")} /></div>
-            <div><label style={labelStyle}>{t.format}</label><select value={format} onChange={(e) => setFormat(e.target.value as Work["format"])} style={{ ...inputStyle, cursor: "pointer" }} onFocus={(e) => (e.currentTarget.style.borderColor = "#0b4335")} onBlur={(e) => (e.currentTarget.style.borderColor = "rgba(192,201,195,0.6)")}>{WORK_FORMATS.map((f) => (<option key={f} value={f}>{FORMAT_LABELS[lang][f]}</option>))}</select></div>
+          <div><label style={labelStyle}>{t.title} *</label><input type="text" value={title} onChange={(e) => { setTitle(e.target.value); setError(""); }} placeholder={t.workTitlePlaceholder} style={inputStyle} onFocus={(e) => (e.currentTarget.style.borderColor = "#1e4d3a")} onBlur={(e) => (e.currentTarget.style.borderColor = "rgba(30,77,58,0.25)")} /></div>
+          <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: "16px" }}>
+            <div><label style={labelStyle}>{t.year} *</label><input type="number" value={year} onChange={(e) => { setYear(e.target.value); setError(""); }} placeholder={t.yearPlaceholder} min={600} max={new Date().getFullYear()} style={inputStyle} onFocus={(e) => (e.currentTarget.style.borderColor = "#1e4d3a")} onBlur={(e) => (e.currentTarget.style.borderColor = "rgba(30,77,58,0.25)")} /></div>
+            <div><label style={labelStyle}>{t.format}</label><select value={format} onChange={(e) => setFormat(e.target.value as Work["format"])} style={{ ...inputStyle, cursor: "pointer" }} onFocus={(e) => (e.currentTarget.style.borderColor = "#1e4d3a")} onBlur={(e) => (e.currentTarget.style.borderColor = "rgba(30,77,58,0.25)")}>{WORK_FORMATS.map((f) => (<option key={f} value={f}>{FORMAT_LABELS[lang][f]}</option>))}</select></div>
           </div>
           <div>
             <label style={labelStyle}>{t.digitalAccess}</label>
-            <div style={{ display: "flex", borderRadius: "8px", overflow: "hidden", border: "1.5px solid rgba(192,201,195,0.5)", marginBottom: "16px" }}>
+            <div style={{ display: "flex", borderRadius: "8px", overflow: "hidden", border: "1.5px solid rgba(30,77,58,0.25)", marginBottom: "16px" }}>
               <button style={modeTabStyle(accessMode === "none")} onClick={() => { setAccessMode("none"); setError(""); }}><Icon name="block" size={13} /> {t.none}</button>
-              <button style={{ ...modeTabStyle(accessMode === "upload"), borderLeft: "1px solid rgba(192,201,195,0.5)", borderRight: "1px solid rgba(192,201,195,0.5)" }} onClick={() => { setAccessMode("upload"); setError(""); }}><Icon name="upload_file" size={13} /> {t.uploadFile}</button>
+              <button style={{ ...modeTabStyle(accessMode === "upload"), borderLeft: "1px solid rgba(30,77,58,0.25)", borderRight: "1px solid rgba(30,77,58,0.25)" }} onClick={() => { setAccessMode("upload"); setError(""); }}><Icon name="upload_file" size={13} /> {t.uploadFile}</button>
               <button style={modeTabStyle(accessMode === "link")} onClick={() => { setAccessMode("link"); setError(""); }}><Icon name="link" size={13} /> {t.pasteLink}</button>
             </div>
             {accessMode === "upload" && <UploadZone file={uploadedFile} onFile={(f) => { setUploadedFile(f); setError(""); }} onRemove={() => setUploadedFile(null)} accept=".pdf,.mp3,.wav,.ogg,.m4a,.mp4,.webm,.epub,.doc,.docx,application/pdf,audio/*,video/*" hint="PDF, Audio, Video, ePub, Word — up to 100 MB" />}
-            {accessMode === "link" && <div style={{ position: "relative" }}><span style={{ position: "absolute", left: "12px", top: "50%", transform: "translateY(-50%)", color: "#c0c9c3", display: "flex", alignItems: "center" }}><Icon name="link" size={16} /></span><input type="url" value={linkUrl} onChange={(e) => { setLinkUrl(e.target.value); setError(""); }} placeholder={t.urlPlaceholder} style={{ ...inputStyle, paddingLeft: "36px" }} onFocus={(e) => (e.currentTarget.style.borderColor = "#0b4335")} onBlur={(e) => (e.currentTarget.style.borderColor = "rgba(192,201,195,0.6)")} /></div>}
-            {accessMode === "none" && <p style={{ fontSize: "12px", color: "#c0c9c3", fontStyle: "italic", margin: 0 }}>{t.noFileAttached}</p>}
+            {accessMode === "link" && <div style={{ position: "relative" }}><span style={{ position: "absolute", left: "12px", top: "50%", transform: "translateY(-50%)", color: "#1e4d3a66", display: "flex", alignItems: "center" }}><Icon name="link" size={16} /></span><input type="url" value={linkUrl} onChange={(e) => { setLinkUrl(e.target.value); setError(""); }} placeholder={t.urlPlaceholder} style={{ ...inputStyle, paddingLeft: "36px" }} onFocus={(e) => (e.currentTarget.style.borderColor = "#1e4d3a")} onBlur={(e) => (e.currentTarget.style.borderColor = "rgba(30,77,58,0.25)")} /></div>}
+            {accessMode === "none" && <p style={{ fontSize: "12px", color: "#1e4d3a66", fontStyle: "italic", margin: 0, ...SANS }}>{t.noFileAttached}</p>}
           </div>
-          {error && <p style={{ ...MONO, fontSize: "10px", color: "#b3261e", margin: 0, display: "flex", alignItems: "center", gap: "6px" }}><Icon name="error" size={13} /> {error}</p>}
+          {error && <p style={{ ...MONO, fontSize: "10px", color: "#b23b3b", margin: 0, display: "flex", alignItems: "center", gap: "6px" }}><Icon name="error" size={13} /> {error}</p>}
         </div>
-        <div style={{ display: "flex", justifyContent: "flex-end", gap: "10px", marginTop: "32px", paddingTop: "24px", borderTop: "1px solid rgba(192,201,195,0.3)" }}>
-          <HoverBtn onClick={onClose} style={{ borderColor: "#c0c9c3", color: "#707974" }}>{t.cancel}</HoverBtn>
+        <div style={{ display: "flex", justifyContent: "flex-end", gap: "10px", marginTop: "32px", paddingTop: "24px", borderTop: "1px solid rgba(30,77,58,0.12)" }}>
+          <button onClick={onClose} style={{ 
+            display: "inline-flex", alignItems: "center", gap: "8px", padding: "10px 20px",
+            border: "2px solid rgba(30,77,58,0.25)", borderRadius: "8px", 
+            backgroundColor: "transparent", color: "#1e4d3a",
+            fontFamily: "'Hanken Grotesk', sans-serif", fontSize: "12px", fontWeight: 700, letterSpacing: "0.05em", cursor: "pointer", 
+            transition: "all 0.3s ease"
+          }} onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = "#F5F3EC"; e.currentTarget.style.color = "#1e4d3a"; }} onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = "transparent"; e.currentTarget.style.color = "#1e4d3a"; }}>
+            {t.cancel}
+          </button>
           <button 
             onClick={handleSubmit} 
             disabled={isSubmitting}
-            style={{ ...BTN_PRIMARY, backgroundColor: isSubmitting ? "#c0c9c3" : "#0b4335", color: "#fff", padding: "8px 20px", fontSize: "11px", cursor: isSubmitting ? "not-allowed" : "pointer", opacity: isSubmitting ? 0.7 : 1 }} 
-            onMouseEnter={(e) => { if (!isSubmitting) e.currentTarget.style.backgroundColor = "#285b4b"; }} 
-            onMouseLeave={(e) => { if (!isSubmitting) e.currentTarget.style.backgroundColor = "#0b4335"; }}
+            style={{ 
+              display: "inline-flex", alignItems: "center", gap: "8px", padding: "10px 20px",
+              border: "2px solid #1e4d3a", borderRadius: "8px", 
+              backgroundColor: isSubmitting ? "rgba(30,77,58,0.25)" : "#1e4d3a", 
+              color: "#fff",
+              fontFamily: "'Hanken Grotesk', sans-serif", fontSize: "12px", fontWeight: 700, letterSpacing: "0.05em", cursor: isSubmitting ? "not-allowed" : "pointer", 
+              opacity: isSubmitting ? 0.7 : 1,
+              transition: "all 0.3s ease"
+            }} 
+            onMouseEnter={(e) => { if (!isSubmitting) { e.currentTarget.style.backgroundColor = "#fbf9f4"; e.currentTarget.style.color = "#1e4d3a"; } }} 
+            onMouseLeave={(e) => { if (!isSubmitting) { e.currentTarget.style.backgroundColor = "#1e4d3a"; e.currentTarget.style.color = "#fff"; } }}
           >
             {isSubmitting ? <Icon name="hourglass_empty" size={14} /> : <Icon name="check" size={14} />} 
             {isSubmitting ? "SAVING..." : t.addWorkBtn}
@@ -851,6 +859,7 @@ interface AddMediaModalProps {
 }
 
 function AddMediaModal({ onClose, onAdd, t, versionId, scholarId, onSuccess }: AddMediaModalProps) {
+  const isMobile = useIsMobile();
   const [title, setTitle] = useState(""); 
   const [year, setYear] = useState<string>("");
   const [desc, setDesc] = useState(""); 
@@ -860,21 +869,21 @@ function AddMediaModal({ onClose, onAdd, t, versionId, scholarId, onSuccess }: A
   const [error, setError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const inputStyle: React.CSSProperties = { width: "100%", padding: "10px 14px", border: "1.5px solid rgba(192,201,195,0.6)", borderRadius: "8px", fontSize: "13px", color: "#191c1b", backgroundColor: "#fafbf8", fontFamily: "'Source Sans 3', sans-serif", outline: "none", transition: "border-color 0.15s" };
-  const labelStyle: React.CSSProperties = { ...MONO, fontSize: "9px", color: "#707974", letterSpacing: "0.12em", display: "block", marginBottom: "6px" };
-  const modeTabStyle = (active: boolean): React.CSSProperties => ({ flex: 1, padding: "9px 0", textAlign: "center" as const, ...MONO, fontSize: "10px", fontWeight: 700, letterSpacing: "0.08em", border: "1.5px solid", borderColor: active ? "#0b4335" : "rgba(192,201,195,0.5)", backgroundColor: active ? "#0b4335" : "transparent", color: active ? "#fff" : "#707974", cursor: "pointer", transition: "all 0.15s", display: "flex", alignItems: "center", justifyContent: "center", gap: "6px" });
+  const inputStyle: React.CSSProperties = { width: "100%", padding: "10px 14px", border: "1.5px solid rgba(30,77,58,0.25)", borderRadius: "8px", fontSize: "13px", color: "#1e4d3a", backgroundColor: "#fff", fontFamily: "'Inter', sans-serif", outline: "none", transition: "border-color 0.2s ease" };
+  const labelStyle: React.CSSProperties = { ...MONO, fontSize: "10px", color: "#1e4d3a66", letterSpacing: "0.1em", display: "block", marginBottom: "6px", fontWeight: 600 };
+  const modeTabStyle = (active: boolean): React.CSSProperties => ({ flex: 1, padding: "9px 0", textAlign: "center" as const, ...MONO, fontSize: "10px", fontWeight: 700, letterSpacing: "0.08em", border: "1.5px solid", borderColor: active ? "#1e4d3a" : "rgba(30,77,58,0.25)", backgroundColor: active ? "#1e4d3a" : "transparent", color: active ? "#fff" : "#1e4d3a99", cursor: "pointer", transition: "all 0.2s ease", display: "flex", alignItems: "center", justifyContent: "center", gap: "6px" });
 
   const handleSubmit = async () => {
     if (!title.trim()) { setError(t.titleRequired); return; }
-if (accessMode === "link" && !linkUrl.trim()) { setError(t.urlRequired); return; }
-if (accessMode === "upload" && !uploadedFile) { setError(t.fileRequired); return; }
+    if (accessMode === "link" && !linkUrl.trim()) { setError(t.urlRequired); return; }
+    if (accessMode === "upload" && !uploadedFile) { setError(t.fileRequired); return; }
 
     setIsSubmitting(true);
     setError("");
 
     const parsedYear = year.trim() ? parseInt(year, 10) : null;
 
-        try {
+    try {
       if (accessMode === "upload" && uploadedFile) {
         const formData = new FormData();
         formData.append("file", uploadedFile);
@@ -884,21 +893,6 @@ if (accessMode === "upload" && !uploadedFile) { setError(t.fileRequired); return
         if (parsedYear !== null) formData.append("year", parsedYear.toString());
 
         const response = await scholarsApi.addMedia(versionId, formData);
-        
-        const mediaItem: MediaItem = {
-          type: (uploadedFile.type.includes("audio") ? "audio" : uploadedFile.type.includes("video") ? "video" : "pdf") as MediaItem["type"],
-          title: response.data.title || uploadedFile.name,
-          description: response.data.description || `${(uploadedFile.size / 1024 / 1024).toFixed(1)} MB`,
-          viewCount: response.data.view_count || 0,
-          likeCount: response.data.like_count || 0,
-          action: uploadedFile.type.includes("audio") ? "PLAY RECORDING" : uploadedFile.type.includes("video") ? "WATCH NOW" : "OPEN DOCUMENT",
-          actionIcon: uploadedFile.type.includes("audio") ? "play_circle" : uploadedFile.type.includes("video") ? "open_in_new" : "arrow_forward",
-          accessUrl: response.data.media_url || response.data.file_path,
-          accessSource: "upload",
-          accessFileName: uploadedFile.name,
-          uploadedBy: response.data.users?.username,
-          uploadedByUrl: response.data.users?.id ? `/profile/${response.data.users.id}` : undefined,
-        };
         
         onSuccess("Media added successfully!");
         onClose();
@@ -914,28 +908,8 @@ if (accessMode === "upload" && !uploadedFile) { setError(t.fileRequired); return
 
         const response = await scholarsApi.addMediaUrl(versionId, mediaData);
         
-        const ext = linkUrl.split(".").pop()?.toLowerCase() ?? "";
-        const type: MediaItem["type"] = 
-          ["mp3", "wav", "ogg", "m4a"].includes(ext) ? "audio" :
-          ["mp4", "webm", "avi", "mov"].includes(ext) || linkUrl.includes("youtube") || linkUrl.includes("vimeo") ? "video" : "pdf";
-
-        const mediaItem: MediaItem = {
-          type,
-          title: title.trim(),
-          description: desc.trim() || "External media",
-          viewCount: response.data.view_count || 0,
-          likeCount: response.data.like_count || 0,
-          action: type === "audio" ? "PLAY RECORDING" : type === "video" ? "WATCH NOW" : "OPEN DOCUMENT",
-          actionIcon: type === "audio" ? "play_circle" : type === "video" ? "open_in_new" : "arrow_forward",
-          accessUrl: linkUrl.trim(),
-          accessSource: "link",
-          uploadedBy: response.data.users?.username,
-          uploadedByUrl: response.data.users?.id ? `/profile/${response.data.users.id}` : undefined,
-        };
-        
         onSuccess("Media added successfully!");
         onClose();
-
       }
     } catch (err: any) {
       console.error("Failed to add media:", err);
@@ -946,37 +920,53 @@ if (accessMode === "upload" && !uploadedFile) { setError(t.fileRequired); return
   };
 
   return (
-    <div style={{ position: "fixed", inset: 0, zIndex: 200, backgroundColor: "rgba(25,28,27,0.45)", display: "flex", alignItems: "center", justifyContent: "center", backdropFilter: "blur(4px)" }} onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}>
-      <div style={{ backgroundColor: "#fff", borderRadius: "16px", padding: "36px", width: "520px", maxWidth: "calc(100vw - 32px)", boxShadow: "0 20px 60px rgba(0,0,0,0.18)", border: "1px solid rgba(192,201,195,0.3)", maxHeight: "90vh", overflowY: "auto" }}>
+    <div style={{ position: "fixed", inset: 0, zIndex: 200, backgroundColor: "rgba(30,77,58,0.4)", display: "flex", alignItems: "center", justifyContent: "center", backdropFilter: "blur(4px)" }} onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}>
+      <div style={{ backgroundColor: "#fff", borderRadius: "16px", padding: isMobile ? "24px 18px" : "36px", width: "520px", maxWidth: "calc(100vw - 32px)", boxShadow: "0 20px 60px rgba(30,77,58,0.14)", border: "1px solid rgba(30,77,58,0.12)", maxHeight: "90vh", overflowY: "auto" }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "28px" }}>
-          <h2 style={{ ...SERIF, fontSize: "20px", fontWeight: 700, color: "#0b4335", margin: 0, display: "flex", alignItems: "center", gap: "10px" }}><Icon name="add_circle" size={20} /> {t.addMediaModal}</h2>
-          <button onClick={onClose} style={{ background: "none", border: "none", cursor: "pointer", color: "#707974", padding: "4px", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center" }} onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#f0f1ee")} onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "transparent")}><Icon name="close" size={20} /></button>
+          <h2 style={{ fontFamily: "'Hanken Grotesk', sans-serif", fontSize: isMobile ? "17px" : "20px", fontWeight: 700, color: "#1e4d3a", margin: 0, display: "flex", alignItems: "center", gap: "10px" }}><Icon name="add_circle" size={20} /> {t.addMediaModal}</h2>
+          <button onClick={onClose} style={{ background: "none", border: "none", cursor: "pointer", color: "#1e4d3a66", padding: "4px", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center" }} onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#F5F3EC")} onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "transparent")}><Icon name="close" size={20} /></button>
         </div>
         
         <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
-          <div><label style={labelStyle}>{t.title} *</label><input type="text" value={title} onChange={(e) => { setTitle(e.target.value); setError(""); }} placeholder={t.mediaTitlePlaceholder} style={inputStyle} onFocus={(e) => (e.currentTarget.style.borderColor = "#0b4335")} onBlur={(e) => (e.currentTarget.style.borderColor = "rgba(192,201,195,0.6)")} /></div>
-          <div><label style={labelStyle}>{t.year}</label><input type="number" value={year} onChange={(e) => { setYear(e.target.value); setError(""); }} placeholder={t.yearPlaceholder} min={600} max={new Date().getFullYear()} style={inputStyle} onFocus={(e) => (e.currentTarget.style.borderColor = "#0b4335")} onBlur={(e) => (e.currentTarget.style.borderColor = "rgba(192,201,195,0.6)")} /></div>
-          <div><label style={labelStyle}>{t.description}</label><textarea value={desc} onChange={(e) => setDesc(e.target.value)} placeholder={t.descriptionPlaceholder} rows={2} style={{ ...inputStyle, resize: "vertical" }} onFocus={(e) => (e.currentTarget.style.borderColor = "#0b4335")} onBlur={(e) => (e.currentTarget.style.borderColor = "rgba(192,201,195,0.6)")} /></div>
+          <div><label style={labelStyle}>{t.title} *</label><input type="text" value={title} onChange={(e) => { setTitle(e.target.value); setError(""); }} placeholder={t.mediaTitlePlaceholder} style={inputStyle} onFocus={(e) => (e.currentTarget.style.borderColor = "#1e4d3a")} onBlur={(e) => (e.currentTarget.style.borderColor = "rgba(30,77,58,0.25)")} /></div>
+          <div><label style={labelStyle}>{t.year}</label><input type="number" value={year} onChange={(e) => { setYear(e.target.value); setError(""); }} placeholder={t.yearPlaceholder} min={600} max={new Date().getFullYear()} style={inputStyle} onFocus={(e) => (e.currentTarget.style.borderColor = "#1e4d3a")} onBlur={(e) => (e.currentTarget.style.borderColor = "rgba(30,77,58,0.25)")} /></div>
+          <div><label style={labelStyle}>{t.description}</label><textarea value={desc} onChange={(e) => setDesc(e.target.value)} placeholder={t.descriptionPlaceholder} rows={2} style={{ ...inputStyle, resize: "vertical", ...SANS }} onFocus={(e) => (e.currentTarget.style.borderColor = "#1e4d3a")} onBlur={(e) => (e.currentTarget.style.borderColor = "rgba(30,77,58,0.25)")} /></div>
           <div>
             <label style={labelStyle}>{t.fileLink}</label>
-                        <div style={{ display: "flex", borderRadius: "8px", overflow: "hidden", border: "1.5px solid rgba(192,201,195,0.5)", marginBottom: "16px" }}>
+            <div style={{ display: "flex", borderRadius: "8px", overflow: "hidden", border: "1.5px solid rgba(30,77,58,0.25)", marginBottom: "16px" }}>
               <button style={modeTabStyle(accessMode === "upload")} onClick={() => { setAccessMode("upload"); setError(""); }}><Icon name="upload_file" size={13} /> {t.uploadFile}</button>
-              <button style={{ ...modeTabStyle(accessMode === "link"), borderLeft: "1px solid rgba(192,201,195,0.5)" }} onClick={() => { setAccessMode("link"); setError(""); }}><Icon name="link" size={13} /> {t.pasteLink}</button>
+              <button style={{ ...modeTabStyle(accessMode === "link"), borderLeft: "1px solid rgba(30,77,58,0.25)" }} onClick={() => { setAccessMode("link"); setError(""); }}><Icon name="link" size={13} /> {t.pasteLink}</button>
             </div>
             {accessMode === "upload" && <UploadZone file={uploadedFile} onFile={(f) => { setUploadedFile(f); setError(""); }} onRemove={() => setUploadedFile(null)} accept=".pdf,.mp3,.wav,.ogg,.m4a,.mp4,.webm,.avi,audio/*,video/*,application/pdf" hint="PDF, Audio, Video — up to 100 MB" />}
-            {accessMode === "link" && <div style={{ position: "relative" }}><span style={{ position: "absolute", left: "12px", top: "50%", transform: "translateY(-50%)", color: "#c0c9c3", display: "flex", alignItems: "center" }}><Icon name="link" size={16} /></span><input type="url" value={linkUrl} onChange={(e) => { setLinkUrl(e.target.value); setError(""); }} placeholder={t.urlPlaceholder} style={{ ...inputStyle, paddingLeft: "36px" }} onFocus={(e) => (e.currentTarget.style.borderColor = "#0b4335")} onBlur={(e) => (e.currentTarget.style.borderColor = "rgba(192,201,195,0.6)")} /></div>}
+            {accessMode === "link" && <div style={{ position: "relative" }}><span style={{ position: "absolute", left: "12px", top: "50%", transform: "translateY(-50%)", color: "#1e4d3a66", display: "flex", alignItems: "center" }}><Icon name="link" size={16} /></span><input type="url" value={linkUrl} onChange={(e) => { setLinkUrl(e.target.value); setError(""); }} placeholder={t.urlPlaceholder} style={{ ...inputStyle, paddingLeft: "36px" }} onFocus={(e) => (e.currentTarget.style.borderColor = "#1e4d3a")} onBlur={(e) => (e.currentTarget.style.borderColor = "rgba(30,77,58,0.25)")} /></div>}
             </div>
-          {error && <p style={{ ...MONO, fontSize: "10px", color: "#b3261e", margin: 0, display: "flex", alignItems: "center", gap: "6px" }}><Icon name="error" size={13} /> {error}</p>}
+          {error && <p style={{ ...MONO, fontSize: "10px", color: "#b23b3b", margin: 0, display: "flex", alignItems: "center", gap: "6px" }}><Icon name="error" size={13} /> {error}</p>}
         </div>
 
-        <div style={{ display: "flex", justifyContent: "flex-end", gap: "10px", marginTop: "32px", paddingTop: "24px", borderTop: "1px solid rgba(192,201,195,0.3)" }}>
-          <HoverBtn onClick={onClose} style={{ borderColor: "#c0c9c3", color: "#707974" }}>{t.cancel}</HoverBtn>
+        <div style={{ display: "flex", justifyContent: "flex-end", gap: "10px", marginTop: "32px", paddingTop: "24px", borderTop: "1px solid rgba(30,77,58,0.12)" }}>
+          <button onClick={onClose} style={{ 
+            display: "inline-flex", alignItems: "center", gap: "8px", padding: "10px 20px",
+            border: "2px solid rgba(30,77,58,0.25)", borderRadius: "8px", 
+            backgroundColor: "transparent", color: "#1e4d3a",
+            fontFamily: "'Hanken Grotesk', sans-serif", fontSize: "12px", fontWeight: 700, letterSpacing: "0.05em", cursor: "pointer", 
+            transition: "all 0.3s ease"
+          }} onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = "#F5F3EC"; e.currentTarget.style.color = "#1e4d3a"; }} onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = "transparent"; e.currentTarget.style.color = "#1e4d3a"; }}>
+            {t.cancel}
+          </button>
           <button 
             onClick={handleSubmit} 
             disabled={isSubmitting}
-            style={{ ...BTN_PRIMARY, backgroundColor: isSubmitting ? "#c0c9c3" : "#0b4335", color: "#fff", padding: "8px 20px", fontSize: "11px", cursor: isSubmitting ? "not-allowed" : "pointer", opacity: isSubmitting ? 0.7 : 1 }} 
-            onMouseEnter={(e) => { if (!isSubmitting) e.currentTarget.style.backgroundColor = "#285b4b"; }} 
-            onMouseLeave={(e) => { if (!isSubmitting) e.currentTarget.style.backgroundColor = "#0b4335"; }}
+            style={{ 
+              display: "inline-flex", alignItems: "center", gap: "8px", padding: "10px 20px",
+              border: "2px solid #1e4d3a", borderRadius: "8px", 
+              backgroundColor: isSubmitting ? "rgba(30,77,58,0.25)" : "#1e4d3a", 
+              color: "#fff",
+              fontFamily: "'Hanken Grotesk', sans-serif", fontSize: "12px", fontWeight: 700, letterSpacing: "0.05em", cursor: isSubmitting ? "not-allowed" : "pointer", 
+              opacity: isSubmitting ? 0.7 : 1,
+              transition: "all 0.3s ease"
+            }} 
+            onMouseEnter={(e) => { if (!isSubmitting) { e.currentTarget.style.backgroundColor = "#fbf9f4"; e.currentTarget.style.color = "#1e4d3a"; } }} 
+            onMouseLeave={(e) => { if (!isSubmitting) { e.currentTarget.style.backgroundColor = "#1e4d3a"; e.currentTarget.style.color = "#fff"; } }}
           >
             {isSubmitting ? <Icon name="hourglass_empty" size={14} /> : <Icon name="check" size={14} />} 
             {isSubmitting ? "UPLOADING..." : t.addMediaBtn}
@@ -994,10 +984,10 @@ interface ReportDropdownProps { onReport: (reason: string) => void; onClose: () 
 function ReportDropdown({ onReport, onClose }: ReportDropdownProps) {
   const reasons = ["Spam", "Misinformation", "Off-topic", "Harassment", "Other"];
   return (
-    <div style={{ position: "absolute", top: "calc(100% + 6px)", right: 0, zIndex: 100, backgroundColor: "#fff", border: "1px solid rgba(192,201,195,0.5)", borderRadius: "8px", boxShadow: "0 4px 20px rgba(0,0,0,0.12)", minWidth: "160px", overflow: "hidden" }}>
-      <div style={{ padding: "8px 12px 6px", borderBottom: "1px solid #f0f1ee" }}><span style={{ ...MONO, fontSize: "9px", color: "#707974", letterSpacing: "0.1em" }}>REPORT REASON</span></div>
+    <div style={{ position: "absolute", top: "calc(100% + 6px)", right: 0, zIndex: 100, backgroundColor: "#fff", border: "1px solid rgba(30,77,58,0.12)", borderRadius: "8px", boxShadow: "0 8px 24px rgba(30,77,58,0.14)", minWidth: "160px", overflow: "hidden" }}>
+      <div style={{ padding: "8px 12px 6px", borderBottom: "1px solid #F5F3EC" }}><span style={{ ...MONO, fontSize: "9px", color: "#1e4d3a66", letterSpacing: "0.1em" }}>REPORT REASON</span></div>
       {reasons.map((r) => (
-        <button key={r} onClick={() => { onReport(r); onClose(); }} style={{ display: "block", width: "100%", textAlign: "left", padding: "8px 14px", fontSize: "12px", color: r === "Harassment" ? "#b3261e" : "#404945", background: "none", border: "none", cursor: "pointer", transition: "background 0.12s" }} onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#f3f4f1")} onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "transparent")}>{r}</button>
+        <button key={r} onClick={() => { onReport(r); onClose(); }} style={{ display: "block", width: "100%", textAlign: "left", padding: "8px 14px", fontSize: "12px", color: r === "Harassment" ? "#b23b3b" : "#1e4d3acc", background: "none", border: "none", cursor: "pointer", transition: "background 0.2s ease", ...SANS }} onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#F5F3EC")} onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "transparent")}>{r}</button>
       ))}
     </div>
   );
@@ -1005,6 +995,7 @@ function ReportDropdown({ onReport, onClose }: ReportDropdownProps) {
 
 interface CommentCardProps { comment: Comment; lang: Language; t: UITranslation; votedIds: VotedIds; onVote: (id: number) => void; onAddReply: (parentId: number, text: string) => void; isReply?: boolean; }
 function CommentCard({ comment: c, lang, t, votedIds, onVote, onAddReply, isReply = false }: CommentCardProps) {
+  const isMobile = useIsMobile();
   const [replyOpen, setReplyOpen] = useState(false);
   const [replyDraft, setReplyDraft] = useState("");
   const [reportOpen, setReportOpen] = useState(false);
@@ -1020,37 +1011,37 @@ function CommentCard({ comment: c, lang, t, votedIds, onVote, onAddReply, isRepl
   }, [reportOpen]);
 
   return (
-    <div style={{ backgroundColor: "#fff", border: "1.5px solid rgba(192,201,195,0.4)", borderRadius: "12px", padding: isReply ? "14px 18px" : "20px 24px", marginLeft: isReply ? "40px" : 0 }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "10px" }}>
+    <div style={{ backgroundColor: "#fff", border: "1px solid rgba(30,77,58,0.1)", borderRadius: "16px", padding: isReply ? (isMobile ? "12px 14px" : "14px 18px") : (isMobile ? "16px 16px" : "20px 24px"), marginLeft: isReply ? (isMobile ? "16px" : "40px") : 0 }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "10px", flexWrap: "wrap", gap: "8px" }}>
         <div style={{ display: "flex", alignItems: "center", gap: "10px", flexWrap: "wrap" }}>
-          <div style={{ width: isReply ? "28px" : "32px", height: isReply ? "28px" : "32px", borderRadius: "50%", backgroundColor: "#e7e8e6", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}><Icon name="person" size={isReply ? 14 : 16} /></div>
-          <span style={{ fontSize: "13px", fontWeight: 700, color: "#191c1b" }}>{c.author}</span>
-          {c.role && <span style={{ ...MONO, fontSize: "9px", backgroundColor: "rgba(11,67,53,0.08)", color: "#0b4335", padding: "2px 8px", borderRadius: "4px", fontWeight: 700 }}>{c.role}</span>}
+          <div style={{ width: isReply ? "28px" : "32px", height: isReply ? "28px" : "32px", borderRadius: "50%", backgroundColor: "#F5F3EC", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}><Icon name="person" size={isReply ? 14 : 16} style={{ color: "#1e4d3a66" }} /></div>
+          <span style={{ fontSize: "13px", fontWeight: 700, color: "#1e4d3a", ...SANS }}>{c.author}</span>
+          {c.role && <span style={{ ...MONO, fontSize: "9px", backgroundColor: "rgba(30,77,58,0.08)", color: "#1e4d3a", padding: "2px 8px", borderRadius: "4px", fontWeight: 700 }}>{c.role}</span>}
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-          <span style={{ ...MONO, fontSize: "10px", color: "#c0c9c3", whiteSpace: "nowrap" }}>{c.time}</span>
+          <span style={{ ...MONO, fontSize: "10px", color: "#1e4d3a66", whiteSpace: "nowrap" }}>{c.time}</span>
           {!reported ? (
             <div ref={reportRef} style={{ position: "relative" }}>
-              <button onClick={() => setReportOpen((v) => !v)} title={t.report} style={{ background: "none", border: "none", cursor: "pointer", color: "#c0c9c3", display: "flex", alignItems: "center", padding: "2px", borderRadius: "4px", transition: "color 0.15s" }} onMouseEnter={(e) => (e.currentTarget.style.color = "#b3261e")} onMouseLeave={(e) => (e.currentTarget.style.color = "#c0c9c3")}><Icon name="flag" size={14} /></button>
+              <button onClick={() => setReportOpen((v) => !v)} title={t.report} style={{ background: "none", border: "none", cursor: "pointer", color: "#1e4d3a66", display: "flex", alignItems: "center", padding: "2px", borderRadius: "4px", transition: "color 0.2s ease" }} onMouseEnter={(e) => (e.currentTarget.style.color = "#b23b3b")} onMouseLeave={(e) => (e.currentTarget.style.color = "#1e4d3a66")}><Icon name="flag" size={14} /></button>
               {reportOpen && <ReportDropdown onReport={handleReport} onClose={() => setReportOpen(false)} />}
             </div>
-          ) : <span style={{ ...MONO, fontSize: "9px", color: "#b3261e", opacity: 0.7 }}>Reported</span>}
+          ) : <span style={{ ...MONO, fontSize: "9px", color: "#b23b3b", opacity: 0.7 }}>Reported</span>}
         </div>
       </div>
-      <p style={{ fontSize: "13px", color: "#404945", lineHeight: 1.65, margin: "0 0 12px" }}>{c.text}</p>
-      <div style={{ display: "flex", gap: "20px", alignItems: "center" }}>
+      <p style={{ fontSize: "13px", color: "#1e4d3acc", lineHeight: 1.65, margin: "0 0 12px", ...SANS }}>{c.text}</p>
+      <div style={{ display: "flex", gap: "20px", alignItems: "center", flexWrap: "wrap" }}>
         {!isReply && <button className="action-link" onClick={() => setReplyOpen((v) => !v)}><Icon name="reply" size={14} /> {t.reply}</button>}
-        <button className="action-link" onClick={() => onVote(c.id)} style={{ color: votedIds[c.id] ? "#0b4335" : "#707974", fontWeight: votedIds[c.id] ? 700 : 400 }}><Icon name="thumb_up" size={13} /> {t.vote} ({c.votes})</button>
+        <button className="action-link" onClick={() => onVote(c.id)} style={{ color: votedIds[c.id] ? "#1e4d3a" : "#1e4d3a99", fontWeight: votedIds[c.id] ? 700 : 400 }}><Icon name="thumb_up" size={13} /> {t.vote} ({c.votes})</button>
       </div>
       {replyOpen && !isReply && (
-        <div style={{ marginTop: "14px", paddingTop: "14px", borderTop: "1px solid #f0f1ee" }}>
+        <div style={{ marginTop: "14px", paddingTop: "14px", borderTop: "1px solid #F5F3EC" }}>
           <div style={{ display: "flex", gap: "10px", alignItems: "flex-start" }}>
-            <div style={{ width: "28px", height: "28px", borderRadius: "50%", flexShrink: 0, backgroundColor: "#e7e8e6", display: "flex", alignItems: "center", justifyContent: "center" }}><Icon name="person" size={14} /></div>
-            <div style={{ flex: 1, border: "1.5px solid rgba(192,201,195,0.5)", borderRadius: "10px", backgroundColor: "#f9faf7", overflow: "hidden" }}>
-              <textarea autoFocus value={replyDraft} onChange={(e) => setReplyDraft(e.target.value)} placeholder={`${t.reply.toLowerCase() === "reply" ? "Reply to" : "رد على"} ${c.author}…`} rows={2} style={{ width: "100%", border: "none", outline: "none", resize: "none", padding: "10px 14px", fontSize: "13px", color: "#191c1b", fontFamily: "'Source Sans 3', sans-serif", backgroundColor: "transparent" }} />
-              <div style={{ display: "flex", justifyContent: "flex-end", padding: "6px 10px", borderTop: "1px solid #f0f1ee", gap: "8px" }}>
-                <button onClick={() => { setReplyOpen(false); setReplyDraft(""); }} style={{ ...MONO, fontSize: "10px", color: "#707974", background: "none", border: "none", cursor: "pointer" }}>CANCEL</button>
-                <button onClick={() => { if (!replyDraft.trim()) return; onAddReply(c.id, replyDraft.trim()); setReplyDraft(""); setReplyOpen(false); }} style={{ display: "flex", alignItems: "center", gap: "5px", backgroundColor: "#0b4335", color: "#fff", border: "none", borderRadius: "6px", padding: "6px 14px", cursor: "pointer", fontSize: "10px", fontWeight: 700, letterSpacing: "0.06em", fontFamily: "'JetBrains Mono', monospace" }} onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#285b4b")} onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "#0b4335")}><Icon name="send" size={12} /> {sendLabel}</button>
+            <div style={{ width: "28px", height: "28px", borderRadius: "50%", flexShrink: 0, backgroundColor: "#F5F3EC", display: "flex", alignItems: "center", justifyContent: "center" }}><Icon name="person" size={14} style={{ color: "#1e4d3a66" }} /></div>
+            <div style={{ flex: 1, border: "1.5px solid rgba(30,77,58,0.25)", borderRadius: "10px", backgroundColor: "#F5F3EC", overflow: "hidden" }}>
+              <textarea autoFocus value={replyDraft} onChange={(e) => setReplyDraft(e.target.value)} placeholder={`${t.reply.toLowerCase() === "reply" ? "Reply to" : "رد على"} ${c.author}…`} rows={2} style={{ width: "100%", border: "none", outline: "none", resize: "none", padding: "10px 14px", fontSize: "13px", color: "#1e4d3a", fontFamily: "'Inter', sans-serif", backgroundColor: "transparent" }} />
+              <div style={{ display: "flex", justifyContent: "flex-end", padding: "6px 10px", borderTop: "1px solid rgba(30,77,58,0.12)", gap: "8px" }}>
+                <button onClick={() => { setReplyOpen(false); setReplyDraft(""); }} style={{ ...MONO, fontSize: "10px", color: "#1e4d3a99", background: "none", border: "none", cursor: "pointer" }}>CANCEL</button>
+                <button onClick={() => { if (!replyDraft.trim()) return; onAddReply(c.id, replyDraft.trim()); setReplyDraft(""); setReplyOpen(false); }} style={{ display: "flex", alignItems: "center", gap: "5px", backgroundColor: "#1e4d3a", color: "#fff", border: "none", borderRadius: "6px", padding: "6px 14px", cursor: "pointer", fontSize: "10px", fontWeight: 700, letterSpacing: "0.06em", fontFamily: "'JetBrains Mono', monospace" }} onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#163a2c")} onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "#1e4d3a")}><Icon name="send" size={12} /> {sendLabel}</button>
               </div>
             </div>
           </div>
@@ -1069,18 +1060,28 @@ function CommentCard({ comment: c, lang, t, votedIds, onVote, onAddReply, isRepl
    DISCUSSION SECTION (Linked to Backend API)
 ───────────────────────────────────────────── */
 function DiscussionSection({ lang, t, scholarId, backendComments }: { lang: Language; t: UITranslation; scholarId: number; backendComments: Comment[] }) {
+  const isMobile = useIsMobile();
   const [commentsByLang, setCommentsByLang] = useState<CommentsByLang>({
-    EN: lang === "EN" ? backendComments : [],
-    AR: lang === "AR" ? backendComments : [],
-    FR: lang === "FR" ? backendComments : [],
+    EN: [],
+    AR: [],
+    FR: [],
   });
   const [draftByLang, setDraftByLang] = useState<DraftByLang>({ EN: "", AR: "", FR: "" });
   const [votedIds, setVotedIds] = useState<VotedIds>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
+  const [showAllComments, setShowAllComments] = useState(false);
+
+  useEffect(() => {
+    setCommentsByLang(prev => ({
+      ...prev,
+      [lang]: backendComments
+    }));
+  }, [lang, backendComments]);
 
   const isRTL = lang === "AR";
   const comments = commentsByLang[lang];
+  const displayedComments = comments.slice(0, showAllComments ? comments.length : 3);
   const draft = draftByLang[lang];
   const setDraft = (val: string) => { setDraftByLang((prev) => ({ ...prev, [lang]: val })); if (submitError) setSubmitError(null); };
   const sendLabel = lang === "AR" ? "إرسال" : lang === "FR" ? "ENVOYER" : "SEND";
@@ -1101,6 +1102,7 @@ function DiscussionSection({ lang, t, scholarId, backendComments }: { lang: Lang
         replies: []
       };
       setCommentsByLang((prev) => ({ ...prev, [lang]: [...prev[lang], newComment] }));
+      setShowAllComments(true); // Ensure the new comment is visible
       setDraft("");
     } catch (err: any) {
       console.error("Failed to post comment:", err);
@@ -1128,29 +1130,38 @@ function DiscussionSection({ lang, t, scholarId, backendComments }: { lang: Lang
   };
 
   return (
-    <section style={{ marginTop: "80px", paddingTop: "40px", borderTop: "1px solid rgba(192,201,195,0.4)" }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "28px" }}>
-        <h2 style={{ ...SERIF, fontSize: "22px", fontWeight: 700, color: "#0b4335", margin: 0, display: "flex", alignItems: "center", gap: "10px" }}><Icon name="forum" size={22} /> {t.academicDiscussion}</h2>
-        <span style={{ ...MONO, fontSize: "9px", fontWeight: 700, letterSpacing: "0.12em", padding: "4px 10px", borderRadius: "6px", backgroundColor: "rgba(11,67,53,0.08)", color: "#0b4335", border: "1px solid rgba(11,67,53,0.15)" }}>{LANG_LABELS[lang].toUpperCase()}</span>
+    <section style={{ marginTop: isMobile ? "48px" : "80px", paddingTop: isMobile ? "28px" : "40px", borderTop: "1px solid rgba(30,77,58,0.1)" }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "28px", flexWrap: "wrap", gap: "10px" }}>
+        <h2 style={{ fontFamily: "'Hanken Grotesk', sans-serif", fontSize: isMobile ? "18px" : "22px", fontWeight: 700, color: "#1e4d3a", margin: 0, display: "flex", alignItems: "center", gap: "10px" }}><Icon name="forum" size={22} /> {t.academicDiscussion}</h2>
+        <span style={{ ...MONO, fontSize: "9px", fontWeight: 700, letterSpacing: "0.12em", padding: "4px 10px", borderRadius: "6px", backgroundColor: "rgba(30,77,58,0.08)", color: "#1e4d3a", border: "1px solid rgba(30,77,58,0.15)" }}>{LANG_LABELS[lang].toUpperCase()}</span>
       </div>
       <div style={{ maxWidth: "800px", display: "flex", flexDirection: "column", gap: "14px" }} dir={isRTL ? "rtl" : "ltr"}>
         {comments.length === 0 && (
-          <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "12px", padding: "48px 32px", textAlign: "center", border: "2px dashed #c0c9c3", borderRadius: "12px" }}>
-            <Icon name="chat_bubble_outline" size={36} />
-            <p style={{ color: "#707974", fontSize: "14px", margin: 0 }}>{t.noDiscussion}</p>
-            <span style={{ ...MONO, fontSize: "10px", color: "#0b4335", fontWeight: 700, cursor: "pointer", textDecoration: "underline", textUnderlineOffset: "3px" }}>{t.startDiscussion}</span>
+          <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "12px", padding: isMobile ? "32px 20px" : "48px 32px", textAlign: "center", border: "2px dashed rgba(30,77,58,0.25)", borderRadius: "16px", backgroundColor: "#F5F3EC" }}>
+            <Icon name="chat_bubble_outline" size={36} style={{ color: "#1e4d3a66" }} />
+            <p style={{ color: "#1e4d3a99", fontSize: "14px", margin: 0, ...SANS }}>{t.noDiscussion}</p>
+            <span style={{ ...MONO, fontSize: "10px", color: "#1e4d3a", fontWeight: 700, cursor: "pointer", textDecoration: "underline", textUnderlineOffset: "3px" }}>{t.startDiscussion}</span>
           </div>
         )}
-        {comments.map((c) => (
+        {displayedComments.map((c) => (
           <CommentCard key={c.id} comment={c} lang={lang} t={t} votedIds={votedIds} onVote={handleVote} onAddReply={handleAddReply} />
         ))}
+        {comments.length > 3 && (
+          <button 
+            className="action-link" 
+            onClick={() => setShowAllComments(!showAllComments)} 
+            style={{ alignSelf: "center", marginTop: "16px", fontSize: "12px" }}
+          >
+            {showAllComments ? t.showLess : `${t.viewMore} (${comments.length - 3} more)`}
+          </button>
+        )}
         <div style={{ display: "flex", gap: "14px", alignItems: "flex-start", marginTop: "4px" }}>
-          <div style={{ width: "40px", height: "40px", borderRadius: "50%", flexShrink: 0, backgroundColor: "#e7e8e6", display: "flex", alignItems: "center", justifyContent: "center", color: "#707974", marginTop: "2px" }}><Icon name="person" size={20} /></div>
-          <div style={{ flex: 1, border: "1.5px solid rgba(192,201,195,0.5)", borderRadius: "12px", backgroundColor: "#fff", overflow: "hidden" }}>
-            <textarea value={draft} onChange={(e) => setDraft(e.target.value)} placeholder={t.joinDialogue} rows={3} disabled={isSubmitting} style={{ width: "100%", border: "none", outline: "none", resize: "none", padding: "14px 16px", fontSize: "13px", color: "#191c1b", fontFamily: "'Source Sans 3', sans-serif", backgroundColor: "transparent", opacity: isSubmitting ? 0.6 : 1 }} />
-            {submitError && (<div style={{ padding: "0 16px 8px", display: "flex", alignItems: "center", gap: "6px" }}><Icon name="error" size={14} /><span style={{ fontSize: "11px", color: "#b3261e", fontFamily: "'JetBrains Mono', monospace" }}>{submitError}</span></div>)}
-            <div style={{ display: "flex", justifyContent: "flex-end", padding: "8px 12px", borderTop: "1px solid #f0f1ee" }}>
-              <button onClick={submitComment} disabled={isSubmitting || !draft.trim()} style={{ display: "flex", alignItems: "center", gap: "6px", backgroundColor: (isSubmitting || !draft.trim()) ? "#c0c9c3" : "#0b4335", color: "#fff", border: "none", borderRadius: "8px", padding: "8px 16px", cursor: (isSubmitting || !draft.trim()) ? "not-allowed" : "pointer", fontSize: "11px", fontWeight: 700, letterSpacing: "0.06em", fontFamily: "'JetBrains Mono', monospace", transition: "background 0.15s" }}>
+          <div style={{ width: "40px", height: "40px", borderRadius: "50%", flexShrink: 0, backgroundColor: "#F5F3EC", display: "flex", alignItems: "center", justifyContent: "center", color: "#1e4d3a66", marginTop: "2px" }}><Icon name="person" size={20} /></div>
+          <div style={{ flex: 1, border: "1.5px solid rgba(30,77,58,0.25)", borderRadius: "12px", backgroundColor: "#fff", overflow: "hidden" }}>
+            <textarea value={draft} onChange={(e) => setDraft(e.target.value)} placeholder={t.joinDialogue} rows={3} disabled={isSubmitting} style={{ width: "100%", border: "none", outline: "none", resize: "none", padding: "14px 16px", fontSize: "13px", color: "#1e4d3a", fontFamily: "'Inter', sans-serif", backgroundColor: "transparent", opacity: isSubmitting ? 0.6 : 1 }} />
+            {submitError && (<div style={{ padding: "0 16px 8px", display: "flex", alignItems: "center", gap: "6px" }}><Icon name="error" size={14} /><span style={{ fontSize: "11px", color: "#b23b3b", fontFamily: "'JetBrains Mono', monospace" }}>{submitError}</span></div>)}
+            <div style={{ display: "flex", justifyContent: "flex-end", padding: "8px 12px", borderTop: "1px solid #F5F3EC" }}>
+              <button onClick={submitComment} disabled={isSubmitting || !draft.trim()} style={{ display: "flex", alignItems: "center", gap: "6px", backgroundColor: (isSubmitting || !draft.trim()) ? "rgba(30,77,58,0.25)" : "#1e4d3a", color: "#fff", border: "none", borderRadius: "8px", padding: "8px 16px", cursor: (isSubmitting || !draft.trim()) ? "not-allowed" : "pointer", fontSize: "11px", fontWeight: 700, letterSpacing: "0.06em", fontFamily: "'JetBrains Mono', monospace", transition: "background 0.2s ease" }}>
                 {isSubmitting ? <Icon name="hourglass_empty" size={14} /> : <Icon name="send" size={14} />} 
                 {isSubmitting ? (lang === "AR" ? "جاري الإرسال..." : "SENDING...") : sendLabel}
               </button>
@@ -1178,11 +1189,9 @@ function MediaCard({ item: m, mediaIconName }: MediaCardProps) {
 
   const handleDownload = async (e: React.MouseEvent) => {
     if (m.accessSource !== "upload" || !m.accessUrl) return;
-    
     e.preventDefault();
     e.stopPropagation();
     setIsDownloading(true);
-    
     try {
       const response = await fetch(m.accessUrl);
       const blob = await response.blob();
@@ -1208,22 +1217,14 @@ function MediaCard({ item: m, mediaIconName }: MediaCardProps) {
     e.preventDefault();
     e.stopPropagation();
     setIsViewing(true);
-    
     try {
       const response = await fetch(m.accessUrl);
       const blob = await response.blob();
-      
-      const correctType = m.type === 'audio' ? 'audio/mpeg' : 
-                          m.type === 'video' ? 'video/mp4' : 
-                          'application/pdf';
-      
+      const correctType = m.type === 'audio' ? 'audio/mpeg' : m.type === 'video' ? 'video/mp4' : 'application/pdf';
       const typedBlob = new Blob([blob], { type: correctType });
       const blobUrl = URL.createObjectURL(typedBlob);
-      
       window.open(blobUrl, '_blank');
-      
       setTimeout(() => URL.revokeObjectURL(blobUrl), 60000);
-      
     } catch (error) {
       console.error('View failed:', error);
       window.open(m.accessUrl, '_blank');
@@ -1236,40 +1237,40 @@ function MediaCard({ item: m, mediaIconName }: MediaCardProps) {
     <div className="card-hover" style={{ 
       backgroundColor: "#fff", 
       padding: "24px", 
-      border: "1.5px solid rgba(192,201,195,0.4)", 
-      borderRadius: "12px", 
+      border: "1px solid rgba(30,77,58,0.1)", 
+      borderRadius: "16px", 
       display: "flex", 
       flexDirection: "column", 
       cursor: "pointer" 
     }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "16px" }}>
-        <span className="material-symbols-outlined" style={{ fontSize: "32px", color: "#0b4335" }}>
+        <span className="material-symbols-outlined" style={{ fontSize: "32px", color: "#1e4d3a" }}>
           {mediaIconName(m.type)}
         </span>
       </div>
       
-      <p style={{ fontSize: "14px", fontWeight: 700, color: "#191c1b", margin: "0 0 8px" }}>
+      <p style={{ fontSize: "14px", fontWeight: 700, color: "#1e4d3a", margin: "0 0 8px", fontFamily: "'Hanken Grotesk', sans-serif" }}>
         {m.title}
       </p>
       
-      <p style={{ fontSize: "12px", color: "#707974", lineHeight: 1.55, flex: 1, margin: "0 0 12px" }}>
+      <p style={{ fontSize: "12px", color: "#1e4d3a99", lineHeight: 1.55, flex: 1, margin: "0 0 12px", ...SANS }}>
         {m.description}
       </p>
       
       {m.uploadedBy && (
-        <p style={{ ...MONO, fontSize: "9px", color: "#c0c9c3", letterSpacing: "0.04em", margin: "0 0 12px" }}>
+        <p style={{ ...MONO, fontSize: "9px", color: "#1e4d3a66", letterSpacing: "0.04em", margin: "0 0 12px" }}>
           uploaded by <ProfileLink name={m.uploadedBy} url={m.uploadedByUrl ?? "#"} />
         </p>
       )}
       
       <div style={{ display: "flex", alignItems: "center", gap: "16px", marginBottom: "14px" }}>
-        <span style={{ display: "flex", alignItems: "center", gap: "4px", ...MONO, fontSize: "10px", color: "#707974" }}>
+        <span style={{ display: "flex", alignItems: "center", gap: "4px", ...MONO, fontSize: "10px", color: "#1e4d3a99" }}>
           <Icon name="visibility" size={15} /> {m.viewCount}
         </span>
         <button
           onClick={(e) => { e.stopPropagation(); setLiked((v) => !v); }}
-          title="Like (not saved yet)"
-          style={{ display: "flex", alignItems: "center", gap: "4px", background: "none", border: "none", cursor: "pointer", padding: 0, ...MONO, fontSize: "10px", color: liked ? "#b3261e" : "#707974" }}
+          title="Like"
+          style={{ display: "flex", alignItems: "center", gap: "4px", background: "none", border: "none", cursor: "pointer", padding: 0, ...MONO, fontSize: "10px", color: liked ? "#C9A84C" : "#1e4d3a99", transition: "color 0.2s ease" }}
         >
           <Icon name={liked ? "favorite" : "favorite_border"} size={15} /> {displayLikes}
         </button>
@@ -1285,8 +1286,8 @@ function MediaCard({ item: m, mediaIconName }: MediaCardProps) {
                 className="action-link"
                 style={{ 
                   backgroundColor: "transparent",
-                  border: "1.5px solid #0b4335",
-                  color: "#0b4335",
+                  border: "1.5px solid #1e4d3a",
+                  color: "#1e4d3a",
                   padding: "6px 14px",
                   borderRadius: "6px",
                   fontSize: "10px",
@@ -1298,9 +1299,9 @@ function MediaCard({ item: m, mediaIconName }: MediaCardProps) {
                   alignItems: "center",
                   gap: "4px",
                   opacity: isViewing ? 0.6 : 1,
-                  transition: "all 0.15s"
+                  transition: "all 0.2s ease"
                 }}
-                onMouseEnter={(e) => { if (!isViewing) e.currentTarget.style.backgroundColor = "rgba(11,67,53,0.05)"; }}
+                onMouseEnter={(e) => { if (!isViewing) e.currentTarget.style.backgroundColor = "rgba(30,77,58,0.05)"; }}
                 onMouseLeave={(e) => { if (!isViewing) e.currentTarget.style.backgroundColor = "transparent"; }}
               >
                 {isViewing ? (
@@ -1315,8 +1316,8 @@ function MediaCard({ item: m, mediaIconName }: MediaCardProps) {
                 disabled={isDownloading}
                 className="action-link"
                 style={{ 
-                  backgroundColor: "#0b4335",
-                  border: "1.5px solid #0b4335",
+                  backgroundColor: "#1e4d3a",
+                  border: "1.5px solid #1e4d3a",
                   color: "#fff",
                   padding: "6px 14px",
                   borderRadius: "6px",
@@ -1329,10 +1330,10 @@ function MediaCard({ item: m, mediaIconName }: MediaCardProps) {
                   alignItems: "center",
                   gap: "4px",
                   opacity: isDownloading ? 0.6 : 1,
-                  transition: "all 0.15s"
+                  transition: "all 0.2s ease"
                 }}
-                onMouseEnter={(e) => { if (!isDownloading) e.currentTarget.style.backgroundColor = "#285b4b"; }}
-                onMouseLeave={(e) => { if (!isDownloading) e.currentTarget.style.backgroundColor = "#0b4335"; }}
+                onMouseEnter={(e) => { if (!isDownloading) e.currentTarget.style.backgroundColor = "#163a2c"; }}
+                onMouseLeave={(e) => { if (!isDownloading) e.currentTarget.style.backgroundColor = "#1e4d3a"; }}
               >
                 {isDownloading ? (
                   <><Icon name="hourglass_empty" size={14} /> DOWNLOADING...</>
@@ -1342,17 +1343,12 @@ function MediaCard({ item: m, mediaIconName }: MediaCardProps) {
               </button>
             </>
           ) : (
-            <a 
-              href={m.accessUrl} 
-              target="_blank" 
-              rel="noopener noreferrer"
-              style={{ textDecoration: "none" }}
-            >
+            <a href={m.accessUrl} target="_blank" rel="noopener noreferrer" style={{ textDecoration: "none" }}>
               <button 
                 className="action-link"
                 style={{ 
-                  backgroundColor: "#0b4335",
-                  border: "1.5px solid #0b4335",
+                  backgroundColor: "#1e4d3a",
+                  border: "1.5px solid #1e4d3a",
                   color: "#fff",
                   padding: "6px 14px",
                   borderRadius: "6px",
@@ -1364,10 +1360,10 @@ function MediaCard({ item: m, mediaIconName }: MediaCardProps) {
                   display: "flex",
                   alignItems: "center",
                   gap: "4px",
-                  transition: "all 0.15s"
+                  transition: "all 0.2s ease"
                 }}
-                onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = "#285b4b"; }}
-                onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = "#0b4335"; }}
+                onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = "#163a2c"; }}
+                onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = "#1e4d3a"; }}
               >
                 OPEN LINK <Icon name="open_in_new" size={14} />
               </button>
@@ -1390,14 +1386,13 @@ const ScholarDetailPage: React.FC = () => {
   const navigate = useNavigate();
   const { lang: siteLang } = useLang();
   const { id: scholarIdStr } = useParams<{ id: string }>();
-  const [searchParams] = useSearchParams(); // ✅ Added
+  const [searchParams] = useSearchParams();
   
-  const focusParam = searchParams.get("focus"); // ✅ Added
-  const langParam = searchParams.get("lang");   // ✅ Added
+  const focusParam = searchParams.get("focus");
+  const langParam = searchParams.get("lang");
 
   const scholarId = scholarIdStr ? parseInt(scholarIdStr, 10) : 1;
   
-  // ✅ Use URL lang param if valid, otherwise fallback to siteLang
   const initialLang = (langParam?.toUpperCase() === "EN" || langParam?.toUpperCase() === "AR" || langParam?.toUpperCase() === "FR") 
     ? (langParam.toUpperCase() as Language) 
     : (siteLang as Language);
@@ -1405,13 +1400,14 @@ const ScholarDetailPage: React.FC = () => {
   const [lang, setLang] = useState<Language>(initialLang);
   const [activeTab, setActiveTab] = useState<TabId>("works");
   const [contributorsOpen, setContributorsOpen] = useState(true);
-  const [imgGray, setImgGray] = useState(true);
   const [shareHov, setShareHov] = useState(false);
   const [linkHov, setLinkHov] = useState(false);
   const [showAddWork, setShowAddWork] = useState(false);
   const [showAddMedia, setShowAddMedia] = useState(false);
+  const [showAllRevisions, setShowAllRevisions] = useState(false); // Added for pagination
   const headerRef = useRef<HTMLDivElement>(null);
   const [collapsed, setCollapsed] = useState(false);
+  const isMobile = useIsMobile();
   
   const [toast, setToast] = useState<{ message: string; type: "success" | "error" } | null>(null);
 
@@ -1419,7 +1415,6 @@ const ScholarDetailPage: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-    // ✅ Sync lang state with URL param
   useEffect(() => {
     if (langParam) {
       const upperLang = langParam.toUpperCase();
@@ -1434,11 +1429,9 @@ const ScholarDetailPage: React.FC = () => {
       setIsLoading(true);
       setError(null);
       try {
-        // ✅ Try the language from URL first
         let response = await scholarsApi.getById(scholarId, lang.toLowerCase());
         setS(transformBackendToUI(response.data, lang));
       } catch (err: any) {
-        // ✅ Fallback chain: EN -> AR -> FR
         try {
           let response = await scholarsApi.getById(scholarId, "en");
           setS(transformBackendToUI(response.data, lang));
@@ -1460,67 +1453,37 @@ const ScholarDetailPage: React.FC = () => {
       }
     };
     fetchData();
-  }, [scholarId, lang, langParam]); // ✅ Added langParam to trigger refetch when URL changes
+  }, [scholarId, lang, langParam]);
 
-    // ✅ ROBUST AUTO-SCROLL with debugging
   useEffect(() => {
-    if (!focusParam || !s) {
-      console.log("❌ Auto-scroll skipped: focusParam=", focusParam, "s=", s);
-      return;
-    }
+    if (!focusParam || !s) return;
 
-    console.log("🎯 Auto-scroll triggered for:", focusParam);
-
-    // 1. Determine which tab holds the element
     const targetTab = focusParam.startsWith("work-") ? "works" : "media";
-    console.log("📑 Target tab:", targetTab, "Current tab:", activeTab);
 
-    // 2. If the tab isn't open yet, open it and STOP.
     if (activeTab !== targetTab) {
-      console.log(" Switching to tab:", targetTab);
       setActiveTab(targetTab);
       return; 
     }
 
-    // 3. Tab is OPEN, wait for DOM to render
     const timer = setTimeout(() => {
       const element = document.getElementById(focusParam);
-      console.log("🔍 Element found:", element ? "YES" : "NO");
-      
       if (element) {
-        // Scroll into view
-        element.scrollIntoView({ 
-          behavior: "smooth", 
-          block: "center",
-          inline: "nearest" 
-        });
-        
-        // Add highlight
+        element.scrollIntoView({ behavior: "smooth", block: "center", inline: "nearest" });
         element.classList.add("highlight-focus");
-        console.log("✨ Highlight added");
-        
-        // Remove highlight after animation
         setTimeout(() => {
           element.classList.remove("highlight-focus");
-          console.log(" Highlight removed");
         }, 2500);
-      } else {
-        console.error("❌ Element not found in DOM!");
-        // List all elements with IDs starting with work- or media-
-        const allElements = document.querySelectorAll("[id^='work-'], [id^='media-']");
-        console.log("📋 Available elements:", Array.from(allElements).map(el => el.id));
       }
-    }, 800); // ✅ Increased delay
+    }, 800);
 
     return () => clearTimeout(timer);
   }, [activeTab, s, focusParam]);
 
-  
   if (isLoading) {
-    return <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", backgroundColor: "#f9faf7" }}><Icon name="hourglass_empty" size={32} /></div>;
+    return <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", backgroundColor: "#fbf9f4" }}><Icon name="hourglass_empty" size={32} style={{ color: "#1e4d3a66" }} /></div>;
   }
   if (error) {
-    return <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", backgroundColor: "#f9faf7", color: "#b3261e" }}>{error}</div>;
+    return <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", backgroundColor: "#fbf9f4", color: "#b23b3b", ...SANS }}>{error}</div>;
   }
   if (!s) return null;
 
@@ -1539,22 +1502,25 @@ const ScholarDetailPage: React.FC = () => {
   const homeLabel: string = isRTL ? "الرئيسية" : lang === "FR" ? "Accueil" : "Home";
   const scholarsLabel: string = isRTL ? "العلماء" : lang === "FR" ? "Érudits" : "Scholars";
   const mediaIconName = (type: "pdf" | "audio" | "video"): string => ({ pdf: "article", audio: "mic", video: "movie" }[type]);
-  const iconBtnStyle = (hov: boolean): React.CSSProperties => ({ width: "36px", height: "36px", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", backgroundColor: hov ? "#edeeeb" : "transparent", color: "#707974", border: "none", cursor: "pointer", transition: "background 0.15s" });
+  const iconBtnStyle = (hov: boolean): React.CSSProperties => ({ width: "36px", height: "36px", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", backgroundColor: hov ? "#F5F3EC" : "transparent", color: "#1e4d3a99", border: "none", cursor: "pointer", transition: "background 0.2s ease" });
 
   return (
-    <div dir={isRTL ? "rtl" : "ltr"} style={{ fontFamily: "'Source Sans 3', sans-serif", minHeight: "100vh", backgroundColor: "#f9faf7", backgroundImage: "radial-gradient(#e1e3e0 0.5px, transparent 0.5px)", backgroundSize: "24px 24px", color: "#191c1b" }}>
+    <div dir={isRTL ? "rtl" : "ltr"} style={{ fontFamily: "'Inter', sans-serif", minHeight: "100vh", backgroundColor: "#fbf9f4", backgroundImage: "radial-gradient(rgba(30,77,58,0.03) 0.5px, transparent 0.5px)", backgroundSize: "24px 24px", color: "#1e4d3a" }}>
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Source+Serif+4:ital,opsz,wght@0,8..60,200..900;1,8..60,200..900&family=Source+Sans+3:ital,wght@0,200..900;1,200..900&family=JetBrains+Mono:ital,wght@0,100..800;1,100..800&family=Amiri:ital,wght@0,400;0,700;1,400&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;700&family=Amiri:wght@400;700&display=swap');
         @import url('https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=swap');
         .material-symbols-outlined { font-variation-settings: 'FILL' 0,'wght' 400,'GRAD' 0,'opsz' 24; font-family: 'Material Symbols Outlined'; display: inline-block; vertical-align: middle; }
         * { box-sizing: border-box; } a { text-decoration: none; } button { font-family: inherit; background: none; border: none; cursor: pointer; }
-        .row-hover:hover { background: #f3f4f1; } .card-hover { transition: box-shadow 0.18s, border-color 0.18s; }
-        .card-hover:hover { box-shadow: 0 4px 20px rgba(11,67,53,0.1); border-color: rgba(11,67,53,0.3) !important; }
-        .tab-btn { padding: 14px 20px; border: none; border-bottom: 2px solid transparent; background: transparent; cursor: pointer; white-space: nowrap; font-family: 'JetBrains Mono', monospace; font-size: 11px; letter-spacing: 0.1em; color: #707974; transition: color 0.15s; }
-        .tab-btn:hover { color: #0b4335; } .tab-btn.active { border-bottom-color: #0b4335; color: #0b4335; background: rgba(11,67,53,0.04); }
-        .person-card:hover .person-name { color: #0b4335; } .action-link { background: none; border: none; padding: 0; cursor: pointer; font-family: 'JetBrains Mono', monospace; font-size: 10px; font-weight: 700; letter-spacing: 0.1em; color: #0b4335; display: inline-flex; align-items: center; gap: 4px; }
-        .action-link:hover { text-decoration: underline; }
-              @keyframes highlightPulse {
+        .row-hover:hover { background: #F5F3EC; } 
+        .card-hover { transition: box-shadow 0.3s ease, transform 0.3s ease, border-color 0.25s ease; }
+        .card-hover:hover { box-shadow: 0 20px 25px -5px rgba(30,77,58,0.15), 0 8px 10px -6px rgba(30,77,58,0.08); transform: translateY(-4px); border-color: rgba(30,77,58,0.1) !important; }
+        .tab-btn { padding: 14px 20px; border: none; border-bottom: 2px solid transparent; background: transparent; cursor: pointer; white-space: nowrap; font-family: 'JetBrains Mono', monospace; font-size: 11px; letter-spacing: 0.1em; color: #1e4d3a99; transition: color 0.2s ease, background 0.2s ease; }
+        .tab-btn:hover { color: #1e4d3a; background: rgba(30,77,58,0.05); } 
+        .tab-btn.active { border-bottom-color: #1e4d3a; color: #1e4d3a; background: rgba(30,77,58,0.05); font-weight: 700; }
+        .person-card:hover .person-name { color: #1e4d3a; } 
+        .action-link { background: none; border: none; padding: 0; cursor: pointer; font-family: 'JetBrains Mono', monospace; font-size: 11px; font-weight: 700; letter-spacing: 0.1em; color: #1e4d3a; display: inline-flex; align-items: center; gap: 4px; transition: color 0.2s ease; }
+        .action-link:hover { color: #C9A84C; }
+        @keyframes highlightPulse {
           0% { box-shadow: 0 0 0 0 rgba(201, 168, 76, 0.7); background-color: rgba(201, 168, 76, 0.15); }
           50% { box-shadow: 0 0 0 8px rgba(201, 168, 76, 0); background-color: rgba(201, 168, 76, 0.25); }
           100% { box-shadow: 0 0 0 0 rgba(201, 168, 76, 0); background-color: transparent; }
@@ -1565,9 +1531,11 @@ const ScholarDetailPage: React.FC = () => {
           position: relative;
           z-index: 10;
         }
-        `}</style>
+        @media (max-width: 768px) {
+          .tab-btn { padding: 10px 14px; font-size: 10px; }
+        }
+      `}</style>
 
-      {/* ✅ WORK MODAL: onAdd is empty so it doesn't add statically */}
       {showAddWork && (
         <AddWorkModal 
           onClose={() => setShowAddWork(false)} 
@@ -1579,7 +1547,6 @@ const ScholarDetailPage: React.FC = () => {
         />
       )}
 
-      {/* ✅ MEDIA MODAL: onAdd is empty so it doesn't add statically */}
       {showAddMedia && (
         <AddMediaModal 
           onClose={() => setShowAddMedia(false)} 
@@ -1593,35 +1560,36 @@ const ScholarDetailPage: React.FC = () => {
 
       {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
 
-      <header ref={headerRef} style={{ position: "sticky", top: 0, zIndex: 50, backgroundColor: collapsed ? "rgba(249,250,247,0.85)" : "rgba(249,250,247,0.97)", backdropFilter: collapsed ? "blur(16px)" : "none", borderBottom: "1px solid rgba(192,201,195,0.3)", boxShadow: collapsed ? "0 2px 12px rgba(11,67,53,0.08)" : "none", transition: "all 0.3s ease", padding: "16px 0" }}>
-        <div style={{ maxWidth: "1280px", margin: "0 auto", padding: "0 64px" }}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
-            <div style={{ marginBottom: collapsed ? 0 : "12px", flex: 1 }}>
-              <div style={{ overflow: "hidden", maxHeight: collapsed ? "0px" : "24px", opacity: collapsed ? 0 : 1, transition: "max-height 0.35s cubic-bezier(0.4,0,0.2,1), opacity 0.25s ease, margin-bottom 0.35s cubic-bezier(0.4,0,0.2,1)", marginBottom: collapsed ? 0 : "8px" }}>
-                <button onClick={() => window.history.back()} style={{ background: "none", border: "none", padding: 0, cursor: "pointer", color: "#707974", fontSize: "14px", lineHeight: 1, transition: "color 0.15s" }} onMouseEnter={(e) => (e.currentTarget.style.color = "#0b4335")} onMouseLeave={(e) => (e.currentTarget.style.color = "#707974")}>←</button>
+      {/* ✅ REDUCED HEADER HEIGHT: padding changed to "10px 0" */}
+      <header ref={headerRef} style={{ position: "sticky", top: 0, zIndex: 50, backgroundColor: collapsed ? "rgba(251,249,244,0.85)" : "rgba(251,249,244,0.97)", backdropFilter: collapsed ? "blur(16px)" : "none", borderBottom: "1px solid rgba(30,77,58,0.1)", boxShadow: collapsed ? "0 2px 12px rgba(30,77,58,0.08)" : "none", transition: "all 0.3s ease", padding: "10px 0" }}>
+        <div style={{ maxWidth: "1280px", margin: "0 auto", padding: isMobile ? "0 16px" : "0 64px" }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: "8px" }}>
+            <div style={{ marginBottom: collapsed ? 0 : "8px", flex: 1, minWidth: 0 }}>
+              <div style={{ overflow: "hidden", maxHeight: collapsed ? "0px" : "20px", opacity: collapsed ? 0 : 1, transition: "max-height 0.35s cubic-bezier(0.4,0,0.2,1), opacity 0.25s ease, margin-bottom 0.35s cubic-bezier(0.4,0,0.2,1)", marginBottom: collapsed ? 0 : "6px" }}>
+                <button onClick={() => window.history.back()} style={{ background: "none", border: "none", padding: 0, cursor: "pointer", color: "#1e4d3a99", fontSize: "14px", lineHeight: 1, transition: "color 0.2s ease" }} onMouseEnter={(e) => (e.currentTarget.style.color = "#1e4d3a")} onMouseLeave={(e) => (e.currentTarget.style.color = "#1e4d3a99")}>←</button>
               </div>
-              <div style={{ ...MONO, fontSize: "11px", color: "#707974", letterSpacing: "0.05em", marginBottom: collapsed ? "4px" : "8px", direction: isRTL ? "rtl" : "ltr", transition: "margin-bottom 0.25s ease" }}>
+              <div style={{ ...MONO, fontSize: isMobile ? "9px" : "11px", color: "#1e4d3a99", letterSpacing: "0.05em", marginBottom: collapsed ? "2px" : "6px", direction: isRTL ? "rtl" : "ltr", transition: "margin-bottom 0.25s ease", whiteSpace: isMobile ? "normal" : "nowrap", overflow: isMobile ? "visible" : "hidden", textOverflow: isMobile ? "clip" : "ellipsis" }}>
                 {isRTL ? (
-                  <><span style={{ color: "#0b4335", fontWeight: 700 }}>{getName()}</span> {" < "}<a href="/scholars" style={{ color: "#707974", textDecoration: "none", transition: "color 0.15s" }} onMouseEnter={(e) => (e.currentTarget.style.color = "#0b4335")} onMouseLeave={(e) => (e.currentTarget.style.color = "#707974")}>{scholarsLabel}</a> {" < "}<a href="/" style={{ color: "#707974", textDecoration: "none", transition: "color 0.15s" }} onMouseEnter={(e) => (e.currentTarget.style.color = "#0b4335")} onMouseLeave={(e) => (e.currentTarget.style.color = "#707974")}>{homeLabel}</a></>
+                  <><span style={{ color: "#1e4d3a", fontWeight: 700 }}>{getName()}</span> {" < "}<a href="/scholars" style={{ color: "#1e4d3a99", textDecoration: "none", transition: "color 0.2s ease" }} onMouseEnter={(e) => (e.currentTarget.style.color = "#1e4d3a")} onMouseLeave={(e) => (e.currentTarget.style.color = "#1e4d3a99")}>{scholarsLabel}</a> {" < "}<a href="/" style={{ color: "#1e4d3a99", textDecoration: "none", transition: "color 0.2s ease" }} onMouseEnter={(e) => (e.currentTarget.style.color = "#1e4d3a")} onMouseLeave={(e) => (e.currentTarget.style.color = "#1e4d3a99")}>{homeLabel}</a></>
                 ) : (
-                  <><a href="/" style={{ color: "#707974", textDecoration: "none", transition: "color 0.15s" }} onMouseEnter={(e) => (e.currentTarget.style.color = "#0b4335")} onMouseLeave={(e) => (e.currentTarget.style.color = "#707974")}>{homeLabel}</a> {" > "}<a href="/scholars" style={{ color: "#707974", textDecoration: "none", transition: "color 0.15s" }} onMouseEnter={(e) => (e.currentTarget.style.color = "#0b4335")} onMouseLeave={(e) => (e.currentTarget.style.color = "#707974")}>{scholarsLabel}</a>{hasLangContent && <> {" > "}<span style={{ color: "#0b4335", fontWeight: 700 }}>{getName()}</span></>}</>
+                  <><a href="/" style={{ color: "#1e4d3a99", textDecoration: "none", transition: "color 0.2s ease" }} onMouseEnter={(e) => (e.currentTarget.style.color = "#1e4d3a")} onMouseLeave={(e) => (e.currentTarget.style.color = "#1e4d3a99")}>{homeLabel}</a> {" > "}<a href="/scholars" style={{ color: "#1e4d3a99", textDecoration: "none", transition: "color 0.2s ease" }} onMouseEnter={(e) => (e.currentTarget.style.color = "#1e4d3a")} onMouseLeave={(e) => (e.currentTarget.style.color = "#1e4d3a99")}>{scholarsLabel}</a>{hasLangContent && <> {" > "}<span style={{ color: "#1e4d3a", fontWeight: 700 }}>{getName()}</span></>}</>
                 )}
               </div>
               
               {hasLangContent && (
                 <>
                   <div style={{ display: "flex", alignItems: "baseline", gap: "12px", flexWrap: "wrap", marginBottom: "2px" }}>
-                    <h1 style={{ ...SERIF, fontWeight: 700, color: "#0b4335", margin: 0, fontSize: collapsed ? "20px" : "32px", transition: "font-size 0.25s ease" }}>{getName()}</h1>
-                    <div style={{ ...MONO, fontSize: "9px", color: "#707974", letterSpacing: "0.18em", opacity: 0.8, display: collapsed ? "none" : "block" }}>
+                    <h1 style={{ fontFamily: "'Hanken Grotesk', sans-serif", fontWeight: 700, color: "#1e4d3a", margin: 0, fontSize: isMobile ? (collapsed ? "16px" : "20px") : (collapsed ? "20px" : "28px"), transition: "font-size 0.25s ease" }}>{getName()}</h1>
+                    <div style={{ ...MONO, fontSize: "9px", color: "#1e4d3a99", letterSpacing: "0.18em", opacity: 0.8, display: collapsed ? "none" : "block" }}>
                       {t.createdBy} <ProfileLink name={s.createdBy} url={s.createdByUrl} /> • {s.createdDate}
                     </div>
                   </div>
-                  <div style={{ overflow: "hidden", maxHeight: collapsed ? "0px" : (hasBeenEdited ? "70px" : "40px"), opacity: collapsed ? 0 : 1, transition: "max-height 0.35s cubic-bezier(0.4,0,0.2,1), opacity 0.25s ease" }}>
+                  <div style={{ overflow: "hidden", maxHeight: collapsed ? "0px" : (hasBeenEdited ? "60px" : "30px"), opacity: collapsed ? 0 : 1, transition: "max-height 0.35s cubic-bezier(0.4,0,0.2,1), opacity 0.25s ease" }}>
                     {getSubtitle() && (
-                      <p style={{ ...SERIF, fontSize: "13px", color: "#707974", fontStyle: "italic", margin: "2px 0 4px", lineHeight: 1.4 }}>{getSubtitle()}</p>
+                      <p style={{ fontFamily: "'Amiri', serif", fontSize: "13px", color: "#1e4d3a99", fontStyle: "italic", margin: "2px 0 4px", lineHeight: 1.4 }}>{getSubtitle()}</p>
                     )}
                     {hasBeenEdited && (
-                      <div style={{ ...MONO, fontSize: "9px", color: "#707974", letterSpacing: "0.18em", opacity: 0.8 }}>
+                      <div style={{ ...MONO, fontSize: "9px", color: "#1e4d3a99", letterSpacing: "0.18em", opacity: 0.8 }}>
                         {t.lastUpdated} <ProfileLink name={s.lastUpdatedBy!} url={s.lastUpdatedByUrl!} /> • {s.lastUpdatedDate}
                       </div>
                     )}
@@ -1631,7 +1599,7 @@ const ScholarDetailPage: React.FC = () => {
             </div>
             
             {hasLangContent && (
-              <div style={{ display: "flex", gap: "4px", paddingTop: "4px" }}>
+              <div style={{ display: "flex", gap: "4px", paddingTop: "4px", flexShrink: 0 }}>
                 <button 
                   onClick={async () => {
                     const shareData = { title: getName(), text: `Check out ${getName()} on Islamic Scholars Database`, url: window.location.href };
@@ -1672,8 +1640,8 @@ const ScholarDetailPage: React.FC = () => {
             )}
           </div>
           
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: collapsed ? "6px" : "8px", paddingTop: collapsed ? "6px" : "8px", borderTop: "1px solid rgba(192,201,195,0.15)", transition: "margin-top 0.35s cubic-bezier(0.4,0,0.2,1), padding-top 0.35s cubic-bezier(0.4,0,0.2,1)" }}>
-            <div style={{ display: "flex", gap: "4px", padding: "4px 8px", backgroundColor: "rgba(11,67,53,0.04)", border: "1px solid rgba(11,67,53,0.1)", borderRadius: "999px" }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: collapsed ? "4px" : "6px", paddingTop: collapsed ? "4px" : "6px", borderTop: "1px solid rgba(30,77,58,0.1)", transition: "margin-top 0.35s cubic-bezier(0.4,0,0.2,1), padding-top 0.35s cubic-bezier(0.4,0,0.2,1)", flexWrap: "wrap", gap: "10px" }}>
+            <div style={{ display: "flex", gap: "4px", padding: "4px 8px", backgroundColor: "rgba(30,77,58,0.05)", border: "1px solid rgba(30,77,58,0.1)", borderRadius: "999px", flexWrap: "wrap" }}>
               {(["AR", "EN", "FR"] as Language[]).map((l) => {
                 const active = lang === l;
                 return (
@@ -1681,46 +1649,68 @@ const ScholarDetailPage: React.FC = () => {
                     key={l} 
                     onClick={() => {
                       setLang(l);
-                      // ✅ Update URL params when language changes
                       const params = new URLSearchParams(searchParams);
                       params.set("lang", l.toLowerCase());
                       navigate({ search: params.toString() }, { replace: true });
                     }} 
-                    style={{ ...MONO, fontSize: "10px", fontWeight: 700, letterSpacing: "0.08em", padding: "4px 12px", borderRadius: "999px", border: "1px solid", borderColor: active ? "#0b4335" : "rgba(192,201,195,0.5)", backgroundColor: active ? "#0b4335" : "transparent", color: active ? "#fff" : "#707974", cursor: "pointer", transition: "all 0.15s" }}
+                    style={{ ...MONO, fontSize: "10px", fontWeight: 700, letterSpacing: "0.08em", padding: isMobile ? "4px 9px" : "4px 12px", borderRadius: "999px", border: "1px solid", borderColor: active ? "#1e4d3a" : "rgba(30,77,58,0.25)", backgroundColor: active ? "#1e4d3a" : "transparent", color: active ? "#fff" : "#1e4d3a99", cursor: "pointer", transition: "all 0.2s ease" }}
                   >
-                    {l === "AR" ? "ARABIC" : l === "EN" ? "ENGLISH" : "FRENCH"}
+                    {isMobile ? l : (l === "AR" ? "ARABIC" : l === "EN" ? "ENGLISH" : "FRENCH")}
                   </button>
                 );
               })}
             </div>
-            <HoverBtn onClick={() => navigate(hasLangContent ? `/scholars/${s.id}/edit/${lang}` : `/scholars/${s.id}/submit/${lang}`)} style={{ borderColor: hasLangContent ? "#0b4335" : "#735c00", color: hasLangContent ? "#0b4335" : "#735c00" }}>
+            
+            {/* ✅ IMPROVED HOVER: Edit/Submit button now matches Forum/Scholar page exactly */}
+            <button 
+              onClick={() => navigate(hasLangContent ? `/scholars/${s.id}/edit/${lang}` : `/scholars/${s.id}/submit/${lang}`)}
+              style={{ 
+                display: "inline-flex", alignItems: "center", gap: "8px", padding: isMobile ? "8px 14px" : "9px 18px",
+                border: "2px solid #1e4d3a", borderRadius: "8px", 
+                backgroundColor: "#1e4d3a", color: "#fbf9f4",
+                fontFamily: "'Hanken Grotesk', sans-serif", fontSize: isMobile ? "10px" : "12px", fontWeight: 700, letterSpacing: "0.05em", cursor: "pointer", 
+                boxShadow: "0 2px 10px rgba(30,77,58,0.18)",
+                transition: "all 0.3s ease", whiteSpace: "nowrap"
+              }}
+              onMouseEnter={(e) => { 
+                e.currentTarget.style.backgroundColor = "#fbf9f4"; 
+                e.currentTarget.style.color = "#1e4d3a"; 
+                e.currentTarget.style.boxShadow = "none";
+              }}
+              onMouseLeave={(e) => { 
+                e.currentTarget.style.backgroundColor = "#1e4d3a"; 
+                e.currentTarget.style.color = "#fbf9f4"; 
+                e.currentTarget.style.boxShadow = "0 2px 10px rgba(30,77,58,0.18)";
+              }}
+            >
               <Icon name={hasLangContent ? "edit_note" : "add_circle"} size={14} />
               {hasLangContent ? (lang === "EN" ? "EDIT ENGLISH" : lang === "AR" ? "تعديل العربية" : "MODIFIER FRANÇAIS") : (lang === "EN" ? "ADD ENGLISH VERSION" : lang === "AR" ? "إضافة نسخة عربية" : "AJOUTER VERSION FRANÇAISE")}
-            </HoverBtn>
+            </button>
           </div>
         </div>
       </header>
 
-      <main style={{ maxWidth: "1280px", margin: "0 auto", padding: "40px 64px 80px" }}>
-        <div style={{ display: "grid", gridTemplateColumns: hasLangContent ? "300px 1fr" : "1fr", gap: "48px", marginBottom: "48px" }}> 
+      {/* ✅ REDUCED MAIN PADDING for a more compact feel */}
+      <main style={{ maxWidth: "1280px", margin: "0 auto", padding: isMobile ? "16px 16px 40px" : "24px 64px 60px" }}>
+        <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : (hasLangContent ? "300px 1fr" : "1fr"), gap: isMobile ? "24px" : "48px", marginBottom: isMobile ? "24px" : "48px" }}> 
           <aside>
             {hasLangContent ? (
-              <div style={{ backgroundColor: "#fff", border: "1px solid rgba(192,201,195,0.4)", borderRadius: "12px", overflow: "hidden", boxShadow: "0 1px 4px rgba(0,0,0,0.06)", position: "sticky", top: "140px" }}>
+              <div style={{ backgroundColor: "#fff", border: "1px solid rgba(30,77,58,0.1)", borderRadius: "16px", overflow: "hidden", boxShadow: "0 1px 4px rgba(30,77,58,0.06)", position: isMobile ? "static" : "sticky", top: isMobile ? undefined : "140px", maxWidth: isMobile ? "360px" : "none", margin: isMobile ? "0 auto" : undefined }}>
                 <div style={{ position: "relative", aspectRatio: "3/4", overflow: "hidden" }}>
                   {s.image ? (
-                    <img alt="Scholar portrait" src={s.image} style={{ width: "100%", height: "100%", objectFit: "cover", filter: imgGray ? "grayscale(100%)" : "grayscale(0%)", transition: "filter 0.6s ease", display: "block" }} onMouseEnter={() => setImgGray(false)} onMouseLeave={() => setImgGray(true)} />
+                    <img alt="Scholar portrait" src={s.image} style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
                   ) : (
-                    <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center", color: "#c0c9c3" }}>
+                    <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center", color: "#1e4d3a66", backgroundColor: "#F5F3EC" }}>
                       <Icon name="account_circle" size={100} />
                     </div>
                   )}
-                  <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, padding: "16px", background: "linear-gradient(to top, rgba(0,0,0,0.65), transparent)" }}>
+                  <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, padding: "16px", background: "linear-gradient(to top, rgba(30,77,58,0.8), transparent)" }}>
                     <p style={{ ...MONO, fontSize: "9px", color: "#fff", letterSpacing: "0.18em", margin: 0, opacity: 0.9 }}>{s.image ? "OFFICIAL SCHOLAR PORTRAIT" : "NO IMAGE AVAILABLE"}</p>
                   </div>
                 </div>
 
-                <div style={{ padding: "20px 20px 24px" }}>
-                  <p style={{ ...MONO, fontSize: "9px", color: "#0b4335", letterSpacing: "0.2em", marginBottom: "12px", borderBottom: "1px solid rgba(11,67,53,0.1)", paddingBottom: "8px" }}>{t.atAGlance}</p>
+                <div style={{ padding: isMobile ? "18px 18px 20px" : "20px 20px 24px" }}>
+                  <p style={{ ...MONO, fontSize: "9px", color: "#1e4d3a", letterSpacing: "0.2em", marginBottom: "12px", borderBottom: "1px solid rgba(30,77,58,0.1)", paddingBottom: "8px" }}>{t.atAGlance}</p>
                   <table style={{ width: "100%", borderCollapse: "collapse" }}>
                     <tbody>
                       {([
@@ -1731,30 +1721,30 @@ const ScholarDetailPage: React.FC = () => {
                         [t.region, s.atAGlance.region],
                         [t.discipline, s.atAGlance.discipline],
                       ] as [string, string][]).map(([label, value]) => (
-                        <tr key={label} style={{ borderBottom: "1px solid #f0f1ee" }}>
-                          <td style={{ ...MONO, padding: "8px 0", fontSize: "10px", color: "#707974", fontWeight: 400, verticalAlign: "top" }}>{label}</td>
-                          <td style={{ padding: "8px 0", fontSize: "11px", fontWeight: 700, textAlign: "right", color: "#191c1b", verticalAlign: "top", paddingLeft: "8px" }}>{value}</td>
+                        <tr key={label} style={{ borderBottom: "1px solid #F5F3EC" }}>
+                          <td style={{ ...MONO, padding: "8px 0", fontSize: "10px", color: "#1e4d3a99", fontWeight: 500, verticalAlign: "top" }}>{label}</td>
+                          <td style={{ padding: "8px 0", fontSize: "11px", fontWeight: 700, textAlign: "right", color: "#1e4d3a", verticalAlign: "top", paddingLeft: "8px", fontFamily: lang === "AR" ? "'Amiri', serif" : "'Hanken Grotesk', sans-serif" }}>{value}</td>
                         </tr>
                       ))}
                     </tbody>
                   </table>
 
                   {s.contributors.length > 0 && (
-                    <div style={{ marginTop: "20px", paddingTop: "16px", borderTop: "1px solid rgba(11,67,53,0.1)" }}>
+                    <div style={{ marginTop: "20px", paddingTop: "16px", borderTop: "1px solid rgba(30,77,58,0.1)" }}>
                       <button onClick={() => setContributorsOpen(!contributorsOpen)} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", width: "100%", background: "none", border: "none", cursor: "pointer", padding: 0 }}>
-                        <span style={{ ...MONO, fontSize: "9px", color: "#0b4335", letterSpacing: "0.2em", display: "flex", alignItems: "center", gap: "4px" }}>{t.allContributors}<Icon name="expand_more" size={14} /></span>
-                        <span style={{ ...MONO, fontSize: "9px", color: "#0b4335", fontWeight: 700, backgroundColor: "rgba(11,67,53,0.05)", padding: "2px 8px", borderRadius: "4px" }}>{s.contributors.length} {t.contributors}</span>
+                        <span style={{ ...MONO, fontSize: "9px", color: "#1e4d3a", letterSpacing: "0.2em", display: "flex", alignItems: "center", gap: "4px" }}>{t.allContributors}<Icon name="expand_more" size={14} /></span>
+                        <span style={{ ...MONO, fontSize: "9px", color: "#1e4d3a", fontWeight: 700, backgroundColor: "rgba(30,77,58,0.05)", padding: "2px 8px", borderRadius: "4px" }}>{s.contributors.length} {t.contributors}</span>
                       </button>
                       {contributorsOpen && (
                         <div style={{ marginTop: "12px" }}>
                           <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "8px" }}>
-                            <span style={{ ...MONO, fontSize: "9px", color: "#c0c9c3", letterSpacing: "0.08em" }}>{t.contributor}</span>
-                            <span style={{ ...MONO, fontSize: "9px", color: "#c0c9c3", letterSpacing: "0.08em" }}>{t.contributions}</span>
+                            <span style={{ ...MONO, fontSize: "9px", color: "#1e4d3a66", letterSpacing: "0.08em" }}>{t.contributor}</span>
+                            <span style={{ ...MONO, fontSize: "9px", color: "#1e4d3a66", letterSpacing: "0.08em" }}>{t.contributions}</span>
                           </div>
                           {s.contributors.map((c) => (
-                            <div key={c.name} style={{ display: "flex", justifyContent: "space-between", padding: "5px 0", borderBottom: "1px solid #f0f1ee" }}>
+                            <div key={c.name} style={{ display: "flex", justifyContent: "space-between", padding: "5px 0", borderBottom: "1px solid #F5F3EC" }}>
                               <ProfileLink name={c.name} url={c.profileUrl ?? "#"} />
-                              <span style={{ ...MONO, fontSize: "10px", color: "#0b4335", fontWeight: 700 }}>{c.contributions}</span>
+                              <span style={{ ...MONO, fontSize: "10px", color: "#1e4d3a", fontWeight: 700 }}>{c.contributions}</span>
                             </div>
                           ))}
                         </div>
@@ -1771,13 +1761,13 @@ const ScholarDetailPage: React.FC = () => {
               <EmptyLangState lang={lang} t={t} onContribute={() => navigate(`/scholars/${s.id}/submit/${lang}`)} />
             ) : (
               <>
-                <section style={{ backgroundColor: "rgba(11,67,53,0.05)", border: "1px solid rgba(11,67,53,0.1)", borderRadius: "16px", padding: "32px", marginBottom: "32px" }}>
-                  <p style={{ ...MONO, fontSize: "9px", color: "#0b4335", letterSpacing: "0.2em", marginBottom: "14px", display: "flex", alignItems: "center", gap: "8px" }}><span style={{ width: "16px", height: "1px", backgroundColor: "#0b4335", display: "inline-block" }} />{t.overview}</p>
+                <section style={{ backgroundColor: "#F5F3EC", border: "1px solid rgba(30,77,58,0.1)", borderRadius: "16px", padding: isMobile ? "20px 18px" : "32px", marginBottom: isMobile ? "24px" : "32px" }}>
+                  <p style={{ ...MONO, fontSize: "9px", color: "#1e4d3a", letterSpacing: "0.2em", marginBottom: "14px", display: "flex", alignItems: "center", gap: "8px" }}><span style={{ width: "16px", height: "1px", backgroundColor: "#1e4d3a", display: "inline-block" }} />{t.overview}</p>
                   {getOverview() && (
-                    <div style={{ fontSize: "14px", color: "#404945", lineHeight: 1.75, marginBottom: "16px" }} dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(getOverview() || "") }} />
+                    <div style={{ fontSize: "14px", color: "#1e4d3acc", lineHeight: 1.75, marginBottom: "16px", ...SANS }} dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(getOverview() || "") }} />
                   )}
                   {(getBody() ?? []).map((para, i) => (
-                    <div key={i} style={{ fontSize: lang === "AR" ? "16px" : "15px", fontFamily: lang === "AR" ? "'Amiri', serif" : undefined, color: "#404945", lineHeight: 1.8, marginBottom: i === (getBody()?.length ?? 0) - 1 ? 0 : "20px" }} dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(para) }} />
+                    <div key={i} style={{ fontSize: lang === "AR" ? "16px" : "15px", fontFamily: lang === "AR" ? "'Amiri', serif" : "'Inter', sans-serif", color: "#1e4d3acc", lineHeight: 1.8, marginBottom: i === (getBody()?.length ?? 0) - 1 ? 0 : "20px" }} dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(para) }} />
                   ))}
                 </section>
               </>
@@ -1786,38 +1776,36 @@ const ScholarDetailPage: React.FC = () => {
         </div>
 
         {hasLangContent && (
-          <div style={{ borderTop: "1px solid rgba(192,201,195,0.4)", paddingTop: "48px" }}>
-            <div style={{ display: "flex", borderBottom: "1.5px solid rgba(192,201,195,0.4)", marginBottom: "32px", position: "sticky", top: "var(--header-h, 130px)", zIndex: 40, willChange: "transform", backgroundColor: "#f9faf7", overflowX: "auto" }}>
+          <div style={{ borderTop: "1px solid rgba(30,77,58,0.1)", paddingTop: isMobile ? "28px" : "48px" }}>
+            <div style={{ display: "flex", borderBottom: "1.5px solid rgba(30,77,58,0.1)", marginBottom: isMobile ? "20px" : "32px", position: "sticky", top: "var(--header-h, 130px)", zIndex: 40, willChange: "transform", backgroundColor: "#fbf9f4", overflowX: "auto" }}>
               {tabIds.map((id, i) => (<button key={id} onClick={() => setActiveTab(id)} className={`tab-btn${activeTab === id ? " active" : ""}`}>{t.tabs[i]}</button>))}
             </div>
 
-            {/* ✅ WORKS TAB: Kept the exact same table design, but replaced the single button with two icon buttons */}
             {activeTab === "works" && (
               <div>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "24px" }}>
-                  <h2 style={{ ...SERIF, fontSize: "24px", fontWeight: 700, color: "#0b4335", margin: 0 }}>{t.bibliographyTitle}</h2>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "24px", flexWrap: "wrap", gap: "12px" }}>
+                  <h2 style={{ fontFamily: "'Hanken Grotesk', sans-serif", fontSize: isMobile ? "19px" : "24px", fontWeight: 700, color: "#1e4d3a", margin: 0 }}>{t.bibliographyTitle}</h2>
                   <HoverBtn onClick={() => setShowAddWork(true)}><Icon name="add_circle" size={14} />{t.addWork}</HoverBtn>
                 </div>
-                <div style={{ border: "1px solid rgba(192,201,195,0.4)", borderRadius: "12px", overflow: "hidden", backgroundColor: "#fff" }}>
-                  <table style={{ width: "100%", borderCollapse: "collapse" }}>
-                    <thead><tr style={{ backgroundColor: "#f3f4f1", borderBottom: "1.5px solid rgba(192,201,195,0.4)" }}>{[t.colTitle, t.colYear, t.colFormat, t.colAccess].map((col) => (<th key={col} style={{ ...MONO, padding: "12px 16px", textAlign: "left", fontSize: "9px", color: "#707974", letterSpacing: "0.1em", fontWeight: 700 }}>{col}</th>))}</tr></thead>
+                <div style={{ border: "1px solid rgba(30,77,58,0.1)", borderRadius: "16px", overflow: "hidden", backgroundColor: "#fff" }}>
+                  <div style={{ overflowX: "auto" }}>
+                  <table style={{ width: "100%", borderCollapse: "collapse", minWidth: isMobile ? "560px" : undefined }}>
+                    <thead><tr style={{ backgroundColor: "#F5F3EC", borderBottom: "1.5px solid rgba(30,77,58,0.1)" }}>{[t.colTitle, t.colYear, t.colFormat, t.colAccess].map((col) => (<th key={col} style={{ ...MONO, padding: "12px 16px", textAlign: "left", fontSize: "9px", color: "#1e4d3a99", letterSpacing: "0.1em", fontWeight: 700 }}>{col}</th>))}</tr></thead>
                     <tbody>
                       {s.works.map((w, i) => {
                         return (
-                                                    <tr 
+                          <tr 
                             key={w.work_id || i} 
-                            id={w.work_id ? `work-${w.work_id}` : undefined} // ✅ This should be work-22 for example
+                            id={w.work_id ? `work-${w.work_id}` : undefined}
                             className="row-hover" 
-                            style={{ borderBottom: "1px solid #f0f1ee", transition: "background 0.12s" }}
+                            style={{ borderBottom: "1px solid #F5F3EC", transition: "background 0.2s ease" }}
                           >
-                            <td style={{ ...SERIF, padding: "14px 16px", fontSize: "14px", fontWeight: 700, fontStyle: "italic", color: "#191c1b" }}>
+                            <td style={{ fontFamily: lang === "AR" ? "'Amiri', serif" : "'Hanken Grotesk', sans-serif", padding: "14px 16px", fontSize: "14px", fontWeight: 700, fontStyle: "italic", color: "#1e4d3a" }}>
                               {w.title}
-                              {w.uploadedBy && (<div style={{ ...MONO, fontSize: "9px", fontStyle: "normal", fontWeight: 400, color: "#c0c9c3", marginTop: "3px" }}>added by <ProfileLink name={w.uploadedBy} url={w.uploadedByUrl ?? "#"} /></div>)}
+                              {w.uploadedBy && (<div style={{ ...MONO, fontSize: "9px", fontStyle: "normal", fontWeight: 400, color: "#1e4d3a66", marginTop: "3px" }}>added by <ProfileLink name={w.uploadedBy} url={w.uploadedByUrl ?? "#"} /></div>)}
                             </td>
-                            <td style={{ padding: "14px 16px", fontSize: "13px", color: "#707974" }}>{w.year}</td>
-                            <td style={{ padding: "14px 16px" }}><span style={{ ...MONO, fontSize: "9px", fontWeight: 700, padding: "3px 10px", borderRadius: "4px", backgroundColor: w.format === "BOOK" ? "rgba(11,67,53,0.08)" : "#f3f4f1", color: w.format === "BOOK" ? "#0b4335" : "#404945" }}>{FORMAT_LABELS[lang][w.format].toUpperCase()}</span></td>
-                            
-                            {/* ✅ REPLACED: Single button with two icon buttons (View & Download) */}
+                            <td style={{ padding: "14px 16px", fontSize: "13px", color: "#1e4d3a99", ...SANS }}>{w.year}</td>
+                            <td style={{ padding: "14px 16px" }}><span style={{ ...MONO, fontSize: "9px", fontWeight: 700, padding: "3px 10px", borderRadius: "4px", backgroundColor: w.format === "BOOK" ? "rgba(30,77,58,0.08)" : "#F5F3EC", color: w.format === "BOOK" ? "#1e4d3a" : "#1e4d3a99" }}>{FORMAT_LABELS[lang][w.format].toUpperCase()}</span></td>
                             <td style={{ padding: "14px 16px" }}>
                               <WorkActions work={w} />
                             </td>
@@ -1826,10 +1814,11 @@ const ScholarDetailPage: React.FC = () => {
                       })}
                     </tbody>
                   </table>
+                  </div>
                   {s.works.length === 0 && (
-                    <div style={{ padding: "48px 32px", textAlign: "center" }}>
-                      <Icon name="menu_book" size={36} />
-                      <p style={{ color: "#707974", fontSize: "14px", marginTop: "12px" }}>No works added yet.</p>
+                    <div style={{ padding: "48px 32px", textAlign: "center", backgroundColor: "#F5F3EC" }}>
+                      <Icon name="menu_book" size={36} style={{ color: "#1e4d3a66" }} />
+                      <p style={{ color: "#1e4d3a99", fontSize: "14px", marginTop: "12px", ...SANS }}>No works added yet.</p>
                       <button className="action-link" onClick={() => setShowAddWork(true)} style={{ marginTop: "8px" }}>Add the first work →</button>
                     </div>
                   )}
@@ -1839,11 +1828,11 @@ const ScholarDetailPage: React.FC = () => {
 
             {activeTab === "media" && (
               <div>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "28px" }}>
-                  <h2 style={{ ...SERIF, fontSize: "24px", fontWeight: 700, color: "#0b4335", margin: 0 }}>{t.mediaTitle}</h2>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "28px", flexWrap: "wrap", gap: "12px" }}>
+                  <h2 style={{ fontFamily: "'Hanken Grotesk', sans-serif", fontSize: isMobile ? "19px" : "24px", fontWeight: 700, color: "#1e4d3a", margin: 0 }}>{t.mediaTitle}</h2>
                   <HoverBtn onClick={() => setShowAddMedia(true)}><Icon name="add_circle" size={14} />{t.addMedia}</HoverBtn>
                 </div>
-                                <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: "20px" }}>
+                <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "repeat(3,1fr)", gap: isMobile ? "16px" : "20px" }}>
                   {s.media.map((m, i) => (
                     <div key={m.media_id || i} id={m.media_id ? `media-${m.media_id}` : undefined}>
                       <MediaCard item={m} mediaIconName={mediaIconName} />
@@ -1854,25 +1843,25 @@ const ScholarDetailPage: React.FC = () => {
             )}
 
             {activeTab === "relations" && (
-              <div style={{ display: "flex", flexDirection: "column", gap: "32px" }}>
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "20px" }}>
+              <div style={{ display: "flex", flexDirection: "column", gap: isMobile ? "20px" : "32px" }}>
+                <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: isMobile ? "16px" : "20px" }}>
                   {[ 
-                    { data: s.intellectualLineage, label: t.intellectualLineage, icon: "school", color: "#0b4335" }, 
-                    { data: s.notableDisciples, label: t.notableDisciples, icon: "groups", color: "#735c00" } 
+                    { data: s.intellectualLineage, label: t.intellectualLineage, icon: "school", color: "#1e4d3a" }, 
+                    { data: s.notableDisciples, label: t.notableDisciples, icon: "groups", color: "#C9A84C" } 
                   ].map(({ data, label, icon, color }) => (
-                    <div key={label} style={{ backgroundColor: "#f3f4f1", padding: "28px", borderRadius: "16px", border: "1px solid rgba(192,201,195,0.4)" }}>
+                    <div key={label} style={{ backgroundColor: "#F5F3EC", padding: isMobile ? "20px 18px" : "28px", borderRadius: "16px", border: "1px solid rgba(30,77,58,0.1)" }}>
                       <h3 style={{ ...MONO, fontSize: "9px", color, letterSpacing: "0.15em", marginBottom: "24px", display: "flex", alignItems: "center", gap: "8px" }}><Icon name={icon} size={15} />{label}</h3>
-                      <div style={{ display: "flex", gap: "24px" }}>
-                        {data.map((p) => (<a key={p.name} href={p.profileUrl ?? "#"} className="person-card" style={{ display: "flex", alignItems: "center", gap: "12px", textDecoration: "none" }}><div style={{ width: "44px", height: "44px", borderRadius: "50%", backgroundColor: p.color, display: "flex", alignItems: "center", justifyContent: "center", color: p.textColor, fontSize: "13px", fontWeight: 700, flexShrink: 0 }}>{p.initials}</div><div><p className="person-name" style={{ fontSize: "13px", fontWeight: 700, color: "#191c1b", margin: "0 0 2px", transition: "color 0.15s" }}>{p.name}</p><p style={{ ...MONO, fontSize: "9px", color: "#c0c9c3", letterSpacing: "0.08em", margin: 0 }}>{p.role}</p></div></a>))}
+                      <div style={{ display: "flex", gap: "24px", flexWrap: "wrap" }}>
+                        {data.map((p) => (<a key={p.name} href={p.profileUrl ?? "#"} className="person-card" style={{ display: "flex", alignItems: "center", gap: "12px", textDecoration: "none" }}><div style={{ width: "44px", height: "44px", borderRadius: "50%", backgroundColor: p.color, display: "flex", alignItems: "center", justifyContent: "center", color: p.textColor, fontSize: "13px", fontWeight: 700, flexShrink: 0 }}>{p.initials}</div><div><p className="person-name" style={{ fontSize: "13px", fontWeight: 700, color: "#1e4d3a", margin: "0 0 2px", transition: "color 0.2s ease", ...SANS }}>{p.name}</p><p style={{ ...MONO, fontSize: "9px", color: "#1e4d3a66", letterSpacing: "0.08em", margin: 0 }}>{p.role}</p></div></a>))}
                       </div>
                     </div>
                   ))}
                 </div>
                 {s.relatedScholars.length > 0 && (
                   <div>
-                    <h3 style={{ ...MONO, fontSize: "9px", color: "#707974", letterSpacing: "0.12em", marginBottom: "16px" }}>{t.relatedByField}</h3>
-                    <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: "14px" }}>
-                      {s.relatedScholars.map((rs, i) => (<div key={i} className="card-hover" style={{ backgroundColor: "#fff", padding: "16px", borderRadius: "8px", border: "1.5px solid rgba(192,201,195,0.4)" }}><p style={{ ...MONO, fontSize: "9px", color: rs.labelColor, letterSpacing: "0.08em", marginBottom: "6px" }}>{rs.label}</p><p style={{ fontSize: "14px", fontWeight: 700, color: "#191c1b", marginBottom: "4px" }}>{rs.name}</p><p style={{ fontSize: "12px", color: "#707974", fontStyle: "italic", margin: 0 }}>{rs.description}</p></div>))}
+                    <h3 style={{ ...MONO, fontSize: "9px", color: "#1e4d3a99", letterSpacing: "0.12em", marginBottom: "16px" }}>{t.relatedByField}</h3>
+                    <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "repeat(3,1fr)", gap: "14px" }}>
+                      {s.relatedScholars.map((rs, i) => (<div key={i} className="card-hover" style={{ backgroundColor: "#fff", padding: "16px", borderRadius: "16px", border: "1px solid rgba(30,77,58,0.1)" }}><p style={{ ...MONO, fontSize: "9px", color: rs.labelColor, letterSpacing: "0.08em", marginBottom: "6px" }}>{rs.label}</p><p style={{ fontSize: "14px", fontWeight: 700, color: "#1e4d3a", marginBottom: "4px", fontFamily: "'Hanken Grotesk', sans-serif" }}>{rs.name}</p><p style={{ fontSize: "12px", color: "#1e4d3a99", fontStyle: "italic", margin: 0, ...SANS }}>{rs.description}</p></div>))}
                     </div>
                   </div>
                 )}
@@ -1883,14 +1872,14 @@ const ScholarDetailPage: React.FC = () => {
               <div style={{ display: "grid" }}>
                 {s.academicReferences.length > 0 && (
                   <div>
-                    <h3 style={{ ...MONO, fontSize: "9px", color: "#707974", letterSpacing: "0.12em", marginBottom: "20px" }}>{t.academicReferences}</h3>
+                    <h3 style={{ ...MONO, fontSize: "9px", color: "#1e4d3a99", letterSpacing: "0.12em", marginBottom: "20px" }}>{t.academicReferences}</h3>
                     <ol style={{ paddingLeft: "0", margin: 0, display: "flex", flexDirection: "column", gap: "16px", listStyle: "none" }}>
                       {s.academicReferences.map((r, i) => (
-                        <li key={i} style={{ padding: "16px 20px", backgroundColor: "#fff", border: "1.5px solid rgba(192,201,195,0.4)", borderRadius: "10px", display: "flex", flexDirection: "column", gap: "6px" }}>
-                          <p style={{ ...SERIF, fontSize: "14px", fontWeight: 600, color: "#0b4335", margin: 0 }}>{r.title}</p>
-                          <p style={{ ...SERIF, fontSize: "13px", color: "#404945", lineHeight: 1.6, margin: 0 }}>{r.citation}</p>
+                        <li key={i} style={{ padding: isMobile ? "14px 16px" : "16px 20px", backgroundColor: "#fff", border: "1px solid rgba(30,77,58,0.1)", borderRadius: "16px", display: "flex", flexDirection: "column", gap: "6px" }}>
+                          <p style={{ fontFamily: "'Hanken Grotesk', sans-serif", fontSize: "14px", fontWeight: 600, color: "#1e4d3a", margin: 0 }}>{r.title}</p>
+                          <p style={{ ...SANS, fontSize: "13px", color: "#1e4d3acc", lineHeight: 1.6, margin: 0 }}>{r.citation}</p>
                           {r.url && (
-                            <a href={r.url} target="_blank" rel="noopener noreferrer" style={{ display: "inline-flex", alignItems: "center", gap: "6px", color: "#735c00", fontSize: "12px", fontWeight: 600, textDecoration: "none", marginTop: "4px" }} onMouseEnter={(e) => { e.currentTarget.style.color = "#0b4335"; e.currentTarget.style.textDecoration = "underline"; }} onMouseLeave={(e) => { e.currentTarget.style.color = "#735c00"; e.currentTarget.style.textDecoration = "none"; }}>
+                            <a href={r.url} target="_blank" rel="noopener noreferrer" style={{ display: "inline-flex", alignItems: "center", gap: "6px", color: "#C9A84C", fontSize: "12px", fontWeight: 600, textDecoration: "none", marginTop: "4px", ...SANS, wordBreak: "break-all" }} onMouseEnter={(e) => { e.currentTarget.style.color = "#1e4d3a"; e.currentTarget.style.textDecoration = "underline"; }} onMouseLeave={(e) => { e.currentTarget.style.color = "#C9A84C"; e.currentTarget.style.textDecoration = "none"; }}>
                               <Icon name="link" size={14} />{r.url.replace(/^https?:\/\//, '')}
                             </a>
                           )}
@@ -1903,17 +1892,25 @@ const ScholarDetailPage: React.FC = () => {
             )}
 
             {s.recentRevisions.length > 0 && (
-              <section style={{ marginTop: "80px", paddingTop: "40px", borderTop: "1px solid rgba(192,201,195,0.4)" }}>
-                <h3 style={{ ...MONO, fontSize: "9px", color: "#707974", letterSpacing: "0.12em", marginBottom: "20px" }}>{t.recentRevisions}</h3>
+              <section style={{ marginTop: isMobile ? "48px" : "80px", paddingTop: isMobile ? "28px" : "40px", borderTop: "1px solid rgba(30,77,58,0.1)" }}>
+                <h3 style={{ ...MONO, fontSize: "9px", color: "#1e4d3a99", letterSpacing: "0.12em", marginBottom: "20px" }}>{t.recentRevisions}</h3>
                 <div style={{ maxWidth: "800px", display: "flex", flexDirection: "column", gap: "12px" }}>
-                  {s.recentRevisions.map((r, i) => (
-                    <div key={i} style={{ display: "flex", gap: "16px", padding: "10px 0", borderBottom: "1px solid #f0f1ee" }}>
-                      <span style={{ ...MONO, fontSize: "10px", color: "#c0c9c3", minWidth: "80px" }}>{r.date}</span>
+                  {s.recentRevisions.slice(0, showAllRevisions ? s.recentRevisions.length : 3).map((r, i) => (
+                    <div key={i} style={{ display: "flex", gap: "16px", padding: "10px 0", borderBottom: "1px solid #F5F3EC", ...SANS, flexWrap: "wrap" }}>
+                      <span style={{ ...MONO, fontSize: "10px", color: "#1e4d3a66", minWidth: "80px" }}>{r.date}</span>
                       <ProfileLink name={r.author} url={r.authorUrl ?? "#"} />
-                      <span style={{ fontSize: "12px", color: "#404945" }}>— {r.action}</span>
+                      <span style={{ fontSize: "12px", color: "#1e4d3acc" }}>— {r.action}</span>
                     </div>
                   ))}
-                  <button className="action-link" style={{ marginTop: "8px", alignSelf: "flex-start" }}>{t.viewAllEdits}</button>
+                  {s.recentRevisions.length > 3 && (
+                    <button 
+                      className="action-link" 
+                      onClick={() => setShowAllRevisions(!showAllRevisions)} 
+                      style={{ marginTop: "8px", alignSelf: "flex-start" }}
+                    >
+                      {showAllRevisions ? t.showLess : `${t.viewMore} (${s.recentRevisions.length - 3} more)`}
+                    </button>
+                  )}
                 </div>
               </section>
             )}

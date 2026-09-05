@@ -32,6 +32,8 @@ const LANG_CODE_BY_UI: Record<Language, string> = {
 const T = {
   EN: {
     breadcrumb: "HOME › SCHOLAR ENCYCLOPEDIA",
+    breadcrumbHome: "HOME",
+    breadcrumbCurrent: "SCHOLAR ENCYCLOPEDIA",
     heroTitle: "Explore the Intellectual Heritage",
     heroSub: "A comprehensive directory of polymaths, theologians, and scientists who shaped the global landscape of knowledge.",
     searchPlaceholder: "Search by name...",
@@ -49,6 +51,7 @@ const T = {
     scholars: "Scholars",
     sortBy: "SORT BY:",
     biography: "BIOGRAPHY",
+    addScholar: "ADD SCHOLAR",
     centuries: ["1st – 3rd Century", "4th – 6th Century", "7th – 9th Century"],
     sortOptions: ["Name (A-Z)", "Name (Z-A)", "Century (Oldest)", "Century (Newest)"],
     noScholars: "No scholars available in this language yet.",
@@ -57,6 +60,8 @@ const T = {
   },
   AR: {
     breadcrumb: "الرئيسية › موسوعة العلماء",
+    breadcrumbHome: "الرئيسية",
+    breadcrumbCurrent: "موسوعة العلماء",
     heroTitle: "استكشف الإرث الفكري الإسلامي",
     heroSub: "دليل شامل للعلماء والمفكرين والعلماء الذين شكّلوا الحضارة الإنسانية.",
     searchPlaceholder: "ابحث باسم العالم...",
@@ -74,6 +79,7 @@ const T = {
     scholars: "عالم",
     sortBy: "ترتيب:",
     biography: "السيرة الذاتية",
+    addScholar: "إضافة عالِم",
     centuries: ["القرن 1-3", "القرن 4-6", "القرن 7-9"],
     sortOptions: ["الاسم (أ-ي)", "الاسم (ي-أ)", "الأقدم", "الأحدث"],
     noScholars: "لا يوجد علماء متاحون بهذه اللغة حتى الآن.",
@@ -82,6 +88,8 @@ const T = {
   },
   FR: {
     breadcrumb: "ACCUEIL › ENCYCLOPÉDIE DES SAVANTS",
+    breadcrumbHome: "ACCUEIL",
+    breadcrumbCurrent: "ENCYCLOPÉDIE DES SAVANTS",
     heroTitle: "Explorer le Patrimoine Intellectuel",
     heroSub: "Un répertoire complet de polymathes, théologiens et scientifiques qui ont façonné le savoir universel.",
     searchPlaceholder: "Rechercher par nom...",
@@ -99,6 +107,7 @@ const T = {
     scholars: "Savants",
     sortBy: "TRIER PAR :",
     biography: "BIOGRAPHIE",
+    addScholar: "AJOUTER UN SAVANT",
     centuries: ["1er – 3e Siècle", "4e – 6e Siècle", "7e – 9e Siècle"],
     sortOptions: ["Nom (A-Z)", "Nom (Z-A)", "Le plus ancien", "Le plus récent"],
     noScholars: "Aucun savant disponible dans cette langue pour le moment.",
@@ -158,15 +167,15 @@ const DisciplineTags: React.FC<{ disciplines: string[] }> = ({ disciplines }) =>
   const extra = disciplines.length - MAX_SHOW;
 
   const tagStyle: React.CSSProperties = {
-    backgroundColor: "#0b4335", color: "#fff", fontSize: "9px", fontWeight: 700,
-    letterSpacing: "0.1em", padding: "3px 8px", borderRadius: "2px",
-    fontFamily: "'Inter', sans-serif", border: "1px solid rgba(255,255,255,0.15)",
+    backgroundColor: "#1e4d3a", color: "#fff", fontSize: "9px", fontWeight: 700,
+    letterSpacing: "0.1em", padding: "4px 9px", borderRadius: "6px",
+    fontFamily: "'JetBrains Mono', monospace", border: "1px solid rgba(255,255,255,0.15)",
     backdropFilter: "blur(4px)", whiteSpace: "nowrap" as const,
   };
   const plusStyle: React.CSSProperties = {
     backgroundColor: "#C9A84C", color: "#fff", fontSize: "9px", fontWeight: 700,
-    letterSpacing: "0.08em", padding: "3px 7px", borderRadius: "2px",
-    fontFamily: "'Inter', sans-serif", border: "1px solid rgba(255,255,255,0.2)",
+    letterSpacing: "0.08em", padding: "4px 8px", borderRadius: "6px",
+    fontFamily: "'JetBrains Mono', monospace", border: "1px solid rgba(255,255,255,0.2)",
     backdropFilter: "blur(4px)", whiteSpace: "nowrap" as const,
   };
 
@@ -192,13 +201,16 @@ const ScholarCard: React.FC<{ scholar: ScholarCardData; lang: Language; biograph
       <div
         onMouseEnter={() => setHovered(true)}
         onMouseLeave={() => setHovered(false)}
+        dir={isRTL ? "rtl" : "ltr"}
         style={{
-          backgroundColor: "#fff", borderRadius: "2px", overflow: "hidden",
-          boxShadow: hovered ? "0 12px 40px rgba(0,0,0,0.15)" : "0 2px 12px rgba(0,0,0,0.06)",
+          backgroundColor: "#F5F3EC", borderRadius: "16px", overflow: "hidden",
+          boxShadow: hovered
+            ? "0 20px 25px -5px rgba(30,77,58,0.15), 0 8px 10px -6px rgba(30,77,58,0.08)"
+            : "0 2px 12px rgba(30,77,58,0.06)",
           transform: hovered ? "translateY(-4px)" : "translateY(0)",
-          transition: "box-shadow 0.25s ease, transform 0.25s ease",
+          border: "1px solid rgba(30,77,58,0.1)",
+          transition: "box-shadow 0.3s ease, transform 0.3s ease",
           display: "flex", flexDirection: "column", cursor: "pointer",
-          direction: isRTL ? "rtl" : "ltr",
           height: "100%",
         }}
       >
@@ -221,8 +233,8 @@ const ScholarCard: React.FC<{ scholar: ScholarCardData; lang: Language; biograph
 
         <div style={{ padding: "20px 20px 0 20px", flex: 1 }}>
           <h3 style={{
-            fontFamily: lang === "AR" ? "'Amiri', serif" : "'Playfair Display', 'Georgia', serif",
-            fontSize: "17px", fontWeight: 600, color: hovered ? "#C9A84C" : "#191c1b",
+            fontFamily: lang === "AR" ? "'Amiri', serif" : "'Hanken Grotesk', sans-serif",
+            fontSize: "18px", fontWeight: 700, color: hovered ? "#C9A84C" : "#1e4d3a",
             margin: "0 0 4px 0", lineHeight: 1.3, transition: "color 0.2s ease",
             display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical",
             overflow: "hidden", minHeight: "44px",
@@ -239,18 +251,18 @@ const ScholarCard: React.FC<{ scholar: ScholarCardData; lang: Language; biograph
           </p>
 
           <p style={{
-            fontFamily: "'Inter', sans-serif", fontSize: "11px", color: "#6b7775",
-            letterSpacing: "0.06em", fontWeight: 500, margin: "0 0 6px 0",
+            fontFamily: "'JetBrains Mono', monospace", fontSize: "11px", color: "#1e4d3a99",
+            letterSpacing: "0.05em", fontWeight: 500, margin: "0 0 6px 0",
             minHeight: "16px", textTransform: "uppercase",
           }}>
             {scholar.years}
             {scholar.years && scholar.region && " • "}
-            <span style={{ color: "#404945" }}>{scholar.region}</span>
+            <span style={{ color: "#1e4d3a" }}>{scholar.region}</span>
           </p>
 
           <p style={{
             fontFamily: lang === "AR" ? "'Amiri', serif" : "'Inter', sans-serif",
-            fontSize: "13px", color: "#404945", lineHeight: 1.6, margin: 0,
+            fontSize: "13px", color: "#1e4d3acc", lineHeight: 1.6, margin: 0,
             display: "-webkit-box", WebkitLineClamp: 3, WebkitBoxOrient: "vertical",
             overflow: "hidden",
           }}>
@@ -260,15 +272,15 @@ const ScholarCard: React.FC<{ scholar: ScholarCardData; lang: Language; biograph
 
         <div style={{
           padding: "16px 20px", marginTop: "16px",
-          borderTop: hovered ? "1px solid #0b4335" : "1px solid #e8ede9",
-          backgroundColor: hovered ? "#0b4335" : "transparent",
-          transition: "background-color 0.2s ease, border-color 0.2s ease",
+          borderTop: hovered ? "1px solid #1e4d3a" : "1px solid rgba(30,77,58,0.1)",
+          backgroundColor: hovered ? "#1e4d3a" : "transparent",
+          transition: "background-color 0.25s ease, border-color 0.25s ease",
         }}>
           <span style={{
-            fontFamily: "'Inter', sans-serif", fontSize: "11px", fontWeight: 700,
-            letterSpacing: "0.12em", color: hovered ? "#fff" : "#0b4335",
+            fontFamily: "'JetBrains Mono', monospace", fontSize: "11px", fontWeight: 700,
+            letterSpacing: "0.1em", color: hovered ? "#fbf9f4" : "#1e4d3a",
             display: "flex", alignItems: "center", gap: "8px",
-            flexDirection: isRTL ? "row-reverse" : "row", transition: "color 0.2s ease",
+            transition: "color 0.2s ease",
           }}>
             {biographyLabel}
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"
@@ -285,28 +297,187 @@ const ScholarCard: React.FC<{ scholar: ScholarCardData; lang: Language; biograph
 // ── Filter Checkbox ────────────────────────────────────────────────────────
 const FilterCheckbox: React.FC<{
   label: string; count?: number; checked: boolean; onChange: () => void; isRTL?: boolean;
-}> = ({ label, count, checked, onChange, isRTL }) => (
-  <label style={{ display: "flex", alignItems: "center", justifyContent: "space-between", cursor: "pointer", padding: "4px 0" }}>
-    <div style={{ display: "flex", alignItems: "center", gap: "9px", flexDirection: isRTL ? "row-reverse" : "row" }}>
-      <div onClick={onChange} style={{
-        width: "15px", height: "15px", border: checked ? "none" : "1.5px solid #ccc",
-        borderRadius: "2px", backgroundColor: checked ? "#0b4335" : "transparent",
-        display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, cursor: "pointer",
-        transition: "background-color 0.15s ease",
-      }}>
-        {checked && (
-          <svg width="9" height="9" viewBox="0 0 12 12" fill="none">
-            <path d="M2 6l3 3 5-5" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-          </svg>
-        )}
+}> = ({ label, count, checked, onChange, isRTL }) => {
+  const [hovered, setHovered] = useState(false);
+  return (
+    <label
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      style={{ display: "flex", alignItems: "center", justifyContent: "space-between", cursor: "pointer", padding: "4px 0" }}
+    >
+      <div style={{ display: "flex", alignItems: "center", gap: "9px" }}>
+        <div onClick={onChange} style={{
+          width: "16px", height: "16px",
+          border: checked ? "none" : `1.5px solid ${hovered ? "#1e4d3a" : "rgba(30,77,58,0.3)"}`,
+          borderRadius: "5px",
+          backgroundColor: checked ? "#1e4d3a" : hovered ? "rgba(30,77,58,0.14)" : "transparent",
+          display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, cursor: "pointer",
+          transition: "background-color 0.2s ease, border-color 0.2s ease",
+        }}>
+          {checked && (
+            <svg width="9" height="9" viewBox="0 0 12 12" fill="none">
+              <path d="M2 6l3 3 5-5" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+          )}
+        </div>
+        <span style={{
+          fontFamily: "'Inter', sans-serif", fontSize: "13px",
+          color: checked ? "#1e4d3a" : hovered ? "#1e4d3a" : "#1e4d3a99",
+          fontWeight: checked ? 600 : 400, transition: "color 0.2s ease",
+        }}>
+          {label}
+        </span>
       </div>
-      <span style={{ fontFamily: "'Inter', sans-serif", fontSize: "13px", color: checked ? "#0b4335" : "#404945", fontWeight: checked ? 600 : 400 }}>
+      {count !== undefined && <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: "11px", color: "#1e4d3a66" }}>{count}</span>}
+    </label>
+  );
+};
+
+// ── Breadcrumb Home Link (text-link idiom: color shifts to green on hover) ─
+const BreadcrumbHomeLink: React.FC<{ label: string }> = ({ label }) => {
+  const [hovered, setHovered] = useState(false);
+  return (
+    <Link
+      to="/"
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      style={{
+        color: hovered ? "#1e4d3a" : "#C9A84C",
+        textDecoration: "none",
+        transition: "color 0.2s ease",
+      }}
+    >
+      {label}
+    </Link>
+  );
+};
+
+// ── Hero Search Button (invert style, matching Home's primary CTAs) ────────
+const HeroSearchButton: React.FC<{ label: string }> = ({ label }) => {
+  const [hovered, setHovered] = useState(false);
+  return (
+    <button
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      style={{
+        backgroundColor: hovered ? "#fff" : "#1e4d3a",
+        color: hovered ? "#1e4d3a" : "#fff",
+        border: "none", borderInlineStart: "2px solid #1e4d3a", padding: "14px 28px",
+        fontFamily: "'Hanken Grotesk', sans-serif", fontSize: "12px", fontWeight: 700,
+        letterSpacing: "0.05em", cursor: "pointer", transition: "all 0.3s ease",
+      }}
+    >
+      {label}
+    </button>
+  );
+};
+
+// ── Add Scholar Button (invert style, matching Home's primary CTAs) ────────
+const AddScholarButton: React.FC<{ label: string }> = ({ label }) => {
+  const [hovered, setHovered] = useState(false);
+  return (
+    <Link to="/scholars/submit" style={{ textDecoration: "none" }}>
+      <button
+        onMouseEnter={() => setHovered(true)}
+        onMouseLeave={() => setHovered(false)}
+        style={{
+          display: "flex", alignItems: "center", gap: "9px", padding: "11px 22px",
+          backgroundColor: hovered ? "#fbf9f4" : "#1e4d3a",
+          color: hovered ? "#1e4d3a" : "#fff",
+          border: "2px solid #1e4d3a",
+          borderRadius: "8px", fontFamily: "'Hanken Grotesk', sans-serif", fontSize: "12px",
+          fontWeight: 700, letterSpacing: "0.05em", cursor: "pointer",
+          boxShadow: hovered ? "none" : "0 2px 10px rgba(30,77,58,0.18)",
+          transition: "all 0.3s ease",
+        }}
+      >
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"
+          style={{ transform: hovered ? "rotate(90deg)" : "rotate(0deg)", transition: "transform 0.3s ease" }}>
+          <path d="M12 5v14M5 12h14" />
+        </svg>
         {label}
+      </button>
+    </Link>
+  );
+};
+
+// ── Sort Trigger Button (subtle border-only hover, matching Home's small
+//    outlined chrome — no full fill) ─────────────────────────────────────
+const SortTriggerButton: React.FC<{
+  sortByLabel: string; sortValue: string; open: boolean; onClick: () => void;
+}> = ({ sortByLabel, sortValue, open, onClick }) => {
+  const [hovered, setHovered] = useState(false);
+  const active = hovered || open;
+  return (
+    <button
+      onClick={onClick}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      style={{
+        display: "flex", alignItems: "center", gap: "8px", padding: "9px 16px",
+        border: `1.5px solid ${active ? "#1e4d3a" : "rgba(30,77,58,0.25)"}`,
+        borderRadius: "8px", backgroundColor: "#fff",
+        fontFamily: "'Inter', sans-serif", fontSize: "12px", color: "#1e4d3a", cursor: "pointer",
+        boxShadow: "0 1px 4px rgba(30,77,58,0.06)", transition: "border-color 0.2s ease",
+      }}
+    >
+      <span style={{
+        fontFamily: "'JetBrains Mono', monospace", fontSize: "10px",
+        color: "#1e4d3a66", letterSpacing: "0.08em", fontWeight: 600,
+      }}>
+        {sortByLabel}
       </span>
-    </div>
-    {count !== undefined && <span style={{ fontFamily: "'Inter', sans-serif", fontSize: "11px", color: "#c0c9c3" }}>{count}</span>}
-  </label>
-);
+      {sortValue}
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"
+        style={{ transform: open ? "rotate(180deg)" : "rotate(0)", transition: "transform 0.2s" }}>
+        <path d="M6 9l6 6 6-6" />
+      </svg>
+    </button>
+  );
+};
+
+// ── Pagination buttons (border-only hover; active page keeps its fill) ─────
+const PageArrowButton: React.FC<{ onClick: () => void; path: string }> = ({ onClick, path }) => {
+  const [hovered, setHovered] = useState(false);
+  return (
+    <button
+      onClick={onClick}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      style={{
+        width: "36px", height: "36px", borderRadius: "8px",
+        border: `1.5px solid ${hovered ? "#1e4d3a" : "rgba(30,77,58,0.25)"}`,
+        backgroundColor: "#fff", cursor: "pointer", display: "flex", alignItems: "center",
+        justifyContent: "center", color: "#1e4d3a", transition: "border-color 0.2s ease",
+      }}
+    >
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+        <path d={path} />
+      </svg>
+    </button>
+  );
+};
+
+const PageNumberButton: React.FC<{ page: number; active: boolean; onClick: () => void }> = ({ page, active, onClick }) => {
+  const [hovered, setHovered] = useState(false);
+  return (
+    <button
+      onClick={onClick}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      style={{
+        width: "36px", height: "36px", borderRadius: "8px",
+        border: `1.5px solid ${active || hovered ? "#1e4d3a" : "rgba(30,77,58,0.25)"}`,
+        backgroundColor: active ? "#1e4d3a" : "#fff",
+        color: active ? "#fff" : "#1e4d3a",
+        fontFamily: "'Hanken Grotesk', sans-serif", fontSize: "13px",
+        fontWeight: active ? 700 : 400, cursor: "pointer", transition: "border-color 0.2s ease, background-color 0.2s ease",
+      }}
+    >
+      {page}
+    </button>
+  );
+};
 
 const PAGE_SIZE = 12;
 
@@ -432,22 +603,62 @@ const ScholarsPage: React.FC = () => {
   const pageItems = filtered.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
 
   return (
-    <div dir={isRTL ? "rtl" : "ltr"} style={{ minHeight: "100vh", backgroundColor: "#faf9f6", fontFamily: "'Inter', sans-serif" }}>
+    <div dir={isRTL ? "rtl" : "ltr"} style={{ minHeight: "100vh", backgroundColor: "#fbf9f4", fontFamily: "'Inter', sans-serif" }}>
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap');
+
+        @media (max-width: 900px) {
+          .scholars-hero { padding: 36px 20px 40px !important; }
+          .scholars-body { flex-direction: column !important; gap: 28px !important; padding: 28px 16px !important; }
+          .scholars-sidebar { width: 100% !important; position: static !important; }
+          .scholars-filter-groups { flex-direction: row !important; flex-wrap: wrap !important; gap: 24px !important; }
+          .scholars-filter-groups > div { margin-bottom: 0 !important; min-width: 140px; flex: 1 1 140px; }
+          .scholars-toolbar { flex-wrap: wrap !important; gap: 14px !important; }
+          .scholars-actions { width: 100% !important; }
+          .scholars-grid { grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)) !important; gap: 14px !important; }
+        }
+
+        @media (max-width: 520px) {
+          .scholars-search-bar { flex-wrap: wrap !important; }
+          .scholars-search-input { min-width: 0; }
+          .scholars-actions { gap: 8px !important; }
+          .scholars-actions button { padding: 7px 12px !important; font-size: 10.5px !important; gap: 6px !important; }
+          .scholars-grid { grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)) !important; }
+          .scholars-pagination { flex-wrap: wrap !important; }
+          .scholars-pagination button { width: 30px !important; height: 30px !important; }
+        }
+
+        .scholars-filter-list { max-height: 210px; overflow-y: auto; padding-right: 8px; }
+        .scholars-filter-list::-webkit-scrollbar { width: 5px; }
+        .scholars-filter-list::-webkit-scrollbar-track { background: transparent; }
+        .scholars-filter-list::-webkit-scrollbar-thumb { background: rgba(30,77,58,0.25); border-radius: 3px; }
+        .scholars-filter-list::-webkit-scrollbar-thumb:hover { background: rgba(30,77,58,0.4); }
+      `}</style>
 
       {/* Hero */}
-      <section style={{
-        backgroundColor: "#faf9f6", padding: "48px 40px 56px", textAlign: "center",
-        position: "relative", overflow: "hidden", borderBottom: "1px solid #E8E6E0",
+      <section className="scholars-hero" style={{
+        backgroundColor: "#fbf9f4", padding: "48px 40px 56px", textAlign: "center",
+        position: "relative", overflow: "hidden", borderBottom: "1px solid rgba(30,77,58,0.1)",
       }}>
         <div style={{
           position: "absolute", inset: 0,
-          backgroundImage: "radial-gradient(circle at 50% 0%, rgba(201,168,76,0.06) 0%, transparent 60%)",
+          backgroundImage: "radial-gradient(circle at 50% 0%, rgba(201,168,76,0.08) 0%, transparent 60%)",
           pointerEvents: "none",
         }} />
 
+        <p style={{
+          fontFamily: "'JetBrains Mono', monospace", fontSize: "11px", fontWeight: 700,
+          letterSpacing: "0.2em", color: "#C9A84C", textTransform: "uppercase",
+          margin: "0 0 14px 0", display: "flex", alignItems: "center", justifyContent: "center", gap: "8px",
+        }}>
+          <BreadcrumbHomeLink label={t.breadcrumbHome} />
+          <span style={{ color: "#1e4d3a66" }}>›</span>
+          <span>{t.breadcrumbCurrent}</span>
+        </p>
+
         <h1 style={{
-          fontFamily: lang === "AR" ? "'Amiri', serif" : "'Playfair Display', 'Georgia', serif",
-          fontSize: "clamp(32px, 5vw, 56px)", fontWeight: 700, color: "#0b4335",
+          fontFamily: "'Hanken Grotesk', sans-serif",
+          fontSize: "clamp(32px, 5vw, 52px)", fontWeight: 700, color: "#1e4d3a",
           margin: "0 0 18px 0", lineHeight: 1.15, maxWidth: "600px", marginLeft: "auto", marginRight: "auto",
         }}>
           {t.heroTitle}
@@ -455,23 +666,24 @@ const ScholarsPage: React.FC = () => {
 
         <p style={{
           fontFamily: lang === "AR" ? "'Amiri', serif" : "'Inter', sans-serif",
-          fontSize: "15px", color: "#666", maxWidth: "480px", margin: "0 auto 40px", lineHeight: 1.7,
+          fontSize: "15px", color: "#1e4d3a99", maxWidth: "480px", margin: "0 auto 40px", lineHeight: 1.7,
         }}>
           {t.heroSub}
         </p>
 
-        <div style={{
+        <div className="scholars-search-bar" style={{
           maxWidth: "560px", margin: "0 auto", display: "flex", alignItems: "center",
-          backgroundColor: "#fff", borderRadius: "4px", overflow: "hidden",
-          boxShadow: "0 4px 24px rgba(0,0,0,0.10)", flexDirection: isRTL ? "row-reverse" : "row",
+          backgroundColor: "#fff", borderRadius: "12px", overflow: "hidden",
+          border: "2px solid #1e4d3a", boxShadow: "0 4px 20px rgba(30,77,58,0.08)",
         }}>
-          <div style={{ padding: "0 16px", color: "#c0c9c3", display: "flex", alignItems: "center" }}>
+          <div style={{ padding: "0 16px", color: "#1e4d3a66", display: "flex", alignItems: "center" }}>
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
               <circle cx="11" cy="11" r="8" /><path d="M21 21l-4.3-4.3" />
             </svg>
           </div>
           <input
             type="text"
+            className="scholars-search-input"
             value={search}
             onChange={(e) => { 
               const val = e.target.value;
@@ -484,43 +696,39 @@ const ScholarsPage: React.FC = () => {
             style={{
               flex: 1, border: "none", outline: "none",
               fontFamily: lang === "AR" ? "'Amiri', serif" : "'Inter', sans-serif",
-              fontSize: "13px", color: "#191c1b", padding: "14px 0",
+              fontSize: "13px", color: "#1e4d3a", padding: "14px 0",
               backgroundColor: "transparent", textAlign: isRTL ? "right" : "left",
             }}
           />
-          <button style={{
-            backgroundColor: "#0b4335", color: "#fff", border: "none", padding: "14px 28px",
-            fontFamily: "'Inter', sans-serif", fontSize: "12px", fontWeight: 700,
-            letterSpacing: "0.1em", cursor: "pointer",
-          }}
-            onMouseEnter={(e) => ((e.currentTarget).style.backgroundColor = "#C9A84C")}
-            onMouseLeave={(e) => ((e.currentTarget).style.backgroundColor = "#0b4335")}
-          >
-            {t.searchBtn}
-          </button>
+          <HeroSearchButton label={t.searchBtn} />
         </div>
       </section>
 
       {/* Body */}
-      <div style={{
+      <div className="scholars-body" style={{
         maxWidth: "1280px", margin: "0 auto", padding: "40px 24px",
         display: "flex", gap: "40px", alignItems: "flex-start",
-        flexDirection: isRTL ? "row-reverse" : "row",
       }}>
 
         {/* Sidebar */}
-        <aside style={{ width: "200px", flexShrink: 0, position: "sticky", top: "100px" }}>
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "20px", flexDirection: isRTL ? "row-reverse" : "row" }}>
-            <span style={{ fontSize: "11px", fontWeight: 700, letterSpacing: "0.12em", color: "#191c1b" }}>{t.filters}</span>
-            <button onClick={clearAll} style={{ fontSize: "12px", color: "#C9A84C", background: "none", border: "none", cursor: "pointer", fontFamily: "'Inter', sans-serif" }}>
+        <aside className="scholars-sidebar" style={{ width: "200px", flexShrink: 0, position: "sticky", top: "100px" }}>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "20px" }}>
+            <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: "11px", fontWeight: 700, letterSpacing: "0.12em", color: "#1e4d3a" }}>{t.filters}</span>
+            <button
+              onClick={clearAll}
+              style={{ fontSize: "12px", color: "#C9A84C", background: "none", border: "none", cursor: "pointer", fontFamily: "'Inter', sans-serif", fontWeight: 600, transition: "color 0.2s ease" }}
+              onMouseEnter={(e) => ((e.currentTarget as HTMLElement).style.color = "#1e4d3a")}
+              onMouseLeave={(e) => ((e.currentTarget as HTMLElement).style.color = "#C9A84C")}
+            >
               {t.clearAll}
             </button>
           </div>
 
+          <div className="scholars-filter-groups" style={{ display: "flex", flexDirection: "column" }}>
           {/* ✅ DYNAMIC REGIONS FROM BACKEND */}
           <div style={{ marginBottom: "24px" }}>
-            <p style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.1em", color: "#c0c9c3", marginBottom: "10px" }}>{t.regionLabel}</p>
-            <div style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
+            <p style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: "10px", fontWeight: 700, letterSpacing: "0.1em", color: "#1e4d3a66", marginBottom: "10px" }}>{t.regionLabel}</p>
+            <div className="scholars-filter-list" style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
               {availableRegions.length > 0 ? (
                 availableRegions.map((r) => (
                   <FilterCheckbox key={r} label={r} isRTL={isRTL}
@@ -528,15 +736,15 @@ const ScholarsPage: React.FC = () => {
                     onChange={() => { toggle(selectedRegions, setSelectedRegions, r); setCurrentPage(1); }} />
                 ))
               ) : (
-                <span style={{ fontSize: "11px", color: "#999" }}>Loading...</span>
+                <span style={{ fontSize: "11px", color: "#1e4d3a66" }}>Loading...</span>
               )}
             </div>
           </div>
 
           {/* ✅ DYNAMIC DISCIPLINES FROM BACKEND */}
           <div style={{ marginBottom: "24px" }}>
-            <p style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.1em", color: "#c0c9c3", marginBottom: "10px" }}>{t.disciplineLabel}</p>
-            <div style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
+            <p style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: "10px", fontWeight: 700, letterSpacing: "0.1em", color: "#1e4d3a66", marginBottom: "10px" }}>{t.disciplineLabel}</p>
+            <div className="scholars-filter-list" style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
               {availableDisciplines.length > 0 ? (
                 availableDisciplines.map((d) => (
                   <FilterCheckbox key={d} label={d} isRTL={isRTL}
@@ -544,63 +752,55 @@ const ScholarsPage: React.FC = () => {
                     onChange={() => { toggle(selectedDisciplines, setSelectedDisciplines, d); setCurrentPage(1); }} />
                 ))
               ) : (
-                <span style={{ fontSize: "11px", color: "#999" }}>Loading...</span>
+                <span style={{ fontSize: "11px", color: "#1e4d3a66" }}>Loading...</span>
               )}
             </div>
           </div>
-
-         
+          </div>
         </aside>
 
         {/* Main Content */}
         <main style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "28px", flexDirection: isRTL ? "row-reverse" : "row" }}>
-            <p style={{ fontSize: "13px", color: "#6b7775", fontFamily: "'Inter', sans-serif" }}>
-              {t.showing} <strong style={{ color: "#191c1b" }}>{pageItems.length}</strong> {t.of}{" "}
-              <strong style={{ color: "#191c1b" }}>{filtered.length}</strong> {t.scholars}
+          <div className="scholars-toolbar" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "28px" }}>
+            <p style={{ fontSize: "13px", color: "#1e4d3a99", fontFamily: "'Inter', sans-serif" }}>
+              {t.showing} <strong style={{ color: "#1e4d3a" }}>{pageItems.length}</strong> {t.of}{" "}
+              <strong style={{ color: "#1e4d3a" }}>{filtered.length}</strong> {t.scholars}
             </p>
 
-            <div style={{ position: "relative" }}>
-              <button onClick={() => setSortOpen((v) => !v)} style={{
-                display: "flex", alignItems: "center", gap: "8px", padding: "8px 16px",
-                border: "1.5px solid #c0c9c3", borderRadius: "2px", backgroundColor: "#fff",
-                fontFamily: "'Inter', sans-serif", fontSize: "12px", color: "#404945", cursor: "pointer",
-                boxShadow: "0 1px 4px rgba(0,0,0,0.06)", flexDirection: isRTL ? "row-reverse" : "row",
-              }}>
-                <span style={{ fontSize: "10px", color: "#c0c9c3", letterSpacing: "0.08em", fontWeight: 600 }}>{t.sortBy}</span>
-                {sort}
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"
-                  style={{ transform: sortOpen ? "rotate(180deg)" : "rotate(0)", transition: "transform 0.2s" }}>
-                  <path d="M6 9l6 6 6-6" />
-                </svg>
-              </button>
-              {sortOpen && (
-                <div style={{
-                  position: "absolute", top: "calc(100% + 4px)", right: isRTL ? "auto" : 0, left: isRTL ? 0 : "auto",
-                  zIndex: 50, backgroundColor: "#fff", border: "1.5px solid #e8ede9", borderRadius: "2px",
-                  boxShadow: "0 8px 24px rgba(0,0,0,0.12)", overflow: "hidden", minWidth: "180px",
-                }}>
-                  {t.sortOptions.map((o) => (
-                    <button key={o} onClick={() => { setSort(o); setSortOpen(false); }} style={{
-                      width: "100%", padding: "10px 16px", textAlign: isRTL ? "right" : "left", border: "none",
-                      backgroundColor: sort === o ? "#e8f2ee" : "transparent",
-                      color: sort === o ? "#0b4335" : "#404945",
-                      fontFamily: lang === "AR" ? "'Amiri', serif" : "'Inter', sans-serif",
-                      fontSize: "12px", fontWeight: sort === o ? 600 : 400, cursor: "pointer",
-                    }}
-                      onMouseEnter={(e) => { if (sort !== o) (e.currentTarget as HTMLElement).style.backgroundColor = "#f7f7f7"; }}
-                      onMouseLeave={(e) => { if (sort !== o) (e.currentTarget as HTMLElement).style.backgroundColor = "transparent"; }}
-                    >
-                      {o}
-                    </button>
-                  ))}
-                </div>
-              )}
+            <div className="scholars-actions" style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+              <AddScholarButton label={t.addScholar} />
+              
+
+              <div style={{ position: "relative" }}>
+                <SortTriggerButton sortByLabel={t.sortBy} sortValue={sort} open={sortOpen} onClick={() => setSortOpen((v) => !v)} />
+                {sortOpen && (
+                  <div style={{
+                    position: "absolute", top: "calc(100% + 4px)", right: isRTL ? "auto" : 0, left: isRTL ? 0 : "auto",
+                    zIndex: 50, backgroundColor: "#fff", border: "1px solid rgba(30,77,58,0.12)", borderRadius: "10px",
+                    boxShadow: "0 8px 24px rgba(30,77,58,0.14)", overflow: "hidden", minWidth: "180px",
+                  }}>
+                    {t.sortOptions.map((o) => (
+                      <button key={o} onClick={() => { setSort(o); setSortOpen(false); }} style={{
+                        width: "100%", padding: "10px 16px", textAlign: isRTL ? "right" : "left", border: "none",
+                        backgroundColor: sort === o ? "#F5F3EC" : "transparent",
+                        color: sort === o ? "#1e4d3a" : "#1e4d3a99",
+                        fontFamily: lang === "AR" ? "'Amiri', serif" : "'Inter', sans-serif",
+                        fontSize: "12px", fontWeight: sort === o ? 600 : 400, cursor: "pointer",
+                      }}
+                        onMouseEnter={(e) => { if (sort !== o) (e.currentTarget as HTMLElement).style.backgroundColor = "#F5F3EC"; }}
+                        onMouseLeave={(e) => { if (sort !== o) (e.currentTarget as HTMLElement).style.backgroundColor = "transparent"; }}
+                      >
+                        {o}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
             </div>
           </div>
 
           {loading && (
-            <p style={{ textAlign: "center", padding: "60px 0", color: "#6b7775", fontFamily: "'Inter', sans-serif" }}>
+            <p style={{ textAlign: "center", padding: "60px 0", color: "#1e4d3a99", fontFamily: "'Inter', sans-serif" }}>
               Loading…
             </p>
           )}
@@ -613,7 +813,7 @@ const ScholarsPage: React.FC = () => {
 
           {!loading && !error && (
             <>
-              <div style={{
+              <div className="scholars-grid" style={{
                 display: "grid",
                 gridTemplateColumns: "repeat(auto-fill, minmax(220px, 1fr))",
                 gap: "20px",
@@ -628,63 +828,46 @@ const ScholarsPage: React.FC = () => {
                 <div style={{
                   textAlign: "center",
                   padding: "60px 20px",
-                  color: "#6b7775",
+                  color: "#1e4d3a99",
                   fontFamily: lang === "AR" ? "'Amiri', serif" : "'Inter', sans-serif",
-                  backgroundColor: "#fff",
-                  borderRadius: "4px",
-                  border: "1px dashed #c0c9c3"
+                  backgroundColor: "#F5F3EC",
+                  borderRadius: "16px",
+                  border: "1px dashed rgba(30,77,58,0.25)"
                 }}>
-                  <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#c0c9c3" strokeWidth="1.5" style={{ margin: "0 auto 16px", display: "block" }}>
+                  <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#1e4d3a66" strokeWidth="1.5" style={{ margin: "0 auto 16px", display: "block" }}>
                     <circle cx="11" cy="11" r="8" />
                     <path d="M21 21l-4.3-4.3" />
                     {isSearchingOrFiltering && <path d="M8 11h6" />}
                   </svg>
 
-                  <p style={{ fontSize: "18px", fontWeight: 600, color: "#404945", margin: "0 0 8px 0" }}>
+                  <p style={{ fontFamily: "'Hanken Grotesk', sans-serif", fontSize: "18px", fontWeight: 700, color: "#1e4d3a", margin: "0 0 8px 0" }}>
                     {isSearchingOrFiltering ? t.noResults : t.noScholars}
                   </p>
 
                   {isSearchingOrFiltering && (
-                    <p style={{ fontSize: "14px", color: "#888", margin: 0 }}>
+                    <p style={{ fontSize: "14px", color: "#1e4d3a80", margin: 0 }}>
                       {t.tryChanging}
                     </p>
                   )}
                 </div>
               )}
 
-              <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "6px", marginTop: "48px", paddingBottom: "24px", flexDirection: isRTL ? "row-reverse" : "row" }}>
-                <button onClick={() => setCurrentPage((p) => Math.max(1, p - 1))} style={{
-                  width: "36px", height: "36px", borderRadius: "2px", border: "1.5px solid #c0c9c3",
-                  backgroundColor: "#fff", cursor: "pointer", display: "flex", alignItems: "center",
-                  justifyContent: "center", color: "#404945",
-                }}>
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <path d={isRTL ? "M9 18l6-6-6-6" : "M15 18l-6-6 6-6"} />
-                  </svg>
-                </button>
+              <div className="scholars-pagination" style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "6px", marginTop: "48px", paddingBottom: "24px" }}>
+                <PageArrowButton
+                  onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                  path={isRTL ? "M9 18l6-6-6-6" : "M15 18l-6-6 6-6"}
+                />
 
                 {Array.from({ length: totalPages }, (_, i) => i + 1)
                   .slice(0, 5)
                   .map((p) => (
-                    <button key={p} onClick={() => setCurrentPage(p)} style={{
-                      width: "36px", height: "36px", borderRadius: "2px", border: "1.5px solid",
-                      borderColor: currentPage === p ? "#0b4335" : "#c0c9c3",
-                      backgroundColor: currentPage === p ? "#0b4335" : "#fff",
-                      color: currentPage === p ? "#fff" : "#404945",
-                      fontFamily: "'Inter', sans-serif", fontSize: "13px",
-                      fontWeight: currentPage === p ? 700 : 400, cursor: "pointer", transition: "all 0.15s ease",
-                    }}>{p}</button>
+                    <PageNumberButton key={p} page={p} active={currentPage === p} onClick={() => setCurrentPage(p)} />
                   ))}
 
-                <button onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))} style={{
-                  width: "36px", height: "36px", borderRadius: "2px", border: "1.5px solid #c0c9c3",
-                  backgroundColor: "#fff", cursor: "pointer", display: "flex", alignItems: "center",
-                  justifyContent: "center", color: "#404945",
-                }}>
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <path d={isRTL ? "M15 18l-6-6 6-6" : "M9 18l6-6-6-6"} />
-                  </svg>
-                </button>
+                <PageArrowButton
+                  onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                  path={isRTL ? "M15 18l-6-6 6-6" : "M9 18l6-6-6-6"}
+                />
               </div>
             </>
           )}

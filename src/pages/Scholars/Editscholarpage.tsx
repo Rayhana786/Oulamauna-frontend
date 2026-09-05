@@ -29,7 +29,6 @@ interface LocalScholarVersion {
   century_hijri_end: number | null;
   century_gregorian_start: number | null;
   century_gregorian_end: number | null;
-  // ✅ ADDED: Image fields to match backend
   image_url: string | null;
   image_status: string | null;
   image_uploaded_by: number | null;
@@ -54,7 +53,7 @@ interface LocalScholarData {
 interface RegionOption { region_id: number; name: string }
 interface DisciplineOption { discipline_id: number; name: string }
 
-/* ─────────────────────────────────────────────
+/* ────────────────────────────────────────────
    STYLE CONSTANTS
 ───────────────────────────────────────────── */
 const MONO: React.CSSProperties = { fontFamily: "'JetBrains Mono', monospace" };
@@ -68,13 +67,6 @@ const BORDER = "rgba(192,201,195,0.5)";
 const MUTED = "#707974";
 const DANGER = "#b3261e";
 const GOLD = "#735c00";
-
-const BTN_PRIMARY: React.CSSProperties = {
-  display: "inline-flex", alignItems: "center", gap: "6px",
-  padding: "8px 20px", border: `1.5px solid ${GREEN}`, borderRadius: "6px",
-  backgroundColor: GREEN, color: "#fff", fontSize: "11px", fontWeight: 700,
-  letterSpacing: "0.05em", cursor: "pointer", transition: "background 0.15s", ...MONO,
-};
 
 const inputStyle: React.CSSProperties = {
   width: "100%", padding: "10px 14px", border: `1.5px solid ${BORDER}`,
@@ -168,7 +160,7 @@ function PreservedNote() {
 
 function SectionCard({ icon, eyebrow, title, children }: { icon: string; eyebrow: string; title: string; children: React.ReactNode }) {
   return (
-    <section style={{ backgroundColor: "#fff", border: "1.5px solid rgba(192,201,195,0.4)", borderRadius: "16px", padding: "32px", marginBottom: "28px", minWidth: 0, overflow: "hidden" }}>
+    <section className="edit-responsive-card" style={{ backgroundColor: "#fff", border: "1.5px solid rgba(192,201,195,0.4)", borderRadius: "16px", padding: "32px", marginBottom: "28px", minWidth: 0, overflow: "hidden" }}>
       <div style={{ marginBottom: "20px" }}>
         <p style={{ ...MONO, fontSize: "9px", color: GREEN, letterSpacing: "0.2em", marginBottom: "10px", display: "flex", alignItems: "center", gap: "8px" }}>
           <span style={{ width: "16px", height: "1px", backgroundColor: GREEN, display: "inline-block", flexShrink: 0 }} />
@@ -191,7 +183,8 @@ function TagInput({ tags, onChange, placeholder }: { tags: string[]; onChange: (
       {tags.map((tag, i) => (
         <span key={i} style={{ display: "flex", alignItems: "center", gap: "4px", backgroundColor: GREEN, color: "#fff", fontSize: "11px", fontWeight: 600, padding: "3px 6px 3px 10px", borderRadius: "999px" }}>
           {tag}
-          <button type="button" onClick={() => onChange(tags.filter((_, idx) => idx !== i))} style={{ background: "none", border: "none", cursor: "pointer", color: "#fff", display: "flex", padding: 0, opacity: 0.7 }}>×</button>
+          {/* ✅ FIX: onMouseDown prevents input blur (which was causing errors while tapping) */}
+          <button type="button" onMouseDown={(e) => e.preventDefault()} onClick={() => onChange(tags.filter((_, idx) => idx !== i))} style={{ background: "none", border: "none", cursor: "pointer", color: "#fff", display: "flex", padding: 0, opacity: 0.7 }}>×</button>
         </span>
       ))}
       <input value={val} onChange={(e) => setVal(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); add(); } }} onBlur={add} placeholder={placeholder ?? "Type and press Enter…"} style={{ flex: 1, minWidth: "120px", border: "none", outline: "none", fontSize: "12px", backgroundColor: "transparent", padding: "3px 4px" }} />
@@ -205,8 +198,37 @@ function DisciplineSelector({ selected, options, onChange }: { selected: number[
       {options.map(opt => {
         const isSelected = selected.includes(opt.discipline_id);
         return (
-          <button key={opt.discipline_id} type="button" onClick={() => isSelected ? onChange(selected.filter(id => id !== opt.discipline_id)) : onChange([...selected, opt.discipline_id])}
-            style={{ padding: "6px 14px", border: `1.5px solid ${isSelected ? GREEN : BORDER}`, borderRadius: "20px", background: isSelected ? GREEN : "transparent", color: isSelected ? "#fff" : MUTED, fontFamily: MONO.fontFamily, fontSize: "10px", fontWeight: 700, cursor: "pointer", transition: "all 0.15s", letterSpacing: "0.06em" }}>
+          <button 
+            key={opt.discipline_id} 
+            type="button" 
+            onMouseDown={(e) => e.preventDefault()} 
+            onClick={() => isSelected ? onChange(selected.filter(id => id !== opt.discipline_id)) : onChange([...selected, opt.discipline_id])}
+            onMouseEnter={e => { 
+              if (!isSelected) { 
+                (e.currentTarget as HTMLButtonElement).style.borderColor = GREEN; 
+                (e.currentTarget as HTMLButtonElement).style.color = GREEN; 
+              } 
+            }}
+            onMouseLeave={e => { 
+              if (!isSelected) { 
+                (e.currentTarget as HTMLButtonElement).style.borderColor = BORDER; 
+                (e.currentTarget as HTMLButtonElement).style.color = MUTED; 
+              } 
+            }}
+            style={{ 
+              padding: "6px 14px", 
+              border: `1.5px solid ${isSelected ? GREEN : BORDER}`, 
+              borderRadius: "20px", 
+              background: isSelected ? GREEN : "transparent", 
+              color: isSelected ? "#fff" : MUTED, 
+              fontFamily: MONO.fontFamily, 
+              fontSize: "10px", 
+              fontWeight: 700, 
+              cursor: "pointer", 
+              transition: "all 0.15s", 
+              letterSpacing: "0.06em" 
+            }}
+          >
             {opt.name}
           </button>
         );
@@ -220,7 +242,8 @@ function ItemCard({ index, label, onRemove, children }: { index: number; label: 
     <div style={{ border: `1.5px solid ${BORDER}`, borderRadius: "12px", padding: "24px", marginBottom: "14px", background: "#fafbf8", transition: "all 0.2s ease" }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "18px" }}>
         <span style={{ ...MONO, fontSize: "10px", color: GREEN, fontWeight: 700, letterSpacing: "0.1em" }}>{label} {index + 1}</span>
-        <button onClick={onRemove} style={{ background: "none", border: "none", cursor: "pointer", color: MUTED, fontSize: "20px", lineHeight: 1, display: "flex", alignItems: "center", padding: "2px", borderRadius: "4px", transition: "color 0.15s" }}
+        {/* ✅ FIX: onMouseDown prevents input blur */}
+        <button onMouseDown={(e) => e.preventDefault()} onClick={onRemove} style={{ background: "none", border: "none", cursor: "pointer", color: MUTED, fontSize: "20px", lineHeight: 1, display: "flex", alignItems: "center", padding: "2px", borderRadius: "4px", transition: "color 0.15s" }}
           onMouseEnter={e => (e.currentTarget as HTMLButtonElement).style.color = DANGER}
           onMouseLeave={e => (e.currentTarget as HTMLButtonElement).style.color = MUTED}>×</button>
       </div>
@@ -233,6 +256,7 @@ function AddBtn({ onClick, children }: { onClick: () => void; children: React.Re
   return (
     <button 
       type="button" 
+      onMouseDown={(e) => e.preventDefault()}
       onClick={onClick} 
       style={{ 
         width: "100%", 
@@ -270,7 +294,7 @@ function AddBtn({ onClick, children }: { onClick: () => void; children: React.Re
   );
 }
 
-/* ─────────────────────────────────────────────
+/* ────────────────────────────────────────────
    PERSON LINK SECTION
 ───────────────────────────────────────────── */
 function PersonLinkSection({ 
@@ -307,7 +331,6 @@ function PersonLinkSection({
         name: v.canonical_name,
       })) || [];
       
-      // ✅ FILTER OUT ALREADY SELECTED SCHOLARS
       scholars = scholars.filter(s => !selectedScholarIds.includes(s.id));
       
       setResults(scholars);
@@ -325,7 +348,8 @@ function PersonLinkSection({
       <div ref={ref} style={{ position: "relative" }}>
         <div style={{ display: "flex", alignItems: "center", gap: "10px", padding: "10px 14px", background: GREEN_LIGHT, border: `1.5px solid ${GREEN_BORDER}`, borderRadius: "8px" }}>
           <div style={{ flex: 1 }}><div style={{ fontSize: "13px", fontWeight: 700, color: GREEN }}>{person.scholar_name}</div></div>
-          <button onClick={() => onChange({ scholar_id: null, scholar_name: "" })} style={{ background: "none", border: "none", cursor: "pointer", color: DANGER, fontSize: "18px", display: "flex", alignItems: "center" }}>×</button>
+          {/* ✅ FIX: onMouseDown prevents input blur */}
+          <button onMouseDown={(e) => e.preventDefault()} onClick={() => onChange({ scholar_id: null, scholar_name: "" })} style={{ background: "none", border: "none", cursor: "pointer", color: DANGER, fontSize: "18px", display: "flex", alignItems: "center" }}>×</button>
         </div>
       </div>
     );
@@ -346,6 +370,7 @@ function PersonLinkSection({
             return (
               <div 
                 key={s.id} 
+                onMouseDown={(e) => e.preventDefault()}
                 onClick={() => {
                   if (isAlreadySelected) return;
                   onChange({ scholar_id: s.id, scholar_name: s.name }); 
@@ -379,13 +404,69 @@ function PersonLinkSection({
 }
 
 /* ─────────────────────────────────────────────
+   FOOTER BUTTONS (with hover, like Submit page)
+───────────────────────────────────────────── */
+function FooterCancelButton({ onClick, label }: { onClick: () => void; label: string }) {
+  const [hovered, setHovered] = useState(false);
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      style={{
+        display: "inline-flex", alignItems: "center", gap: "6px",
+        padding: "8px 20px", border: `1.5px solid ${hovered ? MUTED : BORDER}`, borderRadius: "6px",
+        backgroundColor: hovered ? "rgba(112, 121, 116, 0.08)" : "transparent", color: MUTED, fontSize: "11px", fontWeight: 700,
+        letterSpacing: "0.05em", cursor: "pointer", transition: "all 0.15s", ...MONO,
+      }}
+    >
+      {label}
+    </button>
+  );
+}
+
+function FooterSubmitButton({ onClick, label, disabled, submitting }: { onClick: (e: React.FormEvent) => void; label: string; disabled?: boolean; submitting?: boolean }) {
+  const [hovered, setHovered] = useState(false);
+  const active = hovered && !disabled && !submitting;
+  return (
+    <button
+      type="submit"
+      onClick={onClick}
+      disabled={disabled || submitting}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      style={{
+        display: "inline-flex", alignItems: "center", gap: "6px",
+        padding: "8px 20px", border: `1.5px solid ${disabled || submitting ? "#c0c9c3" : GREEN}`, borderRadius: "6px",
+        backgroundColor: disabled || submitting ? "#c0c9c3" : (active ? "#fbf9f4" : GREEN), 
+        color: disabled || submitting ? "#fff" : (active ? GREEN : "#fff"), 
+        fontSize: "11px", fontWeight: 700,
+        letterSpacing: "0.05em", cursor: disabled || submitting ? "not-allowed" : "pointer", 
+        transition: "all 0.15s", ...MONO,
+        opacity: submitting ? 0.8 : 1
+      }}
+    >
+      {submitting ? (
+        <>
+          <span style={{ width: 14, height: 14, border: "2px solid rgba(255,255,255,0.3)", borderTopColor: "#fff", borderRadius: "50%", display: "inline-block", animation: "submit-spin 0.7s linear infinite" }} />
+          Submitting...
+        </>
+      ) : (
+        <><Icon name="send" size={14} /> {label}</>
+      )}
+    </button>
+  );
+}
+
+/* ─────────────────────────────────────────────
    MAIN COMPONENT
 ───────────────────────────────────────────── */
 const EditScholarPage: React.FC = () => {
   const { lang, id } = useParams<{ lang: Language; id: string }>();
   const [searchParams] = useSearchParams();
   const urlDraftId = searchParams.get("draftId"); 
-  const urlRejectedId = searchParams.get("rejectedId"); // ✅ NEW: Get rejectedId from URL
+  const urlRejectedId = searchParams.get("rejectedId"); 
   const navigate = useNavigate();
   const { t, setLang } = useLang();
   
@@ -402,6 +483,9 @@ const EditScholarPage: React.FC = () => {
   const [draftVersionId, setDraftVersionId] = useState<number | null>(null);
   const [draftSavedPulse, setDraftSavedPulse] = useState(false);
   const [draftRestored, setDraftRestored] = useState(false);
+
+  const [errors, setErrors] = useState<Record<string, string>>({});
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const [formData, setFormData] = useState({
     canonical_name: "",
@@ -420,34 +504,27 @@ const EditScholarPage: React.FC = () => {
     new_refs: [] as RefEntry[],
     new_teachers: [] as PersonEntry[],
     new_students: [] as PersonEntry[],
-    // ✅ ADDED: Image upload fields
     portraitFile: null as File | null,
     currentImageUrl: null as string | null,
   });
 
-  // ✅ Calculate selected IDs to pass down and prevent duplicates
   const selectedScholarIds = [
     ...formData.new_teachers.map(t => t.scholar_id).filter((id): id is number => id !== null),
     ...formData.new_students.map(s => s.scholar_id).filter((id): id is number => id !== null),
   ];
 
-    // ✅ PREVENT ACCIDENTAL TAB CLOSURE IF THERE ARE UNSAVED CHANGES
   useEffect(() => {
     const handleBeforeUnload = (e: BeforeUnloadEvent) => {
-      // Only warn if we have data and it's different from a blank state
       if (formData.canonical_name.trim() !== "" || formData.biography.trim() !== "") {
         e.preventDefault();
-        e.returnValue = ""; // Required for Chrome to show the warning
+        e.returnValue = ""; 
       }
     };
-
     window.addEventListener("beforeunload", handleBeforeUnload);
     return () => window.removeEventListener("beforeunload", handleBeforeUnload);
   }, [formData.canonical_name, formData.biography]);
 
- 
-
-    useEffect(() => {
+  useEffect(() => {
     const fetchData = async () => {
       setLoading(true);
       try {
@@ -503,11 +580,9 @@ const EditScholarPage: React.FC = () => {
         let finalFormData = initialFormData;
         let finalDraftVersionId: number | null = null;
 
-               // ✅ CHECK 1: If URL has draftId or rejectedId, fetch it from backend
         if (urlDraftId || urlRejectedId) {
           try {
             const versionIdToFetch = Number(urlDraftId || urlRejectedId);
-            // ✅ Use getVersionById which works for BOTH drafts and rejected versions!
             const draftRes = await scholarsApi.getVersionById(versionIdToFetch);
             const draft = draftRes.data;
             
@@ -552,7 +627,6 @@ const EditScholarPage: React.FC = () => {
             navigate(`/scholars/${id}/edit/${activeLang.toLowerCase()}`, { replace: true });
           }
         }
-        // ✅ We REMOVED the localStorage fallback entirely so it doesn't auto-restore and confuse you!
 
         setFormData(finalFormData);
         setDraftVersionId(finalDraftVersionId);
@@ -566,10 +640,9 @@ const EditScholarPage: React.FC = () => {
     
     fetchData();
     if (activeLang) setLang(activeLang);
-  }, [id, activeLang, setLang, urlDraftId]); // ✅ Added urlDraftId to dependencies
+  }, [id, activeLang, setLang, urlDraftId]); 
 
- 
-    const handleSaveDraft = async () => {
+  const handleSaveDraft = async () => {
     try {
       const version = data!.scholar_versions[0];
       
@@ -584,7 +657,6 @@ const EditScholarPage: React.FC = () => {
         ...formData.new_students.filter(s => s.scholar_id !== null).map(s => ({ related_version_id: s.scholar_id, relation_type: "student" })),
       ];
 
-      // ✅ 1. If editing a rejected version, save it back as a draft AND navigate away
       if (urlRejectedId) {
         const payload = {
           draft_version_id: draftVersionId,
@@ -602,20 +674,16 @@ const EditScholarPage: React.FC = () => {
           dates: datesPayload.length > 0 ? datesPayload : undefined,
           references: formData.new_refs.filter(r => r.title || r.citation).map(r => ({ title: r.title, citation: r.citation, url: r.url || null })),
           relationships: relationshipsPayload.length > 0 ? relationshipsPayload : undefined,
-          target_status: "draft" // ✅ Tell backend to save as draft
+          target_status: "draft"
         };
 
         await scholarsApi.updateRejected(Number(urlRejectedId), payload);
-        
-        // ✅ Clear local storage immediately
         clearLocalDraft(id!, activeLang);
-        
         alert("Saved as draft successfully!");
-        navigate('/dashboard'); // ✅ Redirect to dashboard
+        navigate('/dashboard');
         return;
       }
 
-      // ✅ 2. Normal Draft Save
       const payload = {
         draft_version_id: draftVersionId,
         scholar_id: Number(id),
@@ -636,16 +704,9 @@ const EditScholarPage: React.FC = () => {
 
       const response = await scholarsApi.saveDraft(payload);
       const newDraftId = response?.data?.draft_version_id;
-      if (newDraftId) {
-        setDraftVersionId(newDraftId);
-      }
-
-      // ✅ Clear localStorage immediately after successful backend save
+      if (newDraftId) setDraftVersionId(newDraftId);
       clearLocalDraft(id!, activeLang);
-
       alert("Saved as draft successfully!");
-      
-      // ✅ Navigate to dashboard immediately
       navigate('/dashboard');
 
     } catch (error: any) {
@@ -654,9 +715,122 @@ const EditScholarPage: React.FC = () => {
     }
   };
 
+    const handleDateChange = (field: string, value: string) => {
+    const cleaned = value.replace(/[^0-9\-]/g, '');
+    const currentGregorianYear = new Date().getFullYear();
+    const currentHijriYear = parseInt(new Intl.DateTimeFormat('en-US-u-ca-islamic-umalqura', { year: 'numeric' }).format(new Date()));
+    const MIN_YEAR = 1;
+    const MAX_YEAR = 9999;
+    
+    setFormData(prevForm => {
+      const newFormValues = { ...prevForm, [field]: cleaned };
+      const birthG = newFormValues.birth_date_gregorian;
+      const deathG = newFormValues.death_date_gregorian;
+      const birthH = newFormValues.birth_date_hijri;
+      const deathH = newFormValues.death_date_hijri;
+      const newErrors: Record<string, string> = {};
+      
+      if (birthG) {
+        const num = Number(birthG);
+        if (isNaN(num) || birthG.endsWith('-') || birthG === '-') newErrors.birth_date_gregorian = "Invalid year";
+        else if (num < MIN_YEAR || num > MAX_YEAR) newErrors.birth_date_gregorian = "Invalid year";
+        else if (num > currentGregorianYear) newErrors.birth_date_gregorian = "Year cannot be in the future";
+      }
+      if (deathG) {
+        const num = Number(deathG);
+        if (isNaN(num) || deathG.endsWith('-') || deathG === '-') newErrors.death_date_gregorian = "Invalid year";
+        else if (num < MIN_YEAR || num > MAX_YEAR) newErrors.death_date_gregorian = "Invalid year";
+        else if (num > currentGregorianYear) newErrors.death_date_gregorian = "Year cannot be in the future";
+      }
+      if (birthG && deathG && !birthG.endsWith('-') && !deathG.endsWith('-') && birthG !== '-' && deathG !== '-') {
+        const numB = Number(birthG), numD = Number(deathG);
+        if (!isNaN(numB) && !isNaN(numD) && numB >= MIN_YEAR && numB <= MAX_YEAR && numD >= MIN_YEAR && numD <= MAX_YEAR) {
+          if (numD < numB) newErrors.death_date_gregorian = "Death date cannot be before birth date";
+        }
+      }
+      if (birthH) {
+        const num = Number(birthH);
+        if (isNaN(num) || birthH.endsWith('-') || birthH === '-') newErrors.birth_date_hijri = "Invalid year";
+        else if (num < MIN_YEAR || num > MAX_YEAR) newErrors.birth_date_hijri = "Invalid year";
+        else if (num > currentHijriYear) newErrors.birth_date_hijri = "Year cannot be in the future";
+      }
+      if (deathH) {
+        const num = Number(deathH);
+        if (isNaN(num) || deathH.endsWith('-') || deathH === '-') newErrors.death_date_hijri = "Invalid year";
+        else if (num < MIN_YEAR || num > MAX_YEAR) newErrors.death_date_hijri = "Invalid year";
+        else if (num > currentHijriYear) newErrors.death_date_hijri = "Year cannot be in the future";
+      }
+      if (birthH && deathH && !birthH.endsWith('-') && !deathH.endsWith('-') && birthH !== '-' && deathH !== '-') {
+        const numB = Number(birthH), numD = Number(deathH);
+        if (!isNaN(numB) && !isNaN(numD) && numB >= MIN_YEAR && numB <= MAX_YEAR && numD >= MIN_YEAR && numD <= MAX_YEAR) {
+          if (numD < numB) newErrors.death_date_hijri = "Death date cannot be before birth date";
+        }
+      }
+      
+      setErrors(prev => {
+        const updated = { ...prev };
+        if (!newErrors.birth_date_gregorian) delete updated.birth_date_gregorian;
+        if (!newErrors.death_date_gregorian) delete updated.death_date_gregorian;
+        if (!newErrors.birth_date_hijri) delete updated.birth_date_hijri;
+        if (!newErrors.death_date_hijri) delete updated.death_date_hijri;
+        return { ...updated, ...newErrors };
+      });
+      return newFormValues;
+    });
+  };
+
+  const handleCenturyChange = (field: string, value: string) => {
+    const numValue = value === '' ? null : parseInt(value, 10);
+    const currentGregorianCentury = Math.ceil(new Date().getFullYear() / 100);
+    const currentHijriCentury = Math.ceil(parseInt(new Intl.DateTimeFormat('en-US-u-ca-islamic-umalqura', { year: 'numeric' }).format(new Date())) / 100);
+    const MIN_CENTURY = 1;
+    
+    setFormData(prevForm => {
+      const newFormValues = { ...prevForm, [field]: numValue };
+      const gregStart = newFormValues.century_gregorian_start;
+      const gregEnd = newFormValues.century_gregorian_end;
+      const hijriStart = newFormValues.century_hijri_start;
+      const hijriEnd = newFormValues.century_hijri_end;
+      const newErrors: Record<string, string> = {};
+      
+      if (gregStart !== null && (isNaN(gregStart) || gregStart < MIN_CENTURY || gregStart > currentGregorianCentury)) {
+        newErrors.century_gregorian_start = `Invalid century (must be 1-${currentGregorianCentury})`;
+      }
+      if (gregEnd !== null && (isNaN(gregEnd) || gregEnd < MIN_CENTURY || gregEnd > currentGregorianCentury)) {
+        newErrors.century_gregorian_end = `Invalid century (must be 1-${currentGregorianCentury})`;
+      }
+      if (gregStart !== null && gregEnd !== null && !isNaN(gregStart) && !isNaN(gregEnd) && gregStart >= MIN_CENTURY && gregStart <= currentGregorianCentury && gregEnd >= MIN_CENTURY && gregEnd <= currentGregorianCentury) {
+        if (gregEnd < gregStart) newErrors.century_gregorian_end = "End century cannot be before start century";
+      }
+      if (hijriStart !== null && (isNaN(hijriStart) || hijriStart < MIN_CENTURY || hijriStart > currentHijriCentury)) {
+        newErrors.century_hijri_start = `Invalid century (must be 1-${currentHijriCentury})`;
+      }
+      if (hijriEnd !== null && (isNaN(hijriEnd) || hijriEnd < MIN_CENTURY || hijriEnd > currentHijriCentury)) {
+        newErrors.century_hijri_end = `Invalid century (must be 1-${currentHijriCentury})`;
+      }
+      if (hijriStart !== null && hijriEnd !== null && !isNaN(hijriStart) && !isNaN(hijriEnd) && hijriStart >= MIN_CENTURY && hijriStart <= currentHijriCentury && hijriEnd >= MIN_CENTURY && hijriEnd <= currentHijriCentury) {
+        if (hijriEnd < hijriStart) newErrors.century_hijri_end = "End century cannot be before start century";
+      }
+      
+      setErrors(prev => {
+        const updated = { ...prev };
+        if (!newErrors.century_gregorian_start) delete updated.century_gregorian_start;
+        if (!newErrors.century_gregorian_end) delete updated.century_gregorian_end;
+        if (!newErrors.century_hijri_start) delete updated.century_hijri_start;
+        if (!newErrors.century_hijri_end) delete updated.century_hijri_end;
+        return { ...updated, ...newErrors };
+      });
+      return newFormValues;
+    });
+  };
+
+
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!data) return;
+
+    setIsSubmitting(true);
 
     const version = data.scholar_versions[0];
 
@@ -688,25 +862,22 @@ const EditScholarPage: React.FC = () => {
     };
 
     try {
-      // ✅ CREATE FORMDATA AND APPEND IMAGE
       const formDataObj = new FormData();
-      
-      // Append JSON data
       formDataObj.append("data", JSON.stringify(payload));
-      
-      // Append image file if selected
-      if (formData.portraitFile) {
-        formDataObj.append("image", formData.portraitFile);
-      }
+      if (formData.portraitFile) formDataObj.append("image", formData.portraitFile);
 
-      // ✅ USE FORMDATA INSTEAD OF JSON PAYLOAD
       await scholarsApi.update(Number(id), formDataObj);
       console.log("✅ Edit submitted successfully");
       clearLocalDraft(id!, activeLang);
+      
+      // ✅ Show success message BEFORE routing
+      alert("✅ Edit submitted successfully! Redirecting...");
       navigate(`/scholars/${id}`);
     } catch (error: any) {
       console.error("❌ Failed to submit edit:", error);
-      alert(error.message || "Failed to submit edit proposal");
+      // ✅ Show error message and keep user on page (reset loading state)
+      alert("❌ Failed to submit edit proposal: " + (error.message || "Unknown error"));
+      setIsSubmitting(false);
     }
   };
 
@@ -724,10 +895,23 @@ const EditScholarPage: React.FC = () => {
         .material-symbols-outlined { font-variation-settings:'FILL' 0,'wght' 400,'GRAD' 0,'opsz' 24; font-family:'Material Symbols Outlined'; display:inline-block; vertical-align:middle; }
         * { box-sizing: border-box; }
         @keyframes step-fade-in { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes submit-spin { to { transform: rotate(360deg); } }
+        
+        /* ✅ RESPONSIVE LAYOUT */
+        @media (max-width: 767px) {
+          .edit-responsive-main-grid { grid-template-columns: 1fr !important; }
+          .edit-responsive-img-grid { grid-template-columns: 1fr !important; }
+          .edit-responsive-date-grid { grid-template-columns: 1fr !important; }
+          .edit-responsive-rel-grid { grid-template-columns: 1fr !important; }
+          .edit-responsive-header { padding: 0 16px !important; }
+          .edit-responsive-main { padding: 24px 8px 80px 8px !important; }
+          .edit-responsive-card { padding: 20px 16px !important; }
+          .edit-responsive-img-box { width: 100% !important; max-width: 200px !important; }
+        }
       `}</style>
 
       <header style={{ position: "sticky", top: 0, zIndex: 50, backgroundColor: "rgba(249,250,247,0.97)", backdropFilter: "blur(8px)", borderBottom: "1px solid rgba(192,201,195,0.3)", padding: "16px 0" }}>
-        <div style={{ maxWidth: "1280px", margin: "0 auto", padding: "0 32px" }}>
+        <div className="edit-responsive-header" style={{ maxWidth: "1280px", margin: "0 auto", padding: "0 32px" }}>
           <div style={{ ...MONO, fontSize: "11px", color: MUTED, letterSpacing: "0.05em", marginBottom: "8px", display: "flex", alignItems: "center", gap: "4px" }}>
             <Link to="/" style={{ color: MUTED, textDecoration: "none" }}>{t("editScholar.breadcrumbHome") || "Home"}</Link>
             <span>{crumbSep}</span>
@@ -745,11 +929,25 @@ const EditScholarPage: React.FC = () => {
             <div style={{ display: "flex", justifyContent: "flex-end" }}>
               <button 
                 type="button" 
-                onClick={handleSaveDraft} 
+                onClick={handleSaveDraft}
+                onMouseEnter={e => { 
+                  if (!draftSavedPulse) {
+                    (e.currentTarget as HTMLButtonElement).style.backgroundColor = GREEN;
+                    (e.currentTarget as HTMLButtonElement).style.color = "#fff";
+                  }
+                }}
+                onMouseLeave={e => { 
+                  if (!draftSavedPulse) {
+                    (e.currentTarget as HTMLButtonElement).style.backgroundColor = "transparent";
+                    (e.currentTarget as HTMLButtonElement).style.color = GREEN;
+                  }
+                }}
                 style={{ 
-                  ...BTN_PRIMARY, 
+                  display: "inline-flex", alignItems: "center", gap: "6px",
+                  padding: "8px 20px", border: `1.5px solid ${GREEN}`, borderRadius: "6px",
                   backgroundColor: draftSavedPulse ? GREEN : "transparent",
-                  color: draftSavedPulse ? "#fff" : GREEN,
+                  color: draftSavedPulse ? "#fff" : GREEN, fontSize: "11px", fontWeight: 700,
+                  letterSpacing: "0.05em", cursor: "pointer", transition: "all 0.15s", ...MONO,
                 }}
               >
                 <Icon name={draftSavedPulse ? "check" : "draft"} size={14} /> 
@@ -760,16 +958,16 @@ const EditScholarPage: React.FC = () => {
         </div>
       </header>
 
-      <main style={{ maxWidth: "1280px", margin: "0 auto", padding: "40px 32px 80px" }}>
+      <main className="edit-responsive-main" style={{ maxWidth: "1280px", margin: "0 auto", padding: "40px 32px 80px" }}>
         {draftRestored && (
           <div style={{ display: "flex", alignItems: "center", gap: "10px", padding: "12px 16px", background: "rgba(115,92,0,0.06)", border: "1px solid rgba(115,92,0,0.22)", borderRadius: "10px", marginBottom: "20px", animation: "step-fade-in 0.3s ease" }}>
             <span style={{ color: GOLD, flexShrink: 0 }}><Icon name="history" size={16} /></span>
             <span style={{ fontSize: "12px", color: "#5c4a00", lineHeight: 1.6, flex: 1 }}>A saved draft was restored. Your previous progress has been loaded.</span>
-            <button onClick={() => setDraftRestored(false)} style={{ background: "none", border: "none", cursor: "pointer", color: GOLD, display: "flex", alignItems: "center", flexShrink: 0 }}><Icon name="close" size={16} /></button>
+            <button onMouseDown={(e) => e.preventDefault()} onClick={() => setDraftRestored(false)} style={{ background: "none", border: "none", cursor: "pointer", color: GOLD, display: "flex", alignItems: "center", flexShrink: 0 }}><Icon name="close" size={16} /></button>
           </div>
         )}
 
-        <form onSubmit={handleSubmit} style={{ display: "grid", gridTemplateColumns: "340px 1fr", gap: "32px", alignItems: "start" }}>
+        <form onSubmit={handleSubmit} className="edit-responsive-main-grid" style={{ display: "grid", gridTemplateColumns: "340px 1fr", gap: "32px", alignItems: "start" }}>
           <aside style={{ minWidth: 0, display: "flex", flexDirection: "column", gap: "24px" }}>
             <SectionCard icon="edit" eyebrow="EDITABLE FIELDS" title={t("editScholar.basicInfo") || "Core Information"}>
               <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
@@ -794,43 +992,51 @@ const EditScholarPage: React.FC = () => {
                 </div>
                 <div style={{ borderTop: "1px solid rgba(192,201,195,0.3)", paddingTop: "20px" }}>
                   <label style={{ ...labelStyle, marginBottom: "12px" }}>{t("editScholar.centuryRanges") || "Century Ranges"}</label>
-                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
+                  <div className="edit-responsive-date-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
                     <div>
                       <label style={{ ...labelStyle, fontSize: "10px", color: "#404945" }}>Hijri Start</label>
-                      <FocusInput type="number" value={formData.century_hijri_start} onChange={(e) => setFormData({ ...formData, century_hijri_start: e.target.value })} />
+                      <FocusInput type="number" value={formData.century_hijri_start} onChange={(e) => handleCenturyChange("century_hijri_start", e.target.value)} hasError={!!errors.century_hijri_start} />
+                      {errors.century_hijri_start && <p style={{ fontSize: "10px", color: DANGER, marginTop: "4px", ...MONO }}>{errors.century_hijri_start}</p>}
                     </div>
                     <div>
                       <label style={{ ...labelStyle, fontSize: "10px", color: "#404945" }}>Hijri End</label>
-                      <FocusInput type="number" value={formData.century_hijri_end} onChange={(e) => setFormData({ ...formData, century_hijri_end: e.target.value })} />
+                      <FocusInput type="number" value={formData.century_hijri_end} onChange={(e) => handleCenturyChange("century_hijri_end", e.target.value)} hasError={!!errors.century_hijri_end} />
+                      {errors.century_hijri_end && <p style={{ fontSize: "10px", color: DANGER, marginTop: "4px", ...MONO }}>{errors.century_hijri_end}</p>}
                     </div>
                     <div>
                       <label style={{ ...labelStyle, fontSize: "10px", color: "#404945" }}>Gregorian Start</label>
-                      <FocusInput type="number" value={formData.century_gregorian_start} onChange={(e) => setFormData({ ...formData, century_gregorian_start: e.target.value })} />
+                      <FocusInput type="number" value={formData.century_gregorian_start} onChange={(e) => handleCenturyChange("century_gregorian_start", e.target.value)} hasError={!!errors.century_gregorian_start} />
+                      {errors.century_gregorian_start && <p style={{ fontSize: "10px", color: DANGER, marginTop: "4px", ...MONO }}>{errors.century_gregorian_start}</p>}
                     </div>
                     <div>
                       <label style={{ ...labelStyle, fontSize: "10px", color: "#404945" }}>Gregorian End</label>
-                      <FocusInput type="number" value={formData.century_gregorian_end} onChange={(e) => setFormData({ ...formData, century_gregorian_end: e.target.value })} />
+                      <FocusInput type="number" value={formData.century_gregorian_end} onChange={(e) => handleCenturyChange("century_gregorian_end", e.target.value)} hasError={!!errors.century_gregorian_end} />
+                      {errors.century_gregorian_end && <p style={{ fontSize: "10px", color: DANGER, marginTop: "4px", ...MONO }}>{errors.century_gregorian_end}</p>}
                     </div>
                   </div>
                 </div>
                 <div style={{ borderTop: "1px solid rgba(192,201,195,0.3)", paddingTop: "20px" }}>
                   <label style={{ ...labelStyle, marginBottom: "12px" }}>{t("editScholar.dates") || "Birth & Death Dates"}</label>
-                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
+                  <div className="edit-responsive-date-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
                     <div>
                       <label style={{ ...labelStyle, fontSize: "10px", color: "#404945" }}>Birth (Gregorian)</label>
-                      <FocusInput type="number" value={formData.birth_date_gregorian} onChange={(e) => setFormData({ ...formData, birth_date_gregorian: e.target.value })} placeholder="e.g. 1905" />
+                      <FocusInput type="number" value={formData.birth_date_gregorian} onChange={(e) => handleDateChange("birth_date_gregorian", e.target.value)} placeholder="e.g. 1905" hasError={!!errors.birth_date_gregorian} />
+                      {errors.birth_date_gregorian && <p style={{ fontSize: "10px", color: DANGER, marginTop: "4px", ...MONO }}>{errors.birth_date_gregorian}</p>}
                     </div>
                     <div>
                       <label style={{ ...labelStyle, fontSize: "10px", color: "#404945" }}>Birth (Hijri)</label>
-                      <FocusInput type="number" value={formData.birth_date_hijri} onChange={(e) => setFormData({ ...formData, birth_date_hijri: e.target.value })} placeholder="e.g. 1323" />
+                      <FocusInput type="number" value={formData.birth_date_hijri} onChange={(e) => handleDateChange("birth_date_hijri", e.target.value)} placeholder="e.g. 1323" hasError={!!errors.birth_date_hijri} />
+                      {errors.birth_date_hijri && <p style={{ fontSize: "10px", color: DANGER, marginTop: "4px", ...MONO }}>{errors.birth_date_hijri}</p>}
                     </div>
                     <div>
                       <label style={{ ...labelStyle, fontSize: "10px", color: "#404945" }}>Death (Gregorian)</label>
-                      <FocusInput type="number" value={formData.death_date_gregorian} onChange={(e) => setFormData({ ...formData, death_date_gregorian: e.target.value })} placeholder="e.g. 1973" />
+                      <FocusInput type="number" value={formData.death_date_gregorian} onChange={(e) => handleDateChange("death_date_gregorian", e.target.value)} placeholder="e.g. 1973" hasError={!!errors.death_date_gregorian} />
+                      {errors.death_date_gregorian && <p style={{ fontSize: "10px", color: DANGER, marginTop: "4px", ...MONO }}>{errors.death_date_gregorian}</p>}
                     </div>
                     <div>
                       <label style={{ ...labelStyle, fontSize: "10px", color: "#404945" }}>Death (Hijri)</label>
-                      <FocusInput type="number" value={formData.death_date_hijri} onChange={(e) => setFormData({ ...formData, death_date_hijri: e.target.value })} placeholder="e.g. 1393" />
+                      <FocusInput type="number" value={formData.death_date_hijri} onChange={(e) => handleDateChange("death_date_hijri", e.target.value)} placeholder="e.g. 1393" hasError={!!errors.death_date_hijri} />
+                      {errors.death_date_hijri && <p style={{ fontSize: "10px", color: DANGER, marginTop: "4px", ...MONO }}>{errors.death_date_hijri}</p>}
                     </div>
                   </div>
                 </div>
@@ -839,81 +1045,144 @@ const EditScholarPage: React.FC = () => {
           </aside>
 
           <div style={{ minWidth: 0 }}>
-            {/* ✅ ADDED: Image Upload Section */}
             <SectionCard icon="image" eyebrow="EDITABLE" title="Scholar Portrait">
-              <div style={{ display: "grid", gridTemplateColumns: "200px 1fr", gap: "32px", alignItems: "start" }}>
-                <div>
-                  <label style={labelStyle}>Current Image</label>
-                  <div style={{ 
+              <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "16px" }}>
+                {/* Hidden file input */}
+                <input
+                  type="file"
+                  accept="image/*"
+                  id="portrait-upload"
+                  style={{ display: "none" }}
+                  onChange={(e) => {
+                    const file = e.target.files?.[0] || null;
+                    setFormData(prev => ({
+                      ...prev,
+                      portraitFile: file,
+                      currentImageUrl: file ? URL.createObjectURL(file) : prev.currentImageUrl
+                    }));
+                    // Reset input so the same file can be selected again if removed
+                    (e.target as HTMLInputElement).value = "";
+                  }}
+                />
+                
+                {/* Clickable Image Box */}
+                <div 
+                  className="edit-responsive-img-box" 
+                  style={{ 
                     width: "200px", 
                     height: "267px", 
-                    borderRadius: "8px", 
+                    borderRadius: "12px", 
                     overflow: "hidden", 
                     background: "#f3f4f1",
-                    border: `1.5px solid ${BORDER}`,
+                    border: `1.5px dashed ${formData.portraitFile ? GREEN : BORDER}`,
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "center",
-                    marginBottom: "12px"
-                  }}>
-                    {formData.currentImageUrl ? (
-                      <img 
-                        src={formData.currentImageUrl} 
-                        alt="Current portrait" 
-                        style={{ width: "100%", height: "100%", objectFit: "cover" }}
-                      />
-                    ) : (
-                      <div style={{ textAlign: "center", color: MUTED }}>
-                        <Icon name="person" size={48} />
-                        <p style={{ fontSize: "11px", marginTop: "8px" }}>No image</p>
-                      </div>
-                    )}
-                  </div>
-                  {formData.currentImageUrl && !formData.portraitFile && (
-                    <p style={{ fontSize: "11px", color: MUTED, textAlign: "center" }}>
-                      Current approved image
-                    </p>
+                    position: "relative",
+                    cursor: "pointer",
+                    transition: "all 0.2s"
+                  }}
+                  onClick={() => document.getElementById('portrait-upload')?.click()}
+                  onMouseEnter={e => (e.currentTarget as HTMLDivElement).style.borderColor = GREEN}
+                  onMouseLeave={e => (e.currentTarget as HTMLDivElement).style.borderColor = formData.portraitFile ? GREEN : BORDER}
+                >
+                  {formData.currentImageUrl ? (
+                    <img 
+                      src={formData.currentImageUrl} 
+                      alt="Scholar portrait" 
+                      style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                    />
+                  ) : (
+                    <div style={{ textAlign: "center", color: MUTED }}>
+                      <Icon name="add_photo_alternate" size={48} />
+                      <p style={{ fontSize: "12px", marginTop: "8px", fontWeight: 600 }}>Click to upload</p>
+                    </div>
                   )}
+                  
+                  {/* Hover Overlay */}
+                  <div 
+                    style={{
+                      position: "absolute", inset: 0, background: "rgba(11,67,53,0.6)", 
+                      display: "flex", alignItems: "center", justifyContent: "center",
+                      opacity: 0, transition: "opacity 0.2s"
+                    }}
+                    onMouseEnter={e => (e.currentTarget as HTMLDivElement).style.opacity = "1"}
+                    onMouseLeave={e => (e.currentTarget as HTMLDivElement).style.opacity = "0"}
+                  >
+                    <span style={{ color: "#fff", fontSize: "12px", fontWeight: 700, ...MONO }}>MODIFY IMAGE</span>
+                  </div>
                 </div>
 
-                <div>
-                  <label style={labelStyle}>Upload New Image</label>
-                  <input
-                    type="file"
-                    accept="image/*"
-                    onChange={(e) => {
-                      const file = e.target.files?.[0] || null;
-                      setFormData(prev => ({
-                        ...prev,
-                        portraitFile: file,
-                        currentImageUrl: file ? URL.createObjectURL(file) : prev.currentImageUrl
-                      }));
-                    }}
-                    style={{ ...inputStyle, padding: "8px" }}
-                  />
-                  <p style={{ fontSize: "11px", color: MUTED, marginTop: "8px" }}>
-                    {formData.portraitFile 
-                      ? `Selected: ${formData.portraitFile.name}` 
-                      : "Leave empty to keep current image"}
+                {/* ✅ FIXED ORDER: File Name Display moved ABOVE buttons for better visual flow */}
+                {formData.portraitFile && (
+                  <p style={{ fontSize: "11px", color: MUTED, textAlign: "center", ...MONO, wordBreak: "break-all" }}>
+                    Selected: {formData.portraitFile.name}
                   </p>
-                  {formData.portraitFile && (
+                )}
+
+                {/* Action Buttons with Hover Effects */}
+                <div style={{ display: "flex", gap: "12px" }}>
+                  <button
+                    type="button"
+                    onMouseDown={(e) => e.preventDefault()}
+                    onClick={() => document.getElementById('portrait-upload')?.click()}
+                    onMouseEnter={e => { 
+                      (e.currentTarget as HTMLButtonElement).style.backgroundColor = "#fbf9f4"; 
+                      (e.currentTarget as HTMLButtonElement).style.color = GREEN; 
+                      (e.currentTarget as HTMLButtonElement).style.border = `1.5px solid ${GREEN}`;
+                    }}
+                    onMouseLeave={e => { 
+                      (e.currentTarget as HTMLButtonElement).style.backgroundColor = GREEN; 
+                      (e.currentTarget as HTMLButtonElement).style.color = "#fff"; 
+                      (e.currentTarget as HTMLButtonElement).style.border = `1.5px solid transparent`;
+                    }}
+                    style={{
+                      padding: "8px 16px",
+                      background: GREEN,
+                      border: `1.5px solid transparent`,
+                      color: "#fff",
+                      borderRadius: "6px",
+                      fontFamily: MONO.fontFamily,
+                      fontSize: "10px",
+                      fontWeight: 700,
+                      cursor: "pointer",
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "6px",
+                      transition: "all 0.15s"
+                    }}
+                  >
+                    <Icon name="edit" size={14} /> Modify
+                  </button>
+                  
+                  {formData.currentImageUrl && (
                     <button
                       type="button"
-                      onClick={() => setFormData(prev => ({ ...prev, portraitFile: null, currentImageUrl: prev.currentImageUrl }))}
+                      onMouseDown={(e) => e.preventDefault()}
+                      onClick={() => {
+                        setFormData(prev => ({ ...prev, portraitFile: null, currentImageUrl: version.image_url || null }));
+                        const input = document.getElementById('portrait-upload') as HTMLInputElement;
+                        if (input) input.value = "";
+                      }}
+                      onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.backgroundColor = "rgba(179,38,30,0.08)"; }}
+                      onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.backgroundColor = "transparent"; }}
                       style={{
-                        marginTop: "8px",
-                        padding: "6px 12px",
+                        padding: "8px 16px",
                         background: "transparent",
                         border: `1.5px solid ${DANGER}`,
                         color: DANGER,
                         borderRadius: "6px",
-                        fontFamily: MONO,
+                        fontFamily: MONO.fontFamily,
                         fontSize: "10px",
                         fontWeight: 700,
-                        cursor: "pointer"
+                        cursor: "pointer",
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "6px",
+                        transition: "background 0.15s"
                       }}
                     >
-                      Remove Selection
+                      <Icon name="delete" size={14} /> Remove
                     </button>
                   )}
                 </div>
@@ -1024,7 +1293,7 @@ const EditScholarPage: React.FC = () => {
                 {(version.scholar_relationships_as_source || []).length > 0 && (
                   <div style={{ marginBottom: "24px", padding: "16px", backgroundColor: "#f3f4f1", borderRadius: "8px", border: "1px solid rgba(192,201,195,0.3)" }}>
                     <p style={{ ...MONO, fontSize: "9px", color: GREEN, marginBottom: "12px", letterSpacing: "0.1em" }}>EXISTING APPROVED RELATIONSHIPS</p>
-                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
+                    <div className="edit-responsive-rel-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
                       {(version.scholar_relationships_as_source || []).map((rel, i) => (
                         <div key={i} style={{ display: "flex", alignItems: "center", gap: "12px", padding: "10px", backgroundColor: "#fff", borderRadius: "8px", border: "1px solid rgba(192,201,195,0.3)" }}>
                           <div style={{ width: 32, height: 32, borderRadius: "50%", backgroundColor: GREEN, color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 700, flexShrink: 0 }}>
@@ -1045,7 +1314,14 @@ const EditScholarPage: React.FC = () => {
                 <div style={{ marginBottom: "24px" }}>
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "14px" }}>
                     <label style={{ ...MONO, fontSize: "9px", color: GREEN, letterSpacing: "0.18em", textTransform: "uppercase" }}>Add Teachers</label>
-                    <button type="button" onClick={() => setFormData(prev => ({ ...prev, new_teachers: [...prev.new_teachers, { scholar_id: null, scholar_name: "" }] }))} style={{ padding: "6px 14px", border: `1.5px solid ${GREEN}`, borderRadius: "6px", background: "transparent", color: GREEN, fontFamily: MONO.fontFamily, fontSize: "9px", fontWeight: 700, letterSpacing: "0.1em", cursor: "pointer", display: "inline-flex", alignItems: "center", gap: "5px" }}>
+                    <button 
+                      type="button" 
+                      onMouseDown={(e) => e.preventDefault()} 
+                      onClick={() => setFormData(prev => ({ ...prev, new_teachers: [...prev.new_teachers, { scholar_id: null, scholar_name: "" }] }))} 
+                      onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = GREEN; (e.currentTarget as HTMLButtonElement).style.color = "#fff"; }}
+                      onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = "transparent"; (e.currentTarget as HTMLButtonElement).style.color = GREEN; }}
+                      style={{ padding: "6px 14px", border: `1.5px solid ${GREEN}`, borderRadius: "6px", background: "transparent", color: GREEN, fontFamily: MONO.fontFamily, fontSize: "9px", fontWeight: 700, letterSpacing: "0.1em", cursor: "pointer", display: "inline-flex", alignItems: "center", gap: "5px", transition: "all 0.15s" }}
+                    >
                       <Icon name="add" size={13} /> Add Teacher
                     </button>
                   </div>
@@ -1064,7 +1340,29 @@ const EditScholarPage: React.FC = () => {
                 <div>
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "14px" }}>
                     <label style={{ ...MONO, fontSize: "9px", color: GREEN, letterSpacing: "0.18em", textTransform: "uppercase" }}>Add Students</label>
-                    <button type="button" onClick={() => setFormData(prev => ({ ...prev, new_students: [...prev.new_students, { scholar_id: null, scholar_name: "" }] }))} style={{ padding: "6px 14px", border: `1.5px solid ${GREEN}`, borderRadius: "6px", background: "transparent", color: GREEN, fontFamily: MONO.fontFamily, fontSize: "9px", fontWeight: 700, letterSpacing: "0.1em", cursor: "pointer", display: "inline-flex", alignItems: "center", gap: "5px" }}>
+                    <button 
+                      type="button" 
+                      onMouseDown={(e) => e.preventDefault()} 
+                      onClick={() => setFormData(prev => ({ ...prev, new_students: [...prev.new_students, { scholar_id: null, scholar_name: "" }] }))} 
+                      onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = GREEN; (e.currentTarget as HTMLButtonElement).style.color = "#fff"; }}
+                      onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = "transparent"; (e.currentTarget as HTMLButtonElement).style.color = GREEN; }}
+                      style={{ 
+                        padding: "6px 14px", 
+                        border: `1.5px solid ${GREEN}`, 
+                        borderRadius: "6px", 
+                        background: "transparent", 
+                        color: GREEN, 
+                        fontFamily: MONO.fontFamily, 
+                        fontSize: "9px", 
+                        fontWeight: 700, 
+                        letterSpacing: "0.1em", 
+                        cursor: "pointer", 
+                        display: "inline-flex", 
+                        alignItems: "center", 
+                        gap: "5px",
+                        transition: "all 0.15s" 
+                      }}
+                    >
                       <Icon name="add" size={13} /> Add Student
                     </button>
                   </div>
@@ -1083,8 +1381,7 @@ const EditScholarPage: React.FC = () => {
             </div>
 
             <div style={{ display: "flex", justifyContent: "flex-end", gap: "12px", marginTop: "32px", paddingTop: "24px", borderTop: "1px solid rgba(192,201,195,0.3)" }}>
-              <button 
-                type="button" 
+              <FooterCancelButton 
                 onClick={() => {
                   if (id) {
                     try {
@@ -1096,13 +1393,14 @@ const EditScholarPage: React.FC = () => {
                   }
                   navigate(-1);
                 }} 
-                style={{ ...BTN_PRIMARY, backgroundColor: "transparent", color: MUTED, borderColor: BORDER }}
-              >
-                Cancel
-              </button>
-              <button type="submit" style={BTN_PRIMARY}>
-                <Icon name="send" size={14} /> {t("editScholar.saveChanges") || "Submit Edit Proposal"}
-              </button>
+                label="Cancel" 
+              />
+              <FooterSubmitButton 
+                onClick={handleSubmit} 
+                label={t("editScholar.saveChanges") || "Submit Edit Proposal"} 
+                disabled={isSubmitting}
+                submitting={isSubmitting}
+              />
             </div>
           </div>
         </form>

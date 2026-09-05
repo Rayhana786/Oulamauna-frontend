@@ -1,58 +1,53 @@
+// AboutPage.tsx
 import React, { useState } from "react";
 import { Link } from "react-router-dom";
 import { useLang } from "../context/LanguageContext";
-// Drop your own images at these paths:
-// - src/assets/about-hero.jpg      (wide banner under the title)
-// - src/assets/about-archive.jpg   (tall image next to "Our Archive")
 import heroImage from "../assets/library-2.jpg";
 import archiveImage from "../assets/library-2.jpg";
 
 type Language = "EN" | "AR" | "FR";
 
-/* ─────────────────────────────────────────────
-   SHARED STYLE CONSTANTS (matches ContactPage / ScholarDetailPage)
-───────────────────────────────────────────── */
 const MONO: React.CSSProperties = { fontFamily: "'JetBrains Mono', monospace" };
-const SERIF: React.CSSProperties = { fontFamily: "'Source Serif 4', serif" };
-const BTN_PRIMARY: React.CSSProperties = {
-  display: "inline-flex", alignItems: "center", gap: "6px", padding: "10px 20px",
-  border: "1.5px solid #0b4335", borderRadius: "6px", backgroundColor: "transparent", color: "#0b4335",
-  fontSize: "10px", fontWeight: 700, letterSpacing: "0.1em", cursor: "pointer",
-  transition: "background 0.15s, color 0.15s", ...MONO,
-};
+const GROTESK: React.CSSProperties = { fontFamily: "'Hanken Grotesk', sans-serif" };
+const INTER: React.CSSProperties = { fontFamily: "'Inter', sans-serif" };
 
 function Icon({ name, size = 16 }: { name: string; size?: number }) {
   return (
-    <span className="material-symbols-outlined" style={{ fontSize: `${size}px`, lineHeight: 1, userSelect: "none" }}>
+    <span className="material-symbols-outlined" style={{ fontSize: `${size}px`, lineHeight: 1 }}>
       {name}
     </span>
   );
 }
 
-function TextLink({ children, isRTL, dark = false, to = "#" }: { children: React.ReactNode; isRTL: boolean; dark?: boolean; to?: string }) {
+function TextLink({ children, isRTL, to = "#" }: { children: React.ReactNode; isRTL: boolean; to?: string }) {
   const [hov, setHov] = useState(false);
-  const color = dark ? "#fff" : "#0b4335";
   return (
     <Link
       to={to}
       onMouseEnter={() => setHov(true)}
       onMouseLeave={() => setHov(false)}
       style={{
-        ...MONO, fontSize: "10px", fontWeight: 700, letterSpacing: "0.1em", color,
-        display: "inline-flex", alignItems: "center", gap: "6px", textDecoration: "none",
-        borderBottom: hov ? `1px solid ${color}` : "1px solid transparent", paddingBottom: "2px",
-        transition: "border-color 0.15s",
+        ...MONO, 
+        fontSize: "11px", 
+        fontWeight: 700, 
+        letterSpacing: "0.05em", 
+        color: "#1e4d3a",
+        display: "inline-flex", 
+        alignItems: "center", 
+        gap: "6px", 
+        textDecoration: "none",
+        borderBottom: hov ? "2px solid #C9A84C" : "2px solid transparent", 
+        paddingBottom: "2px",
+        transition: "border-color 0.3s", 
+        marginTop: "8px",
       }}
     >
       {children}
-      <Icon name={isRTL ? "north_west" : "north_east"} size={13} />
+      <Icon name={isRTL ? "arrow_back" : "arrow_forward"} size={16} />
     </Link>
   );
 }
 
-/* ─────────────────────────────────────────────
-   TRANSLATIONS
-───────────────────────────────────────────── */
 const content: Record<Language, any> = {
   EN: {
     breadcrumb: "HOME › ABOUT",
@@ -71,7 +66,9 @@ const content: Record<Language, any> = {
     teamLabel: "Our Contributors",
     teamBody: "Our contributors aren't just adding names — they're researchers and readers with a deep respect for the tradition they document. Their care for sources and accuracy is what keeps the archive trustworthy.",
     exploreLink: "EXPLORE SCHOLARS",
-    
+    ctaLabel: "GET IN TOUCH",
+    ctaTitle: "Have a correction, a scholar to suggest, or a question about the archive? We'd love to hear from you.",
+    ctaButton: "CONTACT US",
   },
   AR: {
     breadcrumb: "الرئيسية › من نحن",
@@ -90,7 +87,9 @@ const content: Record<Language, any> = {
     teamLabel: "مساهمونا",
     teamBody: "مساهمونا ليسوا مجرد من يضيف أسماء — بل باحثون وقراء يكنّون احتراماً عميقاً للتراث الذي يوثقونه. عنايتهم بالمصادر والدقة هي ما يحافظ على موثوقية الأرشيف.",
     exploreLink: "تصفح العلماء",
-    
+    ctaLabel: "تواصل معنا",
+    ctaTitle: "هل لديك تصحيح، أو اقتراح لإضافة عالم، أو سؤال حول الأرشيف؟ يسعدنا أن نسمع منك.",
+    ctaButton: "راسلنا",
   },
   FR: {
     breadcrumb: "ACCUEIL › À PROPOS",
@@ -109,13 +108,12 @@ const content: Record<Language, any> = {
     teamLabel: "Nos contributeurs",
     teamBody: "Nos contributeurs ne se contentent pas d'ajouter des noms — ce sont des chercheurs et des lecteurs animés d'un profond respect pour la tradition qu'ils documentent. Leur souci des sources et de l'exactitude est ce qui garantit la fiabilité de l'archive.",
     exploreLink: "PARCOURIR LES SAVANTS",
-   
+    ctaLabel: "RESTONS EN CONTACT",
+    ctaTitle: "Une correction à signaler, un savant à suggérer, ou une question sur l'archive ? Nous serions ravis de vous lire.",
+    ctaButton: "NOUS CONTACTER",
   },
 };
 
-/* ─────────────────────────────────────────────
-   MAIN COMPONENT
-───────────────────────────────────────────── */
 const AboutPage: React.FC = () => {
   const { lang } = useLang();
   const t = content[lang as Language];
@@ -124,16 +122,18 @@ const AboutPage: React.FC = () => {
   return (
     <div
       dir={isRTL ? "rtl" : "ltr"}
-     style={{
-  fontFamily: "'Source Sans 3', sans-serif", minHeight: "100vh", backgroundColor: "#faf9f6",
-  backgroundImage: "radial-gradient(circle at 50% 0%, rgba(201,168,76,0.06) 0%, transparent 60%)",
-  color: "#191c1b",
-}}
+      style={{
+        fontFamily: "'Inter', sans-serif", 
+        minHeight: "100vh", 
+        backgroundColor: "#fbf9f4",
+        backgroundImage: "radial-gradient(circle at 50% 0%, rgba(201,168,76,0.08) 0%, transparent 60%)",
+        color: "#1e4d3a",
+      }}
     >
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Source+Serif+4:ital,opsz,wght@0,8..60,200..900;1,8..60,200..900&family=Source+Sans+3:ital,wght@0,200..900;1,200..900&family=JetBrains+Mono:ital,wght@0,100..800;1,100..800&family=Amiri:ital,wght@0,400;0,700;1,400&display=swap');
-        @import url('https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=swap');
-        .material-symbols-outlined { font-variation-settings: 'FILL' 0,'wght' 400,'GRAD' 0,'opsz' 24; font-family: 'Material Symbols Outlined'; display: inline-block; vertical-align: middle; }
+        @import url('https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&family=Source+Serif+4:wght@400;600;700&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap');
+        .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; font-family: 'Material Symbols Outlined'; display: inline-block; vertical-align: middle; }
         * { box-sizing: border-box; }
         @media (max-width: 900px) {
           .about-grid { grid-template-columns: 1fr !important; }
@@ -142,12 +142,12 @@ const AboutPage: React.FC = () => {
         }
       `}</style>
 
-      <div style={{ maxWidth: "1100px", margin: "0 auto", padding: "64px 40px 0" }}>
+      <div style={{ maxWidth: "1280px", margin: "0 auto", padding: "64px 40px 0" }}>
 
-        {/* Hero banner — same treatment as the Contact page */}
+        {/* Hero banner */}
         <div style={{
           position: "relative", overflow: "hidden", borderRadius: "16px",
-          padding: "48px 40px", marginBottom: "48px",
+          padding: "64px 48px", marginBottom: "56px",
           border: "1px solid rgba(201,168,76,0.25)",
           backgroundImage: `url(${heroImage})`,
           backgroundSize: "cover",
@@ -155,27 +155,27 @@ const AboutPage: React.FC = () => {
         }}>
           <div style={{
             position: "absolute", inset: 0,
-            background: "linear-gradient(120deg, rgba(11,67,53,0.92) 0%, rgba(11,67,53,0.75) 45%, rgba(11,67,53,0.4) 100%)",
+            background: "linear-gradient(120deg, rgba(30,77,58,0.92) 0%, rgba(30,77,58,0.85) 45%, rgba(30,77,58,0.6) 100%)",
           }} />
           <div style={{ position: "relative", zIndex: 1 }}>
-            <p style={{ ...MONO, fontSize: "11px", color: "rgba(255,255,255,0.6)", letterSpacing: "0.05em", marginBottom: "18px" }}>
+            <p style={{ ...MONO, fontSize: "11px", color: "#C9A84C", letterSpacing: "0.2em", marginBottom: "16px", fontWeight: 700 }}>
               {t.breadcrumb}
             </p>
-            <h1 style={{ ...SERIF, fontSize: "40px", fontWeight: 700, color: "#fff", margin: "0 0 16px 0" }}>
+            <h1 style={{ ...GROTESK, fontSize: "40px", fontWeight: 700, color: "#fbf9f4", margin: "0 0 20px 0", lineHeight: 1.2 }}>
               {t.title}
             </h1>
-           <p style={{ fontSize: "14px", color: "rgba(255,255,255,0.8)", lineHeight: 1.75, maxWidth: "620px", margin: 0 }}>
+            <p style={{ ...INTER, fontSize: "18px", color: "rgba(251,249,244,0.85)", lineHeight: 1.7, maxWidth: "640px", margin: 0 }}>
               {t.heroDescription}
             </p>
           </div>
         </div>
 
         {/* Intro split text */}
-        <div style={{ display: "grid", gridTemplateColumns: "1.6fr 1fr", gap: "48px", marginBottom: "64px" }}>
-          <p style={{ fontSize: "17px", color: "#191c1b", lineHeight: 1.6, margin: 0 }}>
+        <div style={{ display: "grid", gridTemplateColumns: "1.6fr 1fr", gap: "48px", marginBottom: "72px" }}>
+          <p style={{ ...INTER, fontSize: "18px", color: "#1e4d3a", lineHeight: 1.7, margin: 0 }}>
             {t.introLeft}
           </p>
-          <p style={{ fontSize: "13px", color: "#707974", lineHeight: 1.75, margin: 0 }}>
+          <p style={{ ...INTER, fontSize: "15px", color: "rgba(30,77,58,0.7)", lineHeight: 1.75, margin: 0 }}>
             {t.introRight}
           </p>
         </div>
@@ -185,63 +185,63 @@ const AboutPage: React.FC = () => {
           className="about-grid"
           style={{
             display: "grid",
-            gridTemplateColumns: "200px 1fr 300px",
-            columnGap: "40px",
-            rowGap: "48px",
-            marginBottom: "64px",
+            gridTemplateColumns: "220px 1fr 320px",
+            columnGap: "48px",
+            rowGap: "56px",
+            marginBottom: "72px",
           }}
         >
           <div style={{ gridColumn: 1, gridRow: 1 }}>
-            <p style={{ ...MONO, fontSize: "9px", color: "#707974", letterSpacing: "0.1em", margin: "0 0 10px 0" }}>
+            <p style={{ ...MONO, fontSize: "11px", color: "#C9A84C", letterSpacing: "0.15em", margin: "0 0 12px 0", fontWeight: 700 }}>
               {t.whatLabel}
             </p>
-            <p style={{ fontSize: "14px", color: "#191c1b", lineHeight: 1.6, margin: 0, fontWeight: 500 }}>
+            <p style={{ ...INTER, fontSize: "15px", color: "#1e4d3a", lineHeight: 1.6, margin: 0, fontWeight: 600 }}>
               {t.whatBody}
             </p>
           </div>
 
           <div style={{ gridColumn: 2, gridRow: 1 }}>
             <p style={{
-              ...MONO, fontSize: "10px", color: "#0b4335", letterSpacing: "0.08em", fontWeight: 700,
-              margin: "0 0 14px 0", textDecoration: "underline", textUnderlineOffset: "4px", textDecorationColor: "#C9A84C",
+              ...MONO, fontSize: "11px", color: "#1e4d3a", letterSpacing: "0.15em", fontWeight: 700,
+              margin: "0 0 16px 0", textTransform: "uppercase",
             }}>
               {t.archiveLabel}
             </p>
-            <p style={{ fontSize: "13px", color: "#404945", lineHeight: 1.75, margin: "0 0 16px 0" }}>
+            <p style={{ ...INTER, fontSize: "15px", color: "rgba(30,77,58,0.8)", lineHeight: 1.75, margin: "0 0 16px 0" }}>
               {t.archiveP1}
             </p>
-            <p style={{ fontSize: "13px", color: "#404945", lineHeight: 1.75, margin: 0 }}>
+            <p style={{ ...INTER, fontSize: "15px", color: "rgba(30,77,58,0.8)", lineHeight: 1.75, margin: 0 }}>
               {t.archiveP2}
             </p>
           </div>
 
           <div className="about-image" style={{
-            gridColumn: 3, gridRow: "1 / span 2", borderRadius: "12px", overflow: "hidden",
-            border: "1px solid rgba(192,201,195,0.4)", minHeight: "260px",
+            gridColumn: 3, gridRow: "1 / span 2", borderRadius: "16px", overflow: "hidden",
+            border: "1px solid rgba(30,77,58,0.1)", minHeight: "280px", backgroundColor: "#F5F3EC",
           }}>
             <img src={archiveImage} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
           </div>
 
           <div style={{ gridColumn: 1, gridRow: 2 }}>
-            <p style={{ ...MONO, fontSize: "9px", color: "#707974", letterSpacing: "0.1em", margin: "0 0 10px 0" }}>
+            <p style={{ ...MONO, fontSize: "11px", color: "#C9A84C", letterSpacing: "0.15em", margin: "0 0 12px 0", fontWeight: 700 }}>
               {t.accessLabel}
             </p>
-            <p style={{ fontSize: "14px", color: "#191c1b", lineHeight: 1.6, margin: 0, fontWeight: 500 }}>
+            <p style={{ ...INTER, fontSize: "15px", color: "#1e4d3a", lineHeight: 1.6, margin: 0, fontWeight: 600 }}>
               {t.accessBody}
             </p>
           </div>
 
           <div style={{ gridColumn: 2, gridRow: 2 }}>
             <p style={{
-              ...MONO, fontSize: "10px", color: "#0b4335", letterSpacing: "0.08em", fontWeight: 700,
-              margin: "0 0 14px 0", textDecoration: "underline", textUnderlineOffset: "4px", textDecorationColor: "#C9A84C",
+              ...MONO, fontSize: "11px", color: "#1e4d3a", letterSpacing: "0.15em", fontWeight: 700,
+              margin: "0 0 16px 0", textTransform: "uppercase",
             }}>
               {t.teamLabel}
             </p>
-            <p style={{ fontSize: "13px", color: "#707974", lineHeight: 1.7, margin: "0 0 6px 0" }}>
+            <p style={{ ...INTER, fontSize: "15px", color: "rgba(30,77,58,0.7)", lineHeight: 1.7, margin: "0 0 8px 0" }}>
               {t.accessSub}
             </p>
-            <p style={{ fontSize: "13px", color: "#404945", lineHeight: 1.75, margin: "0 0 18px 0" }}>
+            <p style={{ ...INTER, fontSize: "15px", color: "rgba(30,77,58,0.8)", lineHeight: 1.75, margin: "0 0 20px 0" }}>
               {t.teamBody}
             </p>
             <TextLink isRTL={isRTL} to="/scholars">{t.exploreLink}</TextLink>
@@ -249,7 +249,44 @@ const AboutPage: React.FC = () => {
         </div>
       </div>
 
-     
+      {/* Closing CTA */}
+      <div style={{ backgroundColor: "#F2F1ED", padding: "80px 40px 120px", borderTop: "1px solid rgba(30,77,58,0.1)" }}>
+        <div style={{ maxWidth: "520px", margin: "0 auto", textAlign: "center" }}>
+          <div style={{
+            display: "inline-flex", alignItems: "center", gap: "8px",
+            marginBottom: "24px", color: "#C9A84C",
+          }}>
+            <Icon name="alternate_email" size={16} />
+            <span style={{ ...MONO, fontSize: "11px", letterSpacing: "0.15em", fontWeight: 700 }}>
+              {t.ctaLabel}
+            </span>
+          </div>
+          <p style={{ ...GROTESK, fontSize: "30px", fontWeight: 700, color: "#1e4d3a", lineHeight: 1.4, margin: "0 0 28px 0" }}>
+            {t.ctaTitle}
+          </p>
+          <Link
+            to="/contact"
+            style={{
+              display: "inline-flex", alignItems: "center", gap: "8px",
+              backgroundColor: "#1e4d3a", color: "#fbf9f4", border: "2px solid #1e4d3a",
+              borderRadius: "8px", padding: "14px 28px", cursor: "pointer",
+              fontSize: "11px", fontWeight: 700, letterSpacing: "0.05em",
+              textDecoration: "none", transition: "all 0.3s", ...GROTESK,
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.backgroundColor = "#fbf9f4";
+              e.currentTarget.style.color = "#1e4d3a";
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.backgroundColor = "#1e4d3a";
+              e.currentTarget.style.color = "#fbf9f4";
+            }}
+          >
+            {t.ctaButton}
+            <Icon name={isRTL ? "arrow_back" : "arrow_forward"} size={16} />
+          </Link>
+        </div>
+      </div>
     </div>
   );
 };

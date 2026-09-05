@@ -17,6 +17,11 @@ import { LanguageProvider } from "./context/LanguageContext";
 import Home from "./pages/Home";
 import About from "./pages/About";
 import Contact from "./pages/Contact";
+import ForumPage from "./pages/Forum/ForumPage";
+import ForumPost from "./pages/Forum/ForumPost";
+import FAQ from "./pages/FAQ";
+import PrivacyPolicy from "./pages/PrivacyPolicy";
+import Terms from "./pages/Terms";
 import ScholarsPage from "./pages/Scholars/ScholarsPage";
 import Editscholarpage from "./pages/Scholars/Editscholarpage";
 
@@ -70,18 +75,24 @@ function App() {
               <Route path="/" element={<Home />} />
               <Route path="/about" element={<About />} />
               <Route path="/contact" element={<Contact />} />
+              <Route path="/faq" element={<FAQ />} />
+              <Route path="/privacy" element={<PrivacyPolicy />} />
+              <Route path="/terms" element={<Terms />} />
               <Route path="/scholars" element={<ScholarsPage />} />
+              <Route path="/forum" element={<ForumPage />} />
+              <Route path="/forum/:id" element={<ForumPost />} />
               <Route path="/edit-profile" element={<Editprofilepage />} />
               <Route path="/profile" element={<ProfilePage />} />
 <Route path="/profile/:id" element={<ProfilePage />} />
 <Route path="/dashboard" element={<DashboardPage />} />
 <Route path="/settings" element={<SettingsPage />} />
 </Route>
+ <Route path="/login" element={<Login />} />
+              <Route path="/register" element={<Register />} />
 
             {/* ── AUTH + ERROR ROUTES (no navbar at all) ── */}
             <Route element={<NoNavLayout />}>
-              <Route path="/login" element={<Login />} />
-              <Route path="/register" element={<Register />} />
+             
               
               <Route path="/forgot-password" element={<ForgotPassword />} />
               <Route path="/reset-password" element={<ResetPassword />} />

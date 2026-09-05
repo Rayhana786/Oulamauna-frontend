@@ -1,461 +1,666 @@
-import React, { useState } from "react";
-import { Link } from "react-router-dom";
+// Home.tsx
+import React, { useEffect, useRef, useState } from "react";
+import { Link, useLocation } from "react-router-dom";
 import Hero from "../components/Hero";
 import { useLang } from "../context/LanguageContext";
 
 type Language = "EN" | "AR" | "FR";
 
-/* ─────────────────────────────────────────────
-   SHARED STYLE CONSTANTS (matches AboutPage / ContactPage / ScholarDetailPage)
-───────────────────────────────────────────── */
-const MONO: React.CSSProperties = { fontFamily: "'JetBrains Mono', monospace" };
-const SERIF: React.CSSProperties = { fontFamily: "'Source Serif 4', serif" };
-const BTN_PRIMARY: React.CSSProperties = {
-  display: "inline-flex", alignItems: "center", gap: "6px", padding: "10px 20px",
-  border: "1.5px solid #0b4335", borderRadius: "6px", backgroundColor: "transparent", color: "#0b4335",
-  fontSize: "10px", fontWeight: 700, letterSpacing: "0.1em", cursor: "pointer",
-  transition: "background 0.15s, color 0.15s", ...MONO,
-};
+/* ------------------------------------------------------------------ */
+/*  MOCK DATA — STRICTLY MATCHING PRISMA SCHEMA                       */
+/* ------------------------------------------------------------------ */
+const featuredScholars = [
+  {
+    version_id: 1,
+    canonical_name: "Ibn Khaldun",
+    century_gregorian_start: 1332,
+    century_gregorian_end: 1406,
+    region_name: "North Africa",
+    discipline_name: "History & Sociology",
+    image_url: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&h=400&fit=crop",
+    biography: "Pioneer of historiography and sociology, best known for his masterpiece, the Muqaddimah.",
+  },
+  {
+    version_id: 2,
+    canonical_name: "Al-Ghazali",
+    century_gregorian_start: 1058,
+    century_gregorian_end: 1111,
+    region_name: "Persia",
+    discipline_name: "Theology & Philosophy",
+    image_url: "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=400&h=400&fit=crop",
+    biography: "Theologian, jurist, and philosopher whose work shaped Islamic thought for centuries.",
+  },
+  {
+    version_id: 3,
+    canonical_name: "Ibn Sina (Avicenna)",
+    century_gregorian_start: 980,
+    century_gregorian_end: 1037,
+    region_name: "Central Asia",
+    discipline_name: "Medicine & Philosophy",
+    image_url: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=400&h=400&fit=crop",
+    biography: "Polymath and physician, author of The Canon of Medicine, a standard medical text for centuries.",
+  },
+  {
+    version_id: 4,
+    canonical_name: "Emir Abdelkader",
+    century_gregorian_start: 1808,
+    century_gregorian_end: 1883,
+    region_name: "Algeria",
+    discipline_name: "Islamic Jurisprudence",
+    image_url: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=400&h=400&fit=crop",
+    biography: "Scholar, resistance leader, and founder of modern Algeria, known for his chivalry and writings.",
+  },
+];
 
-function Icon({ name, size = 16, color }: { name: string; size?: number; color?: string }) {
-  return (
-    <span className="material-symbols-outlined" style={{ fontSize: `${size}px`, lineHeight: 1, userSelect: "none", color }}>
-      {name}
-    </span>
-  );
-}
+const recentScholars = [
+  { version_id: 101, canonical_name: "Abdelhamid Ibn Badis", century_gregorian_start: 1889, image_url: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=300&h=300&fit=crop", created_at: "2024-01-15T10:00:00Z" },
+  { version_id: 102, canonical_name: "Malik Ibn Nabi", century_gregorian_start: 1905, image_url: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=300&h=300&fit=crop", created_at: "2024-01-12T14:30:00Z" },
+  { version_id: 103, canonical_name: "Ibn Rushd (Averroes)", century_gregorian_start: 1126, image_url: "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=300&h=300&fit=crop", created_at: "2024-01-10T09:15:00Z" },
+  { version_id: 104, canonical_name: "Fatima al-Fihri", century_gregorian_start: 800, image_url: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=300&h=300&fit=crop", created_at: "2024-01-08T16:45:00Z" },
+];
 
-function TextLink({ children, isRTL, to = "#" }: { children: React.ReactNode; isRTL: boolean; to?: string }) {
-  const [hov, setHov] = useState(false);
-  const color = "#0b4335";
-  return (
-    <Link
-      to={to}
-      onMouseEnter={() => setHov(true)}
-      onMouseLeave={() => setHov(false)}
-      style={{
-        ...MONO, fontSize: "10px", fontWeight: 700, letterSpacing: "0.1em", color,
-        display: "inline-flex", alignItems: "center", gap: "6px", textDecoration: "none",
-        borderBottom: hov ? `1px solid ${color}` : "1px solid transparent", paddingBottom: "2px",
-        transition: "border-color 0.15s",
-      }}
-    >
-      {children}
-      <Icon name={isRTL ? "north_west" : "north_east"} size={13} />
-    </Link>
-  );
-}
+const disciplines = [
+  { discipline_id: 1, name: "Theology", count: 245, icon: "auto_stories" },
+  { discipline_id: 2, name: "Jurisprudence", count: 189, icon: "gavel" },
+  { discipline_id: 3, name: "Philosophy", count: 156, icon: "psychology" },
+  { discipline_id: 4, name: "History", count: 134, icon: "history" },
+  { discipline_id: 5, name: "Medicine", count: 98, icon: "medical_services" },
+  { discipline_id: 6, name: "Literature", count: 87, icon: "menu_book" },
+];
 
-function CtaButton({ children, to, isRTL }: { children: React.ReactNode; to: string; isRTL: boolean }) {
-  const [hov, setHov] = useState(false);
-  return (
-    <Link
-      to={to}
-      onMouseEnter={() => setHov(true)}
-      onMouseLeave={() => setHov(false)}
-      style={{
-        ...BTN_PRIMARY,
-        border: "1.5px solid rgba(255,255,255,0.7)",
-        backgroundColor: hov ? "#fff" : "transparent",
-        color: hov ? "#0b4335" : "#fff",
-      }}
-    >
-      {children}
-      <Icon name={isRTL ? "north_west" : "north_east"} size={14} />
-    </Link>
-  );
-}
+const eras = [
+  { name: "Classical Era", period: "7th-10th Century", scholars_count: 156, image_url: "https://images.unsplash.com/photo-1566127444979-b3d2b654e3d7?w=600&h=200&fit=crop" },
+  { name: "Golden Age", period: "10th-13th Century", scholars_count: 234, image_url: "https://images.unsplash.com/photo-154203710828b-496739ed6887?w=600&h=200&fit=crop" },
+  { name: "Andalusian Era", period: "11th-15th Century", scholars_count: 189, image_url: "https://images.unsplash.com/photo-1534447677768-be436bb09401?w=600&h=200&fit=crop" },
+  { name: "Ottoman Era", period: "16th-19th Century", scholars_count: 145, image_url: "https://images.unsplash.com/photo-1564507592333-c60657eea523?w=600&h=200&fit=crop" },
+  { name: "Modern Era", period: "19th Century - Present", scholars_count: 176, image_url: "https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=600&h=200&fit=crop" },
+];
 
-/* ─────────────────────────────────────────────
-   TRANSLATIONS
-───────────────────────────────────────────── */
-interface EraItem { label: string; range: string; desc: string; }
-interface ScholarItem { name: string; era: string; desc: string; }
-interface StatItem { value: string; label: string; }
-interface PillarItem { icon: string; label: string; desc: string; }
+const featuredWorks = [
+  { work_id: 1, title: "The Muqaddimah", year: 1377, format: "BOOK", media_url: "https://images.unsplash.com/photo-1535905557558-afc487cdc42d?w=400&h=300&fit=crop", description: "A pioneering work of historiography and sociology." },
+  { work_id: 2, title: "The Canon of Medicine", year: 1025, format: "MANUSCRIPT", media_url: "https://images.unsplash.com/photo-1457369804613-52c61a468e7d?w=400&h=300&fit=crop", description: "An encyclopedia of medicine in five books." },
+  { work_id: 3, title: "Tahafut al-Falasifa", year: 1095, format: "TREATISE", media_url: "https://images.unsplash.com/photo-1524995997946-a1c2e315a42f?w=400&h=300&fit=crop", description: "The Incoherence of the Philosophers, a landmark in Islamic philosophy." },
+];
 
+/* ------------------------------------------------------------------ */
+/*  TRANSLATIONS                                                      */
+/* ------------------------------------------------------------------ */
 interface HomeContent {
-  missionEyebrow: string; missionLeft: string; missionRight: string;
-  pillarsLabel: string; pillars: PillarItem[];
-  erasLabel: string; eras: EraItem[];
-  scholarsLabel: string; scholarsSub: string; scholarsAll: string; scholars: ScholarItem[]; viewProfile: string;
-  statsLabel: string; stats: StatItem[];
-  collageLabel: string; collageStatValue: string; collageStatLabel: string;
-  collageQuote: string; collageQuoteAuthor: string;
-  ctaTitle: string; ctaBody: string; ctaButton: string;
+  tagline: string;
+  title: string;
+  subtitle: string;
+  searchPlaceholder: string;
+  exploreButton: string;
+  featuredLabel: string;
+  viewAll: string;
+  disciplinesLabel: string;
+  erasLabel: string;
+  statsLabel: string;
+  ctaTitle: string;
+  ctaText: string;
+  ctaButton: string;
+  recentLabel: string;
+  worksLabel: string;
 }
 
 const content: Record<Language, HomeContent> = {
   EN: {
-    missionEyebrow: "OUR MISSION",
-    missionLeft: "Oulamauna is a living archive of the scholars who shaped Islamic and Algerian thought — built so their work stays within reach, in the languages people actually read in.",
-    missionRight: "Every scholar page brings together a verified biography, notable works, and available manuscripts, reviewed before publication.",
-    pillarsLabel: "WHY OULAMAUNA",
-    pillars: [
-      { icon: "verified", label: "Verified Biographies", desc: "Every entry is reviewed against primary sources before publication." },
-      { icon: "auto_stories", label: "Manuscript Archive", desc: "Original works and referenced manuscripts, catalogued by era." },
-      { icon: "translate", label: "Trilingual Access", desc: "Read in Arabic, French, or English — no barrier to the knowledge." },
-    ],
-    erasLabel: "EXPLORE BY ERA",
-    eras: [
-      { label: "Classical Era", range: "7th–10th c.", desc: "The founding generation of jurists, hadith scholars, and early theologians." },
-      { label: "Golden Age", range: "10th–13th c.", desc: "Philosophy, medicine, and the sciences flourish across the Islamic world." },
-      { label: "Andalusian Era", range: "11th–15th c.", desc: "Scholarship in al-Andalus and the Maghreb, from Cordoba to Fes." },
-      { label: "Ottoman Era", range: "16th–19th c.", desc: "Institutions, commentary literature, and reform movements take shape." },
-      { label: "Modern Era", range: "19th c. – today", desc: "Reformist thinkers and the scholars of Algeria's own intellectual revival." },
-    ],
-    scholarsLabel: "FEATURED SCHOLARS",
-    scholarsSub: "A starting point into the archive.",
-    scholarsAll: "VIEW ALL SCHOLARS",
-    scholars: [
-      { name: "Ibn Khaldun", era: "Andalusian Era", desc: "Historian and sociologist, author of the Muqaddimah." },
-      { name: "Al-Ghazali", era: "Golden Age", desc: "Theologian and philosopher whose work shaped Islamic thought for centuries." },
-      { name: "Emir Abdelkader", era: "Modern Era", desc: "Scholar and resistance leader, among Algeria's most studied intellectual figures." },
-      { name: "Abdelhamid Ibn Badis", era: "Modern Era", desc: "Reformist scholar and founder of the Algerian Muslim Scholars Association." },
-    ],
-    viewProfile: "View profile",
-    statsLabel: "THE ARCHIVE IN NUMBERS",
-    stats: [
-      { value: "500+", label: "Scholars documented" },
-      { value: "1,200+", label: "Manuscripts referenced" },
-      { value: "3", label: "Languages" },
-      { value: "10", label: "Centuries covered" },
-    ],
-    collageLabel: "FROM THE ARCHIVE",
-    collageStatValue: "500+",
-    collageStatLabel: "Scholars documented across 10 centuries of Islamic and Algerian thought.",
-    collageQuote: "Seek knowledge from the cradle to the grave.",
-    collageQuoteAuthor: "— attributed tradition",
-    ctaTitle: "Start exploring the archive",
-    ctaBody: "Search by name, era, or region, and follow the sources behind every entry.",
-    ctaButton: "BROWSE ALL SCHOLARS",
+    tagline: "WELCOME TO OULAMAUNA",
+    title: "Discover the Scholars Who Shaped Islamic Thought",
+    subtitle: "Explore centuries of knowledge, from the Classical era to modern times. Verified biographies, original works, and manuscript archives — all in one place.",
+    searchPlaceholder: "Search by name, discipline, or era...",
+    exploreButton: "Start Exploring",
+    featuredLabel: "Featured Scholars",
+    viewAll: "View All Scholars",
+    disciplinesLabel: "Browse by Discipline",
+    erasLabel: "Explore by Era",
+    statsLabel: "The Archive",
+    ctaTitle: "Ready to dive deeper?",
+    ctaText: "Join our community of researchers and contributors",
+    ctaButton: "Become a Contributor",
+    recentLabel: "Recently Added",
+    worksLabel: "Featured Works & Manuscripts",
   },
   AR: {
-    missionEyebrow: "رسالتنا",
-    missionLeft: "علماؤنا أرشيف حي للعلماء الذين شكّلوا الفكر الإسلامي والجزائري، أُنشئ ليبقى عملهم في متناول القارئ، باللغات التي يقرأ بها فعلاً.",
-    missionRight: "تجمع كل صفحة عالم سيرة موثقة وأعماله البارزة ومخطوطاته المتاحة، وتُراجَع قبل النشر.",
-    pillarsLabel: "لماذا علماؤنا",
-    pillars: [
-      { icon: "verified", label: "سِيَر موثقة", desc: "تُراجَع كل مادة مقابل المصادر الأولية قبل النشر." },
-      { icon: "auto_stories", label: "أرشيف المخطوطات", desc: "الأعمال الأصلية والمخطوطات المرجعية، مصنفة حسب الحقبة." },
-      { icon: "translate", label: "بثلاث لغات", desc: "اقرأ بالعربية أو الفرنسية أو الإنجليزية دون أي عائق." },
-    ],
-    erasLabel: "تصفح حسب الحقبة",
-    eras: [
-      { label: "العصر الكلاسيكي", range: "القرن 7-10م", desc: "الجيل التأسيسي من الفقهاء ومحدّثي الحديث وعلماء الكلام الأوائل." },
-      { label: "العصر الذهبي", range: "القرن 10-13م", desc: "ازدهار الفلسفة والطب والعلوم عبر العالم الإسلامي." },
-      { label: "العصر الأندلسي", range: "القرن 11-15م", desc: "العلم في الأندلس والمغرب، من قرطبة إلى فاس." },
-      { label: "العصر العثماني", range: "القرن 16-19م", desc: "تشكّل المؤسسات وأدب الشروح وحركات الإصلاح." },
-      { label: "العصر الحديث", range: "القرن 19م - اليوم", desc: "المفكرون الإصلاحيون وعلماء النهضة الفكرية الجزائرية." },
-    ],
-    scholarsLabel: "علماء مختارون",
-    scholarsSub: "نقطة بداية في الأرشيف.",
-    scholarsAll: "عرض جميع العلماء",
-    scholars: [
-      { name: "ابن خلدون", era: "العصر الأندلسي", desc: "مؤرخ وعالم اجتماع، صاحب المقدمة." },
-      { name: "أبو حامد الغزالي", era: "العصر الذهبي", desc: "عالم وفيلسوف شكّل الفكر الإسلامي لقرون." },
-      { name: "الأمير عبد القادر", era: "العصر الحديث", desc: "عالم وقائد مقاومة، من أكثر الشخصيات الفكرية الجزائرية دراسة." },
-      { name: "عبد الحميد بن باديس", era: "العصر الحديث", desc: "عالم إصلاحي ومؤسس جمعية العلماء المسلمين الجزائريين." },
-    ],
-    viewProfile: "عرض الصفحة",
-    statsLabel: "الأرشيف بالأرقام",
-    stats: [
-      { value: "+500", label: "عالِم موثّق" },
-      { value: "+1,200", label: "مخطوطة مرجعية" },
-      { value: "3", label: "لغات" },
-      { value: "10", label: "قرون موثقة" },
-    ],
-    collageLabel: "من الأرشيف",
-    collageStatValue: "+500",
-    collageStatLabel: "عالِم موثّق عبر 10 قرون من الفكر الإسلامي والجزائري.",
-    collageQuote: "اطلبوا العلم من المهد إلى اللحد.",
-    collageQuoteAuthor: "— أثر منسوب",
-    ctaTitle: "ابدأ استكشاف الأرشيف",
-    ctaBody: "ابحث بالاسم أو الحقبة أو المنطقة، وتتبّع مصادر كل مدخل.",
-    ctaButton: "تصفح جميع العلماء",
+    tagline: "مرحباً بكم في علماؤنا",
+    title: "اكتشف العلماء الذين شكّلوا الفكر الإسلامي",
+    subtitle: "استكشف قروناً من المعرفة، من العصر الكلاسيكي إلى العصر الحديث. سير موثقة وأعمال أصلية وأرشيف مخطوطات — كل ذلك في مكان واحد.",
+    searchPlaceholder: "ابحث بالاسم أو التخصص أو الحقبة...",
+    exploreButton: "ابدأ الاستكشاف",
+    featuredLabel: "علماء مميزون",
+    viewAll: "عرض جميع العلماء",
+    disciplinesLabel: "تصفح حسب التخصص",
+    erasLabel: "استكشف حسب الحقبة",
+    statsLabel: "الأرشيف",
+    ctaTitle: "مستعد للغوص أعمق؟",
+    ctaText: "انضم إلى مجتمعنا من الباحثين والمساهمين",
+    ctaButton: "كن مساهماً",
+    recentLabel: "أضيف مؤخراً",
+    worksLabel: "أعمال ومخطوطات مميزة",
   },
   FR: {
-    missionEyebrow: "NOTRE MISSION",
-    missionLeft: "Oulamauna est une archive vivante des savants qui ont façonné la pensée islamique et algérienne — conçue pour que leur œuvre reste accessible, dans les langues que l'on lit réellement.",
-    missionRight: "Chaque fiche réunit une biographie vérifiée, les œuvres notables et les manuscrits disponibles, relue avant publication.",
-    pillarsLabel: "POURQUOI OULAMAUNA",
-    pillars: [
-      { icon: "verified", label: "Biographies vérifiées", desc: "Chaque fiche est relue face aux sources primaires avant publication." },
-      { icon: "auto_stories", label: "Archive de manuscrits", desc: "Œuvres originales et manuscrits référencés, classés par époque." },
-      { icon: "translate", label: "Accès trilingue", desc: "Lisez en arabe, en français ou en anglais, sans aucune barrière." },
-    ],
-    erasLabel: "PARCOURIR PAR ÉPOQUE",
-    eras: [
-      { label: "Époque classique", range: "VIIe–Xe s.", desc: "La génération fondatrice des juristes, traditionnistes et premiers théologiens." },
-      { label: "Âge d'or", range: "Xe–XIIIe s.", desc: "La philosophie, la médecine et les sciences fleurissent dans le monde islamique." },
-      { label: "Époque andalouse", range: "XIe–XVe s.", desc: "Le savoir en al-Andalus et au Maghreb, de Cordoue à Fès." },
-      { label: "Époque ottomane", range: "XVIe–XIXe s.", desc: "Les institutions et les mouvements de réforme prennent forme." },
-      { label: "Époque moderne", range: "XIXe s. – aujourd'hui", desc: "Les penseurs réformistes et les savants du renouveau algérien." },
-    ],
-    scholarsLabel: "SAVANTS À L'HONNEUR",
-    scholarsSub: "Un point de départ dans l'archive.",
-    scholarsAll: "VOIR TOUS LES SAVANTS",
-    scholars: [
-      { name: "Ibn Khaldoun", era: "Époque andalouse", desc: "Historien et sociologue, auteur de la Muqaddima." },
-      { name: "Al-Ghazâlî", era: "Âge d'or", desc: "Théologien et philosophe dont l'œuvre a marqué la pensée islamique pendant des siècles." },
-      { name: "L'émir Abdelkader", era: "Époque moderne", desc: "Savant et chef de résistance, l'une des figures les plus étudiées d'Algérie." },
-      { name: "Abdelhamid Ibn Badis", era: "Époque moderne", desc: "Savant réformiste et fondateur de l'Association des oulémas musulmans algériens." },
-    ],
-    viewProfile: "Voir la fiche",
-    statsLabel: "L'ARCHIVE EN CHIFFRES",
-    stats: [
-      { value: "500+", label: "Savants documentés" },
-      { value: "1 200+", label: "Manuscrits référencés" },
-      { value: "3", label: "Langues" },
-      { value: "10", label: "Siècles couverts" },
-    ],
-    collageLabel: "DEPUIS L'ARCHIVE",
-    collageStatValue: "500+",
-    collageStatLabel: "Savants documentés sur 10 siècles de pensée islamique et algérienne.",
-    collageQuote: "Cherche le savoir du berceau jusqu'à la tombe.",
-    collageQuoteAuthor: "— tradition attribuée",
-    ctaTitle: "Commencez à explorer l'archive",
-    ctaBody: "Recherchez par nom, époque ou région, et suivez les sources de chaque fiche.",
-    ctaButton: "PARCOURIR TOUS LES SAVANTS",
+    tagline: "BIENVENUE SUR OULAMAUNA",
+    title: "Découvrez les Savants qui ont Façonné la Pensée Islamique",
+    subtitle: "Explorez des siècles de savoir, de l'époque classique aux temps modernes. Biographies vérifiées, œuvres originales et archives de manuscrits — tout en un seul endroit.",
+    searchPlaceholder: "Rechercher par nom, discipline ou époque...",
+    exploreButton: "Commencer l'exploration",
+    featuredLabel: "Savants en Vedette",
+    viewAll: "Voir Tous les Savants",
+    disciplinesLabel: "Parcourir par Discipline",
+    erasLabel: "Explorer par Époque",
+    statsLabel: "L'Archive",
+    ctaTitle: "Prêt à plonger plus profondément?",
+    ctaText: "Rejoignez notre communauté de chercheurs et contributeurs",
+    ctaButton: "Devenir Contributeur",
+    recentLabel: "Récemment Ajouté",
+    worksLabel: "Œuvres et Manuscrits en Vedette",
   },
 };
 
-/* ─────────────────────────────────────────────
-   MAIN COMPONENT
-───────────────────────────────────────────── */
-const Home: React.FC = () => {
-  const { lang } = useLang();
-  const t = content[lang as Language] || content.EN;
-  const isRTL = lang === "AR";
+/* ------------------------------------------------------------------ */
+/*  "WHY OULAMAUNA" — left-column copy for the text+image+stats block */
+/* ------------------------------------------------------------------ */
+interface WhyContent {
+  tagline: string;
+  titleLine1: string;
+  titleLine2: string;
+  description: string;
+  bullets: string[];
+  ctaButton: string;
+}
+
+const whyContent: Record<Language, WhyContent> = {
+  EN: {
+    tagline: "WHY OULAMAUNA",
+    titleLine1: "Preserving Knowledge",
+    titleLine2: "With Purpose",
+    description: "We believe every scholar's legacy deserves more than a footnote. Our archive pairs rigorous verification with accessible, multilingual storytelling.",
+    bullets: [
+      "Verified biographies and sources",
+      "Multilingual access in Arabic, French & English",
+      "Careful manuscript digitization",
+      "Open to researchers and contributors",
+    ],
+    ctaButton: "About The Archive",
+  },
+  AR: {
+    tagline: "لماذا علماؤنا",
+    titleLine1: "نحافظ على المعرفة",
+    titleLine2: "بهدف واضح",
+    description: "نؤمن أن إرث كل عالم يستحق أكثر من مجرد حاشية عابرة. يجمع أرشيفنا بين التحقق الدقيق والسرد المتاح بعدة لغات.",
+    bullets: [
+      "سير ذاتية ومصادر موثّقة",
+      "وصول متعدد اللغات: عربي، فرنسي، إنجليزي",
+      "رقمنة دقيقة للمخطوطات",
+      "مفتوح للباحثين والمساهمين",
+    ],
+    ctaButton: "عن الأرشيف",
+  },
+  FR: {
+    tagline: "POURQUOI OULAMAUNA",
+    titleLine1: "Préserver le Savoir",
+    titleLine2: "Avec un But Précis",
+    description: "Nous croyons que l'héritage de chaque savant mérite plus qu'une note de bas de page. Notre archive allie vérification rigoureuse et narration accessible et multilingue.",
+    bullets: [
+      "Biographies et sources vérifiées",
+      "Accès multilingue en arabe, français et anglais",
+      "Numérisation soignée des manuscrits",
+      "Ouvert aux chercheurs et contributeurs",
+    ],
+    ctaButton: "À propos de l'Archive",
+  },
+};
+
+/* ------------------------------------------------------------------ */
+/*  STATS DATA (icon-driven, matches reference layout)                */
+/* ------------------------------------------------------------------ */
+const archiveStats = [
+  { icon: "groups", value: "500+", labelEN: "Scholars", labelFR: "Savants", labelAR: "عالم" },
+  { icon: "menu_book", value: "1,200+", labelEN: "Manuscripts", labelFR: "Manuscrits", labelAR: "مخطوطة" },
+  { icon: "category", value: "6", labelEN: "Disciplines", labelFR: "Disciplines", labelAR: "تخصصات" },
+  { icon: "history_edu", value: "10+", labelEN: "Centuries", labelFR: "Siècles", labelAR: "قرون" },
+];
+
+/* ------------------------------------------------------------------ */
+/*  LIGHTWEIGHT SCROLL ANIMATION COMPONENT                            */
+/* ------------------------------------------------------------------ */
+const FadeIn: React.FC<{ children: React.ReactNode; delay?: number; className?: string }> = ({ 
+  children, 
+  delay = 0, 
+  className = "" 
+}) => {
+  const ref = useRef<HTMLDivElement>(null);
+  const [isVisible, setIsVisible] = useState(false);
+
+  useEffect(() => {
+    const currentRef = ref.current;
+    if (!currentRef) return;
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setIsVisible(true);
+          observer.unobserve(currentRef); // Stop observing once visible for max performance
+        }
+      },
+      { threshold: 0.1, rootMargin: "0px 0px -50px 0px" }
+    );
+
+    observer.observe(currentRef);
+    return () => observer.disconnect();
+  }, []);
 
   return (
-    <div className="relative w-full" style={{ backgroundColor: "#faf9f6" }}>
+    <div
+      ref={ref}
+      className={`transition-all duration-700 ease-out ${
+        isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"
+      } ${className}`}
+      style={{ transitionDelay: `${delay}ms` }}
+    >
+      {children}
+    </div>
+  );
+};
+
+/* ------------------------------------------------------------------ */
+/*  MAIN COMPONENT                                                    */
+/* ------------------------------------------------------------------ */
+const Home: React.FC = () => {
+  const { lang } = useLang();
+  const location = useLocation();
+  const t = content[lang as Language] || content.EN;
+  const w = whyContent[lang as Language] || whyContent.EN;
+  const isRTL = lang === "AR";
+
+  useEffect(() => {
+    if (location.hash) {
+      const element = document.getElementById(location.hash.substring(1));
+      if (element) {
+        setTimeout(() => {
+          element.scrollIntoView({ behavior: "smooth" });
+        }, 100);
+      }
+    }
+  }, [location]);
+
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffTime = Math.abs(now.getTime() - date.getTime());
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    if (diffDays === 1) return isRTL ? "أمس" : "Yesterday";
+    if (diffDays < 7) return isRTL ? `منذ ${diffDays} أيام` : `${diffDays} days ago`;
+    if (diffDays < 30) return isRTL ? `منذ ${Math.floor(diffDays / 7)} أسابيع` : `${Math.floor(diffDays / 7)} weeks ago`;
+    return date.toLocaleDateString(isRTL ? "ar-DZ" : lang === "FR" ? "fr-FR" : "en-US");
+  };
+
+  const statLabel = (stat: (typeof archiveStats)[number]) =>
+    isRTL ? stat.labelAR : lang === "FR" ? stat.labelFR : stat.labelEN;
+
+  return (
+    <div className="antialiased min-h-screen selection:bg-[#C9A84C] selection:text-[#1e4d3a] flex flex-col bg-[#fbf9f4]">
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&family=Source+Serif+4:wght@400;600;700&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap');
+        .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; font-family: 'Material Symbols Outlined'; display: inline-block; vertical-align: middle; }
+      `}</style>
+
       <Hero />
 
-      {/* Content sheet — overlaps the hero video for a deliberate, non-abrupt transition */}
-      <main
-        dir={isRTL ? "rtl" : "ltr"}
-        className="relative z-30 -mt-16 md:-mt-20"
-        style={{
-          backgroundColor: "#faf9f6",
-          backgroundImage: "radial-gradient(circle at 50% 0%, rgba(201,168,76,0.06) 0%, transparent 60%)",
-          borderTopLeftRadius: "28px",
-          borderTopRightRadius: "28px",
-          boxShadow: "0 -24px 60px rgba(11,67,53,0.14)",
-          fontFamily: "'Source Sans 3', sans-serif",
-          color: "#191c1b",
-          overflow: "hidden",
-        }}
-      >
-        <style>{`
-          @import url('https://fonts.googleapis.com/css2?family=Source+Serif+4:ital,opsz,wght@0,8..60,200..900;1,8..60,200..900&family=Source+Sans+3:ital,wght@0,200..900;1,200..900&family=JetBrains+Mono:ital,wght@0,100..800;1,100..800&display=swap');
-          @import url('https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=swap');
-          .material-symbols-outlined { font-variation-settings: 'FILL' 0,'wght' 400,'GRAD' 0,'opsz' 24; font-family: 'Material Symbols Outlined'; display: inline-block; vertical-align: middle; }
-          * { box-sizing: border-box; }
+      <main className="flex-grow pt-16 md:pt-0" dir={isRTL ? "rtl" : "ltr"}>
 
-          .home-grid { display: grid; grid-template-columns: 1.6fr 1fr; gap: 48px; }
-          .home-pillars { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0; }
-          .home-pillars > div { border-left: 1px solid rgba(192,201,195,0.4); padding: 0 28px; }
-          .home-pillars > div:first-child { border-left: none; padding-left: 0; }
-          [dir='rtl'] .home-pillars > div { border-left: none; border-right: 1px solid rgba(192,201,195,0.4); padding: 0 28px; }
-          [dir='rtl'] .home-pillars > div:first-child { border-right: none; padding-right: 0; }
-          .home-eras { display: grid; grid-template-columns: repeat(5, 1fr); gap: 0; }
-          .home-eras > div { border-left: 1px solid rgba(192,201,195,0.4); padding: 0 22px; }
-          .home-eras > div:first-child { border-left: none; padding-left: 0; }
-          [dir='rtl'] .home-eras > div { border-left: none; border-right: 1px solid rgba(192,201,195,0.4); padding: 0 22px; }
-          [dir='rtl'] .home-eras > div:first-child { border-right: none; padding-right: 0; }
-          .home-scholars { display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; }
-          .home-stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 32px; }
-          .home-collage { display: grid; grid-template-columns: 1fr 1.4fr; gap: 40px; align-items: center; }
-
-          @media (max-width: 900px) {
-            .home-grid { grid-template-columns: 1fr !important; gap: 24px !important; }
-            .home-pillars { grid-template-columns: 1fr !important; gap: 24px !important; }
-            .home-pillars > div, [dir='rtl'] .home-pillars > div { border: none !important; padding: 0 !important; }
-            .home-eras { grid-template-columns: 1fr !important; gap: 20px !important; }
-            .home-eras > div, [dir='rtl'] .home-eras > div { border-left: none !important; border-right: none !important; border-top: 1px solid rgba(192,201,195,0.4) !important; padding: 18px 0 0 !important; }
-            .home-scholars { grid-template-columns: repeat(2, 1fr) !important; }
-            .home-stats { grid-template-columns: repeat(2, 1fr) !important; }
-            .home-collage { grid-template-columns: 1fr !important; }
-          }
-          @media (max-width: 560px) {
-            .home-scholars { grid-template-columns: 1fr !important; }
-          }
-        `}</style>
-
-        <div style={{ maxWidth: "1100px", margin: "0 auto", padding: "56px 40px 0" }}>
-
-          {/* Mission split intro */}
-          <div style={{ marginBottom: "72px" }}>
-            <p style={{ ...MONO, fontSize: "9px", color: "#707974", letterSpacing: "0.1em", margin: "0 0 18px 0" }}>
-              {t.missionEyebrow}
-            </p>
-            <div className="home-grid">
-              <p style={{ ...SERIF, fontSize: "20px", color: "#191c1b", lineHeight: 1.55, fontWeight: 500, margin: 0 }}>
-                {t.missionLeft}
-              </p>
-              <p style={{ fontSize: "13px", color: "#707974", lineHeight: 1.75, margin: 0 }}>
-                {t.missionRight}
-              </p>
-            </div>
-          </div>
-
-          {/* Why Oulamauna — pillars */}
-          <div style={{ marginBottom: "72px" }}>
-            <p style={{
-              ...MONO, fontSize: "10px", color: "#0b4335", letterSpacing: "0.08em", fontWeight: 700,
-              margin: "0 0 28px 0", textDecoration: "underline", textUnderlineOffset: "4px", textDecorationColor: "#C9A84C",
-              display: "inline-block",
-            }}>
-              {t.pillarsLabel}
-            </p>
-            <div className="home-pillars">
-              {t.pillars.map((p, i) => (
-                <div key={i}>
-                  <Icon name={p.icon} size={26} color="#C9A84C" />
-                  <p style={{ ...SERIF, fontSize: "18px", fontWeight: 600, color: "#191c1b", margin: "16px 0 8px 0" }}>{p.label}</p>
-                  <p style={{ fontSize: "13px", color: "#707974", lineHeight: 1.65, margin: 0 }}>{p.desc}</p>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Era timeline */}
-          <div style={{ marginBottom: "72px" }}>
-            <p style={{
-              ...MONO, fontSize: "10px", color: "#0b4335", letterSpacing: "0.08em", fontWeight: 700,
-              margin: "0 0 24px 0", textDecoration: "underline", textUnderlineOffset: "4px", textDecorationColor: "#C9A84C",
-              display: "inline-block",
-            }}>
-              {t.erasLabel}
-            </p>
-            <div className="home-eras">
-              {t.eras.map((era, i) => (
-                <div key={i}>
-                  <p style={{ ...MONO, fontSize: "10px", color: "#191c1b", fontWeight: 700, letterSpacing: "0.04em", margin: "0 0 4px 0" }}>
-                    {era.label}
-                  </p>
-                  <p style={{ ...MONO, fontSize: "10px", color: "#707974", margin: "0 0 10px 0" }}>
-                    {era.range}
-                  </p>
-                  <p style={{ fontSize: "12.5px", color: "#404945", lineHeight: 1.6, margin: 0 }}>
-                    {era.desc}
-                  </p>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Featured scholars */}
-          <div style={{ marginBottom: "72px" }}>
-            <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", flexWrap: "wrap", gap: "12px", marginBottom: "28px" }}>
-              <div>
-                <p style={{
-                  ...MONO, fontSize: "10px", color: "#0b4335", letterSpacing: "0.08em", fontWeight: 700,
-                  margin: "0 0 8px 0", textDecoration: "underline", textUnderlineOffset: "4px", textDecorationColor: "#C9A84C",
-                  display: "inline-block",
-                }}>
-                  {t.scholarsLabel}
-                </p>
-                <p style={{ fontSize: "13px", color: "#707974", margin: 0 }}>{t.scholarsSub}</p>
-              </div>
-              <TextLink isRTL={isRTL} to="/scholars">{t.scholarsAll}</TextLink>
-            </div>
-
-            <div className="home-scholars">
-              {t.scholars.map((s, i) => (
-                <div key={i} style={{
-                  border: "1px solid rgba(192,201,195,0.4)", borderRadius: "12px", padding: "24px",
-                  backgroundColor: "rgba(255,255,255,0.5)", display: "flex", flexDirection: "column", gap: "12px",
-                }}>
-                  <div style={{
-                    width: "48px", height: "48px", borderRadius: "50%", backgroundColor: "#0b4335",
-                    display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0,
-                  }}>
-                    <span style={{ ...SERIF, fontSize: "17px", color: "#fff", fontWeight: 600 }}>
-                      {s.name.charAt(0)}
+               {/* 1. Feature Pillars */}
+        <FadeIn>
+          <section className="px-[20px] md:px-[64px] max-w-[1040px] mx-auto py-14 md:py-16">
+            <div className="flex flex-col md:flex-row justify-between gap-10 md:gap-6 text-center">
+              {[
+                { icon: "library_books", title: "BESPOKE RESEARCH", desc: "Tailored archives that bring history to life." },
+                { icon: "auto_stories", title: "TIMELESS WISDOM", desc: "Elegant narratives that stand the test of time." },
+                { icon: "verified", title: "QUALITY PRESERVATION", desc: "Premium digitization by trusted artisans." },
+                { icon: "explore", title: "PERSONAL JOURNEY", desc: "Collaborative exploration designed around you." },
+              ].map((card, i) => (
+                <FadeIn key={i} delay={100 + i * 100} className="flex-1 flex flex-col items-center gap-3 group cursor-pointer">
+                  <div className="mb-0.5 transition-transform duration-300 group-hover:-translate-y-1">
+                    <span className="material-symbols-outlined text-[22px] text-[#1e4d3a]" style={{ fontVariationSettings: "'FILL' 0, 'wght' 100" }}>
+                      {card.icon}
                     </span>
                   </div>
-                  <div style={{ flexGrow: 1 }}>
-                    <p style={{ ...SERIF, fontSize: "16px", fontWeight: 600, color: "#191c1b", margin: "0 0 4px 0" }}>{s.name}</p>
-                    <p style={{ ...MONO, fontSize: "9px", color: "#707974", letterSpacing: "0.08em", textTransform: "uppercase", margin: "0 0 10px 0" }}>{s.era}</p>
-                    <p style={{ fontSize: "12.5px", color: "#404945", lineHeight: 1.6, margin: 0 }}>{s.desc}</p>
+                  <div>
+                    <h4 className="font-['Inter'] text-[11px] leading-[16px] text-[#1e4d3a] uppercase tracking-[0.12em] mb-1.5 font-semibold">
+                      {card.title}
+                    </h4>
+                    <p className="font-['Inter'] text-[13px] leading-[20px] text-[#1e4d3a]/60">
+                      {card.desc}
+                    </p>
                   </div>
-                  <TextLink isRTL={isRTL} to="/scholars">{t.viewProfile}</TextLink>
-                </div>
+                </FadeIn>
               ))}
             </div>
-          </div>
+          </section>
+        </FadeIn>
 
-          {/* Stats */}
-          <div style={{ marginBottom: "72px" }}>
-            <p style={{ ...MONO, fontSize: "9px", color: "#707974", letterSpacing: "0.1em", margin: "0 0 24px 0" }}>
-              {t.statsLabel}
+        {/* 2. Welcome & Search Section */}
+        <FadeIn>
+          <section className="py-12 px-[20px] md:px-[64px] bg-[#fbf9f4] max-w-[1280px] mx-auto text-center flex flex-col items-center">
+            <h2 className="font-['JetBrains_Mono'] text-[11px] leading-[16px] text-[#C9A84C] uppercase tracking-[0.2em] font-bold mb-4">
+              {t.tagline}
+            </h2>
+            <h3 className="font-['Hanken_Grotesk'] text-4xl md:text-5xl leading-tight text-[#1e4d3a] font-bold mb-6 max-w-4xl">
+              {t.title}
+            </h3>
+            <p className="font-['Inter'] text-[18px] leading-[1.7] text-[#1e4d3a]/80 mb-10 max-w-3xl">
+              {t.subtitle}
             </p>
-            <div className="home-stats">
-              {t.stats.map((st, i) => (
-                <div key={i}>
-                  <p style={{ ...SERIF, fontSize: "34px", fontWeight: 700, color: "#0b4335", margin: "0 0 6px 0" }}>{st.value}</p>
-                  <p style={{ ...MONO, fontSize: "9px", color: "#707974", letterSpacing: "0.06em", textTransform: "uppercase", margin: 0 }}>{st.label}</p>
-                </div>
-              ))}
-            </div>
-          </div>
 
-          {/* Photo + stat + quote band */}
-          <div style={{
-            position: "relative", overflow: "hidden", borderRadius: "16px",
-            padding: "48px 40px", marginBottom: "64px",
-            backgroundColor: "#0b4335",
-            border: "1px solid rgba(201,168,76,0.25)",
-          }}>
-            <div className="home-collage">
+            <div className="w-full max-w-2xl relative mb-10">
+              <input
+                className="w-full px-6 py-4 rounded-xl border-2 border-[#1e4d3a] bg-[#fbf9f4] focus:border-[#C9A84C] focus:ring-1 focus:ring-[#C9A84C] transition-all font-['Inter'] text-[15px] shadow-sm outline-none text-[#1e4d3a]"
+                placeholder={t.searchPlaceholder}
+                type="text"
+                dir={isRTL ? "rtl" : "ltr"}
+              />
+              <button className={`absolute ${isRTL ? "left-5" : "right-5"} top-1/2 -translate-y-1/2 text-[#1e4d3a] hover:text-[#C9A84C] transition-colors`}>
+                <span className="material-symbols-outlined text-[22px]">search</span>
+              </button>
+            </div>
+
+            <Link
+              to="/scholars"
+              className="inline-flex items-center gap-2 px-8 py-3.5 bg-[#1e4d3a] text-[#fbf9f4] border-2 border-[#1e4d3a] rounded-lg text-[13px] font-bold tracking-[0.05em] font-['Hanken_Grotesk'] hover:bg-[#fbf9f4] hover:text-[#1e4d3a] transition-all duration-300"
+            >
+              {t.exploreButton}
+              <span className="material-symbols-outlined text-[18px]">{isRTL ? "arrow_back" : "arrow_forward"}</span>
+            </Link>
+          </section>
+        </FadeIn>
+
+        {/* 3. Featured Scholars */}
+        <FadeIn>
+          <section className="py-20 px-[20px] md:px-[64px] max-w-[1280px] mx-auto">
+            <div className="flex justify-between items-end mb-12 pb-4 border-b-2 border-[#1e4d3a]">
               <div>
-                <p style={{ ...MONO, fontSize: "9px", color: "#C9A84C", letterSpacing: "0.1em", margin: "0 0 12px 0" }}>
-                  {t.collageLabel}
+                <p className="font-['JetBrains_Mono'] text-[10px] uppercase tracking-[0.15em] font-bold text-[#C9A84C] mb-2">
+                  {t.featuredLabel}
                 </p>
-                <p style={{ ...SERIF, fontSize: "56px", fontWeight: 700, color: "#fff", margin: "0 0 12px 0" }}>
-                  {t.collageStatValue}
-                </p>
-                <p style={{ fontSize: "13px", color: "rgba(255,255,255,0.75)", lineHeight: 1.6, margin: 0 }}>
-                  {t.collageStatLabel}
-                </p>
+                <h2 className="font-['Hanken_Grotesk'] text-3xl font-bold text-[#1e4d3a]">
+                  {isRTL ? "تعرف على العملاقة" : lang === "FR" ? "Rencontrez les Géants" : "Meet the Giants"}
+                </h2>
               </div>
-              <div
-                style={{
-                  position: "relative", borderRadius: "12px", overflow: "hidden", minHeight: "260px",
-                  backgroundImage: "url('/assets/oulamauna-manuscript-collage.jpg')", backgroundSize: "cover",
-                  backgroundPosition: "center", backgroundColor: "#173f33",
-                }}
-              >
-                {/* TODO: swap the path above for a real manuscript / calligraphy photograph */}
-                <div style={{ position: "absolute", inset: 0, background: "linear-gradient(0deg, rgba(11,67,53,0.65) 0%, transparent 50%)" }} />
-                <div style={{ position: "absolute", left: "20px", bottom: "20px", right: "20px" }}>
-                  <p style={{ ...SERIF, fontSize: "18px", fontStyle: "italic", color: "#fff", lineHeight: 1.5, margin: "0 0 6px 0" }}>
-                    {t.collageQuote}
-                  </p>
-                  <p style={{ ...MONO, fontSize: "10px", color: "rgba(255,255,255,0.7)", margin: 0 }}>{t.collageQuoteAuthor}</p>
-                </div>
+              <Link to="/scholars" className="font-['JetBrains_Mono'] text-[12px] font-semibold text-[#1e4d3a] hover:text-[#C9A84C] flex items-center gap-1.5 transition-colors">
+                {t.viewAll}
+                <span className="material-symbols-outlined text-[16px]">{isRTL ? "arrow_back" : "arrow_forward"}</span>
+              </Link>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+              {featuredScholars.map((scholar, index) => (
+                <FadeIn key={scholar.version_id} delay={100 + index * 100}>
+                  <Link
+                    to={`/scholars/${scholar.version_id}`}
+                    className="group block bg-[#F5F3EC] rounded-2xl overflow-hidden border border-[#1e4d3a]/10 hover:shadow-xl hover:-translate-y-1 transition-all duration-300"
+                  >
+                    <div className="relative h-64 bg-[#e5d5a8]">
+                      <img src={scholar.image_url} alt={scholar.canonical_name} className="w-full h-full object-cover" />
+                      <div className="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-[#1e4d3a]/90 to-transparent">
+                        <span className="font-['JetBrains_Mono'] text-[10px] text-[#C9A84C] tracking-widest uppercase">
+                          {scholar.region_name}
+                        </span>
+                      </div>
+                    </div>
+                    <div className="p-6">
+                      <h3 className="font-['Hanken_Grotesk'] text-xl font-bold text-[#1e4d3a] mb-2">{scholar.canonical_name}</h3>
+                      <p className="font-['JetBrains_Mono'] text-[11px] text-[#C9A84C] font-semibold mb-3">
+                        {scholar.century_gregorian_start}-{scholar.century_gregorian_end} • {scholar.discipline_name}
+                      </p>
+                      <p className="font-['Inter'] text-sm text-[#1e4d3a]/80 leading-relaxed">{scholar.biography}</p>
+                    </div>
+                  </Link>
+                </FadeIn>
+              ))}
+            </div>
+          </section>
+        </FadeIn>
+
+        {/* 4. Recently Added */}
+        <FadeIn>
+          <section className="py-20 px-[20px] md:px-[64px] bg-[#F5F3EC] border-y-2 border-[#1e4d3a]/10">
+            <div className="max-w-[1280px] mx-auto">
+              <div className="flex justify-between items-center mb-12">
+                <h2 className="font-['Hanken_Grotesk'] text-2xl md:text-3xl font-bold text-[#1e4d3a]">
+                  {t.recentLabel}
+                </h2>
+                <Link to="/scholars" className="font-['JetBrains_Mono'] text-[12px] font-semibold text-[#1e4d3a] hover:text-[#C9A84C] flex items-center gap-1.5 transition-colors">
+                  {t.viewAll}
+                  <span className="material-symbols-outlined text-[16px]">{isRTL ? "arrow_back" : "arrow_forward"}</span>
+                </Link>
+              </div>
+
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
+                {recentScholars.map((scholar, index) => (
+                  <FadeIn key={scholar.version_id} delay={100 + index * 100} className="group text-center">
+                    <Link to={`/scholars/${scholar.version_id}`}>
+                      <div className="w-28 h-28 md:w-32 md:h-32 mx-auto rounded-full overflow-hidden border-2 border-[#1e4d3a] mb-4 bg-[#fbf9f4]">
+                        <img src={scholar.image_url} alt={scholar.canonical_name} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
+                      </div>
+                      <h3 className="font-['Hanken_Grotesk'] text-base font-semibold text-[#1e4d3a] mb-1">{scholar.canonical_name}</h3>
+                      <p className="font-['JetBrains_Mono'] text-[10px] text-[#C9A84C] font-semibold mb-1">{scholar.century_gregorian_start}</p>
+                      <p className="font-['Inter'] text-xs text-[#1e4d3a]/60">{formatDate(scholar.created_at)}</p>
+                    </Link>
+                  </FadeIn>
+                ))}
               </div>
             </div>
-          </div>
+          </section>
+        </FadeIn>
 
-          {/* Closing CTA band — bookends the dark hero */}
-          <div style={{
-            position: "relative", overflow: "hidden", borderRadius: "16px",
-            padding: "48px 40px", marginBottom: "64px",
-            backgroundColor: "#0b4335",
-            border: "1px solid rgba(201,168,76,0.25)",
-          }}>
-            <p style={{ ...SERIF, fontSize: "26px", fontWeight: 700, color: "#fff", margin: "0 0 12px 0" }}>
-              {t.ctaTitle}
+        {/* 5. Why Oulamauna */}
+        <FadeIn>
+          <section className="py-20 px-[20px] md:px-[64px] max-w-[1280px] mx-auto">
+            <div className="grid grid-cols-1 lg:grid-cols-[1fr_1.3fr_auto] gap-12 lg:gap-10 items-center">
+
+              <FadeIn delay={100} className={isRTL ? "text-right" : "text-left"}>
+                <p className="font-['JetBrains_Mono'] text-[10px] uppercase tracking-[0.15em] font-bold text-[#C9A84C] mb-4">
+                  {w.tagline}
+                </p>
+                <h2 className="font-['Hanken_Grotesk'] text-3xl md:text-[34px] leading-tight font-bold text-[#1e4d3a] mb-5">
+                  {w.titleLine1}
+                  <br />
+                  {w.titleLine2}
+                </h2>
+                <p className="font-['Inter'] text-[14px] leading-[1.7] text-[#1e4d3a]/70 mb-6">
+                  {w.description}
+                </p>
+                <ul className="flex flex-col gap-3 mb-8">
+                  {w.bullets.map((bullet, i) => (
+                    <li key={i} className={`flex items-center gap-2.5 font-['Inter'] text-[13px] text-[#1e4d3a]/80 ${isRTL ? "flex-row-reverse" : ""}`}>
+                      <span className="material-symbols-outlined text-[16px] text-[#C9A84C] flex-shrink-0">check_circle</span>
+                      {bullet}
+                    </li>
+                  ))}
+                </ul>
+                <Link
+                  to="/about"
+                  className="inline-flex items-center gap-2 px-6 py-3 border-2 border-[#1e4d3a] rounded-lg text-[12px] font-bold tracking-[0.05em] font-['Hanken_Grotesk'] text-[#1e4d3a] hover:bg-[#1e4d3a] hover:text-[#fbf9f4] transition-all duration-300"
+                >
+                  {w.ctaButton}
+                  <span className="material-symbols-outlined text-[16px]">{isRTL ? "arrow_back" : "arrow_forward"}</span>
+                </Link>
+              </FadeIn>
+
+              <FadeIn delay={200} className="rounded-2xl overflow-hidden h-[360px] md:h-[420px] bg-[#F5F3EC]">
+                <img
+                  src="https://images.unsplash.com/photo-1457369804613-52c61a468e7d?w=800&h=1000&fit=crop"
+                  alt={w.titleLine1}
+                  className="w-full h-full object-cover"
+                />
+              </FadeIn>
+
+              <FadeIn delay={300} className="flex flex-col gap-7 lg:pl-4">
+                {archiveStats.map((stat, i) => (
+                  <div key={i} className={`flex items-center gap-4 group ${isRTL ? "flex-row-reverse" : ""}`}>
+                    <div className="w-11 h-11 flex-shrink-0 rounded-full border border-[#C9A84C]/50 flex items-center justify-center group-hover:border-[#C9A84C] group-hover:bg-[#f6efdc] transition-colors duration-300">
+                      <span
+                        className="material-symbols-outlined text-[18px] text-[#C9A84C]"
+                        style={{ fontVariationSettings: "'FILL' 0, 'wght' 200" }}
+                      >
+                        {stat.icon}
+                      </span>
+                    </div>
+                    <div className={isRTL ? "text-right" : "text-left"}>
+                      <div className="font-['Hanken_Grotesk'] text-2xl md:text-[26px] font-bold text-[#1e4d3a] leading-tight whitespace-nowrap">
+                        {stat.value}
+                      </div>
+                      <div className="font-['Inter'] text-[13px] text-[#1e4d3a]/60 whitespace-nowrap">
+                        {statLabel(stat)}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </FadeIn>
+            </div>
+          </section>
+        </FadeIn>
+
+        {/* 6. Featured Works & Manuscripts */}
+        <FadeIn>
+          <section id="works" className="scroll-mt-32 py-20 px-[20px] md:px-[64px] max-w-[1280px] mx-auto">
+            <h2 className="font-['Hanken_Grotesk'] text-3xl font-bold text-[#1e4d3a] text-center mb-12">
+              {t.worksLabel}
+            </h2>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              {featuredWorks.map((work, index) => (
+                <FadeIn key={work.work_id} delay={100 + index * 150}>
+                  <div className="bg-[#F5F3EC] rounded-2xl overflow-hidden border border-[#1e4d3a]/10 hover:shadow-lg transition-all duration-300">
+                    <img src={work.media_url} alt={work.title} className="w-full h-56 object-cover" />
+                    <div className="p-6">
+                      <span className="inline-block px-3 py-1 bg-[#e5d5a8]/30 border border-[#1e4d3a]/20 rounded text-[10px] font-['JetBrains_Mono'] font-bold text-[#1e4d3a] mb-3">
+                        {work.format}
+                      </span>
+                      <h3 className="font-['Hanken_Grotesk'] text-xl font-bold text-[#1e4d3a] mb-1">{work.title}</h3>
+                      <p className="font-['JetBrains_Mono'] text-[11px] text-[#C9A84C] font-semibold mb-3">{work.year}</p>
+                      <p className="font-['Inter'] text-sm text-[#1e4d3a]/80 leading-relaxed">{work.description}</p>
+                    </div>
+                  </div>
+                </FadeIn>
+              ))}
+            </div>
+          </section>
+        </FadeIn>
+
+        {/* 7. Eras Timeline */}
+        <FadeIn>
+          <section className="py-20 px-[20px] md:px-[64px] bg-[#fbf9f4]">
+            <div className="max-w-[1280px] mx-auto">
+              <h2 className="font-['Hanken_Grotesk'] text-3xl font-bold text-[#1e4d3a] text-center mb-12">
+                {t.erasLabel}
+              </h2>
+
+              <div className="flex flex-col gap-6">
+                {eras.map((era, index) => (
+                  <FadeIn key={era.name} delay={100 + index * 100}>
+                    <Link
+                      to={`/scholars?era=${era.name}`}
+                      className="group flex bg-white rounded-xl overflow-hidden border border-[#1e4d3a]/10 hover:shadow-lg hover:translate-x-1 transition-all duration-300"
+                    >
+                      <div className="w-48 flex-shrink-0 bg-[#F5F3EC] hidden md:block">
+                        <img src={era.image_url} alt={era.name} className="w-full h-full object-cover min-h-[150px]" />
+                      </div>
+                      <div className="flex-1 p-6 flex items-center justify-between">
+                        <div>
+                          <h3 className="font-['Hanken_Grotesk'] text-xl font-bold text-[#1e4d3a] mb-1">{era.name}</h3>
+                          <p className="font-['JetBrains_Mono'] text-xs text-[#C9A84C] font-semibold">{era.period}</p>
+                        </div>
+                        <div className="text-center px-6 py-4 bg-[#1e4d3a]/80 rounded-lg backdrop-blur-sm">
+                          <div className="font-['Hanken_Grotesk'] text-2xl font-bold text-[#e5d5a8]">{era.scholars_count}</div>
+                          <div className="font-['JetBrains_Mono'] text-[9px] text-[#fbf9f4]/80 tracking-wider mt-1">
+                            {isRTL ? "عالم" : lang === "FR" ? "SAVANTS" : "SCHOLARS"}
+                          </div>
+                        </div>
+                      </div>
+                    </Link>
+                  </FadeIn>
+                ))}
+              </div>
+            </div>
+          </section>
+        </FadeIn>
+
+        {/* 8. Disciplines Grid */}
+        <FadeIn>
+          <section id="disciplines" className="scroll-mt-32 py-20 px-[20px] md:px-[64px] max-w-[1280px] mx-auto">
+            <h2 className="font-['Hanken_Grotesk'] text-3xl font-bold text-[#1e4d3a] text-center mb-4">
+              {t.disciplinesLabel}
+            </h2>
+            <p className="font-['Inter'] text-[15px] text-[#1e4d3a]/60 text-center mb-12 max-w-2xl mx-auto">
+              {isRTL
+                ? "استكشف مجالات المعرفة التي شكّلت الحضارة الإسلامية عبر القرون"
+                : lang === "FR"
+                  ? "Explorez les domaines du savoir qui ont façonné la civilisation islamique à travers les siècles"
+                  : "Explore the fields of knowledge that shaped Islamic civilization across the centuries"}
             </p>
-            <p style={{ fontSize: "14px", color: "rgba(255,255,255,0.75)", lineHeight: 1.7, margin: "0 0 24px 0", maxWidth: "480px" }}>
-              {t.ctaBody}
-            </p>
-            <CtaButton to="/scholars" isRTL={isRTL}>{t.ctaButton}</CtaButton>
-          </div>
-        </div>
+
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+              {disciplines.map((disc, index) => (
+                <FadeIn key={disc.discipline_id} delay={50 + index * 50}>
+                  <Link
+                    to={`/scholars?discipline=${disc.name}`}
+                    className="group block p-6 bg-[#fcfaf5] rounded-[12px] border border-[#1e4d3a] shadow-[0px_4px_20px_rgba(30,77,58,0.08)] hover:shadow-[0px_6px_24px_rgba(30,77,58,0.12)] hover:-translate-y-1 transition-all duration-300"
+                    style={{ backgroundColor: '#fcfaf5' }}
+                  >
+                    <div className="w-7 h-7 rounded-[6px] bg-[#f6efdc] border border-[#1e4d3a] flex items-center justify-center mb-4 group-hover:bg-[#1e4d3a] group-hover:border-[#1e4d3a] transition-colors duration-300">
+                      <span
+                        className="material-symbols-outlined text-[16px] text-[#1e4d3a] group-hover:text-[#fcfaf5] transition-colors duration-300"
+                        style={{ fontVariationSettings: "'FILL' 0, 'wght' 400" }}
+                      >
+                        {disc.icon}
+                      </span>
+                    </div>
+
+                    <div className="font-['Hanken_Grotesk'] text-[15px] font-semibold text-[#1e4d3a] mb-2 group-hover:text-[#1e4d3a] transition-colors">
+                      {disc.name}
+                    </div>
+
+                    <div className="inline-flex items-baseline gap-1.5">
+                      <span className="font-['Hanken_Grotesk'] text-xl font-bold text-[#1e4d3a] group-hover:text-[#1e4d3a] transition-colors">
+                        {disc.count}
+                      </span>
+                      <span className="font-['Inter'] text-[11px] text-[#1e4d3a]/70 group-hover:text-[#1e4d3a] transition-colors">
+                        {isRTL ? "عالم" : lang === "FR" ? "savants" : "scholars"}
+                      </span>
+                    </div>
+                  </Link>
+                </FadeIn>
+              ))}
+            </div>
+          </section>
+        </FadeIn>
+
+        {/* 9. CTA Section */}
+        <FadeIn>
+          <section className="py-24 px-[20px] md:px-[64px] text-center bg-[#1e4d3a] relative overflow-hidden">
+            <div className="absolute -top-24 -right-24 w-72 h-72 rounded-full border-2 border-[#C9A84C] opacity-20" />
+            <div className="absolute -bottom-20 -left-20 w-64 h-64 rounded-full border-2 border-[#C9A84C] opacity-10" />
+
+            <div className="relative z-10 max-w-2xl mx-auto">
+              <h2 className="font-['Hanken_Grotesk'] text-3xl md:text-4xl font-bold text-[#fbf9f4] mb-4">
+                {t.ctaTitle}
+              </h2>
+              <p className="font-['Inter'] text-base text-[#fbf9f4]/80 mb-8 leading-relaxed">
+                {t.ctaText}
+              </p>
+              <Link
+                to="/register"
+                className="inline-flex items-center gap-2 px-10 py-4 bg-[#C9A84C] text-[#1e4d3a] border-2 border-[#C9A84C] rounded-lg text-xs font-bold tracking-[0.1em] font-['JetBrains_Mono'] uppercase hover:bg-[#fbf9f4] transition-colors duration-300"
+              >
+                {t.ctaButton}
+                <span className="material-symbols-outlined text-[18px]">{isRTL ? "arrow_back" : "arrow_forward"}</span>
+              </Link>
+            </div>
+          </section>
+        </FadeIn>
+
       </main>
     </div>
   );

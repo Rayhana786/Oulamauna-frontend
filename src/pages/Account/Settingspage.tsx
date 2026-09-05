@@ -8,20 +8,42 @@ import ProfileSidebar from "../../components/ProfileSidebar";
 /* ─────────────────────────────────────────────
    Oulamauna — Settings
    Personal preferences, privacy, security, account.
+   Styled with Dashboard.tsx / Profile.tsx / EditProfile.tsx palette
    Does NOT duplicate Edit Profile / Notifications / Dashboard.
 ───────────────────────────────────────────── */
 
-const MONO: React.CSSProperties = { fontFamily: "'JetBrains Mono', monospace" };
-const SERIF: React.CSSProperties = { fontFamily: "'Source Serif 4', serif" };
-const SANS: React.CSSProperties = { fontFamily: "'Source Sans 3', sans-serif" };
+// ─ FORUM.TSX / DASHBOARD.TSX COLOR PALETTE ─
+const colors = {
+  creamLight: "#fcfaf5",
+  creamMid: "#f6efdc",
+  creamDark: "#e5d5a8",
+  forestGreen: "#0b4335",
+  amber: "#b8860b",
+  red: "#8b2c2c",
+};
 
-const GREEN = "#0B4335";        // dark green (primary)
-const GREEN_HOVER = "#285B4B";  // deep green (hover / accent)
-const SOFT_GREEN = "#7DA89B";
-const GOLD = "#C9A84C";
-const BORDER = "rgba(192,201,195,0.4)";
-const MUTED = "#707974";
-const RED = "#b3261e";
+const GREEN = colors.forestGreen;
+const GOLD = colors.amber;
+const BG = colors.creamLight;
+const CARD_BG = colors.creamLight;
+const BORDER = colors.creamMid;
+const MUTED = "rgba(11, 67, 53, 0.6)";
+const RED = colors.red;
+
+const MONO: React.CSSProperties = { fontFamily: "'JetBrains Mono', monospace" };
+const SERIF: React.CSSProperties = { fontFamily: "'Hanken Grotesk', sans-serif" };
+const SANS: React.CSSProperties = { fontFamily: "'Inter', sans-serif" };
+
+/* ── RESPONSIVE: shared mobile-detection hook (same pattern as Dashboard / Profile) ───── */
+function useIsMobile() {
+  const [isMobile, setIsMobile] = useState(() => (typeof window !== "undefined" ? window.innerWidth < 768 : false));
+  useEffect(() => {
+    const handler = () => setIsMobile(window.innerWidth < 768);
+    window.addEventListener("resize", handler);
+    return () => window.removeEventListener("resize", handler);
+  }, []);
+  return isMobile;
+}
 
 /* ── Primitives ─────────────────────────────────────────── */
 
@@ -33,9 +55,22 @@ function Icon({ name, size = 18 }: { name: string; size?: number }) {
   );
 }
 
-function Card({ children, style }: { children: React.ReactNode; style?: React.CSSProperties }) {
+function HoverCard({ children, style }: { children: React.ReactNode; style?: React.CSSProperties }) {
+  const [hov, setHov] = useState(false);
   return (
-    <div style={{ border: `1.5px solid ${BORDER}`, borderRadius: "14px", backgroundColor: "#fff", boxShadow: "0 1px 3px rgba(0,0,0,0.04)", ...style }}>
+    <div
+      onMouseEnter={() => setHov(true)}
+      onMouseLeave={() => setHov(false)}
+      style={{
+        border: `1px solid rgba(11, 67, 53, 0.1)`,
+        boxShadow: hov ? "0px 6px 24px rgba(11, 67, 53, 0.12)" : "0px 4px 20px rgba(11, 67, 53, 0.08)",
+        transform: hov ? "translateY(-2px)" : "translateY(0)",
+        transition: "all 0.3s ease",
+        backgroundColor: CARD_BG,
+        borderRadius: "12px",
+        ...style,
+      }}
+    >
       {children}
     </div>
   );
@@ -52,30 +87,40 @@ function SavedBadge({ show }: { show: boolean }) {
   );
 }
 
-function SectionHeader({ icon, title, saved, accent }: { icon: string; title: string; saved?: boolean; accent?: string }) {
+function SectionHeader({ icon, title, saved, accent, isMobile }: { icon: string; title: string; saved?: boolean; accent?: string; isMobile: boolean }) {
   return (
-    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "20px 24px 16px", borderBottom: `1.5px solid ${BORDER}` }}>
+    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: isMobile ? "16px 18px 14px" : "20px 24px 16px", borderBottom: `1.5px solid ${BORDER}` }}>
       <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
         {accent && <span style={{ width: "4px", height: "18px", borderRadius: "2px", backgroundColor: accent }} />}
         <Icon name={icon} size={18} />
-        <h2 style={{ ...SERIF, fontSize: "16px", fontWeight: 700, color: GREEN, margin: 0 }}>{title}</h2>
+        <h2 style={{ ...SERIF, fontSize: isMobile ? "15px" : "16px", fontWeight: 700, color: GREEN, margin: 0 }}>{title}</h2>
       </div>
       {saved !== undefined && <SavedBadge show={saved} />}
     </div>
   );
 }
 
-function Row({ label, desc, control, isRTL }: { label: string; desc?: string; control: React.ReactNode; isRTL: boolean }) {
+function Row({ label, desc, control, isRTL, isMobile }: { label: string; desc?: string; control: React.ReactNode; isRTL: boolean; isMobile: boolean }) {
   return (
     <div style={{
-      display: "flex", alignItems: "center", justifyContent: "space-between", gap: "16px",
-      padding: "16px 24px", borderBottom: "1px solid #f0f1ee", flexWrap: "wrap",
+      display: "flex",
+      alignItems: isMobile ? "flex-start" : "center",
+      justifyContent: "space-between",
+      gap: isMobile ? "10px" : "16px",
+      padding: isMobile ? "14px 18px" : "16px 24px",
+      borderBottom: `1px solid rgba(11, 67, 53, 0.06)`,
+      flexWrap: isMobile ? "nowrap" : "wrap",
+      flexDirection: isMobile ? "column" : "row",
     }}>
-      <div style={{ minWidth: "200px" }}>
-        <p style={{ fontSize: "13.5px", color: "#191c1b", margin: 0, fontWeight: 600 }}>{label}</p>
-        {desc && <p style={{ fontSize: "12px", color: MUTED, margin: "3px 0 0" }}>{desc}</p>}
+      <div style={{ minWidth: isMobile ? "auto" : "200px" }}>
+        <p style={{ ...SANS, fontSize: isMobile ? "13px" : "13.5px", color: GREEN, margin: 0, fontWeight: 600 }}>{label}</p>
+        {desc && <p style={{ ...SANS, fontSize: "12px", color: MUTED, margin: "3px 0 0" }}>{desc}</p>}
       </div>
-      <div style={{ marginInlineStart: isRTL ? 0 : "auto", marginInlineEnd: isRTL ? "auto" : 0 }}>{control}</div>
+      <div style={{
+        marginInlineStart: isMobile ? 0 : (isRTL ? 0 : "auto"),
+        marginInlineEnd: isMobile ? 0 : (isRTL ? "auto" : 0),
+        width: isMobile ? "100%" : "auto",
+      }}>{control}</div>
     </div>
   );
 }
@@ -90,12 +135,12 @@ function Toggle({ checked, onChange, isRTL }: { checked: boolean; onChange: (v: 
       onClick={() => onChange(!checked)}
       style={{
         width: "40px", height: "22px", borderRadius: "12px", border: "none", position: "relative",
-        backgroundColor: checked ? GREEN : "#d7dcd9", cursor: "pointer", transition: "background 0.2s", flexShrink: 0,
+        backgroundColor: checked ? GREEN : "rgba(11, 67, 53, 0.15)", cursor: "pointer", transition: "background 0.2s", flexShrink: 0,
       }}
     >
       <span style={{
         position: "absolute", top: "3px", insetInlineStart: checked ? onX : offX,
-        width: "16px", height: "16px", borderRadius: "50%", backgroundColor: "#fff",
+        width: "16px", height: "16px", borderRadius: "50%", backgroundColor: BG,
         transition: "inset-inline-start 0.2s", boxShadow: "0 1px 2px rgba(0,0,0,0.2)",
       }} />
     </button>
@@ -107,9 +152,12 @@ function Select({ value, onChange, options }: { value: string; onChange: (v: str
     <select
       value={value}
       onChange={(e) => onChange(e.target.value)}
+      className="op-select"
       style={{
         ...MONO, fontSize: "11px", fontWeight: 700, letterSpacing: "0.04em", color: GREEN,
-        border: `1.5px solid ${BORDER}`, borderRadius: "6px", padding: "7px 12px", backgroundColor: "#fff", cursor: "pointer",
+        border: `1.5px solid ${BORDER}`, borderRadius: "6px", padding: "7px 12px",
+        backgroundColor: "rgba(11, 67, 53, 0.04)", cursor: "pointer", outline: "none",
+        width: "100%", boxSizing: "border-box",
       }}
     >
       {options.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
@@ -121,7 +169,7 @@ function RadioGroup({ value, onChange, options }: { value: string; onChange: (v:
   return (
     <div style={{ display: "flex", gap: "16px", flexWrap: "wrap" }}>
       {options.map((o) => (
-        <label key={o.value} style={{ display: "flex", alignItems: "center", gap: "6px", cursor: "pointer", fontSize: "12.5px", color: "#191c1b" }}>
+        <label key={o.value} style={{ display: "flex", alignItems: "center", gap: "6px", cursor: "pointer", ...SANS, fontSize: "12.5px", color: GREEN }}>
           <input type="radio" name="radiogroup" checked={value === o.value} onChange={() => onChange(o.value)} style={{ accentColor: GREEN, width: "14px", height: "14px", cursor: "pointer" }} />
           {o.label}
         </label>
@@ -130,36 +178,50 @@ function RadioGroup({ value, onChange, options }: { value: string; onChange: (v:
   );
 }
 
-function OutlineBtn({ children, onClick, danger = false, style }: { children: React.ReactNode; onClick?: () => void; danger?: boolean; style?: React.CSSProperties }) {
+/* ── Shared button, same hover pattern as Dashboard/Profile HoverBtn ───── */
+function HoverBtn({
+  children,
+  onClick,
+  variant = "outline",
+  danger = false,
+  disabled = false,
+  style,
+}: {
+  children: React.ReactNode;
+  onClick?: () => void;
+  variant?: "outline" | "primary";
+  danger?: boolean;
+  disabled?: boolean;
+  style?: React.CSSProperties;
+}) {
   const [hov, setHov] = useState(false);
-  const color = danger ? RED : GREEN;
+  const baseColor = danger ? RED : GREEN;
+
+  let bg = "transparent";
+  let color = baseColor;
+  let border = `2px solid ${baseColor}`;
+
+  if (variant === "primary") {
+    bg = disabled ? "rgba(11, 67, 53, 0.25)" : baseColor;
+    color = BG;
+    if (hov && !disabled) { bg = BG; color = baseColor; }
+  } else {
+    if (hov && !disabled) { bg = baseColor; color = BG; }
+  }
+
   return (
     <button
-      onClick={onClick}
+      onClick={disabled ? undefined : onClick}
       onMouseEnter={() => setHov(true)}
       onMouseLeave={() => setHov(false)}
-      style={{
-        ...MONO, fontSize: "10px", fontWeight: 700, letterSpacing: "0.08em", padding: "8px 16px",
-        border: `1.5px solid ${color}`, borderRadius: "6px",
-        backgroundColor: hov ? color : "transparent", color: hov ? "#fff" : color,
-        cursor: "pointer", transition: "all 0.15s", ...style,
-      }}
-    >
-      {children}
-    </button>
-  );
-}
-
-function SolidBtn({ children, onClick, danger = false, disabled = false, style }: { children: React.ReactNode; onClick?: () => void; danger?: boolean; disabled?: boolean; style?: React.CSSProperties }) {
-  const color = danger ? RED : GREEN;
-  return (
-    <button
-      onClick={onClick}
       disabled={disabled}
       style={{
-        ...MONO, fontSize: "10px", fontWeight: 700, letterSpacing: "0.08em", padding: "9px 18px",
-        border: "none", borderRadius: "6px", backgroundColor: disabled ? "#c7cdca" : color, color: "#fff",
-        cursor: disabled ? "not-allowed" : "pointer", transition: "background 0.15s", ...style,
+        display: "inline-flex", alignItems: "center", justifyContent: "center", gap: "6px",
+        padding: "8px 16px", border, borderRadius: "8px", backgroundColor: bg, color,
+        ...MONO, fontSize: "11px", fontWeight: 700, letterSpacing: "0.05em",
+        cursor: disabled ? "not-allowed" : "pointer", opacity: disabled ? 0.7 : 1,
+        transition: "all 0.3s",
+        ...style,
       }}
     >
       {children}
@@ -173,9 +235,19 @@ function Modal({ open, onClose, children, width = "420px" }: { open: boolean; on
   return (
     <div
       onClick={onClose}
-      style={{ position: "fixed", inset: 0, backgroundColor: "rgba(11,20,17,0.45)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 100, padding: "20px" }}
+      style={{
+        position: "fixed", inset: 0, backgroundColor: "rgba(11, 67, 53, 0.6)",
+        backdropFilter: "blur(4px)",
+        display: "flex", alignItems: "center", justifyContent: "center", zIndex: 200, padding: "20px",
+      }}
     >
-      <div onClick={(e) => e.stopPropagation()} style={{ backgroundColor: "#fff", borderRadius: "14px", width, maxWidth: "100%", padding: "26px", boxShadow: "0 12px 40px rgba(0,0,0,0.2)" }}>
+      <div
+        onClick={(e) => e.stopPropagation()}
+        style={{
+          backgroundColor: BG, borderRadius: "14px", width, maxWidth: "100%", padding: "26px",
+          boxShadow: "0 25px 80px rgba(0,0,0,0.15)", border: `1px solid ${BORDER}`,
+        }}
+      >
         {children}
       </div>
     </div>
@@ -193,7 +265,8 @@ function ChangePasswordModal({ open, onClose, t }: { open: boolean; onClose: () 
 
   const inputStyle: React.CSSProperties = {
     width: "100%", padding: "10px 12px", borderRadius: "8px", border: `1.5px solid ${BORDER}`,
-    fontSize: "13px", marginTop: "4px", fontFamily: "inherit", boxSizing: "border-box",
+    fontSize: "13px", marginTop: "4px", ...SANS, color: GREEN, boxSizing: "border-box",
+    backgroundColor: "rgba(11, 67, 53, 0.04)", outline: "none",
   };
 
   const submit = () => {
@@ -208,9 +281,9 @@ function ChangePasswordModal({ open, onClose, t }: { open: boolean; onClose: () 
 
   return (
     <Modal open={open} onClose={onClose}>
-      <h3 style={{ ...SERIF, fontSize: "17px", color: GREEN, margin: "0 0 16px" }}>{t("settings.security.changePassword")}</h3>
+      <h3 style={{ ...SERIF, fontSize: "17px", fontWeight: 700, color: GREEN, margin: "0 0 16px" }}>{t("settings.security.changePassword")}</h3>
       {done ? (
-        <p style={{ fontSize: "13px", color: GREEN, display: "flex", alignItems: "center", gap: "6px" }}>
+        <p style={{ ...SANS, fontSize: "13px", color: GREEN, display: "flex", alignItems: "center", gap: "6px" }}>
           <Icon name="check_circle" size={16} /> {t("settings.security.pwSuccess")}
         </p>
       ) : (
@@ -224,10 +297,10 @@ function ChangePasswordModal({ open, onClose, t }: { open: boolean; onClose: () 
           <label style={{ fontSize: "11px", ...MONO, color: MUTED, display: "block", marginTop: "12px" }}>{t("settings.security.pwConfirm")}
             <input type="password" style={inputStyle} value={form.confirm} onChange={(e) => setForm({ ...form, confirm: e.target.value })} />
           </label>
-          {error && <p style={{ color: RED, fontSize: "12px", marginTop: "10px" }}>{error}</p>}
+          {error && <p style={{ ...SANS, color: RED, fontSize: "12px", marginTop: "10px" }}>{error}</p>}
           <div style={{ display: "flex", gap: "10px", justifyContent: "flex-end", marginTop: "20px" }}>
-            <OutlineBtn onClick={onClose}>{t("settings.common.cancel")}</OutlineBtn>
-            <SolidBtn onClick={submit} disabled={saving}>{saving ? t("settings.common.saving") : t("settings.common.save")}</SolidBtn>
+            <HoverBtn onClick={onClose}>{t("settings.common.cancel")}</HoverBtn>
+            <HoverBtn variant="primary" onClick={submit} disabled={saving}>{saving ? t("settings.common.saving") : t("settings.common.save")}</HoverBtn>
           </div>
         </>
       )}
@@ -241,11 +314,11 @@ function ConfirmModal({ open, onClose, onConfirm, title, message, confirmLabel, 
 }) {
   return (
     <Modal open={open} onClose={onClose}>
-      <h3 style={{ ...SERIF, fontSize: "17px", color: danger ? RED : GREEN, margin: "0 0 10px" }}>{title}</h3>
-      <p style={{ fontSize: "13px", color: MUTED, lineHeight: 1.6, margin: "0 0 20px" }}>{message}</p>
+      <h3 style={{ ...SERIF, fontSize: "17px", fontWeight: 700, color: danger ? RED : GREEN, margin: "0 0 10px" }}>{title}</h3>
+      <p style={{ ...SANS, fontSize: "13px", color: MUTED, lineHeight: 1.6, margin: "0 0 20px" }}>{message}</p>
       <div style={{ display: "flex", gap: "10px", justifyContent: "flex-end" }}>
-        <OutlineBtn onClick={onClose}>Cancel</OutlineBtn>
-        <SolidBtn danger={danger} onClick={onConfirm}>{confirmLabel}</SolidBtn>
+        <HoverBtn onClick={onClose}>Cancel</HoverBtn>
+        <HoverBtn variant="primary" danger={danger} onClick={onConfirm}>{confirmLabel}</HoverBtn>
       </div>
     </Modal>
   );
@@ -261,23 +334,27 @@ function DeleteAccountModal({ open, onClose, t }: { open: boolean; onClose: () =
     <Modal open={open} onClose={onClose}>
       <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "10px" }}>
         <Icon name="warning" size={18} />
-        <h3 style={{ ...SERIF, fontSize: "17px", color: RED, margin: 0 }}>{t("settings.account.deleteTitle")}</h3>
+        <h3 style={{ ...SERIF, fontSize: "17px", fontWeight: 700, color: RED, margin: 0 }}>{t("settings.account.deleteTitle")}</h3>
       </div>
-      <p style={{ fontSize: "13px", color: MUTED, lineHeight: 1.6, margin: "0 0 16px" }}>{t("settings.account.deleteWarning")}</p>
+      <p style={{ ...SANS, fontSize: "13px", color: MUTED, lineHeight: 1.6, margin: "0 0 16px" }}>{t("settings.account.deleteWarning")}</p>
       <label style={{ fontSize: "11px", ...MONO, color: MUTED, display: "block" }}>
         {t("settings.account.deleteTypeConfirm")}
         <input
           value={typed}
           onChange={(e) => setTyped(e.target.value)}
           placeholder="DELETE"
-          style={{ width: "100%", padding: "10px 12px", borderRadius: "8px", border: `1.5px solid ${BORDER}`, fontSize: "13px", marginTop: "6px", boxSizing: "border-box", fontFamily: "inherit" }}
+          style={{
+            width: "100%", padding: "10px 12px", borderRadius: "8px", border: `1.5px solid ${BORDER}`,
+            fontSize: "13px", marginTop: "6px", boxSizing: "border-box", ...SANS, color: GREEN,
+            backgroundColor: "rgba(11, 67, 53, 0.04)", outline: "none",
+          }}
         />
       </label>
       <div style={{ display: "flex", gap: "10px", justifyContent: "flex-end", marginTop: "20px" }}>
-        <OutlineBtn onClick={onClose}>{t("settings.common.cancel")}</OutlineBtn>
-        <SolidBtn danger disabled={!ready} onClick={() => { /* TODO: real delete API call */ onClose(); }}>
+        <HoverBtn onClick={onClose}>{t("settings.common.cancel")}</HoverBtn>
+        <HoverBtn variant="primary" danger disabled={!ready} onClick={() => { /* TODO: real delete API call */ onClose(); }}>
           {t("settings.account.deleteConfirm")}
-        </SolidBtn>
+        </HoverBtn>
       </div>
     </Modal>
   );
@@ -290,6 +367,7 @@ export default function SettingsPage() {
   const { lang, t, setLang } = useLang() as any; // expects setLang / changeLanguage on the real context — see note below
   const { user } = useAuth();
   const isRTL = lang === "AR";
+  const isMobile = useIsMobile();
 
   // Same test override pattern used on the Dashboard, for previewing the contributor-only block.
   const forceContributor = new URLSearchParams(window.location.search).get("asContributor");
@@ -355,76 +433,91 @@ export default function SettingsPage() {
     markSaved("language");
   };
 
-  const cardStyle: React.CSSProperties = {};
-
   return (
     <div
       dir={isRTL ? "rtl" : "ltr"}
-      style={{ ...SANS, backgroundColor: "#faf9f6", minHeight: "100vh", color: "#191c1b" }}
+      style={{
+        ...SANS,
+        backgroundColor: BG,
+        backgroundImage: "radial-gradient(circle at 50% 0%, rgba(184, 134, 11, 0.06) 0%, transparent 60%)",
+        minHeight: "100vh",
+        color: GREEN,
+      }}
     >
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Source+Serif+4:ital,opsz,wght@0,8..60,200..900;1,8..60,200..900&family=Source+Sans+3:ital,wght@0,200..900;1,200..900&family=JetBrains+Mono:ital,wght@0,100..800;1,100..800&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;700&display=swap');
         @import url('https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=swap');
         .material-symbols-outlined { font-variation-settings: 'FILL' 0,'wght' 400,'GRAD' 0,'opsz' 24; font-family: 'Material Symbols Outlined'; display: inline-block; vertical-align: middle; }
+        .op-select:focus { border-color: ${GREEN} !important; box-shadow: inset 0 0 0 1px rgba(11,67,53,0.12); }
       `}</style>
 
-      <div style={{ maxWidth: "1000px", margin: "0 auto", padding: "24px 32px 60px", display: "flex", gap: "32px" }}>
-        <ProfileSidebar role={isContributor ? "contributor" : "user"} active="settings" />
+      {/* Extra top/bottom breathing room under the navbar and above the footer,
+          same pattern as Dashboard / Profile / Edit Profile */}
+      <div style={{
+        maxWidth: "1000px", margin: "0 auto",
+        padding: isMobile ? "32px 16px 48px" : "64px 32px 80px",
+        display: "flex", flexDirection: isMobile ? "column" : "row",
+        gap: isMobile ? "16px" : "32px",
+      }}>
+        {!isMobile && <ProfileSidebar role={isContributor ? "contributor" : "user"} active="settings" />}
 
-        <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: "20px" }}>
+        <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: isMobile ? "14px" : "20px" }}>
           <div>
-            <h1 style={{ ...SERIF, fontSize: "24px", fontWeight: 700, color: GREEN, margin: "0 0 4px" }}>{t("settings.title")}</h1>
-            <p style={{ fontSize: "13px", color: MUTED, margin: 0 }}>{t("settings.subtitle")}</p>
+            {isMobile && (
+              <p style={{ ...MONO, fontSize: "10px", textTransform: "uppercase", letterSpacing: "0.08em", opacity: 0.7, margin: "0 0 6px" }}>SETTINGS</p>
+            )}
+            <h1 style={{ ...SERIF, fontSize: isMobile ? "20px" : "24px", fontWeight: 700, color: GREEN, margin: "0 0 4px" }}>{t("settings.title")}</h1>
+            <p style={{ ...SANS, fontSize: isMobile ? "12px" : "13px", color: MUTED, margin: 0 }}>{t("settings.subtitle")}</p>
           </div>
 
           {/* ── Language & Interface ─────────────────────── */}
-          <Card>
-            <SectionHeader icon="translate" title={t("settings.language.title")} saved={savedSection === "language"} />
-            <Row isRTL={isRTL} label={t("settings.language.language")} control={
+          <HoverCard>
+            <SectionHeader icon="translate" title={t("settings.language.title")} saved={savedSection === "language"} isMobile={isMobile} />
+            <Row isRTL={isRTL} isMobile={isMobile} label={t("settings.language.language")} control={
               <Select value={lang ?? "EN"} onChange={handleLangChange} options={langOptions} />
             } />
             {/* Appearance / dark mode intentionally omitted — not implemented yet.
                 Add back here once real theme support exists:
                 <Row label="Appearance" control={<Select ... options={[System, Light, Dark]} />} /> */}
-          </Card>
+          </HoverCard>
 
           {/* ── Notification Preferences ─────────────────── */}
-          <Card>
-            <SectionHeader icon="notifications_active" title={t("settings.notif.title")} saved={savedSection === "notif"} />
-            <Row isRTL={isRTL} label={t("settings.notif.email")} desc={t("settings.notif.emailDesc")} control={
+          <HoverCard>
+            <SectionHeader icon="notifications_active" title={t("settings.notif.title")} saved={savedSection === "notif"} isMobile={isMobile} />
+            <Row isRTL={isRTL} isMobile={isMobile} label={t("settings.notif.email")} desc={t("settings.notif.emailDesc")} control={
               <Toggle isRTL={isRTL} checked={prefs.emailNotif} onChange={(v) => set("notif", { emailNotif: v })} />
             } />
-            <Row isRTL={isRTL} label={t("settings.notif.commentReply")} desc={t("settings.notif.commentReplyDesc")} control={
+            <Row isRTL={isRTL} isMobile={isMobile} label={t("settings.notif.commentReply")} desc={t("settings.notif.commentReplyDesc")} control={
               <Toggle isRTL={isRTL} checked={prefs.commentReply} onChange={(v) => set("notif", { commentReply: v })} />
             } />
-            <Row isRTL={isRTL} label={t("settings.notif.discussion")} desc={t("settings.notif.discussionDesc")} control={
+            <Row isRTL={isRTL} isMobile={isMobile} label={t("settings.notif.discussion")} desc={t("settings.notif.discussionDesc")} control={
               <Toggle isRTL={isRTL} checked={prefs.discussion} onChange={(v) => set("notif", { discussion: v })} />
             } />
-            <Row isRTL={isRTL} label={t("settings.notif.system")} desc={t("settings.notif.systemDesc")} control={
+            <Row isRTL={isRTL} isMobile={isMobile} label={t("settings.notif.system")} desc={t("settings.notif.systemDesc")} control={
               <Toggle isRTL={isRTL} checked={prefs.system} onChange={(v) => set("notif", { system: v })} />
             } />
 
             {isContributor && (
-              <div style={{ backgroundColor: "rgba(11,67,53,0.03)" }}>
-                <div style={{ padding: "14px 24px 6px", display: "flex", alignItems: "center", gap: "8px" }}>
+              <div style={{ backgroundColor: "rgba(11, 67, 53, 0.03)" }}>
+                <div style={{ padding: isMobile ? "12px 18px 6px" : "14px 24px 6px", display: "flex", alignItems: "center", gap: "8px" }}>
                   <span style={{ width: "3px", height: "14px", borderRadius: "2px", backgroundColor: GOLD }} />
                   <p style={{ ...MONO, fontSize: "10px", fontWeight: 700, letterSpacing: "0.08em", color: GREEN, margin: 0 }}>
                     {t("settings.notif.contributorTitle")}
                   </p>
                 </div>
-                <Row isRTL={isRTL} label={t("settings.notif.contribApproved")} control={<Toggle isRTL={isRTL} checked={prefs.contribApproved} onChange={(v) => set("notif", { contribApproved: v })} />} />
-                <Row isRTL={isRTL} label={t("settings.notif.contribRejected")} control={<Toggle isRTL={isRTL} checked={prefs.contribRejected} onChange={(v) => set("notif", { contribRejected: v })} />} />
-                <Row isRTL={isRTL} label={t("settings.notif.contribChanges")} control={<Toggle isRTL={isRTL} checked={prefs.contribChanges} onChange={(v) => set("notif", { contribChanges: v })} />} />
-                <Row isRTL={isRTL} label={t("settings.notif.contribTranslation")} control={<Toggle isRTL={isRTL} checked={prefs.contribTranslation} onChange={(v) => set("notif", { contribTranslation: v })} />} />
-                <Row isRTL={isRTL} label={t("settings.notif.contribStatus")} control={<Toggle isRTL={isRTL} checked={prefs.contribStatus} onChange={(v) => set("notif", { contribStatus: v })} />} />
+                <Row isRTL={isRTL} isMobile={isMobile} label={t("settings.notif.contribApproved")} control={<Toggle isRTL={isRTL} checked={prefs.contribApproved} onChange={(v) => set("notif", { contribApproved: v })} />} />
+                <Row isRTL={isRTL} isMobile={isMobile} label={t("settings.notif.contribRejected")} control={<Toggle isRTL={isRTL} checked={prefs.contribRejected} onChange={(v) => set("notif", { contribRejected: v })} />} />
+                <Row isRTL={isRTL} isMobile={isMobile} label={t("settings.notif.contribChanges")} control={<Toggle isRTL={isRTL} checked={prefs.contribChanges} onChange={(v) => set("notif", { contribChanges: v })} />} />
+                <Row isRTL={isRTL} isMobile={isMobile} label={t("settings.notif.contribTranslation")} control={<Toggle isRTL={isRTL} checked={prefs.contribTranslation} onChange={(v) => set("notif", { contribTranslation: v })} />} />
+                <Row isRTL={isRTL} isMobile={isMobile} label={t("settings.notif.contribStatus")} control={<Toggle isRTL={isRTL} checked={prefs.contribStatus} onChange={(v) => set("notif", { contribStatus: v })} />} />
               </div>
             )}
-          </Card>
+          </HoverCard>
 
           {/* ── Privacy ───────────────────────────────────── */}
-          <Card>
-            <SectionHeader icon="shield" title={t("settings.privacy.title")} saved={savedSection === "privacy"} />
-            <Row isRTL={isRTL} label={t("settings.privacy.visibility")} control={
+          <HoverCard>
+            <SectionHeader icon="shield" title={t("settings.privacy.title")} saved={savedSection === "privacy"} isMobile={isMobile} />
+            <Row isRTL={isRTL} isMobile={isMobile} label={t("settings.privacy.visibility")} control={
               <RadioGroup
                 value={prefs.profileVisibility}
                 onChange={(v) => set("privacy", { profileVisibility: v })}
@@ -434,28 +527,28 @@ export default function SettingsPage() {
                 ]}
               />
             } />
-            <Row isRTL={isRTL} label={t("settings.privacy.showEmail")} desc={t("settings.privacy.showEmailDesc")} control={
+            <Row isRTL={isRTL} isMobile={isMobile} label={t("settings.privacy.showEmail")} desc={t("settings.privacy.showEmailDesc")} control={
               <Toggle isRTL={isRTL} checked={prefs.showEmail} onChange={(v) => set("privacy", { showEmail: v })} />
             } />
-            <Row isRTL={isRTL} label={t("settings.privacy.showActivity")} control={
+            <Row isRTL={isRTL} isMobile={isMobile} label={t("settings.privacy.showActivity")} control={
               <Toggle isRTL={isRTL} checked={prefs.showActivity} onChange={(v) => set("privacy", { showActivity: v })} />
             } />
-            <Row isRTL={isRTL} label={t("settings.privacy.showContributions")} desc={isContributor ? t("settings.privacy.showContributionsDesc") : undefined} control={
+            <Row isRTL={isRTL} isMobile={isMobile} label={t("settings.privacy.showContributions")} desc={isContributor ? t("settings.privacy.showContributionsDesc") : undefined} control={
               <Toggle isRTL={isRTL} checked={prefs.showContributions} onChange={(v) => set("privacy", { showContributions: v })} />
             } />
-            <p style={{ fontSize: "11px", color: MUTED, fontStyle: "italic", margin: 0, padding: "12px 24px 18px" }}>
+            <p style={{ ...SANS, fontSize: "11px", color: MUTED, fontStyle: "italic", margin: 0, padding: isMobile ? "12px 18px 16px" : "12px 24px 18px" }}>
               {t("settings.privacy.adminNote")}
             </p>
-          </Card>
+          </HoverCard>
 
           {/* ── Security ──────────────────────────────────── */}
-          <Card>
-            <SectionHeader icon="lock" title={t("settings.security.title")} />
-            <Row isRTL={isRTL} label={t("settings.security.password")} control={
-              <OutlineBtn onClick={() => setPwModalOpen(true)}>{t("settings.security.changePassword")}</OutlineBtn>
+          <HoverCard>
+            <SectionHeader icon="lock" title={t("settings.security.title")} isMobile={isMobile} />
+            <Row isRTL={isRTL} isMobile={isMobile} label={t("settings.security.password")} control={
+              <HoverBtn onClick={() => setPwModalOpen(true)} style={isMobile ? { width: "100%" } : undefined}>{t("settings.security.changePassword")}</HoverBtn>
             } />
-            <div style={{ padding: "16px 24px", borderBottom: "1px solid #f0f1ee" }}>
-              <p style={{ fontSize: "13.5px", fontWeight: 600, margin: "0 0 4px" }}>{t("settings.security.emailVerification")}</p>
+            <div style={{ padding: isMobile ? "14px 18px" : "16px 24px", borderBottom: `1px solid rgba(11, 67, 53, 0.06)` }}>
+              <p style={{ ...SANS, fontSize: "13.5px", fontWeight: 600, color: GREEN, margin: "0 0 4px" }}>{t("settings.security.emailVerification")}</p>
               <p style={{ ...MONO, fontSize: "11px", color: MUTED, margin: "0 0 8px" }}>{(user as any)?.email ?? "—"}</p>
               {emailVerified ? (
                 <span style={{ ...MONO, fontSize: "10px", fontWeight: 700, color: GREEN, display: "inline-flex", alignItems: "center", gap: "4px" }}>
@@ -463,28 +556,32 @@ export default function SettingsPage() {
                 </span>
               ) : (
                 <div style={{ display: "flex", alignItems: "center", gap: "10px", flexWrap: "wrap" }}>
-                  <span style={{ ...MONO, fontSize: "10px", fontWeight: 700, color: "#735c00" }}>{t("settings.security.notVerified")}</span>
-                  <OutlineBtn onClick={resend} style={{ padding: "5px 12px" }}>
+                  <span style={{ ...MONO, fontSize: "10px", fontWeight: 700, color: GOLD }}>{t("settings.security.notVerified")}</span>
+                  <HoverBtn onClick={resend} style={{ padding: "5px 12px" }}>
                     {resendState === "sent" ? t("settings.security.resendSent") : t("settings.security.resend")}
-                  </OutlineBtn>
+                  </HoverBtn>
                 </div>
               )}
             </div>
             {/* "Log out other sessions" intentionally omitted — no session management yet.
                 Add back once implemented:
-                <Row label="Log out of all other sessions" control={<OutlineBtn>...</OutlineBtn>} /> */}
-          </Card>
+                <Row label="Log out of all other sessions" control={<HoverBtn>...</HoverBtn>} /> */}
+          </HoverCard>
 
           {/* ── Account (visually separated, danger zone) ──── */}
-          <Card style={{ border: `1.5px solid rgba(179,38,30,0.25)` }}>
-            <SectionHeader icon="warning" title={t("settings.account.title")} accent={RED} />
-            <Row isRTL={isRTL} label={t("settings.account.deactivate")} desc={t("settings.account.deactivateDesc")} control={
-              <OutlineBtn onClick={() => setDeactivateOpen(true)}>{t("settings.account.deactivate")}</OutlineBtn>
+          <HoverCard style={{ border: `1.5px solid rgba(139, 44, 44, 0.25)` }}>
+            <SectionHeader icon="warning" title={t("settings.account.title")} accent={RED} isMobile={isMobile} />
+            <Row isRTL={isRTL} isMobile={isMobile} label={t("settings.account.deactivate")} desc={t("settings.account.deactivateDesc")} control={
+              <HoverBtn onClick={() => setDeactivateOpen(true)} style={isMobile ? { width: "100%" } : undefined}>{t("settings.account.deactivate")}</HoverBtn>
             } />
-            <div style={{ padding: "16px 24px", display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: "12px" }}>
-              <div style={{ minWidth: "200px" }}>
-                <p style={{ fontSize: "13.5px", color: RED, margin: 0, fontWeight: 600 }}>{t("settings.account.deleteTitle")}</p>
-                <p style={{ fontSize: "12px", color: MUTED, margin: "3px 0 0" }}>{t("settings.account.deleteDesc")}</p>
+            <div style={{
+              padding: isMobile ? "14px 18px" : "16px 24px",
+              display: "flex", alignItems: isMobile ? "flex-start" : "center", justifyContent: "space-between",
+              flexWrap: "wrap", gap: "12px", flexDirection: isMobile ? "column" : "row",
+            }}>
+              <div style={{ minWidth: isMobile ? "auto" : "200px" }}>
+                <p style={{ ...SANS, fontSize: "13.5px", color: RED, margin: 0, fontWeight: 600 }}>{t("settings.account.deleteTitle")}</p>
+                <p style={{ ...SANS, fontSize: "12px", color: MUTED, margin: "3px 0 0" }}>{t("settings.account.deleteDesc")}</p>
               </div>
               {/* Deliberately not a bold/filled button — spec says don't make delete visually dominant */}
               <button
@@ -494,7 +591,7 @@ export default function SettingsPage() {
                 {t("settings.account.deleteTitle")}
               </button>
             </div>
-          </Card>
+          </HoverCard>
         </div>
       </div>
 
