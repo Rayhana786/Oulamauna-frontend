@@ -8,6 +8,7 @@ import { useLang } from "../../context/LanguageContext";
 const colors = {
   creamLight: "#fcfaf5",
   forestGreen: "#0b4335",
+  red: "#b3261e", // ✅ Added red for the notification badge
 };
 
 const fonts = {
@@ -32,7 +33,7 @@ const Icon: React.FC<{ name: string; size?: number }> = ({ name, size = 16 }) =>
 /* ------------------------------------------------------------------ */
 type AdminNavbarProps = {
   pageTitleKey: string;
-  /** Extra page-specific button(s) shown to the right of "Add Scholar",
+  /** Extra page-specific button(s) shown to the right of "View Public Site",
    *  e.g. an "Export" button on a report page. Optional. */
   actions?: React.ReactNode;
 };
@@ -72,43 +73,48 @@ const AdminNavbar: React.FC<AdminNavbarProps> = ({ pageTitleKey, actions }) => {
       </h1>
 
       <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-        <div style={{ position: "relative" }}>
-          <span
-            style={{
-              position: "absolute",
-              [isRTL ? "right" : "left"]: 11,
-              top: "50%",
-              transform: "translateY(-50%)",
-              color: colors.forestGreen,
-              display: "flex",
-            }}
-          >
-            <Icon name="search" size={15} />
-          </span>
-          <input
-            type="text"
-            placeholder={t("navbar.search")}
-            style={{
-              [isRTL ? "paddingRight" : "paddingLeft"]: 32,
-              [isRTL ? "paddingLeft" : "paddingRight"]: 14,
-              paddingTop: 7,
-              paddingBottom: 7,
-              borderRadius: 8,
-              backgroundColor: colors.creamLight,
-              border: `1px solid ${colors.forestGreen}`,
-              fontFamily: fonts.body,
-              fontSize: 13,
-              color: colors.forestGreen,
-              outline: "none",
-              width: 210,
-            }}
-          />
-        </div>
+       
 
         {actions}
 
+        {/* ✅ NEW: Notification Bell */}
+        <button
+          style={{
+            background: "none",
+            border: "none",
+            cursor: "pointer",
+            color: colors.forestGreen,
+            padding: 8,
+            borderRadius: "50%",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            position: "relative",
+            transition: "background 0.2s",
+          }}
+          onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "rgba(11, 67, 53, 0.08)")}
+          onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "transparent")}
+          title="Notifications"
+        >
+          <Icon name="notifications" size={22} />
+          {/* Unread Badge Dot */}
+          <span
+            style={{
+              position: "absolute",
+              top: 6,
+              [isRTL ? "left" : "right"]: 6,
+              width: 8,
+              height: 8,
+              backgroundColor: colors.red,
+              borderRadius: "50%",
+              border: `2px solid ${colors.creamLight}`,
+            }}
+          />
+        </button>
+
+        {/* View Public Site Button */}
         <Link
-          to="/admin/scholars/new"
+          to="/"
           style={{
             display: "flex",
             alignItems: "center",
@@ -128,8 +134,8 @@ const AdminNavbar: React.FC<AdminNavbarProps> = ({ pageTitleKey, actions }) => {
           onMouseEnter={(e) => (e.currentTarget.style.opacity = "0.85")}
           onMouseLeave={(e) => (e.currentTarget.style.opacity = "1")}
         >
-          <Icon name="add" size={16} />
-          {t("navbar.addScholar")}
+          <Icon name="public" size={16} />
+          {isRTL ? "عرض الموقع العام" : lang === "FR" ? "Voir le site public" : "View Public Site"}
         </Link>
       </div>
     </header>

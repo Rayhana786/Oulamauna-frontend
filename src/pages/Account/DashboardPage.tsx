@@ -902,7 +902,9 @@ export default function DashboardPage() {
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  const isContributor = user?.role_name === "contributor" || user?.role_name === "admin";
+  const userRole = (user as any)?.role_name;
+const isAdmin = userRole === "admin";
+const isContributor = userRole === "contributor" || isAdmin; // Admins can also contribute
   const username = (user as any)?.username ?? (user as any)?.displayName ?? "there";
 
   const [tab, setTab] = useState<ContributorTab>("overview");
@@ -1163,12 +1165,14 @@ export default function DashboardPage() {
               {t("dashboard.welcome")}, {username}
             </h1>
             <p style={{ fontSize: isMobile ? "12px" : "14px", color: MUTED, margin: 0 }}>
-              {isContributor ? (
-                <>{t("dashboard.roleLabel")}: <strong style={{ color: GREEN }}>{t("dashboard.roleContributor")}</strong></>
-              ) : (
-                t("dashboard.welcomeUser")
-              )}
-            </p>
+  {isAdmin ? (
+    <>{t("dashboard.roleLabel")}: <strong style={{ color: GOLD }}>{t("dashboard.roleAdmin")}</strong></>
+  ) : isContributor ? (
+    <>{t("dashboard.roleLabel")}: <strong style={{ color: GREEN }}>{t("dashboard.roleContributor")}</strong></>
+  ) : (
+    t("dashboard.welcomeUser")
+  )}
+</p>
           </div>
 
           {!isContributor && (
@@ -1260,14 +1264,21 @@ export default function DashboardPage() {
                 }
               />
 
-              <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
-                <FilterChip active={statusFilter === "ALL"} onClick={() => setStatusFilter("ALL")} count={counts.ALL}>{t("dashboard.filter.all")}</FilterChip>
-                <FilterChip active={statusFilter === "DRAFT"} onClick={() => setStatusFilter("DRAFT")} count={counts.DRAFT}>{t("dashboard.status.draft")}</FilterChip>
-                <FilterChip active={statusFilter === "PENDING"} onClick={() => setStatusFilter("PENDING")} count={counts.PENDING}>{t("dashboard.status.pending")}</FilterChip>
-                <FilterChip active={statusFilter === "APPROVED"} onClick={() => setStatusFilter("APPROVED")} count={counts.APPROVED}>{t("dashboard.status.approved")}</FilterChip>
-                <FilterChip active={statusFilter === "REJECTED"} onClick={() => setStatusFilter("REJECTED")} count={counts.REJECTED}>{t("dashboard.status.rejected")}</FilterChip>
-                <FilterChip active={statusFilter === "SUPERSEDED"} onClick={() => setStatusFilter("SUPERSEDED")} count={counts.SUPERSEDED}>{t("dashboard.status.superseded")}</FilterChip>
-              </div>
+             <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
+  <FilterChip active={statusFilter === "ALL"} onClick={() => setStatusFilter("ALL")} count={counts.ALL}>{t("dashboard.filter.all")}</FilterChip>
+  <FilterChip active={statusFilter === "DRAFT"} onClick={() => setStatusFilter("DRAFT")} count={counts.DRAFT}>{t("dashboard.status.draft")}</FilterChip>
+  
+  {/* ✅ Hide PENDING and REJECTED for admins only */}
+  {!isAdmin && (
+    <>
+      <FilterChip active={statusFilter === "PENDING"} onClick={() => setStatusFilter("PENDING")} count={counts.PENDING}>{t("dashboard.status.pending")}</FilterChip>
+      <FilterChip active={statusFilter === "REJECTED"} onClick={() => setStatusFilter("REJECTED")} count={counts.REJECTED}>{t("dashboard.status.rejected")}</FilterChip>
+    </>
+  )}
+  
+  <FilterChip active={statusFilter === "APPROVED"} onClick={() => setStatusFilter("APPROVED")} count={counts.APPROVED}>{t("dashboard.status.approved")}</FilterChip>
+  <FilterChip active={statusFilter === "SUPERSEDED"} onClick={() => setStatusFilter("SUPERSEDED")} count={counts.SUPERSEDED}>{t("dashboard.status.superseded")}</FilterChip>
+</div>
 
               {isLoadingData ? <EmptyRow text="Loading submissions..." /> : (
                 <>

@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { useLang } from "../../context/LanguageContext";
 
@@ -7,9 +7,11 @@ import { useLang } from "../../context/LanguageContext";
 /* ------------------------------------------------------------------ */
 const colors = {
   creamLight: "#fcfaf5",
-  creamMid: "#f3ebd6",
+  creamMid: "#f6efdc",
   creamDark: "#e5d5a8",
   forestGreen: "#0b4335",
+  amber: "#b8860b",
+  red: "#8b2c2c",
 };
 
 const fonts = {
@@ -52,13 +54,12 @@ const navGroups: NavGroup[] = [
     sectionKey: "sidebar.section.scholars",
     links: [
       { icon: "school", labelKey: "sidebar.allScholars", to: "/admin/scholars" },
-      { icon: "person_add", labelKey: "sidebar.addScholar", to: "/admin/scholars/new" },
+      // ✅ REMOVED: "Add Scholar" link as requested
     ],
   },
   {
     sectionKey: "sidebar.section.review",
     links: [
-      // ✅ UPDATED: Clearly separated "New" vs "Edits" to match backend
       { icon: "how_to_reg", labelKey: "sidebar.pendingNewScholars", to: "/admin/pending/scholars" },
       { icon: "edit_document", labelKey: "sidebar.pendingScholarEdits", to: "/admin/pending/edits" },
       { icon: "menu_book", labelKey: "sidebar.pendingWorks", to: "/admin/pending/works" },
@@ -67,7 +68,12 @@ const navGroups: NavGroup[] = [
     ],
   },
   {
-    links: [{ icon: "category", labelKey: "sidebar.disciplines", to: "/admin/disciplines" }],
+    // ✅ NEW: Combined section for Disciplines and Regions (Add/Edit/Delete management)
+    sectionKey: "sidebar.section.classification",
+    links: [
+      { icon: "category", labelKey: "sidebar.disciplines", to: "/admin/disciplines" },
+      { icon: "public", labelKey: "sidebar.regions", to: "/admin/regions" }, 
+    ],
   },
   {
     sectionKey: "sidebar.section.blog",
@@ -93,7 +99,6 @@ const navGroups: NavGroup[] = [
     sectionKey: "sidebar.section.system",
     links: [
       { icon: "translate", labelKey: "sidebar.translation", to: "/admin/settings/translation" },
-      { icon: "public", labelKey: "sidebar.regions", to: "/admin/settings/regions" },
       { icon: "backup", labelKey: "sidebar.backups", to: "/admin/settings/backups" },
     ],
   },
@@ -106,6 +111,28 @@ const AdminSidebar: React.FC = () => {
   const location = useLocation();
   const { t, lang } = useLang();
   const isRTL = lang === "AR";
+
+  // ✅ Static User Data (For now, later we will use useAuth)
+  const staticUser = {
+    username: "riri",
+    role: "Administrator",
+    initial: "R",
+  };
+
+  // ✅ Dropdown State
+  const [profileOpen, setProfileOpen] = useState(false);
+  const profileRef = useRef<HTMLDivElement>(null);
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (profileRef.current && !profileRef.current.contains(event.target as Node)) {
+        setProfileOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   return (
     <nav
@@ -123,7 +150,7 @@ const AdminSidebar: React.FC = () => {
         zIndex: 50,
         display: "flex",
         flexDirection: "column",
-        justifyContent: "space-between",
+        justifyContent: "space-between", // ✅ Keeps the bottom section pushed to the end
         paddingTop: 18,
         paddingBottom: 12,
         overflowY: "auto",
@@ -194,7 +221,11 @@ const AdminSidebar: React.FC = () => {
         {/* Nav groups */}
         <div className="admin-sidebar-scroll" style={{ display: "flex", flexDirection: "column", gap: 12, padding: "0 8px" }}>
           {navGroups.map((group, idx) => (
-            <div key={group.sectionKey ?? `group-${idx}`}>
+            <div 
+  key={group.sectionKey ?? `group-${idx}`}
+  style={{ marginBottom: idx === navGroups.length - 1 ? "100px" : "0" }}
+>
+              
               {group.sectionKey && (
                 <p
                   style={{
@@ -213,7 +244,6 @@ const AdminSidebar: React.FC = () => {
               )}
               <ul style={{ listStyle: "none", display: "flex", flexDirection: "column", gap: 1, margin: 0, padding: 0 }}>
                 {group.links.map((item) => {
-                  // ✅ FIX: Use startsWith so the link stays active when viewing a specific scholar (e.g., /admin/pending/scholars/123)
                   const active = location.pathname === item.to || location.pathname.startsWith(item.to + "/");
                   
                   return (
@@ -257,35 +287,116 @@ const AdminSidebar: React.FC = () => {
         </div>
       </div>
 
-      {/* User profile */}
-      <div style={{ padding: "12px 18px 0", borderTop: `1px solid ${colors.forestGreen}`, display: "flex", alignItems: "center", gap: 9, cursor: "pointer" }}>
-        <div
+      {/* ✅ User Profile & Dropdown Menu (Kept exactly as requested) */}
+      <div 
+        ref={profileRef}
+        style={{ 
+          padding: "12px 18px 0", 
+          borderTop: `1px solid ${colors.forestGreen}`, 
+          position: "relative" 
+        }}
+      >
+        {/* Clickable Profile Button */}
+        <button
+          onClick={() => setProfileOpen(!profileOpen)}
           style={{
-            width: 32,
-            height: 32,
-            borderRadius: "50%",
-            border: `1px solid ${colors.forestGreen}`,
-            backgroundColor: colors.creamDark,
+            width: "100%",
             display: "flex",
             alignItems: "center",
-            justifyContent: "center",
-            fontFamily: fonts.headline,
-            fontWeight: 600,
-            color: colors.forestGreen,
-            flexShrink: 0,
-            fontSize: 13,
+            gap: 9,
+            background: "none",
+            border: "none",
+            cursor: "pointer",
+            padding: 0,
+            textAlign: isRTL ? "right" : "left",
           }}
         >
-          A
-        </div>
-        <div style={{ display: "flex", flexDirection: "column" }}>
-          <span style={{ fontFamily: fonts.body, fontSize: 12, fontWeight: 600, color: colors.forestGreen }}>
-            Hello Aarav
-          </span>
-          <span style={{ fontFamily: fonts.label, fontSize: 10, color: colors.forestGreen }}>
-            Director of Research
-          </span>
-        </div>
+          <div
+            style={{
+              width: 32,
+              height: 32,
+              borderRadius: "50%",
+              border: `1px solid ${colors.forestGreen}`,
+              backgroundColor: colors.creamMid,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              fontFamily: fonts.headline,
+              fontWeight: 600,
+              color: colors.forestGreen,
+              flexShrink: 0,
+              fontSize: 13,
+            }}
+          >
+            {staticUser.initial}
+          </div>
+          <div style={{ display: "flex", flexDirection: "column", flex: 1, minWidth: 0 }}>
+            <span style={{ fontFamily: fonts.body, fontSize: 12, fontWeight: 600, color: colors.forestGreen }}>
+              Hello {staticUser.username}
+            </span>
+            <span style={{ fontFamily: fonts.label, fontSize: 10, color: colors.forestGreen, opacity: 0.7 }}>
+              {staticUser.role}
+            </span>
+          </div>
+          <Icon name={profileOpen ? "expand_less" : "expand_more"} size={16} />
+        </button>
+
+        {/* Dropdown Menu */}
+        {profileOpen && (
+          <div
+            style={{
+              position: "absolute",
+              bottom: "100%",
+              [isRTL ? "right" : "left"]: 18,
+              width: 212,
+              backgroundColor: colors.creamLight,
+              border: `1px solid ${colors.forestGreen}`,
+              borderRadius: 8,
+              boxShadow: "0px -4px 20px rgba(11, 67, 53, 0.12)",
+              marginBottom: 8,
+              overflow: "hidden",
+              zIndex: 100,
+            }}
+          >
+            {/* 1. My Profile */}
+            <Link
+              to="/admin/profile"
+              onClick={() => setProfileOpen(false)}
+              style={{ display: "flex", alignItems: "center", gap: 8, padding: "10px 14px", textDecoration: "none", color: colors.forestGreen, fontSize: 13, fontFamily: fonts.body, transition: "background 0.15s" }}
+              onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = colors.creamMid)}
+              onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "transparent")}
+            >
+              <Icon name="person" size={16} />
+              My Profile
+            </Link>
+            
+            {/* 2. View Public Site */}
+            <Link
+              to="/"
+              onClick={() => setProfileOpen(false)}
+              style={{ display: "flex", alignItems: "center", gap: 8, padding: "10px 14px", textDecoration: "none", color: colors.forestGreen, fontSize: 13, fontFamily: fonts.body, transition: "background 0.15s" }}
+              onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = colors.creamMid)}
+              onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "transparent")}
+            >
+              <Icon name="public" size={16} />
+              View Public Site
+            </Link>
+
+            {/* Divider */}
+            <div style={{ height: 1, backgroundColor: colors.forestGreen, opacity: 0.1, margin: "4px 0" }} />
+
+            {/* 3. Logout */}
+            <button
+              onClick={() => { alert("Logout clicked (Static for now)"); setProfileOpen(false); }}
+              style={{ width: "100%", display: "flex", alignItems: "center", gap: 8, padding: "10px 14px", background: "none", border: "none", cursor: "pointer", color: colors.red, fontSize: 13, fontFamily: fonts.body, transition: "background 0.15s", textAlign: isRTL ? "right" : "left" }}
+              onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "rgba(139, 44, 44, 0.08)")}
+              onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "transparent")}
+            >
+              <Icon name="logout" size={16} />
+              Logout
+            </button>
+          </div>
+        )}
       </div>
     </nav>
   );

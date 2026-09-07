@@ -1,9 +1,9 @@
 // src/i18n.ts
 import i18n from 'i18next';
 import { initReactI18next } from 'react-i18next';
-import LanguageDetector from 'i18next-browser-languagedetector'; // 1. Import the language detector plugin
+import LanguageDetector from 'i18next-browser-languagedetector'; // 1. استيراد المكتبة الجديدة
 
-// Import your current locale files
+// استيراد ملفاتك الحالية
 import en from './locales/en.json';
 import ar from './locales/ar.json';
 import fr from './locales/fr.json';
@@ -15,26 +15,23 @@ const resources = {
 };
 
 i18n
-  .use(LanguageDetector) // 2. Use the language detector
+  .use(LanguageDetector) // 2. استخدام كاشف اللغة
   .use(initReactI18next)
   .init({
     resources,
-    lng: 'ar', // Set Arabic as the default language for new visitors
-    fallbackLng: 'ar', // Fallback to Arabic if a translation key is missing
-    
+    fallbackLng: 'en',
     interpolation: {
-      escapeValue: false, // React already handles XSS protection, so we disable i18next's escaping
+      escapeValue: false,
     },
-    
-    // 3. Language detection settings
+    // 3. إعدادات الكشف عن اللغة
     detection: {
-      // Priority order: check localStorage first, then browser language, then HTML tag, etc.
+      // ترتيب الأولوية: نتحقق من localStorage أولاً، ثم لغة المتصفح، ثم إعدادات HTML
       order: ['localStorage', 'navigator', 'htmlTag', 'path', 'subdomain'],
       
-      // Link it to your specific localStorage key to respect the user's previous manual choice
+      // نربطها بمفتاح localStorage الخاص بك لكي تحترم اختيار المستخدم السابق
       lookupLocalStorage: 'oulamauna-language', 
       
-      // Automatically cache the chosen language in localStorage
+      // نحفظ اللغة المختارة تلقائياً في localStorage
       caches: ['localStorage'], 
     },
   });

@@ -174,7 +174,7 @@ const RegionManagement: React.FC = () => {
       </div>
 
       {isFormOpen && (
-        <section style={{ ...cardStyle, marginBottom: 24, backgroundColor: colors.creamMid }}>
+        <section style={{ ...cardStyle, marginBottom: 24, backgroundColor: colors.creamLight }}>
           <h2 style={{ fontFamily: fonts.headline, fontSize: 18, fontWeight: 600, color: colors.forestGreen, margin: "0 0 20px 0" }}>Add New Region (All 3 Languages)</h2>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 20, marginBottom: 24 }}>
             <div><label style={{ fontFamily: fonts.label, fontSize: 12, color: colors.forestGreen, display: "block", marginBottom: 8 }}>English *</label><input type="text" value={formData.nameEn} onChange={(e) => setFormData({ ...formData, nameEn: e.target.value })} placeholder="e.g., North Africa" style={inputStyle} /></div>
@@ -206,7 +206,7 @@ const RegionManagement: React.FC = () => {
             const langName = item.langName || "this language";
             
             return (
-              <div key={item.region_id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "12px 16px", border: `1px solid ${isEditing ? colors.forestGreen : colors.creamDark}`, borderRadius: 8, backgroundColor: isEditing ? colors.creamMid : "transparent", transition: "all 0.2s" }}>
+              <div key={item.region_id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "12px 16px", border: `1px solid ${isEditing ? colors.forestGreen : colors.creamDark}`, borderRadius: 8, backgroundColor: isEditing ? colors.creamLight : "transparent", transition: "all 0.2s" }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 16, flex: 1 }}>
                   <span style={{ fontFamily: fonts.label, fontSize: 10, color: colors.forestGreen, backgroundColor: colors.creamDark, padding: "4px 10px", borderRadius: 4, fontWeight: 600, minWidth: 60, textAlign: "center" }}>{langName.toUpperCase()}</span>
                   {isEditing ? (

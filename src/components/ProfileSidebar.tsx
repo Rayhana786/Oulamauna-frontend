@@ -2,14 +2,13 @@ import React, { useState } from "react";
 import { Link } from "react-router-dom";
 import { useLang } from "../context/LanguageContext";
 
-type Role = "user" | "contributor";
+type Role = "user" | "contributor" | "admin";
 export type SidebarActive = "profile" | "dashboard" | "editProfile" | "settings";
 
 const MONO: React.CSSProperties = { fontFamily: "'JetBrains Mono', monospace" };
 const SERIF: React.CSSProperties = { fontFamily: "'Source Serif 4', serif" };
 const SANS: React.CSSProperties = { fontFamily: "'Source Sans 3', sans-serif" };
 
-// ✅ FIX 1: Added style prop to Icon component
 function Icon({ name, size = 18, style }: { name: string; size?: number; style?: React.CSSProperties }) {
   return (
     <span className="material-symbols-outlined" style={{ fontSize: `${size}px`, lineHeight: 1, userSelect: "none", ...style }}>
@@ -129,32 +128,14 @@ export default function ProfileSidebar({
   currentUserId 
 }: ProfileSidebarProps) {
   const { t } = useLang();
-  const [upgradeHov, setUpgradeHov] = useState(false);
   const isUser = role === "user";
 
-  // ✅ FIX 2: Updated profile link to use /profile/:id
   const navItems: { key: SidebarActive; icon: string; label: string; to?: string }[] = [
     { key: "profile", icon: "person", label: t("editProfile.myProfile"), to:  "/profile"  },
     { key: "dashboard", icon: "dashboard", label: t("editProfile.dashboard"), to: "/dashboard" },
     { key: "editProfile", icon: "edit_square", label: t("editProfile.editProfile"), to: "/edit-profile" },
     { key: "settings", icon: "settings", label: t("editProfile.settings"), to: "/settings" },
   ];
-
-  const upgradeBtnStyle: React.CSSProperties = {
-    width: "100%",
-    padding: "8px 12px",
-    borderRadius: "6px",
-    ...MONO,
-    fontSize: "9px",
-    fontWeight: 700,
-    letterSpacing: "0.1em",
-    textTransform: "uppercase",
-    cursor: "pointer",
-    transition: "background 0.15s, color 0.15s, border-color 0.15s",
-    backgroundColor: upgradeHov ? "#fff" : "transparent",
-    color: upgradeHov ? "#0b4335" : "#fff",
-    border: `1.5px solid ${upgradeHov ? "#fff" : "rgba(255,255,255,0.6)"}`,
-  };
 
   return (
     <aside style={{ width: "216px", flexShrink: 0, display: "flex", flexDirection: "column", gap: "20px", height: "fit-content", alignSelf: "flex-start", position: "sticky", top: "16px" }}>
@@ -165,27 +146,18 @@ export default function ProfileSidebar({
         <NavRow icon="logout" label={t("editProfile.signOut")} danger onClick={() => console.log("Logout clicked")} />
       </div>
 
-      {isUser && (
-        <>
-          <HoverCard style={{ padding: "16px", backgroundColor: "#fff", borderRadius: "12px" }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "6px", ...MONO, fontSize: "9px", letterSpacing: "0.1em", textTransform: "uppercase", color: "#707974" }}>
-              <span>{t("editProfile.profileCompletion")}</span>
-              <span style={{ fontWeight: 700, color: "#191c1b" }}>40%</span>
-            </div>
-            <div style={{ width: "100%", height: "6px", backgroundColor: "#f0f1ee", borderRadius: "999px", marginBottom: "10px", overflow: "hidden" }}>
-              <div style={{ width: "40%", height: "100%", backgroundColor: "#0b4335", borderRadius: "999px" }} />
-            </div>
-            <p style={{ fontSize: "11px", color: "#707974", margin: 0, lineHeight: 1.5 }}>{t("editProfile.completeHint")}</p>
-          </HoverCard>
-
-          <HoverCard style={{ padding: "18px", backgroundColor: "#0b4335", borderRadius: "12px", border: "none" }}>
-            <h3 style={{ ...SERIF, fontSize: "15px", fontWeight: 700, color: "#fff", margin: "0 0 6px" }}>{t("editProfile.becomeContributor")}</h3>
-            <p style={{ ...SANS, fontSize: "12px", color: "rgba(255,255,255,0.85)", margin: "0 0 14px", lineHeight: 1.55 }}>{t("editProfile.upgradeHint")}</p>
-            <Link to="/scholars/submit/" onMouseEnter={() => setUpgradeHov(true)} onMouseLeave={() => setUpgradeHov(false)} style={{ ...upgradeBtnStyle, display: "block", textAlign: "center", textDecoration: "none" }}>
-  {t("editProfile.upgradeNow")}
-</Link>
-          </HoverCard>
-        </>
+      {/* ✅ ONLY show completion card on Edit Profile page */}
+      {isUser && active === "editProfile" && (
+        <HoverCard style={{ padding: "16px", backgroundColor: "#fff", borderRadius: "12px" }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "6px", ...MONO, fontSize: "9px", letterSpacing: "0.1em", textTransform: "uppercase", color: "#707974" }}>
+            <span>{t("editProfile.profileCompletion")}</span>
+            <span style={{ fontWeight: 700, color: "#191c1b" }}>40%</span>
+          </div>
+          <div style={{ width: "100%", height: "6px", backgroundColor: "#f0f1ee", borderRadius: "999px", marginBottom: "10px", overflow: "hidden" }}>
+            <div style={{ width: "40%", height: "100%", backgroundColor: "#0b4335", borderRadius: "999px" }} />
+          </div>
+          <p style={{ fontSize: "11px", color: "#707974", margin: 0, lineHeight: 1.5 }}>{t("editProfile.completeHint")}</p>
+        </HoverCard>
       )}
 
       {links && links.length > 0 && (
@@ -219,7 +191,6 @@ export default function ProfileSidebar({
                 <span style={{ flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                   {getLinkDisplay(link)}
                 </span>
-                {/* ✅ This will now work because Icon accepts style prop */}
                 <Icon name="open_in_new" size={14} style={{ color: "#707974" }} />
               </a>
             ))}

@@ -50,6 +50,7 @@ import Forbidden from "./pages/errors/Forbidden";
 import InvalidToken from "./pages/errors/InvalidToken";
 
 // Admin pages
+import AdminProfilePage from "./pages/admin/AdminProfilePage";
 import AdminDashboard from "./pages/admin/Admindashboard";
 import NewScholarsQueue from "./pages/admin/NewScholarsQueue";
 import ScholarReview from "./pages/admin/ScholarReview";
@@ -117,6 +118,7 @@ function App() {
             {/* ── ADMIN ROUTES (sidebar + admin navbar, protected) ── */}
             <Route element={<NoNavLayout />}>
               <Route element={<AdminLayout />}>
+              <Route path="/admin/profile" element={<AdminProfilePage />} />
                 <Route path="/admin/dashboard" element={<AdminDashboard />} />
                 <Route path="/admin/pending/scholars" element={<NewScholarsQueue />} />
                 <Route path="/admin/pending/scholars/:id" element={<ScholarReview />} />
@@ -125,7 +127,7 @@ function App() {
                 <Route path="/admin/pending/media" element={<MediaPendingQueue />} />
                 <Route path="/admin/pending/works" element={<WorksPendingQueue />} />
                 <Route path="/admin/disciplines" element={<DisciplineManagement />} /> {/* ✅ ADDED: Discipline Management page */}
-                <Route path="/admin/settings/regions" element={<RegionManagement />} /> {/* ✅ ADDED: Region Management page */}
+                <Route path="/admin/regions" element={<RegionManagement />} /> {/* ✅ ADDED: Region Management page */}
                 {/* Add more admin routes here as you build them: */}
                 {/* <Route path="scholars" element={<AdminScholars />} /> */}
                 {/* <Route path="scholars/new" element={<AdminAddScholar />} /> */}

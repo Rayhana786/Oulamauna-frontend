@@ -1,4 +1,3 @@
-// src/components/Navbar.tsx
 import React, { useState, useEffect, useRef } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
@@ -68,6 +67,7 @@ const LANG_FULL: Record<Language, string> = {
 const Navbar: React.FC = () => {
   const { lang, setLang } = useLang();
   const { isLoggedIn, logout, user } = useAuth();
+  console.log(" USER OBJECT:", user);
 
   const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState("");
@@ -90,6 +90,10 @@ const Navbar: React.FC = () => {
   const isHome = location.pathname === "/";
   const isRTL = lang === "AR";
   const t = T[lang];
+
+  // ✅ Check if user is admin (handles 'role_name' from your DB)
+const userRole = (user as any)?.role || (user as any)?.role_name;
+const isAdmin = userRole && String(userRole).toLowerCase() === 'admin';
 
   // Active link sync
   useEffect(() => {
@@ -115,7 +119,6 @@ const Navbar: React.FC = () => {
       const currentScrollY = window.scrollY;
       setScrolled(currentScrollY > 50);
 
-      // Only apply hide/show logic on mobile screens (< 768px)
       if (window.innerWidth < 768) {
         if (currentScrollY > lastScrollY && currentScrollY > 100) {
           setShowNavbar(false);
@@ -123,13 +126,13 @@ const Navbar: React.FC = () => {
           setShowNavbar(true);
         }
       } else {
-        setShowNavbar(true); // Always visible on desktop
+        setShowNavbar(true);
       }
       setLastScrollY(currentScrollY);
     };
 
     window.addEventListener("scroll", fn, { passive: true });
-    window.addEventListener("resize", fn); // Ensure it updates if window is resized
+    window.addEventListener("resize", fn);
     return () => {
       window.removeEventListener("scroll", fn);
       window.removeEventListener("resize", fn);
@@ -165,7 +168,6 @@ const Navbar: React.FC = () => {
     }
   }, [searchQuery, navigate]);
 
-  // Determine navbar states
   const isTransparent = isHome && !scrolled;
 
   const handleMobileNavClick = (id: string) => {
@@ -190,8 +192,6 @@ const Navbar: React.FC = () => {
           font-family: 'Amiri', serif;
           font-size: 16px;
         }
-
-        /* Hover effect only on the text, not the full line */
         .mobile-link {
           display: block;
           padding: 1rem 0;
@@ -218,8 +218,6 @@ const Navbar: React.FC = () => {
           transform: translateX(4px);
           color: #1e4d3a;
         }
-
-        /* Navbar hide/show animation */
         .navbar-animate {
           transition: transform 0.3s ease, opacity 0.3s ease, background-color 0.3s ease;
         }
@@ -241,25 +239,18 @@ const Navbar: React.FC = () => {
           px-6 py-3
           navbar-animate
           ${!showNavbar ? 'hide' : ''}
-
-          /* ✅ Little bit of space from the top (Hero section) */
           ${isTransparent ? 'top-4 md:top-6' : 'top-0'}
-
-          /* ✅ Mobile: Conditional background - transparent in hero, green when scrolled */
           ${isTransparent
             ? 'bg-transparent backdrop-blur-none border-b-0 shadow-none'
             : 'bg-[#1e4d3a]/85 backdrop-blur-md border-b border-[#C9A84C]/20 shadow-md'
           }
-
-          /* Desktop: Conditional styling — each class individually prefixed with md: so it
-             only applies at the md breakpoint and doesn't leak onto mobile */
           ${isTransparent
             ? 'md:mx-auto md:max-w-[1280px] md:w-[95%] md:bg-transparent md:backdrop-blur-none md:rounded-full md:shadow-none md:border-none'
             : 'md:w-full md:max-w-none md:bg-[#1e4d3a]/95 md:backdrop-blur-md md:border-b md:border-[#C9A84C]/20 md:shadow-md'
           }
         `}
       >
-        {/* Logo: order-1 on mobile (left), first grid column on desktop */}
+        {/* Logo */}
         <Link to="/" className="flex items-center group order-1 md:order-none md:col-start-1 md:justify-self-start flex-shrink-0">
           <img
             alt="Oulamauna Logo"
@@ -269,7 +260,7 @@ const Navbar: React.FC = () => {
           />
         </Link>
 
-        {/* ✅ Desktop Nav Links - truly centered on the page (middle grid column) */}
+        {/* Desktop Nav Links */}
         <ul className="hidden md:flex items-center justify-center gap-1 md:col-start-2 md:justify-self-center">
           {NAV_IDS.map((id, i) => {
             const isActive = active === id;
@@ -293,7 +284,7 @@ const Navbar: React.FC = () => {
           })}
         </ul>
 
-        {/* ✅ Desktop Utilities - REDUCED SPACING (gap-1 instead of gap-3) */}
+        {/* Desktop Utilities */}
         <div className="hidden md:flex items-center gap-1 md:col-start-3 md:justify-self-end flex-shrink-0">
           {/* Language Selector */}
           <div className="relative" ref={langRef}>
@@ -365,77 +356,89 @@ const Navbar: React.FC = () => {
                   onClick={() => setProfileOpen(!profileOpen)}
                   className="w-9 h-9 rounded-full border-2 flex items-center justify-center transition-all duration-300 overflow-hidden hover:scale-105 bg-white/10 border-white/30 hover:bg-[#C9A84C]/20 hover:border-[#C9A84C]"
                 >
-                  {user?.avatar ? (
-                    <img src={user.avatar} alt="Profile" className="w-full h-full object-cover" />
+                  {(user as any)?.avatar ? (
+                    <img src={(user as any).avatar} alt="Profile" className="w-full h-full object-cover" />
                   ) : (
                     <span className="material-symbols-outlined text-white" style={{ fontSize: '20px', fontVariationSettings: "'FILL' 1" }}>person</span>
                   )}
                 </button>
 
- {profileOpen && (
-  <div className={`absolute top-[calc(100%+8px)] ${isRTL ? 'left-0' : 'right-0'} z-[110] w-[280px] bg-[#F5F3EC] rounded-2xl shadow-xl overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200 border border-[#C9A84C]/20`}>
-    <div className="p-4 border-b border-[#1e4d3a]/10">
-      <div className="flex items-center gap-3">
-        <div className="w-10 h-10 rounded-full bg-[#C9A84C] flex items-center justify-center flex-shrink-0 overflow-hidden">
-          {user?.avatar ? (
-            <img src={user.avatar} alt="Profile" className="w-full h-full object-cover" />
-          ) : (
-            <span className="material-symbols-outlined text-[#1e4d3a]" style={{ fontSize: '24px', fontVariationSettings: "'FILL' 1" }}>
-              person
-            </span>
-          )}
-        </div>
-        <div className="flex-1 min-w-0">
-          <p className={`text-[#1e4d3a] font-medium text-sm truncate ${isRTL ? 'arabic-text' : ''}`}>
-            {user?.username || (isRTL ? 'مستخدم' : lang === 'FR' ? 'Utilisateur' : 'User')}
-          </p>
-          <p className="text-gray-600 text-xs truncate">
-            {user?.email || ''}
-          </p>
-        </div>
-      </div>
-    </div>
+                {profileOpen && (
+                  <div className={`absolute top-[calc(100%+8px)] ${isRTL ? 'left-0' : 'right-0'} z-[110] w-[280px] bg-[#F5F3EC] rounded-2xl shadow-xl overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200 border border-[#C9A84C]/20`}>
+                    <div className="p-4 border-b border-[#1e4d3a]/10">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-full bg-[#C9A84C] flex items-center justify-center flex-shrink-0 overflow-hidden">
+                          {(user as any)?.avatar ? (
+                            <img src={(user as any).avatar} alt="Profile" className="w-full h-full object-cover" />
+                          ) : (
+                            <span className="material-symbols-outlined text-[#1e4d3a]" style={{ fontSize: '24px', fontVariationSettings: "'FILL' 1" }}>
+                              person
+                            </span>
+                          )}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className={`text-[#1e4d3a] font-medium text-sm truncate ${isRTL ? 'arabic-text' : ''}`}>
+                            {(user as any)?.username || (isRTL ? 'مستخدم' : lang === 'FR' ? 'Utilisateur' : 'User')}
+                          </p>
+                          <p className="text-gray-600 text-xs truncate">
+                            {(user as any)?.email || ''}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
 
-    <div className="p-2">
-      <Link to="/dashboard" onClick={() => setProfileOpen(false)} className="flex items-center gap-3 px-3 py-2.5 text-[#1e4d3a]/80 hover:text-[#C9A84C] hover:bg-[#1e4d3a]/5 rounded-lg transition-colors">
-        <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>dashboard</span>
-        <span className={`text-sm ${isRTL ? 'arabic-text' : ''}`}>
-          {isRTL ? 'لوحة التحكم' : lang === 'FR' ? 'Tableau de bord' : 'Dashboard'}
-        </span>
-      </Link>
-      <Link to="/profile" onClick={() => setProfileOpen(false)} className="flex items-center gap-3 px-3 py-2.5 text-[#1e4d3a]/80 hover:text-[#C9A84C] hover:bg-[#1e4d3a]/5 rounded-lg transition-colors">
-        <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>edit</span>
-        <span className={`text-sm ${isRTL ? 'arabic-text' : ''}`}>
-          {isRTL ? 'الملف الشخصي' : lang === 'FR' ? 'Modifier le profil' : 'Edit Profile'}
-        </span>
-      </Link>
-      <Link to="/settings" onClick={() => setProfileOpen(false)} className="flex items-center gap-3 px-3 py-2.5 text-[#1e4d3a]/80 hover:text-[#C9A84C] hover:bg-[#1e4d3a]/5 rounded-lg transition-colors">
-        <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>settings</span>
-        <span className={`text-sm ${isRTL ? 'arabic-text' : ''}`}>
-          {isRTL ? 'الإعدادات' : lang === 'FR' ? 'Paramètres' : 'Settings'}
-        </span>
-      </Link>
-    </div>
+                    <div className="p-2">
+                      <Link to="/dashboard" onClick={() => setProfileOpen(false)} className="flex items-center gap-3 px-3 py-2.5 text-[#1e4d3a]/80 hover:text-[#C9A84C] hover:bg-[#1e4d3a]/5 rounded-lg transition-colors">
+                        <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>dashboard</span>
+                        <span className={`text-sm ${isRTL ? 'arabic-text' : ''}`}>
+                          {isRTL ? 'لوحة التحكم' : lang === 'FR' ? 'Tableau de bord' : 'Dashboard'}
+                        </span>
+                      </Link>
+                      <Link to="/edit-profile" onClick={() => setProfileOpen(false)} className="flex items-center gap-3 px-3 py-2.5 text-[#1e4d3a]/80 hover:text-[#C9A84C] hover:bg-[#1e4d3a]/5 rounded-lg transition-colors">
+                        <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>edit</span>
+                        <span className={`text-sm ${isRTL ? 'arabic-text' : ''}`}>
+                          {isRTL ? 'الملف الشخصي' : lang === 'FR' ? 'Modifier le profil' : 'Edit Profile'}
+                        </span>
+                      </Link>
+                      <Link to="/settings" onClick={() => setProfileOpen(false)} className="flex items-center gap-3 px-3 py-2.5 text-[#1e4d3a]/80 hover:text-[#C9A84C] hover:bg-[#1e4d3a]/5 rounded-lg transition-colors">
+                        <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>settings</span>
+                        <span className={`text-sm ${isRTL ? 'arabic-text' : ''}`}>
+                          {isRTL ? 'الإعدادات' : lang === 'FR' ? 'Paramètres' : 'Settings'}
+                        </span>
+                      </Link>
 
-    <div className="p-2 border-t border-[#1e4d3a]/10">
-      <button onClick={() => { logout(); setProfileOpen(false); }} className="w-full flex items-center gap-3 px-3 py-2.5 text-red-600 hover:text-red-700 hover:bg-[#1e4d3a]/5 rounded-lg transition-colors">
-        <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>logout</span>
-        <span className={`text-sm ${isRTL ? 'arabic-text' : ''}`}>
-          {isRTL ? 'تسجيل الخروج' : lang === 'FR' ? 'Déconnexion' : 'Sign out'}
-        </span>
-      </button>
-    </div>
-  </div>
-)}
+                      {/* ✅ ADMIN ONLY LINK: Appears only if user is admin */}
+                      {isAdmin && (
+                        <Link 
+                          to="/admin/dashboard" 
+                          onClick={() => setProfileOpen(false)} 
+                          className="flex items-center gap-3 px-3 py-2.5 text-[#1e4d3a] font-semibold hover:text-[#C9A84C] hover:bg-[#1e4d3a]/5 rounded-lg transition-colors border-t border-[#1e4d3a]/10 mt-2 pt-2"
+                        >
+                          <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>admin_panel_settings</span>
+                          <span className={`text-sm ${isRTL ? 'arabic-text' : ''}`}>
+                            {isRTL ? 'لوحة إدارة الموقع' : lang === 'FR' ? "Panneau d'administration" : 'Site Admin Panel'}
+                          </span>
+                        </Link>
+                      )}
+                    </div>
+
+                    <div className="p-2 border-t border-[#1e4d3a]/10">
+                      <button onClick={() => { logout(); setProfileOpen(false); }} className="w-full flex items-center gap-3 px-3 py-2.5 text-red-600 hover:text-red-700 hover:bg-[#1e4d3a]/5 rounded-lg transition-colors">
+                        <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>logout</span>
+                        <span className={`text-sm ${isRTL ? 'arabic-text' : ''}`}>
+                          {isRTL ? 'تسجيل الخروج' : lang === 'FR' ? 'Déconnexion' : 'Sign out'}
+                        </span>
+                      </button>
+                    </div>
+                  </div>
+                )}
               </>
             )}
           </div>
         </div>
 
-        {/* Mobile Utilities: Search FIRST, Hamburger SECOND (to match second image) */}
+        {/* Mobile Utilities */}
         <div className="md:hidden flex items-center gap-2 order-2">
-
-          {/* Search Icon Button (First on right) */}
           <button
             onClick={() => setSearchOpen(!searchOpen)}
             className="p-2 text-white rounded-full hover:bg-white/10 transition-colors"
@@ -443,33 +446,25 @@ const Navbar: React.FC = () => {
             <span className="material-symbols-outlined" style={{ fontSize: '24px' }}>search</span>
           </button>
 
-          {/* Hamburger Menu Button (Second on right) */}
           <button
             className="p-2 text-white rounded-full hover:bg-white/10 transition-colors"
             onClick={() => setMobileMenuOpen(true)}
           >
             <span className="material-symbols-outlined" style={{ fontSize: '28px' }}>menu</span>
           </button>
-
         </div>
       </nav>
 
-      {/* Full-Page Mobile Menu with RTL support */}
+      {/* Full-Page Mobile Menu */}
       {mobileMenuOpen && (
         <div 
           className="fixed inset-0 z-[100] md:hidden bg-white overflow-y-auto"
           dir={isRTL ? 'rtl' : 'ltr'}
         >
-          {/* Header with Close Button */}
           <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex justify-between items-center z-10">
             <Link to="/" onClick={() => setMobileMenuOpen(false)} className="flex items-center">
-              <img
-                alt="Oulamauna Logo"
-                className="h-8 w-auto object-contain"
-                src={oulamaunaLogo}
-              />
+              <img alt="Oulamauna Logo" className="h-8 w-auto object-contain" src={oulamaunaLogo} />
             </Link>
-
             <button
               onClick={() => { setMobileMenuOpen(false); setMobileProfileExpanded(false); }}
               className="p-2 text-gray-700 hover:text-gray-900 transition-colors"
@@ -478,9 +473,7 @@ const Navbar: React.FC = () => {
             </button>
           </div>
 
-          {/* Menu Content */}
           <div className="px-6 py-4">
-            {/* Profile Menu Section (if logged in) */}
             {isLoggedIn && (
               <div className="border-b border-gray-200">
                 <button
@@ -509,6 +502,16 @@ const Navbar: React.FC = () => {
                     <Link to="/settings" onClick={() => handleMobileNavClick('HOME')} className="mobile-link text-gray-600">
                       <span className={`mobile-link-text font-['Inter'] text-[15px] ${isRTL ? 'arabic-text' : ''}`}>{t.settings}</span>
                     </Link>
+                    
+                    {/* ✅ ADMIN ONLY LINK (Mobile) */}
+                    {isAdmin && (
+                      <Link to="/admin/dashboard" onClick={() => handleMobileNavClick('HOME')} className="mobile-link text-[#1e4d3a] font-semibold border-t border-gray-200 mt-2 pt-2">
+                        <span className={`mobile-link-text font-['Inter'] text-[15px] ${isRTL ? 'arabic-text' : ''}`}>
+                          {isRTL ? 'لوحة إدارة الموقع' : lang === 'FR' ? "Panneau d'administration" : 'Site Admin Panel'}
+                        </span>
+                      </Link>
+                    )}
+
                     <button onClick={() => { logout(); handleMobileNavClick('HOME'); }} className="mobile-link text-red-500 w-full text-start">
                       <span className={`mobile-link-text font-['Inter'] text-[15px] ${isRTL ? 'arabic-text' : ''}`}>{t.signOut}</span>
                     </button>
@@ -517,7 +520,6 @@ const Navbar: React.FC = () => {
               </div>
             )}
 
-            {/* Main Navigation Links */}
             {NAV_IDS.map((id, i) => (
               <Link
                 key={id}
@@ -533,36 +535,24 @@ const Navbar: React.FC = () => {
               </Link>
             ))}
 
-            {/* Auth Section (if not logged in) - Simple Links Only */}
             {!isLoggedIn && (
               <div className="mt-6 space-y-1 border-t border-gray-200 pt-4">
-                <Link
-                  to="/register"
-                  onClick={() => handleMobileNavClick('HOME')}
-                  className="mobile-link text-gray-900"
-                >
+                <Link to="/register" onClick={() => handleMobileNavClick('HOME')} className="mobile-link text-gray-900">
                   <span className={`mobile-link-text font-['Inter'] text-[16px] font-medium ${isRTL ? 'arabic-text' : ''}`}>
                     {t.register}
                   </span>
                 </Link>
-
-                <Link
-                  to="/login"
-                  onClick={() => handleMobileNavClick('HOME')}
-                  className="mobile-link text-gray-900"
-                >
+                <Link to="/login" onClick={() => handleMobileNavClick('HOME')} className="mobile-link text-gray-900">
                   <span className={`mobile-link-text font-['Inter'] text-[16px] ${isRTL ? 'arabic-text' : ''}`}>
                     {t.login}
                   </span>
                 </Link>
               </div>
             )}
-
-            {/* Spacer */}
             <div className="h-16" />
           </div>
 
-          {/* Language Selector at Bottom - Brighter Color */}
+          {/* Language Selector at Bottom */}
           <div className="sticky bottom-0 bg-white border-t border-gray-200">
             <div className="relative" ref={langRef}>
               <button
@@ -580,25 +570,24 @@ const Navbar: React.FC = () => {
                 </span>
               </button>
 
-            {/* Language Dropdown - Opens Upward with Half Width */}
-            {langOpen && (
-              <div className={`absolute bottom-full ${isRTL ? 'right-0' : 'left-0'} w-1/2 bg-[#F5F3EC] border-t border-[#e5e0d5] shadow-lg animate-in slide-in-from-bottom-2 duration-200`}>
-                {(["EN", "AR", "FR"] as Language[]).map((l) => (
-                  <button
-                    key={l}
-                    onClick={() => { setLang(l); setLangOpen(false); }}
-                    className={`w-full flex items-center justify-between px-6 py-3.5 transition-colors ${
-                      lang === l ? "text-[#1e4d3a] bg-[#e5e0d5]" : "text-gray-900 hover:bg-[#e5e0d5]/50"
-                    } ${l === "AR" ? 'arabic-text' : 'font-["Inter"] text-[15px]'}`}
-                  >
-                    <span>{LANG_FULL[l]}</span>
-                    {lang === l && (
-                      <span className="material-symbols-outlined text-[#1e4d3a]" style={{ fontSize: '18px' }}>check</span>
-                    )}
-                  </button>
-                ))}
-              </div>
-            )}
+              {langOpen && (
+                <div className={`absolute bottom-full ${isRTL ? 'right-0' : 'left-0'} w-1/2 bg-[#F5F3EC] border-t border-[#e5e0d5] shadow-lg animate-in slide-in-from-bottom-2 duration-200`}>
+                  {(["EN", "AR", "FR"] as Language[]).map((l) => (
+                    <button
+                      key={l}
+                      onClick={() => { setLang(l); setLangOpen(false); }}
+                      className={`w-full flex items-center justify-between px-6 py-3.5 transition-colors ${
+                        lang === l ? "text-[#1e4d3a] bg-[#e5e0d5]" : "text-gray-900 hover:bg-[#e5e0d5]/50"
+                      } ${l === "AR" ? 'arabic-text' : 'font-["Inter"] text-[15px]'}`}
+                    >
+                      <span>{LANG_FULL[l]}</span>
+                      {lang === l && (
+                        <span className="material-symbols-outlined text-[#1e4d3a]" style={{ fontSize: '18px' }}>check</span>
+                      )}
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
         </div>
