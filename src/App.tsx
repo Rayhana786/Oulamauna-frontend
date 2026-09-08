@@ -24,7 +24,7 @@ import PrivacyPolicy from "./pages/PrivacyPolicy";
 import Terms from "./pages/Terms";
 import ScholarsPage from "./pages/Scholars/ScholarsPage";
 import Editscholarpage from "./pages/Scholars/Editscholarpage";
-
+import NotificationsPage from "./pages/NotificationsPage";
 // Auth pages (no navbar)
 import Login from "./pages/Authentication/Login";
 import Register from "./pages/Authentication/Register";
@@ -87,14 +87,12 @@ function App() {
 <Route path="/profile/:id" element={<ProfilePage />} />
 <Route path="/dashboard" element={<DashboardPage />} />
 <Route path="/settings" element={<SettingsPage />} />
+<Route path="/notifications" element={<NotificationsPage />} />
 </Route>
- <Route path="/login" element={<Login />} />
+ 
+<Route>
+              <Route path="/login" element={<Login />} />
               <Route path="/register" element={<Register />} />
-
-            {/* ── AUTH + ERROR ROUTES (no navbar at all) ── */}
-            <Route element={<NoNavLayout />}>
-             
-              
               <Route path="/forgot-password" element={<ForgotPassword />} />
               <Route path="/reset-password" element={<ResetPassword />} />
               <Route path="/verify-email" element={<VerifyEmail />} />
@@ -103,6 +101,11 @@ function App() {
               <Route path="/403" element={<Forbidden />} />
               <Route path="/invalid-token" element={<InvalidToken />} />
               <Route path="*" element={<NotFound />} />
+</Route>
+            {/* ── AUTH + ERROR ROUTES (no navbar at all) ── */}
+            <Route element={<NoNavLayout />}>
+             
+             
 
               {/* ── SCHOLARS ROUTES (with public Navbar) ── */}
 
@@ -116,7 +119,7 @@ function App() {
             </Route>
 
             {/* ── ADMIN ROUTES (sidebar + admin navbar, protected) ── */}
-            <Route element={<NoNavLayout />}>
+            
               <Route element={<AdminLayout />}>
               <Route path="/admin/profile" element={<AdminProfilePage />} />
                 <Route path="/admin/dashboard" element={<AdminDashboard />} />
@@ -132,7 +135,7 @@ function App() {
                 {/* <Route path="scholars" element={<AdminScholars />} /> */}
                 {/* <Route path="scholars/new" element={<AdminAddScholar />} /> */}
               </Route>
-            </Route>
+            
 
           </Routes>
         </AuthProvider>

@@ -315,4 +315,12 @@ export const scholarsApi = {
       method: "POST",
       body: JSON.stringify(workData),
     }, false), // ✅ Already had false, kept it
+
+      // View Media (increments view_count, no auth required)
+  viewMedia: (mediaId: number): Promise<any> =>
+    request(`/media/view/${mediaId}`, { method: "POST" }, false),
+
+  // Toggle Like/Unlike Media (requires auth, token is attached automatically)
+  toggleMediaLike: (mediaId: number): Promise<any> =>
+    request(`/media/like/${mediaId}`, { method: "POST" }, false),
 };

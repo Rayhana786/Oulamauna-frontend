@@ -1,5 +1,7 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useLang } from "../../context/LanguageContext";
+import { useAuth } from "../../context/AuthContext";
+import { userApi } from "../../api/userApi";
 
 /* ------------------------------------------------------------------ */
 /*  Design tokens — Oulamnauna admin palette                          */
@@ -37,42 +39,102 @@ const Icon: React.FC<{ name: string; size?: number; filled?: boolean }> = ({ nam
 /* ------------------------------------------------------------------ */
 export default function AdminProfilePage() {
   const { lang } = useLang();
+  const { user } = useAuth();
   const isRTL = lang === "AR";
 
-  // ✅ Static Mock Data
+  // ✅ REAL Data State
   const [profileData, setProfileData] = useState({
-    username: "riri",
-    email: "r.khelifati@esi-sba.dz",
-    bio: "Director of Research at Oulamauna. Passionate about preserving Islamic scholarly heritage.",
-    joinDate: "September 2024",
-    lastLogin: "Just now",
+    username: "",
+    email: "",
+    bio: "",
+    name: "",
   });
 
-  const [passwordData, setPasswordData] = useState({
-    current: "",
-    newPass: "",
-    confirm: "",
-  });
-
+  const [isLoading, setIsLoading] = useState(true);
   const [saved, setSaved] = useState(false);
+  const [errorMsg, setErrorMsg] = useState("");
+  const [passwordData, setPasswordData] = useState({ current: "", newPass: "", confirm: "" });
+  
+  // ✅ Image upload state
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handlePasswordChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setPasswordData({ ...passwordData, [e.target.name]: e.target.value });
+  };
+
+  // ✅ Image handlers
+  const handleAvatarClick = () => fileInputRef.current?.click();
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      setSelectedFile(e.target.files[0]);
+    }
+  };
+
+  // ✅ Fetch real profile data on mount
+  useEffect(() => {
+    const fetchProfile = async () => {
+      try {
+        const response = await userApi.profile.getMyProfile();
+        if (response.data.success && response.data.data) {
+          const data = response.data.data;
+          setProfileData({
+            username: data.username || "",
+            email: data.email || "",
+            bio: data.bio || "",
+            name: data.name || "",
+          });
+        }
+      } catch (err) {
+        console.error("Failed to fetch admin profile:", err);
+        setErrorMsg("Failed to load profile data.");
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchProfile();
+  }, []);
 
   const handleProfileChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     setProfileData({ ...profileData, [e.target.name]: e.target.value });
     setSaved(false);
   };
 
-  const handlePasswordChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setPasswordData({ ...passwordData, [e.target.name]: e.target.value });
-  };
-
-  const handleSaveProfile = (e: React.FormEvent) => {
+  // ✅ REAL SAVE ACTION
+  const handleSaveProfile = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Static simulation
-    setSaved(true);
-    setTimeout(() => setSaved(false), 3000);
+    setSaved(false);
+    setErrorMsg("");
+
+    try {
+      const formData = new FormData();
+      if (profileData.name) formData.append("name", profileData.name);
+      if (profileData.bio) formData.append("bio", profileData.bio);
+      if (selectedFile) formData.append("profile_picture", selectedFile);
+      
+      const response = await userApi.profile.updateMyProfile(formData);
+      
+      if (response.data.success) {
+        setSaved(true);
+        setSelectedFile(null); // Clear file after success
+        setTimeout(() => setSaved(false), 3000);
+      } else {
+        setErrorMsg(response.data.message || "Failed to update profile.");
+      }
+    } catch (err: any) {
+      console.error("Save error:", err);
+      setErrorMsg(err.response?.data?.message || "An error occurred while saving.");
+    }
   };
 
-  // Shared Input Style
+  if (isLoading) {
+    return (
+      <div dir={isRTL ? "rtl" : "ltr"} style={{ fontFamily: fonts.body, color: colors.forestGreen, backgroundColor: colors.creamLight, minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center" }}>
+        Loading profile...
+      </div>
+    );
+  }
+
   const inputStyle: React.CSSProperties = {
     width: "100%",
     padding: "10px 12px",
@@ -99,6 +161,9 @@ export default function AdminProfilePage() {
     opacity: 0.8,
   };
 
+  // ✅ Safely get role name, default to ADMINISTRATOR for this page
+  const userRole = ((user as any)?.role_name || "admin").toUpperCase();
+
   return (
     <div dir={isRTL ? "rtl" : "ltr"} style={{ fontFamily: fonts.body, color: colors.forestGreen, backgroundColor: colors.creamLight, minHeight: "100vh", padding: 24 }}>
       <div style={{ maxWidth: 1000, margin: "0 auto" }}>
@@ -116,21 +181,71 @@ export default function AdminProfilePage() {
           
           {/* ── Left Column: Profile Summary Card ── */}
           <div style={{ ...cardStyle, padding: 24, display: "flex", flexDirection: "column", alignItems: "center", textAlign: "center" }}>
-            <div style={{ 
-              width: 80, height: 80, borderRadius: "50%", 
-              backgroundColor: colors.creamMid, color: colors.forestGreen, 
-              border: `2px solid ${colors.forestGreen}`, 
-              display: "flex", alignItems: "center", justifyContent: "center", 
-              fontFamily: fonts.headline, fontWeight: 700, fontSize: 32, marginBottom: 16 
-            }}>
-              R
+            
+            {/* ✅ Clean Clickable Avatar with Elegant Hover Overlay */}
+            <div 
+              onClick={handleAvatarClick}
+              style={{ 
+                width: 80, height: 80, borderRadius: "50%", 
+                backgroundColor: colors.creamMid, color: colors.forestGreen, 
+                border: `2px solid ${colors.forestGreen}`, 
+                display: "flex", alignItems: "center", justifyContent: "center", 
+                fontFamily: fonts.headline, fontWeight: 700, fontSize: 32, marginBottom: 16,
+                overflow: "hidden", cursor: "pointer", position: "relative",
+                flexShrink: 0
+              }}
+            >
+              {selectedFile ? (
+                <img src={URL.createObjectURL(selectedFile)} alt="Preview" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+              ) : (user as any)?.profile_picture || (user as any)?.avatar ? (
+                <img 
+                  src={(user as any).profile_picture || (user as any).avatar} 
+                  alt="Avatar" 
+                  style={{ width: "100%", height: "100%", objectFit: "cover" }} 
+                  crossOrigin="anonymous"
+                  referrerPolicy="no-referrer"
+                />
+              ) : (
+                (profileData.name || profileData.username || "U").charAt(0).toUpperCase()
+              )}
+              
+              {/* Elegant Hover Overlay */}
+              <div 
+                style={{
+                  position: "absolute", inset: 0,
+                  backgroundColor: "rgba(11, 67, 53, 0.6)",
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                  opacity: 0, transition: "opacity 0.2s ease",
+                  color: colors.creamLight
+                }}
+                onMouseEnter={(e) => (e.currentTarget.style.opacity = "1")}
+                onMouseLeave={(e) => (e.currentTarget.style.opacity = "0")}
+              >
+                <Icon name="edit" size={24} />
+              </div>
             </div>
-            <h2 style={{ fontFamily: fonts.headline, fontSize: 18, fontWeight: 700, margin: "0 0 4px" }}>{profileData.username}</h2>
+
+            {/* ✅ Hidden File Input */}
+            <input 
+              type="file" 
+              ref={fileInputRef} 
+              style={{ display: "none" }} 
+              accept="image/*" 
+              onChange={handleFileChange} 
+            />
+
+            {selectedFile && (
+              <p style={{ fontSize: 11, color: colors.amber, marginTop: -8, marginBottom: 8, fontWeight: 600 }}>
+                New image selected
+              </p>
+            )}
+
+            <h2 style={{ fontFamily: fonts.headline, fontSize: 18, fontWeight: 700, margin: "0 0 4px" }}>{profileData.name || profileData.username}</h2>
             <span style={{ 
               fontFamily: fonts.label, fontSize: 10, fontWeight: 700, letterSpacing: "0.08em", 
               padding: "4px 10px", borderRadius: 9999, backgroundColor: colors.forestGreen, color: colors.creamLight, marginBottom: 16 
             }}>
-              ADMINISTRATOR
+              {userRole}
             </span>
             
             <div style={{ width: "100%", borderTop: `1px solid ${colors.creamDark}`, paddingTop: 16, marginTop: 8, textAlign: isRTL ? "right" : "left" }}>
@@ -139,15 +254,8 @@ export default function AdminProfilePage() {
                 <p style={{ fontFamily: fonts.body, fontSize: 12, margin: 0, wordBreak: "break-all" }}>{profileData.email}</p>
               </div>
               <div style={{ marginBottom: 12 }}>
-                <p style={{ ...labelStyle, marginBottom: 4, fontSize: 9 }}>Member Since</p>
-                <p style={{ fontFamily: fonts.body, fontSize: 12, margin: 0 }}>{profileData.joinDate}</p>
-              </div>
-              <div>
-                <p style={{ ...labelStyle, marginBottom: 4, fontSize: 9 }}>Last Login</p>
-                <p style={{ fontFamily: fonts.body, fontSize: 12, margin: 0, display: "flex", alignItems: "center", gap: 4 }}>
-                  <span style={{ width: 6, height: 6, borderRadius: "50%", backgroundColor: "#22c55e", display: "inline-block" }}></span>
-                  {profileData.lastLogin}
-                </p>
+                <p style={{ ...labelStyle, marginBottom: 4, fontSize: 9 }}>Username</p>
+                <p style={{ fontFamily: fonts.body, fontSize: 12, margin: 0 }}>@{profileData.username}</p>
               </div>
             </div>
           </div>
@@ -161,26 +269,39 @@ export default function AdminProfilePage() {
                 <Icon name="person" size={20} /> Personal Information
               </h3>
               
+              {errorMsg && (
+                <div style={{ padding: "10px 12px", backgroundColor: "rgba(139, 44, 44, 0.1)", color: colors.red, borderRadius: 8, fontSize: 13, marginBottom: 16 }}>
+                  {errorMsg}
+                </div>
+              )}
+
               <form onSubmit={handleSaveProfile} style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+                <div>
+                  <label style={labelStyle}>Display Name</label>
+                  <input 
+                    type="text" name="name" value={profileData.name} onChange={handleProfileChange} 
+                    style={inputStyle} placeholder="Your full name"
+                  />
+                </div>
                 <div>
                   <label style={labelStyle}>Username</label>
                   <input 
-                    type="text" name="username" value={profileData.username} onChange={handleProfileChange} 
-                    style={inputStyle} 
+                    type="text" name="username" value={profileData.username} disabled
+                    style={{ ...inputStyle, backgroundColor: "#f9f9f9", cursor: "not-allowed", opacity: 0.7 }} 
                   />
                 </div>
                 <div>
                   <label style={labelStyle}>Email Address</label>
                   <input 
-                    type="email" name="email" value={profileData.email} onChange={handleProfileChange} 
-                    style={inputStyle} 
+                    type="email" name="email" value={profileData.email} disabled
+                    style={{ ...inputStyle, backgroundColor: "#f9f9f9", cursor: "not-allowed", opacity: 0.7 }} 
                   />
                 </div>
                 <div>
                   <label style={labelStyle}>Bio / Description</label>
                   <textarea 
                     name="bio" value={profileData.bio} onChange={handleProfileChange} rows={4}
-                    style={{ ...inputStyle, resize: "vertical", minHeight: 80 }} 
+                    style={{ ...inputStyle, resize: "vertical", minHeight: 80 }} placeholder="Tell us about yourself..."
                   />
                 </div>
 
@@ -201,13 +322,13 @@ export default function AdminProfilePage() {
               </form>
             </div>
 
-            {/* Form 2: Security */}
+            {/* Form 2: Security & Password (Static for now) */}
             <div style={{ ...cardStyle, padding: 24 }}>
               <h3 style={{ fontFamily: fonts.headline, fontSize: 16, fontWeight: 600, margin: "0 0 20px", display: "flex", alignItems: "center", gap: 8 }}>
                 <Icon name="lock" size={20} /> Security & Password
               </h3>
               
-              <form style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+              <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
                 <div>
                   <label style={labelStyle}>Current Password</label>
                   <input 
@@ -244,7 +365,7 @@ export default function AdminProfilePage() {
                     Update Password
                   </button>
                 </div>
-              </form>
+              </div>
             </div>
 
           </div>

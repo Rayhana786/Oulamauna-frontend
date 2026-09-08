@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from "react";
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useLang } from "../../context/LanguageContext";
+import { useAuth } from "../../context/AuthContext"; // ✅ ADDED
 
 /* ------------------------------------------------------------------ */
 /*  Design tokens — Oulamnauna admin palette                          */
@@ -54,7 +55,6 @@ const navGroups: NavGroup[] = [
     sectionKey: "sidebar.section.scholars",
     links: [
       { icon: "school", labelKey: "sidebar.allScholars", to: "/admin/scholars" },
-      // ✅ REMOVED: "Add Scholar" link as requested
     ],
   },
   {
@@ -68,7 +68,6 @@ const navGroups: NavGroup[] = [
     ],
   },
   {
-    // ✅ NEW: Combined section for Disciplines and Regions (Add/Edit/Delete management)
     sectionKey: "sidebar.section.classification",
     links: [
       { icon: "category", labelKey: "sidebar.disciplines", to: "/admin/disciplines" },
@@ -109,14 +108,17 @@ const navGroups: NavGroup[] = [
 /* ------------------------------------------------------------------ */
 const AdminSidebar: React.FC = () => {
   const location = useLocation();
+  const navigate = useNavigate(); // ✅ ADDED
   const { t, lang } = useLang();
+  const { user, logout } = useAuth(); // ✅ ADDED: Get real user and logout function
   const isRTL = lang === "AR";
 
-  // ✅ Static User Data (For now, later we will use useAuth)
-  const staticUser = {
-    username: "riri",
+  // ✅ REAL User Data from Auth Context
+  const currentUser = {
+    username: user?.username || "User",
     role: "Administrator",
-    initial: "R",
+    initial: (user?.name || user?.username || "U").charAt(0).toUpperCase(),
+    profile_picture: (user as any)?.profile_picture || (user as any)?.avatar,
   };
 
   // ✅ Dropdown State
@@ -150,7 +152,7 @@ const AdminSidebar: React.FC = () => {
         zIndex: 50,
         display: "flex",
         flexDirection: "column",
-        justifyContent: "space-between", // ✅ Keeps the bottom section pushed to the end
+        justifyContent: "space-between",
         paddingTop: 18,
         paddingBottom: 12,
         overflowY: "auto",
@@ -221,11 +223,7 @@ const AdminSidebar: React.FC = () => {
         {/* Nav groups */}
         <div className="admin-sidebar-scroll" style={{ display: "flex", flexDirection: "column", gap: 12, padding: "0 8px" }}>
           {navGroups.map((group, idx) => (
-            <div 
-  key={group.sectionKey ?? `group-${idx}`}
-  style={{ marginBottom: idx === navGroups.length - 1 ? "100px" : "0" }}
->
-              
+            <div key={group.sectionKey ?? `group-${idx}`} style={{ marginBottom: idx === navGroups.length - 1 ? "100px" : "0" }}>
               {group.sectionKey && (
                 <p
                   style={{
@@ -245,7 +243,6 @@ const AdminSidebar: React.FC = () => {
               <ul style={{ listStyle: "none", display: "flex", flexDirection: "column", gap: 1, margin: 0, padding: 0 }}>
                 {group.links.map((item) => {
                   const active = location.pathname === item.to || location.pathname.startsWith(item.to + "/");
-                  
                   return (
                     <li key={item.to}>
                       <Link
@@ -265,14 +262,10 @@ const AdminSidebar: React.FC = () => {
                             : { color: colors.forestGreen }),
                         }}
                         onMouseEnter={(e) => {
-                          if (!active) {
-                            e.currentTarget.style.backgroundColor = colors.creamMid;
-                          }
+                          if (!active) e.currentTarget.style.backgroundColor = colors.creamMid;
                         }}
                         onMouseLeave={(e) => {
-                          if (!active) {
-                            e.currentTarget.style.backgroundColor = "transparent";
-                          }
+                          if (!active) e.currentTarget.style.backgroundColor = "transparent";
                         }}
                       >
                         <Icon name={item.icon} size={16} filled={active} />
@@ -287,7 +280,7 @@ const AdminSidebar: React.FC = () => {
         </div>
       </div>
 
-      {/* ✅ User Profile & Dropdown Menu (Kept exactly as requested) */}
+      {/* ✅ User Profile & Dropdown Menu */}
       <div 
         ref={profileRef}
         style={{ 
@@ -296,7 +289,6 @@ const AdminSidebar: React.FC = () => {
           position: "relative" 
         }}
       >
-        {/* Clickable Profile Button */}
         <button
           onClick={() => setProfileOpen(!profileOpen)}
           style={{
@@ -326,22 +318,27 @@ const AdminSidebar: React.FC = () => {
               color: colors.forestGreen,
               flexShrink: 0,
               fontSize: 13,
+              overflow: "hidden"
             }}
           >
-            {staticUser.initial}
+            {/* ✅ Show real avatar or initial */}
+            {currentUser.profile_picture ? (
+              <img src={currentUser.profile_picture} alt="Avatar" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+            ) : (
+              currentUser.initial
+            )}
           </div>
           <div style={{ display: "flex", flexDirection: "column", flex: 1, minWidth: 0 }}>
             <span style={{ fontFamily: fonts.body, fontSize: 12, fontWeight: 600, color: colors.forestGreen }}>
-              Hello {staticUser.username}
+              Hello {currentUser.username}
             </span>
             <span style={{ fontFamily: fonts.label, fontSize: 10, color: colors.forestGreen, opacity: 0.7 }}>
-              {staticUser.role}
+              {currentUser.role}
             </span>
           </div>
           <Icon name={profileOpen ? "expand_less" : "expand_more"} size={16} />
         </button>
 
-        {/* Dropdown Menu */}
         {profileOpen && (
           <div
             style={{
@@ -358,7 +355,6 @@ const AdminSidebar: React.FC = () => {
               zIndex: 100,
             }}
           >
-            {/* 1. My Profile */}
             <Link
               to="/admin/profile"
               onClick={() => setProfileOpen(false)}
@@ -370,7 +366,6 @@ const AdminSidebar: React.FC = () => {
               My Profile
             </Link>
             
-            {/* 2. View Public Site */}
             <Link
               to="/"
               onClick={() => setProfileOpen(false)}
@@ -382,12 +377,15 @@ const AdminSidebar: React.FC = () => {
               View Public Site
             </Link>
 
-            {/* Divider */}
             <div style={{ height: 1, backgroundColor: colors.forestGreen, opacity: 0.1, margin: "4px 0" }} />
 
-            {/* 3. Logout */}
+            {/* ✅ REAL LOGOUT ACTION */}
             <button
-              onClick={() => { alert("Logout clicked (Static for now)"); setProfileOpen(false); }}
+              onClick={() => { 
+                logout(); 
+                navigate("/login"); 
+                setProfileOpen(false); 
+              }}
               style={{ width: "100%", display: "flex", alignItems: "center", gap: 8, padding: "10px 14px", background: "none", border: "none", cursor: "pointer", color: colors.red, fontSize: 13, fontFamily: fonts.body, transition: "background 0.15s", textAlign: isRTL ? "right" : "left" }}
               onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "rgba(139, 44, 44, 0.08)")}
               onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "transparent")}

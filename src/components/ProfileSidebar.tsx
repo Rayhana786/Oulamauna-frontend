@@ -130,8 +130,8 @@ export default function ProfileSidebar({
   const { t } = useLang();
   const isUser = role === "user";
 
+  // ✅ REMOVED "My Profile" from this array as requested
   const navItems: { key: SidebarActive; icon: string; label: string; to?: string }[] = [
-    { key: "profile", icon: "person", label: t("editProfile.myProfile"), to:  "/profile"  },
     { key: "dashboard", icon: "dashboard", label: t("editProfile.dashboard"), to: "/dashboard" },
     { key: "editProfile", icon: "edit_square", label: t("editProfile.editProfile"), to: "/edit-profile" },
     { key: "settings", icon: "settings", label: t("editProfile.settings"), to: "/settings" },

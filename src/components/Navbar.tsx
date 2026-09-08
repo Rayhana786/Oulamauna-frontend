@@ -2,6 +2,8 @@ import React, { useState, useEffect, useRef } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { useLang } from "../context/LanguageContext";
+import { notificationApi } from "../api/notificationApi";
+import NotificationsPanel from "./NotificationsPanel"; // ⚠️ adjust this path to wherever NotificationsPanel.tsx actually lives relative to Navbar.tsx (was wrongly pointing at the full page before)
 
 import oulamaunaLogo from '../assets/ChatGPT Image 1 sept. 2026, 22_36_18.png';
 
@@ -18,7 +20,7 @@ const PATHS: Record<string, string> = {
 
 const T: Record<
   Language,
-  { links: string[]; login: string; register: string; placeholder: string; profileMenu: string; profile: string; dashboard: string; settings: string; signOut: string; search: string }
+  { links: string[]; login: string; register: string; placeholder: string; profileMenu: string; profile: string; dashboard: string; settings: string; signOut: string; search: string; notifications: string }
 > = {
   EN: {
     links: ["Home", "Scholars", "Forum", "About", "Contact"],
@@ -31,6 +33,7 @@ const T: Record<
     settings: "Settings",
     signOut: "Sign out",
     search: "Search",
+    notifications: "Notifications",
   },
   AR: {
     links: ["الرئيسية", "العلماء", "المنتدى", "عنا", "اتصل"],
@@ -43,6 +46,7 @@ const T: Record<
     settings: "الإعدادات",
     signOut: "تسجيل الخروج",
     search: "بحث",
+    notifications: "الإشعارات",
   },
   FR: {
     links: ["Accueil", "Savants", "Forum", "À propos", "Contact"],
@@ -55,6 +59,7 @@ const T: Record<
     settings: "Paramètres",
     signOut: "Déconnexion",
     search: "Rechercher",
+    notifications: "Notifications",
   },
 };
 
@@ -67,7 +72,6 @@ const LANG_FULL: Record<Language, string> = {
 const Navbar: React.FC = () => {
   const { lang, setLang } = useLang();
   const { isLoggedIn, logout, user } = useAuth();
-  console.log(" USER OBJECT:", user);
 
   const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState("");
@@ -81,6 +85,12 @@ const Navbar: React.FC = () => {
   const [lastScrollY, setLastScrollY] = useState(0);
   const [showNavbar, setShowNavbar] = useState(true);
 
+  const [unreadCount, setUnreadCount] = useState(0);
+  // ✅ NEW: controls the floating dropdown panel. The bell no longer navigates directly —
+  // it opens this panel first; the panel itself has the "See all notifications" action
+  // that pushes to /notifications.
+  const [notifPanelOpen, setNotifPanelOpen] = useState(false);
+
   const langRef = useRef<HTMLDivElement>(null);
   const searchRef = useRef<HTMLDivElement>(null);
   const profileRef = useRef<HTMLDivElement>(null);
@@ -88,12 +98,36 @@ const Navbar: React.FC = () => {
 
   const location = useLocation();
   const isHome = location.pathname === "/";
+  // ✅ When we're already on the full notifications page, the bell shouldn't
+  // pop the floating panel back on top of it — that's just noise since the
+  // user is already looking at the same list.
+  const isNotificationsPage = location.pathname === "/notifications";
   const isRTL = lang === "AR";
   const t = T[lang];
 
-  // ✅ Check if user is admin (handles 'role_name' from your DB)
-const userRole = (user as any)?.role || (user as any)?.role_name;
-const isAdmin = userRole && String(userRole).toLowerCase() === 'admin';
+  const userRole = (user as any)?.role || (user as any)?.role_name;
+  const isAdmin = userRole && String(userRole).toLowerCase() === 'admin';
+
+  // ✅ Extracted so we can also refresh it right after the panel closes
+  // (e.g. after marking something as read inside the dropdown).
+  const fetchUnreadCount = async () => {
+    if (!isLoggedIn) {
+      setUnreadCount(0);
+      return;
+    }
+    try {
+      const response = await notificationApi.getNotifications({ unread_only: true, limit: 1 });
+      if (response.data.success) {
+        setUnreadCount(response.data.unread_count || 0);
+      }
+    } catch (error) {
+      console.error("Failed to fetch notification count:", error);
+    }
+  };
+
+  useEffect(() => {
+    fetchUnreadCount();
+  }, [isLoggedIn]);
 
   // Active link sync
   useEffect(() => {
@@ -113,7 +147,7 @@ const isAdmin = userRole && String(userRole).toLowerCase() === 'admin';
     };
   }, [mobileMenuOpen]);
 
-  // ✅ Scroll behavior - hide/show navbar (MOBILE ONLY)
+  // Scroll behavior - hide/show navbar (MOBILE ONLY)
   useEffect(() => {
     const fn = () => {
       const currentScrollY = window.scrollY;
@@ -174,6 +208,23 @@ const isAdmin = userRole && String(userRole).toLowerCase() === 'admin';
     setActive(id);
     setMobileMenuOpen(false);
     setMobileProfileExpanded(false);
+  };
+
+  const handleCloseNotifPanel = () => {
+    setNotifPanelOpen(false);
+    fetchUnreadCount();
+  };
+
+  // ✅ Single handler for both the desktop and mobile bell.
+  // On any other page: toggles the floating panel.
+  // On /notifications itself: just scrolls the already-open list back to top —
+  // no floating panel, since we're already "in" notifications.
+  const handleBellClick = () => {
+    if (isNotificationsPage) {
+      window.scrollTo({ top: 0, behavior: "smooth" });
+      return;
+    }
+    setNotifPanelOpen((prev) => !prev);
   };
 
   return (
@@ -325,6 +376,28 @@ const isAdmin = userRole && String(userRole).toLowerCase() === 'admin';
             <span className="material-symbols-outlined" style={{ fontSize: '20px' }}>search</span>
           </button>
 
+          {isLoggedIn && <div className={`w-px h-5 mx-1 ${isTransparent ? 'bg-white/30' : 'bg-white/20'}`} />}
+
+          {/* ✅ Notifications Bell (Desktop) — opens the floating panel, does NOT navigate */}
+          {isLoggedIn && (
+            <button
+              onClick={handleBellClick}
+              className={`relative p-2 transition-all duration-300 rounded-full flex items-center justify-center hover:scale-105 ${
+                isNotificationsPage
+                  ? (isTransparent ? 'bg-white/20 text-[#C9A84C]' : 'bg-[#C9A84C]/20 text-[#C9A84C]')
+                  : (isTransparent ? 'text-white hover:bg-white/10 hover:text-[#C9A84C]' : 'text-white hover:bg-[#C9A84C]/10 hover:text-[#C9A84C]')
+              }`}
+              title={t.notifications}
+            >
+              <span className="material-symbols-outlined" style={{ fontSize: '24px' }}>notifications</span>
+              {unreadCount > 0 && (
+                <span className="absolute top-1 right-1 flex h-4 min-w-[16px] px-1 items-center justify-center rounded-full bg-[#C9A84C] text-[10px] font-bold text-[#1e4d3a] ring-2 ring-white/80">
+                  {unreadCount > 99 ? '99+' : unreadCount}
+                </span>
+              )}
+            </button>
+          )}
+
           <div className={`w-px h-5 mx-1 ${isTransparent ? 'bg-white/30' : 'bg-white/20'}`} />
 
           {/* Profile / Auth */}
@@ -352,24 +425,37 @@ const isAdmin = userRole && String(userRole).toLowerCase() === 'admin';
               </div>
             ) : (
               <>
-                <button
+               <button
                   onClick={() => setProfileOpen(!profileOpen)}
                   className="w-9 h-9 rounded-full border-2 flex items-center justify-center transition-all duration-300 overflow-hidden hover:scale-105 bg-white/10 border-white/30 hover:bg-[#C9A84C]/20 hover:border-[#C9A84C]"
                 >
-                  {(user as any)?.avatar ? (
-                    <img src={(user as any).avatar} alt="Profile" className="w-full h-full object-cover" />
+                  {(user as any)?.avatar || (user as any)?.profile_picture ? (
+                    <img
+                      src={(user as any).avatar || (user as any).profile_picture}
+                      alt="Profile"
+                      className="w-full h-full object-cover"
+                    />
                   ) : (
                     <span className="material-symbols-outlined text-white" style={{ fontSize: '20px', fontVariationSettings: "'FILL' 1" }}>person</span>
                   )}
                 </button>
 
+                {/* Profile Dropdown */}
                 {profileOpen && (
                   <div className={`absolute top-[calc(100%+8px)] ${isRTL ? 'left-0' : 'right-0'} z-[110] w-[280px] bg-[#F5F3EC] rounded-2xl shadow-xl overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200 border border-[#C9A84C]/20`}>
-                    <div className="p-4 border-b border-[#1e4d3a]/10">
+                    <Link
+                      to="/profile"
+                      onClick={() => setProfileOpen(false)}
+                      className="block p-4 border-b border-[#1e4d3a]/10 hover:bg-[#1e4d3a]/5 transition-colors cursor-pointer"
+                    >
                       <div className="flex items-center gap-3">
                         <div className="w-10 h-10 rounded-full bg-[#C9A84C] flex items-center justify-center flex-shrink-0 overflow-hidden">
-                          {(user as any)?.avatar ? (
-                            <img src={(user as any).avatar} alt="Profile" className="w-full h-full object-cover" />
+                          {(user as any)?.avatar || (user as any)?.profile_picture ? (
+                            <img
+                              src={(user as any).avatar || (user as any).profile_picture}
+                              alt="Profile"
+                              className="w-full h-full object-cover"
+                            />
                           ) : (
                             <span className="material-symbols-outlined text-[#1e4d3a]" style={{ fontSize: '24px', fontVariationSettings: "'FILL' 1" }}>
                               person
@@ -384,8 +470,11 @@ const isAdmin = userRole && String(userRole).toLowerCase() === 'admin';
                             {(user as any)?.email || ''}
                           </p>
                         </div>
+                        <span className="material-symbols-outlined text-gray-400" style={{ fontSize: '18px' }}>
+                          {isRTL ? 'arrow_back' : 'arrow_forward'}
+                        </span>
                       </div>
-                    </div>
+                    </Link>
 
                     <div className="p-2">
                       <Link to="/dashboard" onClick={() => setProfileOpen(false)} className="flex items-center gap-3 px-3 py-2.5 text-[#1e4d3a]/80 hover:text-[#C9A84C] hover:bg-[#1e4d3a]/5 rounded-lg transition-colors">
@@ -407,11 +496,10 @@ const isAdmin = userRole && String(userRole).toLowerCase() === 'admin';
                         </span>
                       </Link>
 
-                      {/* ✅ ADMIN ONLY LINK: Appears only if user is admin */}
                       {isAdmin && (
-                        <Link 
-                          to="/admin/dashboard" 
-                          onClick={() => setProfileOpen(false)} 
+                        <Link
+                          to="/admin/dashboard"
+                          onClick={() => setProfileOpen(false)}
                           className="flex items-center gap-3 px-3 py-2.5 text-[#1e4d3a] font-semibold hover:text-[#C9A84C] hover:bg-[#1e4d3a]/5 rounded-lg transition-colors border-t border-[#1e4d3a]/10 mt-2 pt-2"
                         >
                           <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>admin_panel_settings</span>
@@ -439,6 +527,21 @@ const isAdmin = userRole && String(userRole).toLowerCase() === 'admin';
 
         {/* Mobile Utilities */}
         <div className="md:hidden flex items-center gap-2 order-2">
+          {/* ✅ Notifications Bell (Mobile Top Bar) — opens the floating panel too */}
+          {isLoggedIn && (
+            <button
+              onClick={handleBellClick}
+              className={`relative p-2 text-white rounded-full transition-colors ${isNotificationsPage ? 'bg-white/20' : 'hover:bg-white/10'}`}
+            >
+              <span className="material-symbols-outlined" style={{ fontSize: '24px' }}>notifications</span>
+              {unreadCount > 0 && (
+                <span className="absolute top-1 right-1 flex h-4 min-w-[16px] px-1 items-center justify-center rounded-full bg-[#C9A84C] text-[10px] font-bold text-[#1e4d3a]">
+                  {unreadCount > 99 ? '99+' : unreadCount}
+                </span>
+              )}
+            </button>
+          )}
+
           <button
             onClick={() => setSearchOpen(!searchOpen)}
             className="p-2 text-white rounded-full hover:bg-white/10 transition-colors"
@@ -455,9 +558,12 @@ const isAdmin = userRole && String(userRole).toLowerCase() === 'admin';
         </div>
       </nav>
 
+      {/* ✅ Floating notifications panel — lives outside <nav> so it overlays everything */}
+      <NotificationsPanel isOpen={notifPanelOpen} onClose={handleCloseNotifPanel} />
+
       {/* Full-Page Mobile Menu */}
       {mobileMenuOpen && (
-        <div 
+        <div
           className="fixed inset-0 z-[100] md:hidden bg-white overflow-y-auto"
           dir={isRTL ? 'rtl' : 'ltr'}
         >
@@ -502,8 +608,7 @@ const isAdmin = userRole && String(userRole).toLowerCase() === 'admin';
                     <Link to="/settings" onClick={() => handleMobileNavClick('HOME')} className="mobile-link text-gray-600">
                       <span className={`mobile-link-text font-['Inter'] text-[15px] ${isRTL ? 'arabic-text' : ''}`}>{t.settings}</span>
                     </Link>
-                    
-                    {/* ✅ ADMIN ONLY LINK (Mobile) */}
+
                     {isAdmin && (
                       <Link to="/admin/dashboard" onClick={() => handleMobileNavClick('HOME')} className="mobile-link text-[#1e4d3a] font-semibold border-t border-gray-200 mt-2 pt-2">
                         <span className={`mobile-link-text font-['Inter'] text-[15px] ${isRTL ? 'arabic-text' : ''}`}>

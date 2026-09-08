@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from "react";
 import { useParams, useNavigate, useSearchParams } from "react-router-dom";
 import { useLang } from "../../context/LanguageContext"; 
+import { useAuth } from "../../context/AuthContext"; // ✅ ADD THIS LINE
 import { scholarsApi } from "../../api/scholarsApi";
 import DOMPurify from 'dompurify';
 
@@ -111,7 +112,8 @@ interface Work {
 interface MediaItem {
    media_id?: number;
   type: "pdf" | "audio" | "video"; title: string; description: string;
-  viewCount: number; likeCount: number; action: string; actionIcon: string;
+  viewCount: number; likeCount: number; isLikedByUser?: boolean; 
+  action: string; actionIcon: string;
   accessUrl?: string; accessSource?: "upload" | "link"; accessFileName?: string;
   uploadedBy?: string; uploadedByUrl?: string;
 }
@@ -292,7 +294,7 @@ function formatCentury(start: number | null | undefined, end: number | null | un
 /* ─────────────────────────────────────────────
    DATA TRANSFORMER (Backend -> UI)
 ───────────────────────────────────────────── */
-const transformBackendToUI = (data: BackendScholarResponse["data"], lang: Language): ScholarDetail => {
+const transformBackendToUI = (data: BackendScholarResponse["data"], lang: Language, currentUserId?: number): ScholarDetail => {
   const versions = data.scholar_versions || [];
   const getVersion = (code: string) => versions.find((v) => v.languages?.code?.toLowerCase() === code.toLowerCase());
   
@@ -378,6 +380,10 @@ const transformBackendToUI = (data: BackendScholarResponse["data"], lang: Langua
     }),
     media: versions.flatMap((v) => v.media || []).map((m): MediaItem => {
       const fileType = (m.file_type || "pdf") as MediaItem["type"];
+      
+      // ✅ CHECK IF CURRENT USER ID IS IN THE media_likes ARRAY FROM BACKEND
+      const isLiked = currentUserId ? (m as any).media_likes?.some((like: any) => like.user_id === currentUserId) : false;
+
       return {
         media_id: m.media_id,
         type: fileType,
@@ -385,6 +391,7 @@ const transformBackendToUI = (data: BackendScholarResponse["data"], lang: Langua
         description: m.description || `${(m.file_type || "pdf").toUpperCase()} file`,
         viewCount: m.view_count || 0,
         likeCount: m.like_count || 0,
+        isLikedByUser: isLiked, // ✅ USE THE CHECK RESULT HERE
         action: m.source_type === "upload" ? "DOWNLOAD FILE" : "OPEN LINK",
         actionIcon: m.source_type === "upload" ? "download" : "open_in_new",
         accessUrl: m.media_url || m.file_path || undefined,
@@ -1182,10 +1189,11 @@ interface MediaCardProps {
 }
 
 function MediaCard({ item: m, mediaIconName }: MediaCardProps) {
-  const [liked, setLiked] = useState(false);
+  // ✅ Initialize state from backend data so it survives refreshes
+  const [liked, setLiked] = useState(m.isLikedByUser || false);
+  const [likeCount, setLikeCount] = useState(m.likeCount || 0);
   const [isDownloading, setIsDownloading] = useState(false);
   const [isViewing, setIsViewing] = useState(false);
-  const displayLikes = m.likeCount + (liked ? 1 : 0);
 
   const handleDownload = async (e: React.MouseEvent) => {
     if (m.accessSource !== "upload" || !m.accessUrl) return;
@@ -1217,6 +1225,14 @@ function MediaCard({ item: m, mediaIconName }: MediaCardProps) {
     e.preventDefault();
     e.stopPropagation();
     setIsViewing(true);
+
+    // ✅ NEW: Track the view in the background (doesn't block the file from opening)
+    if (m.media_id) {
+      scholarsApi.viewMedia(m.media_id).catch((err) => 
+        console.error("View track failed:", err)
+      );
+    }
+
     try {
       const response = await fetch(m.accessUrl);
       const blob = await response.blob();
@@ -1267,12 +1283,27 @@ function MediaCard({ item: m, mediaIconName }: MediaCardProps) {
         <span style={{ display: "flex", alignItems: "center", gap: "4px", ...MONO, fontSize: "10px", color: "#1e4d3a99" }}>
           <Icon name="visibility" size={15} /> {m.viewCount}
         </span>
-        <button
-          onClick={(e) => { e.stopPropagation(); setLiked((v) => !v); }}
+                <button
+          onClick={async (e) => { 
+            e.stopPropagation(); 
+            if (!m.media_id) {
+              console.error("Cannot like: media_id is missing");
+              return;
+            }
+            try {
+              // Call the API to toggle like/unlike
+              const response = await scholarsApi.toggleMediaLike(m.media_id);
+              // ✅ Update BOTH the liked state and the actual count from the server
+              setLiked(response.liked);
+              setLikeCount(response.like_count); 
+            } catch (err) {
+              console.error("Failed to toggle like:", err);
+            }
+          }}
           title="Like"
           style={{ display: "flex", alignItems: "center", gap: "4px", background: "none", border: "none", cursor: "pointer", padding: 0, ...MONO, fontSize: "10px", color: liked ? "#C9A84C" : "#1e4d3a99", transition: "color 0.2s ease" }}
         >
-          <Icon name={liked ? "favorite" : "favorite_border"} size={15} /> {displayLikes}
+          <Icon name={liked ? "favorite" : "favorite_border"} size={15} /> {likeCount}
         </button>
       </div>
       
@@ -1408,7 +1439,8 @@ const ScholarDetailPage: React.FC = () => {
   const headerRef = useRef<HTMLDivElement>(null);
   const [collapsed, setCollapsed] = useState(false);
   const isMobile = useIsMobile();
-  
+   const { user, loading: authLoading } = useAuth(); // ✅ Get the loading state
+  const currentUserId = user?.id; 
   const [toast, setToast] = useState<{ message: string; type: "success" | "error" } | null>(null);
 
   const [s, setS] = useState<ScholarDetail | null>(null);
@@ -1424,25 +1456,28 @@ const ScholarDetailPage: React.FC = () => {
     }
   }, [langParam]);
 
-  useEffect(() => {
+   useEffect(() => {
+    // ✅ 1. WAIT for AuthContext to finish checking the session/cookie
+    if (authLoading) return;
+
     const fetchData = async () => {
       setIsLoading(true);
       setError(null);
       try {
         let response = await scholarsApi.getById(scholarId, lang.toLowerCase());
-        setS(transformBackendToUI(response.data, lang));
+        setS(transformBackendToUI(response.data, lang, currentUserId));
       } catch (err: any) {
         try {
           let response = await scholarsApi.getById(scholarId, "en");
-          setS(transformBackendToUI(response.data, lang));
+          setS(transformBackendToUI(response.data, lang, currentUserId)); // ✅ Pass currentUserId
         } catch (enErr: any) {
           try {
             let response = await scholarsApi.getById(scholarId, "ar");
-            setS(transformBackendToUI(response.data, lang));
+            setS(transformBackendToUI(response.data, lang, currentUserId)); // ✅ Pass currentUserId
           } catch (arErr: any) {
             try {
               let response = await scholarsApi.getById(scholarId, "fr");
-              setS(transformBackendToUI(response.data, lang));
+              setS(transformBackendToUI(response.data, lang, currentUserId)); // ✅ Pass currentUserId
             } catch (finalErr: any) {
               setError("Scholar not found");
             }
@@ -1453,7 +1488,7 @@ const ScholarDetailPage: React.FC = () => {
       }
     };
     fetchData();
-  }, [scholarId, lang, langParam]);
+  }, [scholarId, lang, langParam, authLoading, currentUserId]); // ✅ Add authLoading and currentUserId to dependencies
 
   useEffect(() => {
     if (!focusParam || !s) return;

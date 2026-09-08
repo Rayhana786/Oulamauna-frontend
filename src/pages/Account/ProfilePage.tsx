@@ -2,16 +2,14 @@ import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useLang } from "../../context/LanguageContext";
 import { useAuth } from "../../context/AuthContext";
-import ProfileSidebar from "../../components/ProfileSidebar";
+import { userApi } from "../../api/userApi"; 
 
 /* ─────────────────────────────────────────────────────────────
    Oulamauna — Unified Profile Page
-   Styled with Dashboard.tsx palette
-   v2: full-width profile header, Forum Activity separated from
-   Contributions, extra top/bottom breathing room under navbar/footer
+   v7: Now with clickable profile image modal
 ───────────────────────────────────────────────────────────── */
 
-type Role = "user" | "contributor";
+type Role = "user" | "contributor" | "admin";
 
 interface Contribution {
   id: number;
@@ -36,11 +34,13 @@ interface ProfileData {
   displayName: string;
   fullName: string;
   email: string;
+  role_id: number;
   role: Role;
   bio: string;
   country: string;
   joined: string;
   links: string[];
+  profile_picture: string | null;
   avatarInitial: string;
   contributions: Contribution[];
   forumPosts: ForumPost[];
@@ -86,7 +86,6 @@ const BTN_PRIMARY: React.CSSProperties = {
   textDecoration: "none",
 };
 
-/* ── RESPONSIVE: shared mobile-detection hook (same pattern as Dashboard) ───── */
 function useIsMobile() {
   const [isMobile, setIsMobile] = useState(() => (typeof window !== "undefined" ? window.innerWidth < 768 : false));
   useEffect(() => {
@@ -146,8 +145,16 @@ function HoverBtn({ children, onClick, style }: { children: React.ReactNode; onC
 }
 
 function RoleBadge({ role }: { role: Role }) {
-  const isContributor = role === "contributor";
-  const iconName = isContributor ? "edit_document" : "person";
+  let iconName = "person";
+  let label = "User";
+
+  if (role === "admin") {
+    iconName = "admin_panel_settings";
+    label = "Admin";
+  } else if (role === "contributor") {
+    iconName = "edit_document";
+    label = "Contributor";
+  }
 
   return (
     <span style={{
@@ -166,7 +173,7 @@ function RoleBadge({ role }: { role: Role }) {
       whiteSpace: "nowrap",
     }}>
       <Icon name={iconName} size={14} />
-      {isContributor ? "Contributor" : "User"}
+      {label}
     </span>
   );
 }
@@ -202,8 +209,6 @@ function SocialIconBtn({ href }: { href: string }) {
   );
 }
 
-/* ── RESPONSIVE: on mobile, stats render as small square tiles (same idea as
-   Dashboard's 2-col stat grid) instead of an inline row of numbers ───── */
 function StatTile({ value, label }: { value: string | number; label: string }) {
   return (
     <HoverCard style={{ padding: "12px 10px", textAlign: "center" }}>
@@ -222,7 +227,6 @@ function StatBlock({ value, label }: { value: string | number; label: string }) 
   );
 }
 
-/* ── Section header used by both "Recent Contributions" and "Forum Activity" ─ */
 function SectionHeader({ icon, title, count, isMobile }: { icon: string; title: string; count: number; isMobile: boolean }) {
   return (
     <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: isMobile ? "12px" : "16px" }}>
@@ -244,7 +248,6 @@ function ContributionCard({ item, isMobile }: { item: Contribution; isMobile: bo
   const [hov, setHov] = useState(false);
 
   if (isMobile) {
-    // ── RESPONSIVE: compact horizontal row instead of the tall desktop card ─
     return (
       <div style={{
         display: "flex", alignItems: "flex-start", gap: "12px",
@@ -288,43 +291,26 @@ function ContributionCard({ item, isMobile }: { item: Contribution; isMobile: bo
       }}
     >
       <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: "8px" }}>
-        <span
-          style={{
-            ...MONO,
-            fontSize: "10px",
-            padding: "4px 10px",
-            borderRadius: "6px",
-            backgroundColor: "rgba(11, 67, 53, 0.08)",
-            border: `1px solid rgba(11, 67, 53, 0.2)`,
-            color: GREEN,
-            fontWeight: 700,
-            letterSpacing: "0.05em",
-          }}
-        >
+        <span style={{
+          ...MONO, fontSize: "10px", padding: "4px 10px", borderRadius: "6px",
+          backgroundColor: "rgba(11, 67, 53, 0.08)", border: `1px solid rgba(11, 67, 53, 0.2)`,
+          color: GREEN, fontWeight: 700, letterSpacing: "0.05em",
+        }}>
           {item.tag}
         </span>
         <Icon name="arrow_forward" size={16} style={{ color: MUTED, flexShrink: 0 }} />
       </div>
-
       <div>
-        <h3 style={{ ...SERIF, fontSize: "15px", fontWeight: 700, color: GREEN, margin: "0 0 6px" }}>
-          {item.title}
-        </h3>
-        <p style={{ ...SANS, fontSize: "13px", color: MUTED, margin: 0, lineHeight: 1.6 }}>
-          {item.description}
-        </p>
+        <h3 style={{ ...SERIF, fontSize: "15px", fontWeight: 700, color: GREEN, margin: "0 0 6px" }}>{item.title}</h3>
+        <p style={{ ...SANS, fontSize: "13px", color: MUTED, margin: 0, lineHeight: 1.6 }}>{item.description}</p>
       </div>
-
       <span style={{ ...MONO, fontSize: "11px", color: MUTED, display: "flex", alignItems: "center", gap: "4px" }}>
-        <Icon name="schedule" size={13} />
-        {item.time}
+        <Icon name="schedule" size={13} /> {item.time}
       </span>
     </div>
   );
 }
 
-/* ── Forum activity card — visually distinct from ContributionCard (chat icon,
-   reply count) so the two feeds never get visually confused ───── */
 function ForumPostCard({ item, isMobile }: { item: ForumPost; isMobile: boolean }) {
   const [hov, setHov] = useState(false);
 
@@ -358,101 +344,38 @@ function ForumPostCard({ item, isMobile }: { item: ForumPost; isMobile: boolean 
       onMouseEnter={() => setHov(true)}
       onMouseLeave={() => setHov(false)}
       style={{
-        display: "flex",
-        flexDirection: "column",
-        gap: "12px",
-        padding: "20px",
-        border: `1px solid ${BORDER}`,
-        borderRadius: "12px",
+        display: "flex", flexDirection: "column", gap: "12px", padding: "20px",
+        border: `1px solid ${BORDER}`, borderRadius: "12px",
         backgroundColor: hov ? "rgba(184, 134, 11, 0.05)" : CARD_BG,
-        borderColor: hov ? GOLD : BORDER,
-        transition: "all 0.3s ease",
-        cursor: "pointer",
+        borderColor: hov ? GOLD : BORDER, transition: "all 0.3s ease", cursor: "pointer",
         transform: hov ? "translateY(-2px)" : "translateY(0)",
         boxShadow: hov ? "0px 6px 24px rgba(184, 134, 11, 0.12)" : "0px 4px 20px rgba(11, 67, 53, 0.08)",
       }}
     >
       <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: "8px" }}>
-        <span
-          style={{
-            ...MONO,
-            fontSize: "10px",
-            padding: "4px 10px",
-            borderRadius: "6px",
-            backgroundColor: "rgba(184, 134, 11, 0.10)",
-            border: `1px solid rgba(184, 134, 11, 0.25)`,
-            color: GOLD,
-            fontWeight: 700,
-            letterSpacing: "0.05em",
-          }}
-        >
+        <span style={{
+          ...MONO, fontSize: "10px", padding: "4px 10px", borderRadius: "6px",
+          backgroundColor: "rgba(184, 134, 11, 0.10)", border: `1px solid rgba(184, 134, 11, 0.25)`,
+          color: GOLD, fontWeight: 700, letterSpacing: "0.05em",
+        }}>
           {item.category}
         </span>
         <Icon name="arrow_forward" size={16} style={{ color: MUTED, flexShrink: 0 }} />
       </div>
-
       <div>
-        <h3 style={{ ...SERIF, fontSize: "15px", fontWeight: 700, color: GREEN, margin: "0 0 6px" }}>
-          {item.title}
-        </h3>
-        <p style={{ ...SANS, fontSize: "13px", color: MUTED, margin: 0, lineHeight: 1.6 }}>
-          {item.excerpt}
-        </p>
+        <h3 style={{ ...SERIF, fontSize: "15px", fontWeight: 700, color: GREEN, margin: "0 0 6px" }}>{item.title}</h3>
+        <p style={{ ...SANS, fontSize: "13px", color: MUTED, margin: 0, lineHeight: 1.6 }}>{item.excerpt}</p>
       </div>
-
       <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
         <span style={{ ...MONO, fontSize: "11px", color: MUTED, display: "flex", alignItems: "center", gap: "4px" }}>
-          <Icon name="schedule" size={13} />
-          {item.time}
+          <Icon name="schedule" size={13} /> {item.time}
         </span>
         <span style={{ ...MONO, fontSize: "11px", color: MUTED, display: "flex", alignItems: "center", gap: "4px" }}>
-          <Icon name="chat_bubble" size={13} />
-          {item.replies} replies
+          <Icon name="chat_bubble" size={13} /> {item.replies} replies
         </span>
       </div>
     </div>
   );
-}
-
-/* ── MOCK DATA ───────────────────────────── */
-const MOCK_PROFILES: Record<string, ProfileData> = {
-  "6": {
-    id: "6", username: "iuio", displayName: "iuio", fullName: "", email: "", role: "user", avatarInitial: "I", country: "", joined: "", links: [], bio: "", contributions: [], forumPosts: [],
-  },
-  "21": {
-    id: "21", username: "Ahmed_21", displayName: "Ahmed", fullName: "Ahmed Al-Farsi", email: "ahmed.alfarsi@email.com", role: "contributor", avatarInitial: "A", country: "Algeria", joined: "Jan 2024", links: ["https://facebook.com/ahmed.alfarsi"], bio: "Independent researcher focusing on 12th-century theological manuscripts. I contribute translations and bibliographical annotations to the Oulamauna archive, specializing in texts originating from the Andalusian region.", contributions: [
-      { id: 1, title: "Translation: Kitab al-Shifa", description: "Added new annotations to Chapter 3 regarding the philosophical interpretations of causation.", time: "2 days ago", tag: "Annotation" },
-      { id: 2, title: "Manuscript Digitization: MS. 402", description: "Uploaded high-resolution scans of the margin notes found in the Cordoba collection.", time: "1 week ago", tag: "Media" },
-      { id: 3, title: "Research Paper: Andalusian Philosophy", description: "Published comprehensive analysis of Ibn Rushd's commentaries on Aristotle's Metaphysics.", time: "2 weeks ago", tag: "Research" },
-    ], forumPosts: [
-      { id: 1, title: "Dating the Cordoba marginalia", excerpt: "Started a thread asking for second opinions on the estimated dating of the newly digitized margin notes.", time: "1 day ago", category: "Manuscripts", replies: 12 },
-      { id: 2, title: "Best practices for transliteration", excerpt: "Shared a comparison of transliteration conventions used across the Andalusian sub-collection.", time: "4 days ago", category: "Discussion", replies: 7 },
-    ],
-  },
-  "42": {
-    id: "42", username: "Fatima_Zahra", displayName: "Fatima Zahra", fullName: "Fatima Zahra Benali", email: "fatima.benali@email.com", role: "user", avatarInitial: "F", country: "Morocco", joined: "Sep 2024", links: [], bio: "Graduate student in Islamic Studies at Al-Qarawiyyin University. Passionate about preserving and digitizing North African manuscript collections.", contributions: [
-      { id: 1, title: "Translation: Letter from Granada", description: "Translated a 15th-century correspondence between scholars in Granada and Fez.", time: "3 days ago", tag: "Translation" },
-      { id: 2, title: "Archive Contribution: Fez Library", description: "Added metadata for 50+ manuscripts from the Al-Qarawiyyin Library digital collection.", time: "5 days ago", tag: "Annotation" },
-    ], forumPosts: [
-      { id: 1, title: "Looking for co-reviewers: Fez metadata batch", excerpt: "Asked the community to help proofread the newly added Al-Qarawiyyin metadata before it goes live.", time: "2 days ago", category: "Collaboration", replies: 4 },
-    ],
-  },
-};
-
-function buildOwnProfile(user: any): ProfileData {
-  const uid = String(user?.id ?? user?._id ?? "me");
-  const mock = MOCK_PROFILES[uid];
-  const displayName = user?.displayName ?? user?.username ?? mock?.displayName ?? "Your Profile";
-  return {
-    id: uid, username: user?.username ?? mock?.username ?? "you", displayName, fullName: user?.fullName ?? mock?.fullName ?? "", email: user?.email ?? mock?.email ?? "",
-    role: (user?.role as Role) ?? mock?.role ?? "user", bio: user?.bio ?? mock?.bio ?? "", country: user?.country ?? mock?.country ?? "", joined: user?.joined ?? mock?.joined ?? "",
-    links: Array.isArray(user?.links) ? user.links : mock?.links ?? [], avatarInitial: (displayName[0] ?? "U").toUpperCase(),
-    contributions: mock?.contributions ?? [], forumPosts: mock?.forumPosts ?? [],
-  };
-}
-
-function getPublicProfile(profileId: string): ProfileData | undefined {
-  return MOCK_PROFILES[String(profileId)];
 }
 
 const fontImports = (
@@ -464,14 +387,6 @@ const fontImports = (
       font-family: 'Material Symbols Outlined';
       display: inline-block;
       vertical-align: middle;
-    }
-    .profile-contrib-grid {
-      display: grid;
-      grid-template-columns: repeat(2, 1fr);
-      gap: 16px;
-    }
-    @media (max-width: 720px) {
-      .profile-contrib-grid { grid-template-columns: 1fr; gap: 10px; }
     }
     .profile-feed-grid {
       display: grid;
@@ -485,17 +400,19 @@ const fontImports = (
   `}</style>
 );
 
-/* ── Cover band behind the avatar — gives the header real "profile page"
-   presence instead of floating flat on the page background ───── */
 const COVER_STYLE: React.CSSProperties = {
   height: "108px",
   width: "100%",
   background: `linear-gradient(120deg, rgba(11,67,53,0.92) 0%, rgba(11,67,53,0.75) 55%, rgba(184,134,11,0.55) 100%)`,
 };
 
-/* ── DESKTOP profile header: full-width banner, avatar overlapping the cover,
-   name/bio/stats below ───── */
-function DesktopProfileCard({ profile, showEditButton, onEdit, editLabel }: { profile: ProfileData; showEditButton: boolean; onEdit: () => void; editLabel: string }) {
+function DesktopProfileCard({ profile, showEditButton, onEdit, editLabel, openImageModal }: { 
+  profile: ProfileData; 
+  showEditButton: boolean; 
+  onEdit: () => void; 
+  editLabel: string;
+  openImageModal: () => void;
+}) {
   const manuscriptCount = profile.contributions.filter((c) => c.tag === "Media").length;
 
   return (
@@ -503,13 +420,31 @@ function DesktopProfileCard({ profile, showEditButton, onEdit, editLabel }: { pr
       <div style={COVER_STYLE} />
       <div style={{ padding: "0 32px 28px" }}>
         <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", gap: "16px", marginTop: "-40px" }}>
-          <div style={{
-            width: "96px", height: "96px", borderRadius: "50%", backgroundColor: CARD_BG,
-            display: "flex", alignItems: "center", justifyContent: "center", color: GREEN,
-            ...SERIF, fontSize: "34px", fontWeight: 700, border: `4px solid ${CARD_BG}`,
-            boxShadow: "0px 4px 16px rgba(11, 67, 53, 0.18)", flexShrink: 0,
-          }}>
-            {profile.avatarInitial}
+          {/* ✅ CORRECTED: Now opens image modal on click */}
+          <div 
+            onClick={openImageModal}
+            style={{
+              width: "96px", height: "96px", borderRadius: "50%", backgroundColor: CARD_BG,
+              display: "flex", alignItems: "center", justifyContent: "center", color: GREEN,
+              ...SERIF, fontSize: "34px", fontWeight: 700, border: `4px solid ${CARD_BG}`,
+              boxShadow: "0px 4px 16px rgba(11, 67, 53, 0.18)", flexShrink: 0, overflow: "hidden",
+              cursor: profile?.profile_picture ? 'pointer' : 'default',
+              transition: 'transform 0.3s',
+            }}
+            onMouseEnter={(e) => {
+              if (profile?.profile_picture) {
+                e.currentTarget.style.transform = 'scale(1.05)';
+              }
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.transform = 'scale(1)';
+            }}
+          >
+            {profile.profile_picture ? (
+              <img src={profile.profile_picture} alt="Profile" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+            ) : (
+              profile.avatarInitial
+            )}
           </div>
           {showEditButton && (
             <div style={{ marginBottom: "6px" }}>
@@ -547,20 +482,72 @@ function DesktopProfileCard({ profile, showEditButton, onEdit, editLabel }: { pr
           </div>
         )}
 
-        {profile.links.length > 0 && (
-          <div style={{ display: "flex", gap: "8px", margin: "16px 0 0" }}>
-            {profile.links.map((link, i) => (
-              <SocialIconBtn key={`${link}-${i}`} href={link} />
-            ))}
-          </div>
-        )}
+{profile.links.length > 0 && (
+  <div style={{ 
+    display: "flex", 
+    flexWrap: "wrap", 
+    justifyContent: "flex-start", // ✅ Aligns links to the LEFT
+    gap: "8px", 
+    margin: "16px 0 0" 
+  }}>
+    {profile.links.map((link, i) => {
+      let displayText = link;
+      try {
+        const url = new URL(link);
+        displayText = url.hostname.replace('www.', '');
+      } catch {
+        // Keep original if URL parsing fails
+      }
+      
+      return (
+        <a
+          key={`${link}-${i}`}
+          href={link}
+          target="_blank"
+          rel="noopener noreferrer"
+          title={link}
+          style={{
+            display: "inline-flex",
+            alignItems: "center",
+            justifyContent: "center",
+            gap: "6px",
+            padding: "6px 14px",
+            backgroundColor: "rgba(11, 67, 53, 0.04)",
+            border: `1px solid ${BORDER}`,
+            borderRadius: "20px",
+            textDecoration: "none",
+            color: GREEN,
+            ...SANS,
+            fontSize: "11px",
+            fontWeight: 500,
+            transition: "all 0.2s",
+            whiteSpace: "nowrap",
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.backgroundColor = GREEN;
+            e.currentTarget.style.color = BG;
+            e.currentTarget.style.borderColor = GREEN;
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.backgroundColor = "rgba(11, 67, 53, 0.04)";
+            e.currentTarget.style.color = GREEN;
+            e.currentTarget.style.borderColor = BORDER;
+          }}
+        >
+          <Icon name="link" size={13} />
+          <span>{displayText}</span>
+        </a>
+      );
+    })}
+  </div>
+)}
 
         <div style={{ borderTop: `1px solid ${BORDER}`, margin: "20px 0 0", paddingTop: "18px" }}>
           <div style={{ display: "flex", gap: "36px" }}>
             <StatBlock value={profile.contributions.length} label="Contributions" />
             <StatBlock value={profile.forumPosts.length} label="Forum Posts" />
             <StatBlock value={manuscriptCount} label="Manuscripts" />
-            <StatBlock value={profile.role === "contributor" ? "Yes" : "No"} label="Verified" />
+            <StatBlock value={profile.role === "admin" || profile.role === "contributor" ? "Yes" : "No"} label="Verified" />
           </div>
         </div>
       </div>
@@ -568,22 +555,44 @@ function DesktopProfileCard({ profile, showEditButton, onEdit, editLabel }: { pr
   );
 }
 
-/* ── MOBILE profile header: cover band, centered avatar/name, stat tiles grid,
-   full-width edit button pinned to the bottom of the card ───── */
-function MobileProfileCard({ profile, showEditButton, onEdit, editLabel }: { profile: ProfileData; showEditButton: boolean; onEdit: () => void; editLabel: string }) {
+function MobileProfileCard({ profile, showEditButton, onEdit, editLabel, openImageModal }: { 
+  profile: ProfileData; 
+  showEditButton: boolean; 
+  onEdit: () => void; 
+  editLabel: string;
+  openImageModal: () => void;
+}) {
   const manuscriptCount = profile.contributions.filter((c) => c.tag === "Media").length;
 
   return (
     <HoverCard style={{ overflow: "hidden", width: "100%" }}>
       <div style={{ ...COVER_STYLE, height: "72px" }} />
       <div style={{ padding: "0 20px 20px", display: "flex", flexDirection: "column", alignItems: "center", textAlign: "center" }}>
-        <div style={{
-          width: "78px", height: "78px", borderRadius: "50%",
-          backgroundColor: CARD_BG, display: "flex", alignItems: "center", justifyContent: "center",
-          color: GREEN, ...SERIF, fontSize: "28px", fontWeight: 700, border: `4px solid ${CARD_BG}`,
-          boxShadow: "0px 4px 16px rgba(11, 67, 53, 0.18)", flexShrink: 0, marginTop: "-38px"
-        }}>
-          {profile.avatarInitial}
+        {/* ✅ CORRECTED: Now opens image modal on click */}
+        <div 
+          onClick={openImageModal}
+          style={{
+            width: "78px", height: "78px", borderRadius: "50%",
+            backgroundColor: CARD_BG, display: "flex", alignItems: "center", justifyContent: "center",
+            color: GREEN, ...SERIF, fontSize: "28px", fontWeight: 700, border: `4px solid ${CARD_BG}`,
+            boxShadow: "0px 4px 16px rgba(11, 67, 53, 0.18)", flexShrink: 0, marginTop: "-38px", overflow: "hidden",
+            cursor: profile?.profile_picture ? 'pointer' : 'default',
+            transition: 'transform 0.3s',
+          }}
+          onMouseEnter={(e) => {
+            if (profile?.profile_picture) {
+              e.currentTarget.style.transform = 'scale(1.05)';
+            }
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.transform = 'scale(1)';
+          }}
+        >
+          {profile.profile_picture ? (
+            <img src={profile.profile_picture} alt="Profile" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+          ) : (
+            profile.avatarInitial
+          )}
         </div>
 
         <h1 style={{ ...SERIF, fontSize: "19px", fontWeight: 700, color: GREEN, margin: "12px 0 0" }}>{profile.displayName}</h1>
@@ -621,12 +630,11 @@ function MobileProfileCard({ profile, showEditButton, onEdit, editLabel }: { pro
           </div>
         )}
 
-        {/* stat tiles — square cards in a 4-col grid */}
         <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "8px", width: "100%", marginTop: "18px" }}>
           <StatTile value={profile.contributions.length} label="Contribs" />
           <StatTile value={profile.forumPosts.length} label="Forum" />
           <StatTile value={manuscriptCount} label="Media" />
-          <StatTile value={profile.role === "contributor" ? "Yes" : "No"} label="Verified" />
+          <StatTile value={profile.role === "admin" || profile.role === "contributor" ? "Yes" : "No"} label="Verified" />
         </div>
 
         {showEditButton && (
@@ -646,12 +654,19 @@ function MobileProfileCard({ profile, showEditButton, onEdit, editLabel }: { pro
   );
 }
 
-function ProfileCard(props: { profile: ProfileData; showEditButton: boolean; onEdit: () => void; editLabel: string; isMobile: boolean }) {
-  return props.isMobile ? <MobileProfileCard {...props} /> : <DesktopProfileCard {...props} />;
+function ProfileCard(props: { 
+  profile: ProfileData; 
+  showEditButton: boolean; 
+  onEdit: () => void; 
+  editLabel: string; 
+  isMobile: boolean;
+  openImageModal: () => void;
+}) {
+  return props.isMobile 
+    ? <MobileProfileCard {...props} /> 
+    : <DesktopProfileCard {...props} />;
 }
 
-/* ── Two feeds, clearly separated: Recent Contributions and Forum Activity.
-   Side-by-side on wide screens, stacked (contributions first) on mobile ── */
 function ActivityFeeds({ profile, isMobile }: { profile: ProfileData; isMobile: boolean }) {
   return (
     <div className="profile-feed-grid">
@@ -680,13 +695,196 @@ function ActivityFeeds({ profile, isMobile }: { profile: ProfileData; isMobile: 
   );
 }
 
+const mapRoleIdToRole = (roleId: number | undefined): Role => {
+  if (roleId === 1) return "admin";
+  if (roleId === 2) return "contributor"; 
+  return "user";
+};
+
 export default function ProfilePage() {
   const { id } = useParams<{ id: string }>();
   const { lang, t } = useLang();
-  const { user, isLoggedIn, loading } = useAuth();
+  const { user, isLoggedIn, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   const isRTL = lang === "AR";
   const isMobile = useIsMobile();
+
+  const [profile, setProfile] = useState<ProfileData | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [imageModalOpen, setImageModalOpen] = useState(false);
+
+  const openImageModal = () => {
+    if (profile?.profile_picture) {
+      setImageModalOpen(true);
+      document.body.style.overflow = 'hidden';
+    }
+  };
+
+  const closeImageModal = () => {
+    setImageModalOpen(false);
+    document.body.style.overflow = 'unset';
+  };
+
+  const ImageModal = () => {
+    if (!imageModalOpen || !profile?.profile_picture) return null;
+
+    return (
+      <div 
+        style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundColor: 'rgba(0, 0, 0, 0.9)',
+          zIndex: 1000,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          cursor: 'pointer',
+        }}
+        onClick={closeImageModal}
+      >
+        <button
+          onClick={closeImageModal}
+          style={{
+            position: 'absolute',
+            top: '20px',
+            right: '20px',
+            background: 'rgba(255, 255, 255, 0.1)',
+            border: 'none',
+            color: 'white',
+            width: '40px',
+            height: '40px',
+            borderRadius: '50%',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            cursor: 'pointer',
+            fontSize: '24px',
+            transition: 'all 0.3s',
+            zIndex: 1001,
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.2)';
+            e.currentTarget.style.transform = 'rotate(90deg)';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.1)';
+            e.currentTarget.style.transform = 'rotate(0deg)';
+          }}
+        >
+          ×
+        </button>
+
+        <img
+          src={profile.profile_picture}
+          alt="Profile"
+          style={{
+            maxWidth: '90%',
+            maxHeight: '90%',
+            objectFit: 'contain',
+            borderRadius: '8px',
+            boxShadow: '0 20px 60px rgba(0, 0, 0, 0.5)',
+          }}
+          onClick={(e) => e.stopPropagation()}
+        />
+      </div>
+    );
+  };
+
+  useEffect(() => {
+    const fetchProfile = async () => {
+      if (!id && (!isLoggedIn || !user)) {
+        setIsLoading(false);
+        return;
+      }
+
+      setIsLoading(true);
+      setError(null);
+
+      try {
+        if (!id) {
+          const response = await userApi.profile.getMyProfile();
+          if (response.data.success && response.data.data) {
+            const data = response.data.data;
+            setProfile({
+              id: String(data.id || user?.id || "me"),
+              username: data.username || "user",
+              displayName: data.name || data.username || "User",
+              fullName: data.name || "",
+              email: data.email || "",
+              role_id: data.role_id || 3,
+              role: mapRoleIdToRole(data.role_id),
+              bio: data.bio || "",
+              country: "", 
+              joined: data.created_at ? new Date(data.created_at).toLocaleDateString() : "",
+              links: (() => {
+                if (!data.links) return [];
+                if (typeof data.links === "string") {
+                  try { return JSON.parse(data.links); } catch { return []; }
+                }
+                if (Array.isArray(data.links)) return data.links;
+                return [];
+              })(),
+              profile_picture: data.profile_picture || null,
+              avatarInitial: (data.name || data.username || "U").charAt(0).toUpperCase(),
+              contributions: [], 
+              forumPosts: [],    
+            });
+          } else {
+            setError("Failed to load profile");
+          }
+        } else {
+          const targetId = parseInt(id);
+          if (isNaN(targetId)) {
+            setError("Profile not found");
+            setIsLoading(false);
+            return;
+          }
+          
+          const response = await userApi.profile.getPublicProfile(targetId);
+          if (response.data.success && response.data.data) {
+            const data = response.data.data;
+            setProfile({
+              id: id,
+              username: data.username || "user",
+              displayName: data.name || data.username || "User",
+              fullName: data.name || "",
+              email: data.email || "",
+              role_id: data.role_id || 3,
+              role: mapRoleIdToRole(data.role_id),
+              bio: data.bio || "",
+              country: "", 
+              joined: "", 
+              links: (() => {
+                if (!data.links) return [];
+                if (typeof data.links === "string") {
+                  try { return JSON.parse(data.links); } catch { return []; }
+                }
+                if (Array.isArray(data.links)) return data.links;
+                return [];
+              })(),
+              profile_picture: data.profile_picture || null,
+              avatarInitial: (data.name || data.username || "U").charAt(0).toUpperCase(),
+              contributions: [], 
+              forumPosts: [],    
+            });
+          } else {
+            setError("Profile not found");
+          }
+        }
+      } catch (err) {
+        console.error("Failed to fetch profile:", err);
+        setError("Failed to load profile");
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchProfile();
+  }, [id, isLoggedIn, user]);
 
   const pageStyle: React.CSSProperties = {
     ...SANS,
@@ -696,7 +894,6 @@ export default function ProfilePage() {
     color: GREEN,
   };
 
-  // Extra breathing room under the navbar and above the footer.
   const outerPadding: React.CSSProperties = {
     maxWidth: "1280px",
     margin: "0 auto",
@@ -706,76 +903,63 @@ export default function ProfilePage() {
     paddingBottom: isMobile ? "48px" : "96px",
   };
 
-  if (loading) {
+  if (authLoading || isLoading) {
     return (
       <div dir={isRTL ? "rtl" : "ltr"} style={pageStyle}>
         {fontImports}
-        <div style={{ maxWidth: "600px", margin: "0 auto", padding: isMobile ? "80px 20px" : "140px 32px", textAlign: "center", color: MUTED }}>Loading…</div>
-      </div>
-    );
-  }
-
-  if (!id) {
-    if (!isLoggedIn || !user) {
-      return (
-        <div dir={isRTL ? "rtl" : "ltr"} style={pageStyle}>
-          {fontImports}
-          <div style={{ maxWidth: "500px", margin: "0 auto", padding: isMobile ? "80px 20px" : "140px 32px", textAlign: "center" }}>
-            <Icon name="lock" size={32} style={{ color: BORDER, marginBottom: "12px" }} />
-            <h1 style={{ ...SERIF, fontSize: "18px", fontWeight: 700, color: GREEN, margin: "0 0 8px" }}>You need to log in</h1>
-            <p style={{ ...SANS, fontSize: "13px", color: MUTED, margin: "0 0 16px" }}>Log in to see and manage your profile.</p>
-            <HoverBtn onClick={() => navigate("/login")}>{t("editProfile.signIn") ?? "Log in"}</HoverBtn>
-          </div>
-        </div>
-      );
-    }
-    const profile = buildOwnProfile(user);
-    return (
-      <div dir={isRTL ? "rtl" : "ltr"} style={pageStyle}>
-        {fontImports}
-        <div style={outerPadding}>
-          {/* Profile header spans the full page width */}
-          <div style={{ marginBottom: isMobile ? "20px" : "32px" }}>
-            <ProfileCard profile={profile} showEditButton={false} onEdit={() => navigate("/edit-profile")} editLabel={t("editProfile.editProfile") ?? "Edit profile"} isMobile={isMobile} />
-          </div>
-
-          <div style={{ display: "flex", flexDirection: isMobile ? "column" : "row", gap: isMobile ? "20px" : "32px" }}>
-            {!isMobile && <ProfileSidebar role={profile.role} active="profile" />}
-
-            <div style={{ flex: 1, minWidth: 0 }}>
-              {isMobile && (
-                <p style={{ ...MONO, fontSize: "10px", textTransform: "uppercase", letterSpacing: "0.08em", opacity: 0.7, margin: "0 0 14px" }}>ACTIVITY</p>
-              )}
-              <ActivityFeeds profile={profile} isMobile={isMobile} />
-            </div>
-          </div>
+        <div style={{ maxWidth: "600px", margin: "0 auto", padding: isMobile ? "80px 20px" : "140px 32px", textAlign: "center", color: MUTED }}>
+          Loading…
         </div>
       </div>
     );
   }
 
-  const profile = getPublicProfile(id);
-  if (!profile) {
+  if (!id && (!isLoggedIn || !user)) {
+    return (
+      <div dir={isRTL ? "rtl" : "ltr"} style={pageStyle}>
+        {fontImports}
+        <div style={{ maxWidth: "500px", margin: "0 auto", padding: isMobile ? "80px 20px" : "140px 32px", textAlign: "center" }}>
+          <Icon name="lock" size={32} style={{ color: BORDER, marginBottom: "12px" }} />
+          <h1 style={{ ...SERIF, fontSize: "18px", fontWeight: 700, color: GREEN, margin: "0 0 8px" }}>You need to log in</h1>
+          <p style={{ ...SANS, fontSize: "13px", color: MUTED, margin: "0 0 16px" }}>Log in to see and manage your profile.</p>
+          <HoverBtn onClick={() => navigate("/login")}>{t("editProfile.signIn") ?? "Log in"}</HoverBtn>
+        </div>
+      </div>
+    );
+  }
+
+  if (error || !profile) {
     return (
       <div dir={isRTL ? "rtl" : "ltr"} style={pageStyle}>
         {fontImports}
         <div style={{ maxWidth: "600px", margin: "0 auto", padding: isMobile ? "80px 20px" : "140px 32px", textAlign: "center" }}>
           <Icon name="person_off" size={40} style={{ color: BORDER, marginBottom: "12px" }} />
-          <h1 style={{ ...SERIF, fontSize: "18px", fontWeight: 700, color: GREEN, margin: "0 0 8px" }}>Profile not found</h1>
-          <p style={{ ...SANS, fontSize: "13px", color: MUTED }}>No profile exists for id "{id}".</p>
+          <h1 style={{ ...SERIF, fontSize: "18px", fontWeight: 700, color: GREEN, margin: "0 0 8px" }}>
+            {error === "Profile not found" ? "Profile not found" : "Error loading profile"}
+          </h1>
+          <p style={{ ...SANS, fontSize: "13px", color: MUTED }}>
+            {error === "Profile not found" ? `No profile exists for id "${id}".` : "Please try again later."}
+          </p>
         </div>
       </div>
     );
   }
 
-  const isOwner = !!user && (String(user.id) === String(profile.id) || String(user._id) === String(profile.id));
+  const isOwner = !!user && (String(user.id) === String(profile.id) || String((user as any)._id) === String(profile.id));
 
   return (
     <div dir={isRTL ? "rtl" : "ltr"} style={pageStyle}>
       {fontImports}
       <div style={outerPadding}>
         <div style={{ marginBottom: isMobile ? "20px" : "32px" }}>
-          <ProfileCard profile={profile} showEditButton={isOwner} onEdit={() => navigate("/edit-profile")} editLabel={t("editProfile.editProfile") ?? "Edit profile"} isMobile={isMobile} />
+          <ProfileCard 
+            profile={profile} 
+            showEditButton={isOwner} 
+            onEdit={() => navigate("/edit-profile")} 
+            editLabel={t("editProfile.editProfile") ?? "Edit profile"} 
+            isMobile={isMobile}
+            openImageModal={openImageModal}
+          />
         </div>
 
         {isMobile && (
@@ -783,6 +967,8 @@ export default function ProfilePage() {
         )}
         <ActivityFeeds profile={profile} isMobile={isMobile} />
       </div>
+      
+      <ImageModal />
     </div>
   );
 }
