@@ -5,7 +5,7 @@ import { useLang } from "../context/LanguageContext";
 import { notificationApi } from "../api/notificationApi";
 import NotificationsPanel from "./NotificationsPanel"; // ⚠️ adjust this path to wherever NotificationsPanel.tsx actually lives relative to Navbar.tsx (was wrongly pointing at the full page before)
 
-import oulamaunaLogo from '../assets/ChatGPT Image 1 sept. 2026, 22_36_18.png';
+import oulamaunaLogo from '../assets/bgt1.png';
 
 type Language = "EN" | "AR" | "FR";
 

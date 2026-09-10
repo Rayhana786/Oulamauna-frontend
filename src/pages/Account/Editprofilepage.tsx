@@ -271,7 +271,7 @@ export default function EditProfilePage({ role = "user" }: EditProfilePageProps)
   const isRTL = lang === "AR";
   const isUser = role === "user";
 
-  // ✅ FETCH PROFILE DATA ON MOUNT
+   // ✅ FETCH PROFILE DATA ON MOUNT
   useEffect(() => {
     const fetchProfile = async () => {
       try {
@@ -282,15 +282,24 @@ export default function EditProfilePage({ role = "user" }: EditProfilePageProps)
           setUsername(data.username || "");
           setEmail(data.email || "");
           setBioText(data.bio || "");
-          setProfilePicture(data.profile_picture || ""); // ✅ ADDED: Fetch existing profile picture
+          setProfilePicture(data.profile_picture || ""); 
           
-          // Parse links: backend might send it as a JSON string or an array
+          // ✅ UPDATED: Parse links safely whether it's an Array or an Object
           let parsedLinks: string[] = [];
           if (data.links) {
             if (typeof data.links === "string") {
-              try { parsedLinks = JSON.parse(data.links); } catch { parsedLinks = []; }
+              try { 
+                const parsed = JSON.parse(data.links);
+                if (Array.isArray(parsed)) {
+                  parsedLinks = parsed;
+                } else if (typeof parsed === 'object' && parsed !== null) {
+                  parsedLinks = Object.values(parsed); // Extract URLs from the object
+                }
+              } catch { parsedLinks = []; }
             } else if (Array.isArray(data.links)) {
               parsedLinks = data.links;
+            } else if (typeof data.links === 'object' && data.links !== null) {
+              parsedLinks = Object.values(data.links);
             }
           }
           
@@ -311,7 +320,6 @@ export default function EditProfilePage({ role = "user" }: EditProfilePageProps)
 
     fetchProfile();
   }, []);
-
   const addLink = () => setLinks((prev) => [...prev, { id: idCounter++, url: "" }]);
   const removeLink = (id: number) => setLinks((prev) => prev.filter((l) => l.id !== id));
   const updateLink = (id: number, url: string) => setLinks((prev) => prev.map((l) => (l.id === id ? { ...l, url } : l)));
@@ -324,7 +332,7 @@ export default function EditProfilePage({ role = "user" }: EditProfilePageProps)
     }
   };
 
-  // ✅ REAL SAVE HANDLER
+   // ✅ REAL SAVE HANDLER
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSaving(true);
@@ -336,9 +344,16 @@ export default function EditProfilePage({ role = "user" }: EditProfilePageProps)
       if (name) formData.append("name", name);
       if (bioText) formData.append("bio", bioText);
       
-      // Filter out empty links and send as JSON string (Prisma Json type requirement)
-      const validLinks = links.map(l => l.url).filter(url => url.trim() !== "");
-      formData.append("links", JSON.stringify(validLinks));
+      // ✅ FIX: Backend expects an OBJECT {}, not an ARRAY []
+      const validUrls = links.map(l => l.url).filter(url => url.trim() !== "");
+      
+      const linksObject: Record<string, string> = {};
+      validUrls.forEach((url, index) => {
+        linksObject[`link_${index + 1}`] = url; // Creates: { "link_1": "https://..." }
+      });
+
+      // Send as a JSON stringified OBJECT
+      formData.append("links", JSON.stringify(linksObject));
 
       // ✅ Attach file if one was selected
       if (selectedFile) {
@@ -351,9 +366,6 @@ export default function EditProfilePage({ role = "user" }: EditProfilePageProps)
         setSuccessMsg(t("editProfile.profileUpdated") || "Profile Updated Successfully!");
         setSelectedFile(null); // Clear file after successful upload
         setTimeout(() => setSuccessMsg(""), 3000);
-        
-        // Optional: Reload profile data to get the new image URL
-        // window.location.reload(); 
       } else {
         setErrorMsg(response.data.message || "Failed to update profile.");
       }
