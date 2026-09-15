@@ -1,9 +1,9 @@
 import React, { useState, useRef, useEffect } from "react";
 import { useParams, useNavigate, useSearchParams } from "react-router-dom";
 import { useLang } from "../../context/LanguageContext"; 
-import { useAuth } from "../../context/AuthContext"; // ✅ ADD THIS LINE
+import { useAuth } from "../../context/AuthContext";
 import { scholarsApi } from "../../api/scholarsApi";
-import DOMPurify from 'dompurify';
+import BiographyRenderer from "../../components/BiographyRenderer";
 
 /* ─────────────────────────────────────────────
    BACKEND TYPES (Matches your Prisma JSON)
@@ -132,17 +132,26 @@ interface LangContent<T> { EN?: T; AR?: T; FR?: T; }
 interface ScholarDetail {
   id: number; 
   versionId: number;
-  name: LangContent<string>; subtitle: LangContent<string>;
-  createdBy: string; createdByUrl: string; createdDate: string;
-  lastUpdatedBy?: string; lastUpdatedByUrl?: string; lastUpdatedDate?: string;
+  name: LangContent<string>; 
+  subtitle: LangContent<string>;
+  createdBy: string; 
+  createdByUrl: string; 
+  createdDate: string;
+  lastUpdatedBy?: string; 
+  lastUpdatedByUrl?: string; 
+  lastUpdatedDate?: string;
   image: string;
-  overviewText: LangContent<string>;
-  body: LangContent<string[]>;
+  biography: LangContent<string>; // ✅ UPDATED: Single HTML string per language
   atAGlance: { fullName: string; born: string; died: string; century: string; region: string; discipline: string; };
-  contributors: Contributor[]; works: Work[]; media: MediaItem[];
-  intellectualLineage: RelatedPerson[]; notableDisciples: RelatedPerson[];
-  relatedScholars: RelatedScholar[]; academicReferences: Reference[];
-  revisionHistory: RevisionEntry[]; recentRevisions: RecentRevision[];
+  contributors: Contributor[]; 
+  works: Work[]; 
+  media: MediaItem[];
+  intellectualLineage: RelatedPerson[]; 
+  notableDisciples: RelatedPerson[];
+  relatedScholars: RelatedScholar[]; 
+  academicReferences: Reference[];
+  revisionHistory: RevisionEntry[]; 
+  recentRevisions: RecentRevision[];
   comments: Comment[];
 }
 
@@ -303,16 +312,6 @@ const transformBackendToUI = (data: BackendScholarResponse["data"], lang: Langua
   const frVersion = getVersion("fr");
   const activeVersion = getVersion(lang.toLowerCase());
   const fallbackVersion = enVersion || arVersion || frVersion || versions[0];
-  
-  const splitBio = (bio: string) => {
-    if (!bio) return { overview: "", body: [] };
-    const parts = bio.split("\n\n");
-    return { overview: parts[0], body: parts.slice(1) };
-  };
-
-  const enBio = splitBio(enVersion?.biography || "");
-  const arBio = splitBio(arVersion?.biography || "");
-  const frBio = splitBio(frVersion?.biography || "");
 
   const history = data.history || [];
   const creator = history.length > 0 ? (history[history.length - 1].users?.username ?? "Unknown") : "Unknown";
@@ -351,8 +350,12 @@ const transformBackendToUI = (data: BackendScholarResponse["data"], lang: Langua
     lastUpdatedByUrl: hasBeenEdited ? `/profile/${lastUpdaterId}` : undefined,
     lastUpdatedDate: hasBeenEdited ? new Date(history[0].created_at).toLocaleDateString() : undefined,
     image: activeVersion?.image_url || fallbackVersion?.image_url || "",
-    overviewText: { EN: enBio.overview, AR: arBio.overview, FR: frBio.overview },
-    body: { EN: enBio.body, AR: arBio.body, FR: frBio.body },
+    // ✅ UPDATED: Pass raw HTML directly instead of splitting
+    biography: { 
+      EN: enVersion?.biography || "", 
+      AR: arVersion?.biography || "", 
+      FR: frVersion?.biography || "" 
+    },
     atAGlance: {
       fullName: activeVersion?.canonical_name || "",
       born: formatDate(activeVersion?.scholar_dates, "birth"),
@@ -380,8 +383,6 @@ const transformBackendToUI = (data: BackendScholarResponse["data"], lang: Langua
     }),
     media: versions.flatMap((v) => v.media || []).map((m): MediaItem => {
       const fileType = (m.file_type || "pdf") as MediaItem["type"];
-      
-      // ✅ CHECK IF CURRENT USER ID IS IN THE media_likes ARRAY FROM BACKEND
       const isLiked = currentUserId ? (m as any).media_likes?.some((like: any) => like.user_id === currentUserId) : false;
 
       return {
@@ -391,7 +392,7 @@ const transformBackendToUI = (data: BackendScholarResponse["data"], lang: Langua
         description: m.description || `${(m.file_type || "pdf").toUpperCase()} file`,
         viewCount: m.view_count || 0,
         likeCount: m.like_count || 0,
-        isLikedByUser: isLiked, // ✅ USE THE CHECK RESULT HERE
+        isLikedByUser: isLiked,
         action: m.source_type === "upload" ? "DOWNLOAD FILE" : "OPEN LINK",
         actionIcon: m.source_type === "upload" ? "download" : "open_in_new",
         accessUrl: m.media_url || m.file_path || undefined,
@@ -406,7 +407,6 @@ const transformBackendToUI = (data: BackendScholarResponse["data"], lang: Langua
     relatedScholars: [],
     academicReferences: (data.references || []).map((r) => ({ title: r.title, citation: r.citation, url: r.url })),
     revisionHistory: [],
-    // Changed from .slice(0, 5) to .map() so the UI component can handle pagination
     recentRevisions: history.map((h) => ({ date: new Date(h.created_at).toLocaleDateString(), author: h.users?.username || "Unknown", action: `Version ${h.version_id} - ${h.status}`, authorUrl: `/profile/${h.users?.id}` })),
     comments: (activeVersion?.comments || []).map((c: any) => ({
       id: c.comment_id, author: c.users?.username || "Unknown", role: null,
@@ -440,7 +440,6 @@ const SERIF: React.CSSProperties = { fontFamily: "'Amiri', serif" };
 const SANS: React.CSSProperties = { fontFamily: "'Inter', sans-serif" };
 const HEADING: React.CSSProperties = { fontFamily: "'Hanken Grotesk', sans-serif" };
 
-// Colors from Forum/ScholarsPage
 const PRIMARY_GREEN = "#1e4d3a";
 const ACCENT_GOLD = "#C9A84C";
 const BG_CREM = "#fbf9f4";
@@ -638,17 +637,19 @@ function WorkActions({ work }: { work: Work }) {
     setIsDownloading(true);
     try {
       const response = await fetch(work.accessUrl);
+      if (!response.ok) throw new Error('Network response was not ok');
       const blob = await response.blob();
+      
       const blobUrl = window.URL.createObjectURL(blob);
+      const filename = work.accessFileName || `${work.title}.pdf`;
+      
       const link = document.createElement('a');
       link.href = blobUrl;
-      
-      const filename = work.accessFileName || work.title || 'file.pdf';
       link.download = filename;
-      
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
+      
       window.URL.revokeObjectURL(blobUrl);
     } catch (error) {
       console.error('Download failed:', error);
@@ -753,8 +754,7 @@ function AddWorkModal({ onClose, onAdd, t, lang, versionId, onSuccess }: AddWork
         formData.append("year", year.toString());
         formData.append("format", format);
         
-        const response = await scholarsApi.addWork(versionId, formData);
-        
+        await scholarsApi.addWork(versionId, formData);
         onSuccess("Work added successfully!");
         onClose();
 
@@ -766,9 +766,7 @@ function AddWorkModal({ onClose, onAdd, t, lang, versionId, onSuccess }: AddWork
           format,
           media_url: linkUrl.trim(),
         };
-
-        const response = await scholarsApi.addWorkUrl(versionId, workData);
-        
+        await scholarsApi.addWorkUrl(versionId, workData);
         onSuccess("Work added successfully!");
         onClose();
 
@@ -779,9 +777,7 @@ function AddWorkModal({ onClose, onAdd, t, lang, versionId, onSuccess }: AddWork
           year: yr,
           format,
         };
-
-        const response = await scholarsApi.addWorkUrl(versionId, workData);
-        
+        await scholarsApi.addWorkUrl(versionId, workData);
         onSuccess("Work added successfully!");
         onClose();
       }
@@ -899,8 +895,7 @@ function AddMediaModal({ onClose, onAdd, t, versionId, scholarId, onSuccess }: A
         formData.append("description", desc.trim());
         if (parsedYear !== null) formData.append("year", parsedYear.toString());
 
-        const response = await scholarsApi.addMedia(versionId, formData);
-        
+        await scholarsApi.addMedia(versionId, formData);
         onSuccess("Media added successfully!");
         onClose();
 
@@ -913,8 +908,7 @@ function AddMediaModal({ onClose, onAdd, t, versionId, scholarId, onSuccess }: A
         };
         if (parsedYear !== null) mediaData.year = parsedYear;
 
-        const response = await scholarsApi.addMediaUrl(versionId, mediaData);
-        
+        await scholarsApi.addMediaUrl(versionId, mediaData);
         onSuccess("Media added successfully!");
         onClose();
       }
@@ -1109,7 +1103,7 @@ function DiscussionSection({ lang, t, scholarId, backendComments }: { lang: Lang
         replies: []
       };
       setCommentsByLang((prev) => ({ ...prev, [lang]: [...prev[lang], newComment] }));
-      setShowAllComments(true); // Ensure the new comment is visible
+      setShowAllComments(true);
       setDraft("");
     } catch (err: any) {
       console.error("Failed to post comment:", err);
@@ -1189,7 +1183,6 @@ interface MediaCardProps {
 }
 
 function MediaCard({ item: m, mediaIconName }: MediaCardProps) {
-  // ✅ Initialize state from backend data so it survives refreshes
   const [liked, setLiked] = useState(m.isLikedByUser || false);
   const [likeCount, setLikeCount] = useState(m.likeCount || 0);
   const [isDownloading, setIsDownloading] = useState(false);
@@ -1202,15 +1195,19 @@ function MediaCard({ item: m, mediaIconName }: MediaCardProps) {
     setIsDownloading(true);
     try {
       const response = await fetch(m.accessUrl);
+      if (!response.ok) throw new Error('Network response was not ok');
       const blob = await response.blob();
+      
       const blobUrl = window.URL.createObjectURL(blob);
+      const filename = m.accessFileName || `${m.title}.pdf`;
+      
       const link = document.createElement('a');
       link.href = blobUrl;
-      const filename = m.accessFileName || m.title || 'file.pdf';
       link.download = filename;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
+      
       window.URL.revokeObjectURL(blobUrl);
     } catch (error) {
       console.error('Download failed:', error);
@@ -1226,7 +1223,6 @@ function MediaCard({ item: m, mediaIconName }: MediaCardProps) {
     e.stopPropagation();
     setIsViewing(true);
 
-    // ✅ NEW: Track the view in the background (doesn't block the file from opening)
     if (m.media_id) {
       scholarsApi.viewMedia(m.media_id).catch((err) => 
         console.error("View track failed:", err)
@@ -1283,7 +1279,7 @@ function MediaCard({ item: m, mediaIconName }: MediaCardProps) {
         <span style={{ display: "flex", alignItems: "center", gap: "4px", ...MONO, fontSize: "10px", color: "#1e4d3a99" }}>
           <Icon name="visibility" size={15} /> {m.viewCount}
         </span>
-                <button
+        <button
           onClick={async (e) => { 
             e.stopPropagation(); 
             if (!m.media_id) {
@@ -1291,9 +1287,7 @@ function MediaCard({ item: m, mediaIconName }: MediaCardProps) {
               return;
             }
             try {
-              // Call the API to toggle like/unlike
               const response = await scholarsApi.toggleMediaLike(m.media_id);
-              // ✅ Update BOTH the liked state and the actual count from the server
               setLiked(response.liked);
               setLikeCount(response.like_count); 
             } catch (err) {
@@ -1435,11 +1429,11 @@ const ScholarDetailPage: React.FC = () => {
   const [linkHov, setLinkHov] = useState(false);
   const [showAddWork, setShowAddWork] = useState(false);
   const [showAddMedia, setShowAddMedia] = useState(false);
-  const [showAllRevisions, setShowAllRevisions] = useState(false); // Added for pagination
+  const [showAllRevisions, setShowAllRevisions] = useState(false);
   const headerRef = useRef<HTMLDivElement>(null);
   const [collapsed, setCollapsed] = useState(false);
   const isMobile = useIsMobile();
-   const { user, loading: authLoading } = useAuth(); // ✅ Get the loading state
+  const { user, loading: authLoading } = useAuth();
   const currentUserId = user?.id; 
   const [toast, setToast] = useState<{ message: string; type: "success" | "error" } | null>(null);
 
@@ -1456,8 +1450,7 @@ const ScholarDetailPage: React.FC = () => {
     }
   }, [langParam]);
 
-   useEffect(() => {
-    // ✅ 1. WAIT for AuthContext to finish checking the session/cookie
+  useEffect(() => {
     if (authLoading) return;
 
     const fetchData = async () => {
@@ -1469,15 +1462,15 @@ const ScholarDetailPage: React.FC = () => {
       } catch (err: any) {
         try {
           let response = await scholarsApi.getById(scholarId, "en");
-          setS(transformBackendToUI(response.data, lang, currentUserId)); // ✅ Pass currentUserId
+          setS(transformBackendToUI(response.data, lang, currentUserId));
         } catch (enErr: any) {
           try {
             let response = await scholarsApi.getById(scholarId, "ar");
-            setS(transformBackendToUI(response.data, lang, currentUserId)); // ✅ Pass currentUserId
+            setS(transformBackendToUI(response.data, lang, currentUserId));
           } catch (arErr: any) {
             try {
               let response = await scholarsApi.getById(scholarId, "fr");
-              setS(transformBackendToUI(response.data, lang, currentUserId)); // ✅ Pass currentUserId
+              setS(transformBackendToUI(response.data, lang, currentUserId));
             } catch (finalErr: any) {
               setError("Scholar not found");
             }
@@ -1488,7 +1481,7 @@ const ScholarDetailPage: React.FC = () => {
       }
     };
     fetchData();
-  }, [scholarId, lang, langParam, authLoading, currentUserId]); // ✅ Add authLoading and currentUserId to dependencies
+  }, [scholarId, lang, langParam, authLoading, currentUserId]);
 
   useEffect(() => {
     if (!focusParam || !s) return;
@@ -1527,10 +1520,9 @@ const ScholarDetailPage: React.FC = () => {
   
   const getName = (): string => s.name[lang] ?? s.name.EN ?? "";
   const getSubtitle = (): string | undefined => s.subtitle[lang] ?? s.subtitle.EN;
-  const getOverview = (): string | null => s.overviewText[lang] ?? null;
-  const getBody = (): string[] | null => s.body[lang] ?? null;
 
-  const hasLangContent = !!(s.name[lang] || s.overviewText[lang] || (s.body[lang]?.length ?? 0) > 0);
+  // ✅ UPDATED: Check biography instead of overviewText/body
+  const hasLangContent = !!(s.name[lang] || s.biography[lang]);
   const hasBeenEdited = !!(s.lastUpdatedBy && s.lastUpdatedBy !== s.createdBy);
 
   const tabIds: TabId[] = ["works", "media", "relations", "more"];
@@ -1595,7 +1587,6 @@ const ScholarDetailPage: React.FC = () => {
 
       {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
 
-      {/* ✅ REDUCED HEADER HEIGHT: padding changed to "10px 0" */}
       <header ref={headerRef} style={{ position: "sticky", top: 0, zIndex: 50, backgroundColor: collapsed ? "rgba(251,249,244,0.85)" : "rgba(251,249,244,0.97)", backdropFilter: collapsed ? "blur(16px)" : "none", borderBottom: "1px solid rgba(30,77,58,0.1)", boxShadow: collapsed ? "0 2px 12px rgba(30,77,58,0.08)" : "none", transition: "all 0.3s ease", padding: "10px 0" }}>
         <div style={{ maxWidth: "1280px", margin: "0 auto", padding: isMobile ? "0 16px" : "0 64px" }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: "8px" }}>
@@ -1696,7 +1687,6 @@ const ScholarDetailPage: React.FC = () => {
               })}
             </div>
             
-            {/* ✅ IMPROVED HOVER: Edit/Submit button now matches Forum/Scholar page exactly */}
             <button 
               onClick={() => navigate(hasLangContent ? `/scholars/${s.id}/edit/${lang}` : `/scholars/${s.id}/submit/${lang}`)}
               style={{ 
@@ -1725,232 +1715,233 @@ const ScholarDetailPage: React.FC = () => {
         </div>
       </header>
 
-      {/* ✅ REDUCED MAIN PADDING for a more compact feel */}
-      <main style={{ maxWidth: "1280px", margin: "0 auto", padding: isMobile ? "16px 16px 40px" : "24px 64px 60px" }}>
-        <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : (hasLangContent ? "300px 1fr" : "1fr"), gap: isMobile ? "24px" : "48px", marginBottom: isMobile ? "24px" : "48px" }}> 
-          <aside>
-            {hasLangContent ? (
-              <div style={{ backgroundColor: "#fff", border: "1px solid rgba(30,77,58,0.1)", borderRadius: "16px", overflow: "hidden", boxShadow: "0 1px 4px rgba(30,77,58,0.06)", position: isMobile ? "static" : "sticky", top: isMobile ? undefined : "140px", maxWidth: isMobile ? "360px" : "none", margin: isMobile ? "0 auto" : undefined }}>
-                <div style={{ position: "relative", aspectRatio: "3/4", overflow: "hidden" }}>
-                  {s.image ? (
-                    <img alt="Scholar portrait" src={s.image} style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
-                  ) : (
-                    <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center", color: "#1e4d3a66", backgroundColor: "#F5F3EC" }}>
-                      <Icon name="account_circle" size={100} />
-                    </div>
-                  )}
-                  <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, padding: "16px", background: "linear-gradient(to top, rgba(30,77,58,0.8), transparent)" }}>
-                    <p style={{ ...MONO, fontSize: "9px", color: "#fff", letterSpacing: "0.18em", margin: 0, opacity: 0.9 }}>{s.image ? "OFFICIAL SCHOLAR PORTRAIT" : "NO IMAGE AVAILABLE"}</p>
+            <main style={{ maxWidth: "1280px", margin: "0 auto", padding: isMobile ? "16px 16px 40px" : "24px 64px 60px" }}>
+        {!hasLangContent ? (
+          <EmptyLangState lang={lang} t={t} onContribute={() => navigate(`/scholars/${s.id}/submit/${lang}`)} />
+        ) : (
+          <>
+            {/* ✅ WIKIPEDIA-STYLE LAYOUT: Card floats left, biography wraps around */}
+            <div style={{ position: "relative", marginBottom: "64px" }}>
+              
+              {/* FLOATING SIDEBAR CARD */}
+              <aside style={{ 
+                float: isMobile ? "none" : (isRTL ? "right" : "left"), 
+                width: isMobile ? "100%" : "300px", 
+                marginBottom: "24px",
+                marginRight: isMobile ? "0" : (isRTL ? "0" : "48px"),
+                marginLeft: isMobile ? "0" : (isRTL ? "48px" : "0"),
+              }}>
+                <div style={{ backgroundColor: "#fff", border: "1px solid rgba(30,77,58,0.1)", borderRadius: "16px", overflow: "hidden", boxShadow: "0 1px 4px rgba(30,77,58,0.06)" }}>
+                  <div style={{ position: "relative", aspectRatio: "3/4", overflow: "hidden" }}>
+                    {s.image ? (
+                      <img alt="Scholar portrait" src={s.image} style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
+                    ) : (
+                      <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center", color: "#1e4d3a66", backgroundColor: "#F5F3EC" }}>
+                        <Icon name="account_circle" size={100} />
+                      </div>
+                    )}
+                  </div>
+
+                  <div style={{ padding: isMobile ? "18px 18px 20px" : "20px 20px 24px" }}>
+                    <p style={{ ...MONO, fontSize: "9px", color: "#1e4d3a", letterSpacing: "0.2em", marginBottom: "12px", borderBottom: "1px solid rgba(30,77,58,0.1)", paddingBottom: "8px" }}>{t.atAGlance}</p>
+                    <table style={{ width: "100%", borderCollapse: "collapse" }}>
+                      <tbody>
+                        {([
+                          [t.fullName, s.atAGlance.fullName],
+                          [t.born, s.atAGlance.born],
+                          [t.died, s.atAGlance.died],
+                          [t.century, s.atAGlance.century],
+                          [t.region, s.atAGlance.region],
+                          [t.discipline, s.atAGlance.discipline],
+                        ] as [string, string][]).map(([label, value]) => (
+                          <tr key={label} style={{ borderBottom: "1px solid #F5F3EC" }}>
+                            <td style={{ ...MONO, padding: "8px 0", fontSize: "10px", color: "#1e4d3a99", fontWeight: 500, verticalAlign: "top" }}>{label}</td>
+                            <td style={{ padding: "8px 0", fontSize: "11px", fontWeight: 700, textAlign: "right", color: "#1e4d3a", verticalAlign: "top", paddingLeft: "8px", fontFamily: lang === "AR" ? "'Amiri', serif" : "'Hanken Grotesk', sans-serif" }}>{value}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+
+                    {s.contributors.length > 0 && (
+                      <div style={{ marginTop: "20px", paddingTop: "16px", borderTop: "1px solid rgba(30,77,58,0.1)" }}>
+                        <button onClick={() => setContributorsOpen(!contributorsOpen)} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", width: "100%", background: "none", border: "none", cursor: "pointer", padding: 0 }}>
+                          <span style={{ ...MONO, fontSize: "9px", color: "#1e4d3a", letterSpacing: "0.2em", display: "flex", alignItems: "center", gap: "4px" }}>{t.allContributors}<Icon name="expand_more" size={14} /></span>
+                          <span style={{ ...MONO, fontSize: "9px", color: "#1e4d3a", fontWeight: 700, backgroundColor: "rgba(30,77,58,0.05)", padding: "2px 8px", borderRadius: "4px" }}>{s.contributors.length} {t.contributors}</span>
+                        </button>
+                        {contributorsOpen && (
+                          <div style={{ marginTop: "12px" }}>
+                            <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "8px" }}>
+                              <span style={{ ...MONO, fontSize: "9px", color: "#1e4d3a66", letterSpacing: "0.08em" }}>{t.contributor}</span>
+                              <span style={{ ...MONO, fontSize: "9px", color: "#1e4d3a66", letterSpacing: "0.08em" }}>{t.contributions}</span>
+                            </div>
+                            {s.contributors.map((c) => (
+                              <div key={c.name} style={{ display: "flex", justifyContent: "space-between", padding: "5px 0", borderBottom: "1px solid #F5F3EC" }}>
+                                <ProfileLink name={c.name} url={c.profileUrl ?? "#"} />
+                                <span style={{ ...MONO, fontSize: "10px", color: "#1e4d3a", fontWeight: 700 }}>{c.contributions}</span>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    )}
                   </div>
                 </div>
+              </aside>
 
-                <div style={{ padding: isMobile ? "18px 18px 20px" : "20px 20px 24px" }}>
-                  <p style={{ ...MONO, fontSize: "9px", color: "#1e4d3a", letterSpacing: "0.2em", marginBottom: "12px", borderBottom: "1px solid rgba(30,77,58,0.1)", paddingBottom: "8px" }}>{t.atAGlance}</p>
-                  <table style={{ width: "100%", borderCollapse: "collapse" }}>
-                    <tbody>
-                      {([
-                        [t.fullName, s.atAGlance.fullName],
-                        [t.born, s.atAGlance.born],
-                        [t.died, s.atAGlance.died],
-                        [t.century, s.atAGlance.century],
-                        [t.region, s.atAGlance.region],
-                        [t.discipline, s.atAGlance.discipline],
-                      ] as [string, string][]).map(([label, value]) => (
-                        <tr key={label} style={{ borderBottom: "1px solid #F5F3EC" }}>
-                          <td style={{ ...MONO, padding: "8px 0", fontSize: "10px", color: "#1e4d3a99", fontWeight: 500, verticalAlign: "top" }}>{label}</td>
-                          <td style={{ padding: "8px 0", fontSize: "11px", fontWeight: 700, textAlign: "right", color: "#1e4d3a", verticalAlign: "top", paddingLeft: "8px", fontFamily: lang === "AR" ? "'Amiri', serif" : "'Hanken Grotesk', sans-serif" }}>{value}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-
-                  {s.contributors.length > 0 && (
-                    <div style={{ marginTop: "20px", paddingTop: "16px", borderTop: "1px solid rgba(30,77,58,0.1)" }}>
-                      <button onClick={() => setContributorsOpen(!contributorsOpen)} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", width: "100%", background: "none", border: "none", cursor: "pointer", padding: 0 }}>
-                        <span style={{ ...MONO, fontSize: "9px", color: "#1e4d3a", letterSpacing: "0.2em", display: "flex", alignItems: "center", gap: "4px" }}>{t.allContributors}<Icon name="expand_more" size={14} /></span>
-                        <span style={{ ...MONO, fontSize: "9px", color: "#1e4d3a", fontWeight: 700, backgroundColor: "rgba(30,77,58,0.05)", padding: "2px 8px", borderRadius: "4px" }}>{s.contributors.length} {t.contributors}</span>
-                      </button>
-                      {contributorsOpen && (
-                        <div style={{ marginTop: "12px" }}>
-                          <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "8px" }}>
-                            <span style={{ ...MONO, fontSize: "9px", color: "#1e4d3a66", letterSpacing: "0.08em" }}>{t.contributor}</span>
-                            <span style={{ ...MONO, fontSize: "9px", color: "#1e4d3a66", letterSpacing: "0.08em" }}>{t.contributions}</span>
-                          </div>
-                          {s.contributors.map((c) => (
-                            <div key={c.name} style={{ display: "flex", justifyContent: "space-between", padding: "5px 0", borderBottom: "1px solid #F5F3EC" }}>
-                              <ProfileLink name={c.name} url={c.profileUrl ?? "#"} />
-                              <span style={{ ...MONO, fontSize: "10px", color: "#1e4d3a", fontWeight: 700 }}>{c.contributions}</span>
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                  )}
-                </div>
+              {/* BIOGRAPHY CONTENT - wraps around the floated card */}
+              <div>
+                <BiographyRenderer 
+                  content={s.biography[lang] || s.biography.EN || ""} 
+                  lang={lang.toLowerCase()} 
+                />
               </div>
-            ) : null}
-          </aside>
 
-          <div>
-            {!hasLangContent ? (
-              <EmptyLangState lang={lang} t={t} onContribute={() => navigate(`/scholars/${s.id}/submit/${lang}`)} />
-            ) : (
-              <>
-                <section style={{ backgroundColor: "#F5F3EC", border: "1px solid rgba(30,77,58,0.1)", borderRadius: "16px", padding: isMobile ? "20px 18px" : "32px", marginBottom: isMobile ? "24px" : "32px" }}>
-                  <p style={{ ...MONO, fontSize: "9px", color: "#1e4d3a", letterSpacing: "0.2em", marginBottom: "14px", display: "flex", alignItems: "center", gap: "8px" }}><span style={{ width: "16px", height: "1px", backgroundColor: "#1e4d3a", display: "inline-block" }} />{t.overview}</p>
-                  {getOverview() && (
-                    <div style={{ fontSize: "14px", color: "#1e4d3acc", lineHeight: 1.75, marginBottom: "16px", ...SANS }} dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(getOverview() || "") }} />
-                  )}
-                  {(getBody() ?? []).map((para, i) => (
-                    <div key={i} style={{ fontSize: lang === "AR" ? "16px" : "15px", fontFamily: lang === "AR" ? "'Amiri', serif" : "'Inter', sans-serif", color: "#1e4d3acc", lineHeight: 1.8, marginBottom: i === (getBody()?.length ?? 0) - 1 ? 0 : "20px" }} dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(para) }} />
-                  ))}
-                </section>
-              </>
-            )}
-          </div>
-        </div>
-
-        {hasLangContent && (
-          <div style={{ borderTop: "1px solid rgba(30,77,58,0.1)", paddingTop: isMobile ? "28px" : "48px" }}>
-            <div style={{ display: "flex", borderBottom: "1.5px solid rgba(30,77,58,0.1)", marginBottom: isMobile ? "20px" : "32px", position: "sticky", top: "var(--header-h, 130px)", zIndex: 40, willChange: "transform", backgroundColor: "#fbf9f4", overflowX: "auto" }}>
-              {tabIds.map((id, i) => (<button key={id} onClick={() => setActiveTab(id)} className={`tab-btn${activeTab === id ? " active" : ""}`}>{t.tabs[i]}</button>))}
+              {/* Clear the float */}
+              <div style={{ clear: "both" }} />
             </div>
 
-            {activeTab === "works" && (
-              <div>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "24px", flexWrap: "wrap", gap: "12px" }}>
-                  <h2 style={{ fontFamily: "'Hanken Grotesk', sans-serif", fontSize: isMobile ? "19px" : "24px", fontWeight: 700, color: "#1e4d3a", margin: 0 }}>{t.bibliographyTitle}</h2>
-                  <HoverBtn onClick={() => setShowAddWork(true)}><Icon name="add_circle" size={14} />{t.addWork}</HoverBtn>
-                </div>
-                <div style={{ border: "1px solid rgba(30,77,58,0.1)", borderRadius: "16px", overflow: "hidden", backgroundColor: "#fff" }}>
-                  <div style={{ overflowX: "auto" }}>
-                  <table style={{ width: "100%", borderCollapse: "collapse", minWidth: isMobile ? "560px" : undefined }}>
-                    <thead><tr style={{ backgroundColor: "#F5F3EC", borderBottom: "1.5px solid rgba(30,77,58,0.1)" }}>{[t.colTitle, t.colYear, t.colFormat, t.colAccess].map((col) => (<th key={col} style={{ ...MONO, padding: "12px 16px", textAlign: "left", fontSize: "9px", color: "#1e4d3a99", letterSpacing: "0.1em", fontWeight: 700 }}>{col}</th>))}</tr></thead>
-                    <tbody>
-                      {s.works.map((w, i) => {
-                        return (
-                          <tr 
-                            key={w.work_id || i} 
-                            id={w.work_id ? `work-${w.work_id}` : undefined}
-                            className="row-hover" 
-                            style={{ borderBottom: "1px solid #F5F3EC", transition: "background 0.2s ease" }}
-                          >
-                            <td style={{ fontFamily: lang === "AR" ? "'Amiri', serif" : "'Hanken Grotesk', sans-serif", padding: "14px 16px", fontSize: "14px", fontWeight: 700, fontStyle: "italic", color: "#1e4d3a" }}>
-                              {w.title}
-                              {w.uploadedBy && (<div style={{ ...MONO, fontSize: "9px", fontStyle: "normal", fontWeight: 400, color: "#1e4d3a66", marginTop: "3px" }}>added by <ProfileLink name={w.uploadedBy} url={w.uploadedByUrl ?? "#"} /></div>)}
-                            </td>
-                            <td style={{ padding: "14px 16px", fontSize: "13px", color: "#1e4d3a99", ...SANS }}>{w.year}</td>
-                            <td style={{ padding: "14px 16px" }}><span style={{ ...MONO, fontSize: "9px", fontWeight: 700, padding: "3px 10px", borderRadius: "4px", backgroundColor: w.format === "BOOK" ? "rgba(30,77,58,0.08)" : "#F5F3EC", color: w.format === "BOOK" ? "#1e4d3a" : "#1e4d3a99" }}>{FORMAT_LABELS[lang][w.format].toUpperCase()}</span></td>
-                            <td style={{ padding: "14px 16px" }}>
-                              <WorkActions work={w} />
-                            </td>
-                          </tr>
-                        );
-                      })}
-                    </tbody>
-                  </table>
+            {/* ✅ TABS SECTION (BELOW EVERYTHING) */}
+            <div style={{ borderTop: "1px solid rgba(30,77,58,0.1)", paddingTop: isMobile ? "28px" : "48px" }}>
+              <div style={{ display: "flex", borderBottom: "1.5px solid rgba(30,77,58,0.1)", marginBottom: isMobile ? "20px" : "32px", position: "sticky", top: "var(--header-h, 130px)", zIndex: 40, willChange: "transform", backgroundColor: "#fbf9f4", overflowX: "auto" }}>
+                {tabIds.map((id, i) => (<button key={id} onClick={() => setActiveTab(id)} className={`tab-btn${activeTab === id ? " active" : ""}`}>{t.tabs[i]}</button>))}
+              </div>
+
+              {activeTab === "works" && (
+                <div>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "24px", flexWrap: "wrap", gap: "12px" }}>
+                    <h2 style={{ fontFamily: "'Hanken Grotesk', sans-serif", fontSize: isMobile ? "19px" : "24px", fontWeight: 700, color: "#1e4d3a", margin: 0 }}>{t.bibliographyTitle}</h2>
+                    <HoverBtn onClick={() => setShowAddWork(true)}><Icon name="add_circle" size={14} />{t.addWork}</HoverBtn>
                   </div>
-                  {s.works.length === 0 && (
-                    <div style={{ padding: "48px 32px", textAlign: "center", backgroundColor: "#F5F3EC" }}>
-                      <Icon name="menu_book" size={36} style={{ color: "#1e4d3a66" }} />
-                      <p style={{ color: "#1e4d3a99", fontSize: "14px", marginTop: "12px", ...SANS }}>No works added yet.</p>
-                      <button className="action-link" onClick={() => setShowAddWork(true)} style={{ marginTop: "8px" }}>Add the first work →</button>
+                  <div style={{ border: "1px solid rgba(30,77,58,0.1)", borderRadius: "16px", overflow: "hidden", backgroundColor: "#fff" }}>
+                    <div style={{ overflowX: "auto" }}>
+                    <table style={{ width: "100%", borderCollapse: "collapse", minWidth: isMobile ? "560px" : undefined }}>
+                      <thead><tr style={{ backgroundColor: "#F5F3EC", borderBottom: "1.5px solid rgba(30,77,58,0.1)" }}>{[t.colTitle, t.colYear, t.colFormat, t.colAccess].map((col) => (<th key={col} style={{ ...MONO, padding: "12px 16px", textAlign: "left", fontSize: "9px", color: "#1e4d3a99", letterSpacing: "0.1em", fontWeight: 700 }}>{col}</th>))}</tr></thead>
+                      <tbody>
+                        {s.works.map((w, i) => {
+                          return (
+                            <tr 
+                              key={w.work_id || i} 
+                              id={w.work_id ? `work-${w.work_id}` : undefined}
+                              className="row-hover" 
+                              style={{ borderBottom: "1px solid #F5F3EC", transition: "background 0.2s ease" }}
+                            >
+                              <td style={{ fontFamily: lang === "AR" ? "'Amiri', serif" : "'Hanken Grotesk', sans-serif", padding: "14px 16px", fontSize: "14px", fontWeight: 700, fontStyle: "italic", color: "#1e4d3a" }}>
+                                {w.title}
+                                {w.uploadedBy && (<div style={{ ...MONO, fontSize: "9px", fontStyle: "normal", fontWeight: 400, color: "#1e4d3a66", marginTop: "3px" }}>added by <ProfileLink name={w.uploadedBy} url={w.uploadedByUrl ?? "#"} /></div>)}
+                              </td>
+                              <td style={{ padding: "14px 16px", fontSize: "13px", color: "#1e4d3a99", ...SANS }}>{w.year}</td>
+                              <td style={{ padding: "14px 16px" }}><span style={{ ...MONO, fontSize: "9px", fontWeight: 700, padding: "3px 10px", borderRadius: "4px", backgroundColor: w.format === "BOOK" ? "rgba(30,77,58,0.08)" : "#F5F3EC", color: w.format === "BOOK" ? "#1e4d3a" : "#1e4d3a99" }}>{FORMAT_LABELS[lang][w.format].toUpperCase()}</span></td>
+                              <td style={{ padding: "14px 16px" }}>
+                                <WorkActions work={w} />
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
                     </div>
-                  )}
+                    {s.works.length === 0 && (
+                      <div style={{ padding: "48px 32px", textAlign: "center", backgroundColor: "#F5F3EC" }}>
+                        <Icon name="menu_book" size={36} style={{ color: "#1e4d3a66" }} />
+                        <p style={{ color: "#1e4d3a99", fontSize: "14px", marginTop: "12px", ...SANS }}>No works added yet.</p>
+                        <button className="action-link" onClick={() => setShowAddWork(true)} style={{ marginTop: "8px" }}>Add the first work →</button>
+                      </div>
+                    )}
+                  </div>
                 </div>
-              </div>
-            )}
+              )}
 
-            {activeTab === "media" && (
-              <div>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "28px", flexWrap: "wrap", gap: "12px" }}>
-                  <h2 style={{ fontFamily: "'Hanken Grotesk', sans-serif", fontSize: isMobile ? "19px" : "24px", fontWeight: 700, color: "#1e4d3a", margin: 0 }}>{t.mediaTitle}</h2>
-                  <HoverBtn onClick={() => setShowAddMedia(true)}><Icon name="add_circle" size={14} />{t.addMedia}</HoverBtn>
+              {activeTab === "media" && (
+                <div>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "28px", flexWrap: "wrap", gap: "12px" }}>
+                    <h2 style={{ fontFamily: "'Hanken Grotesk', sans-serif", fontSize: isMobile ? "19px" : "24px", fontWeight: 700, color: "#1e4d3a", margin: 0 }}>{t.mediaTitle}</h2>
+                    <HoverBtn onClick={() => setShowAddMedia(true)}><Icon name="add_circle" size={14} />{t.addMedia}</HoverBtn>
+                  </div>
+                  <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "repeat(3,1fr)", gap: isMobile ? "16px" : "20px" }}>
+                    {s.media.map((m, i) => (
+                      <div key={m.media_id || i} id={m.media_id ? `media-${m.media_id}` : undefined}>
+                        <MediaCard item={m} mediaIconName={mediaIconName} />
+                      </div>
+                    ))}
+                  </div>
                 </div>
-                <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "repeat(3,1fr)", gap: isMobile ? "16px" : "20px" }}>
-                  {s.media.map((m, i) => (
-                    <div key={m.media_id || i} id={m.media_id ? `media-${m.media_id}` : undefined}>
-                      <MediaCard item={m} mediaIconName={mediaIconName} />
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
+              )}
 
-            {activeTab === "relations" && (
-              <div style={{ display: "flex", flexDirection: "column", gap: isMobile ? "20px" : "32px" }}>
-                <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: isMobile ? "16px" : "20px" }}>
-                  {[ 
-                    { data: s.intellectualLineage, label: t.intellectualLineage, icon: "school", color: "#1e4d3a" }, 
-                    { data: s.notableDisciples, label: t.notableDisciples, icon: "groups", color: "#C9A84C" } 
-                  ].map(({ data, label, icon, color }) => (
-                    <div key={label} style={{ backgroundColor: "#F5F3EC", padding: isMobile ? "20px 18px" : "28px", borderRadius: "16px", border: "1px solid rgba(30,77,58,0.1)" }}>
-                      <h3 style={{ ...MONO, fontSize: "9px", color, letterSpacing: "0.15em", marginBottom: "24px", display: "flex", alignItems: "center", gap: "8px" }}><Icon name={icon} size={15} />{label}</h3>
-                      <div style={{ display: "flex", gap: "24px", flexWrap: "wrap" }}>
-                        {data.map((p) => (<a key={p.name} href={p.profileUrl ?? "#"} className="person-card" style={{ display: "flex", alignItems: "center", gap: "12px", textDecoration: "none" }}><div style={{ width: "44px", height: "44px", borderRadius: "50%", backgroundColor: p.color, display: "flex", alignItems: "center", justifyContent: "center", color: p.textColor, fontSize: "13px", fontWeight: 700, flexShrink: 0 }}>{p.initials}</div><div><p className="person-name" style={{ fontSize: "13px", fontWeight: 700, color: "#1e4d3a", margin: "0 0 2px", transition: "color 0.2s ease", ...SANS }}>{p.name}</p><p style={{ ...MONO, fontSize: "9px", color: "#1e4d3a66", letterSpacing: "0.08em", margin: 0 }}>{p.role}</p></div></a>))}
+              {activeTab === "relations" && (
+                <div style={{ display: "flex", flexDirection: "column", gap: isMobile ? "20px" : "32px" }}>
+                  <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: isMobile ? "16px" : "20px" }}>
+                    {[ 
+                      { data: s.intellectualLineage, label: t.intellectualLineage, icon: "school", color: "#1e4d3a" }, 
+                      { data: s.notableDisciples, label: t.notableDisciples, icon: "groups", color: "#C9A84C" } 
+                    ].map(({ data, label, icon, color }) => (
+                      <div key={label} style={{ backgroundColor: "#F5F3EC", padding: isMobile ? "20px 18px" : "28px", borderRadius: "16px", border: "1px solid rgba(30,77,58,0.1)" }}>
+                        <h3 style={{ ...MONO, fontSize: "9px", color, letterSpacing: "0.15em", marginBottom: "24px", display: "flex", alignItems: "center", gap: "8px" }}><Icon name={icon} size={15} />{label}</h3>
+                        <div style={{ display: "flex", gap: "24px", flexWrap: "wrap" }}>
+                          {data.map((p) => (<a key={p.name} href={p.profileUrl ?? "#"} className="person-card" style={{ display: "flex", alignItems: "center", gap: "12px", textDecoration: "none" }}><div style={{ width: "44px", height: "44px", borderRadius: "50%", backgroundColor: p.color, display: "flex", alignItems: "center", justifyContent: "center", color: p.textColor, fontSize: "13px", fontWeight: 700, flexShrink: 0 }}>{p.initials}</div><div><p className="person-name" style={{ fontSize: "13px", fontWeight: 700, color: "#1e4d3a", margin: "0 0 2px", transition: "color 0.2s ease", ...SANS }}>{p.name}</p><p style={{ ...MONO, fontSize: "9px", color: "#1e4d3a66", letterSpacing: "0.08em", margin: 0 }}>{p.role}</p></div></a>))}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                  {s.relatedScholars.length > 0 && (
+                    <div>
+                      <h3 style={{ ...MONO, fontSize: "9px", color: "#1e4d3a99", letterSpacing: "0.12em", marginBottom: "16px" }}>{t.relatedByField}</h3>
+                      <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "repeat(3,1fr)", gap: "14px" }}>
+                        {s.relatedScholars.map((rs, i) => (<div key={i} className="card-hover" style={{ backgroundColor: "#fff", padding: "16px", borderRadius: "16px", border: "1px solid rgba(30,77,58,0.1)" }}><p style={{ ...MONO, fontSize: "9px", color: rs.labelColor, letterSpacing: "0.08em", marginBottom: "6px" }}>{rs.label}</p><p style={{ fontSize: "14px", fontWeight: 700, color: "#1e4d3a", marginBottom: "4px", fontFamily: "'Hanken Grotesk', sans-serif" }}>{rs.name}</p><p style={{ fontSize: "12px", color: "#1e4d3a99", fontStyle: "italic", margin: 0, ...SANS }}>{rs.description}</p></div>))}
                       </div>
                     </div>
-                  ))}
-                </div>
-                {s.relatedScholars.length > 0 && (
-                  <div>
-                    <h3 style={{ ...MONO, fontSize: "9px", color: "#1e4d3a99", letterSpacing: "0.12em", marginBottom: "16px" }}>{t.relatedByField}</h3>
-                    <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "repeat(3,1fr)", gap: "14px" }}>
-                      {s.relatedScholars.map((rs, i) => (<div key={i} className="card-hover" style={{ backgroundColor: "#fff", padding: "16px", borderRadius: "16px", border: "1px solid rgba(30,77,58,0.1)" }}><p style={{ ...MONO, fontSize: "9px", color: rs.labelColor, letterSpacing: "0.08em", marginBottom: "6px" }}>{rs.label}</p><p style={{ fontSize: "14px", fontWeight: 700, color: "#1e4d3a", marginBottom: "4px", fontFamily: "'Hanken Grotesk', sans-serif" }}>{rs.name}</p><p style={{ fontSize: "12px", color: "#1e4d3a99", fontStyle: "italic", margin: 0, ...SANS }}>{rs.description}</p></div>))}
-                    </div>
-                  </div>
-                )}
-              </div>
-            )}
-
-            {activeTab === "more" && (
-              <div style={{ display: "grid" }}>
-                {s.academicReferences.length > 0 && (
-                  <div>
-                    <h3 style={{ ...MONO, fontSize: "9px", color: "#1e4d3a99", letterSpacing: "0.12em", marginBottom: "20px" }}>{t.academicReferences}</h3>
-                    <ol style={{ paddingLeft: "0", margin: 0, display: "flex", flexDirection: "column", gap: "16px", listStyle: "none" }}>
-                      {s.academicReferences.map((r, i) => (
-                        <li key={i} style={{ padding: isMobile ? "14px 16px" : "16px 20px", backgroundColor: "#fff", border: "1px solid rgba(30,77,58,0.1)", borderRadius: "16px", display: "flex", flexDirection: "column", gap: "6px" }}>
-                          <p style={{ fontFamily: "'Hanken Grotesk', sans-serif", fontSize: "14px", fontWeight: 600, color: "#1e4d3a", margin: 0 }}>{r.title}</p>
-                          <p style={{ ...SANS, fontSize: "13px", color: "#1e4d3acc", lineHeight: 1.6, margin: 0 }}>{r.citation}</p>
-                          {r.url && (
-                            <a href={r.url} target="_blank" rel="noopener noreferrer" style={{ display: "inline-flex", alignItems: "center", gap: "6px", color: "#C9A84C", fontSize: "12px", fontWeight: 600, textDecoration: "none", marginTop: "4px", ...SANS, wordBreak: "break-all" }} onMouseEnter={(e) => { e.currentTarget.style.color = "#1e4d3a"; e.currentTarget.style.textDecoration = "underline"; }} onMouseLeave={(e) => { e.currentTarget.style.color = "#C9A84C"; e.currentTarget.style.textDecoration = "none"; }}>
-                              <Icon name="link" size={14} />{r.url.replace(/^https?:\/\//, '')}
-                            </a>
-                          )}
-                        </li>
-                      ))}
-                    </ol>
-                  </div>
-                )}
-              </div>
-            )}
-
-            {s.recentRevisions.length > 0 && (
-              <section style={{ marginTop: isMobile ? "48px" : "80px", paddingTop: isMobile ? "28px" : "40px", borderTop: "1px solid rgba(30,77,58,0.1)" }}>
-                <h3 style={{ ...MONO, fontSize: "9px", color: "#1e4d3a99", letterSpacing: "0.12em", marginBottom: "20px" }}>{t.recentRevisions}</h3>
-                <div style={{ maxWidth: "800px", display: "flex", flexDirection: "column", gap: "12px" }}>
-                  {s.recentRevisions.slice(0, showAllRevisions ? s.recentRevisions.length : 3).map((r, i) => (
-                    <div key={i} style={{ display: "flex", gap: "16px", padding: "10px 0", borderBottom: "1px solid #F5F3EC", ...SANS, flexWrap: "wrap" }}>
-                      <span style={{ ...MONO, fontSize: "10px", color: "#1e4d3a66", minWidth: "80px" }}>{r.date}</span>
-                      <ProfileLink name={r.author} url={r.authorUrl ?? "#"} />
-                      <span style={{ fontSize: "12px", color: "#1e4d3acc" }}>— {r.action}</span>
-                    </div>
-                  ))}
-                  {s.recentRevisions.length > 3 && (
-                    <button 
-                      className="action-link" 
-                      onClick={() => setShowAllRevisions(!showAllRevisions)} 
-                      style={{ marginTop: "8px", alignSelf: "flex-start" }}
-                    >
-                      {showAllRevisions ? t.showLess : `${t.viewMore} (${s.recentRevisions.length - 3} more)`}
-                    </button>
                   )}
                 </div>
-              </section>
-            )}
-            <DiscussionSection lang={lang} t={t} scholarId={s.id} backendComments={s.comments} />
-          </div>
+              )}
+
+              {activeTab === "more" && (
+                <div style={{ display: "grid" }}>
+                  {s.academicReferences.length > 0 && (
+                    <div>
+                      <h3 style={{ ...MONO, fontSize: "9px", color: "#1e4d3a99", letterSpacing: "0.12em", marginBottom: "20px" }}>{t.academicReferences}</h3>
+                      <ol style={{ paddingLeft: "0", margin: 0, display: "flex", flexDirection: "column", gap: "16px", listStyle: "none" }}>
+                        {s.academicReferences.map((r, i) => (
+                          <li key={i} style={{ padding: isMobile ? "14px 16px" : "16px 20px", backgroundColor: "#fff", border: "1px solid rgba(30,77,58,0.1)", borderRadius: "16px", display: "flex", flexDirection: "column", gap: "6px" }}>
+                            <p style={{ fontFamily: "'Hanken Grotesk', sans-serif", fontSize: "14px", fontWeight: 600, color: "#1e4d3a", margin: 0 }}>{r.title}</p>
+                            <p style={{ ...SANS, fontSize: "13px", color: "#1e4d3acc", lineHeight: 1.6, margin: 0 }}>{r.citation}</p>
+                            {r.url && (
+                              <a href={r.url} target="_blank" rel="noopener noreferrer" style={{ display: "inline-flex", alignItems: "center", gap: "6px", color: "#C9A84C", fontSize: "12px", fontWeight: 600, textDecoration: "none", marginTop: "4px", ...SANS, wordBreak: "break-all" }} onMouseEnter={(e) => { e.currentTarget.style.color = "#1e4d3a"; e.currentTarget.style.textDecoration = "underline"; }} onMouseLeave={(e) => { e.currentTarget.style.color = "#C9A84C"; e.currentTarget.style.textDecoration = "none"; }}>
+                                <Icon name="link" size={14} />{r.url.replace(/^https?:\/\//, '')}
+                              </a>
+                            )}
+                          </li>
+                        ))}
+                      </ol>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {s.recentRevisions.length > 0 && (
+                <section style={{ marginTop: isMobile ? "48px" : "80px", paddingTop: isMobile ? "28px" : "40px", borderTop: "1px solid rgba(30,77,58,0.1)" }}>
+                  <h3 style={{ ...MONO, fontSize: "9px", color: "#1e4d3a99", letterSpacing: "0.12em", marginBottom: "20px" }}>{t.recentRevisions}</h3>
+                  <div style={{ maxWidth: "800px", display: "flex", flexDirection: "column", gap: "12px" }}>
+                    {s.recentRevisions.slice(0, showAllRevisions ? s.recentRevisions.length : 3).map((r, i) => (
+                      <div key={i} style={{ display: "flex", gap: "16px", padding: "10px 0", borderBottom: "1px solid #F5F3EC", ...SANS, flexWrap: "wrap" }}>
+                        <span style={{ ...MONO, fontSize: "10px", color: "#1e4d3a66", minWidth: "80px" }}>{r.date}</span>
+                        <ProfileLink name={r.author} url={r.authorUrl ?? "#"} />
+                        <span style={{ fontSize: "12px", color: "#1e4d3acc" }}>— {r.action}</span>
+                      </div>
+                    ))}
+                    {s.recentRevisions.length > 3 && (
+                      <button 
+                        className="action-link" 
+                        onClick={() => setShowAllRevisions(!showAllRevisions)} 
+                        style={{ marginTop: "8px", alignSelf: "flex-start" }}
+                      >
+                        {showAllRevisions ? t.showLess : `${t.viewMore} (${s.recentRevisions.length - 3} more)`}
+                      </button>
+                    )}
+                  </div>
+                </section>
+              )}
+              <DiscussionSection lang={lang} t={t} scholarId={s.id} backendComments={s.comments} />
+            </div>
+          </>
         )}
       </main>
     </div>

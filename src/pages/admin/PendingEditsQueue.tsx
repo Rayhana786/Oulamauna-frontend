@@ -84,7 +84,7 @@ interface ScholarSubmission {
   name: string;
   language: LangCode;
   editor: string;
-  editorId: string;
+  editorId: number | null; // ✅ Changed to number for API
   originalContributor: string;
   date: string;
   discipline: string;
@@ -130,7 +130,7 @@ const transformEditedVersions = (edits: BackendEditedVersion[]): ScholarSubmissi
       name: v.canonical_name,
       language: langCode,
       editor: v.users?.username || "Unknown",
-      editorId: v.created_by ? `user_${v.created_by}` : "system",
+      editorId: v.created_by || null, // ✅ Changed to number
       originalContributor: item.current?.users?.username || v.users?.username || "Unknown",
       date: new Date(v.created_at).toLocaleDateString("en-US", {
         month: "short", day: "numeric", year: "numeric",
@@ -158,10 +158,12 @@ export default function PendingEditsQueue() {
   });
   
   // ✅ Modal States
-  const [stripTarget, setStripTarget] = useState<ScholarSubmission | null>(null);
+  const [approveReason, setApproveReason] = useState("");
+  const [rejectReason, setRejectReason] = useState("");
+  const [restrictTarget, setRestrictTarget] = useState<ScholarSubmission | null>(null);
+  const [confirmAction, setConfirmAction] = useState<{ type: 'revoke' | 'ban', target: ScholarSubmission } | null>(null);
   const [approveTarget, setApproveTarget] = useState<ScholarSubmission | null>(null);
   const [rejectTarget, setRejectTarget] = useState<ScholarSubmission | null>(null);
-  const [rejectReason, setRejectReason] = useState("");
 
   useEffect(() => {
     const fetchData = async () => {
@@ -212,17 +214,20 @@ export default function PendingEditsQueue() {
     navigate(`/admin/pending/edits/${s.id}?lang=${s.language}`);
   };
 
+  // ✅ UPDATED: Approve Handler (Sends reason)
   const handleApprove = async (id: string) => {
     try {
-      await adminApi.scholars.approve(Number(id), {});
+      await adminApi.scholars.approve(Number(id), { reason: approveReason || "Approved" });
       setRows((prev) => prev.filter((r) => r.id !== id));
       setApproveTarget(null);
+      setApproveReason("");
     } catch (error) {
       console.error("Failed to approve:", error);
       alert("Failed to approve scholar edit. Please try again.");
     }
   };
 
+  // ✅ UPDATED: Reject Handler (Requires reason)
   const handleReject = async (id: string) => {
     if (!rejectReason.trim()) {
       alert("Please provide a rejection reason");
@@ -239,14 +244,40 @@ export default function PendingEditsQueue() {
     }
   };
 
-  const confirmStrip = () => {
-    if (!stripTarget) return;
-    setRows((prev) => prev.map((row) =>
-      row.id === stripTarget.id
-        ? { ...row, editor: "System (stripped)", editorId: "system" }
-        : row
-    ));
-    setStripTarget(null);
+  // ✅ NEW: Restrict User + Auto-Reject Handler
+  const executeRestrictionAndReject = async () => {
+    if (!confirmAction) return;
+    try {
+      const { type, target } = confirmAction;
+      const userId = target.editorId;
+      const scholarId = Number(target.id);
+
+      if (!userId) {
+        alert("Cannot restrict system-generated submissions.");
+        setConfirmAction(null);
+        setRestrictTarget(null);
+        return;
+      }
+
+      // 1. Restrict the User
+      if (type === 'revoke') {
+        await adminApi.users.toggleContribute(userId);
+      } else {
+        await adminApi.users.ban(userId);
+      }
+
+      // 2. Automatically Reject the Scholar Edit
+      const defaultReason = type === 'ban' ? "Contributor banned" : "Contribution access revoked";
+      await adminApi.scholars.reject(scholarId, defaultReason);
+
+      // 3. Remove from UI and close modals
+      setRows((prev) => prev.filter((r) => r.id !== target.id));
+      setConfirmAction(null);
+      setRestrictTarget(null);
+    } catch (err) {
+      console.error("Action failed:", err);
+      alert("Failed to process action. Please try again.");
+    }
   };
 
   const clearFilters = () => {
@@ -331,64 +362,31 @@ export default function PendingEditsQueue() {
                 <select 
                   value={filterLanguage} 
                   onChange={(e) => setFilterLanguage(e.target.value as any)} 
-                  style={{ 
-                    border: "none", 
-                    outline: "none", 
-                    background: "transparent", 
-                    fontFamily: fonts.body, 
-                    fontSize: 13, 
-                    color: colors.forestGreen, 
-                    cursor: "pointer",
-                    minWidth: 120,
-                  }}
+                  style={{ border: "none", outline: "none", background: "transparent", fontFamily: fonts.body, fontSize: 13, color: colors.forestGreen, cursor: "pointer", minWidth: 120 }}
                 >
                   <option value="all">All Languages</option>
                   <option value="EN">English</option>
                   <option value="AR">Arabic</option>
                   <option value="FR">French</option>
                 </select>
-                
               </div>
 
               <div style={{ display: "flex", alignItems: "center", gap: 6, padding: "6px 10px", backgroundColor: colors.creamMid, border: `1px solid ${colors.forestGreen}`, borderRadius: 8, cursor: "pointer" }}>
                 <select 
                   value={sortBy} 
                   onChange={(e) => setSortBy(e.target.value as any)} 
-                  style={{ 
-                    border: "none", 
-                    outline: "none", 
-                    background: "transparent", 
-                    fontFamily: fonts.body, 
-                    fontSize: 13, 
-                    color: colors.forestGreen, 
-                    cursor: "pointer",
-                    minWidth: 120,
-                  }}
+                  style={{ border: "none", outline: "none", background: "transparent", fontFamily: fonts.body, fontSize: 13, color: colors.forestGreen, cursor: "pointer", minWidth: 120 }}
                 >
                   <option value="newest">Newest First</option>
                   <option value="oldest">Oldest First</option>
                   <option value="name">Name A-Z</option>
                 </select>
-                
               </div>
 
               {hasActiveFilters && (
                 <button 
                   onClick={clearFilters} 
-                  style={{ 
-                    display: "flex", 
-                    alignItems: "center", 
-                    gap: 4, 
-                    padding: "6px 10px", 
-                    backgroundColor: "transparent", 
-                    border: `1px solid ${colors.red}`, 
-                    borderRadius: 8, 
-                    fontFamily: fonts.body, 
-                    fontSize: 12, 
-                    fontWeight: 500, 
-                    color: colors.red, 
-                    cursor: "pointer" 
-                  }}
+                  style={{ display: "flex", alignItems: "center", gap: 4, padding: "6px 10px", backgroundColor: "transparent", border: `1px solid ${colors.red}`, borderRadius: 8, fontFamily: fonts.body, fontSize: 12, fontWeight: 500, color: colors.red, cursor: "pointer" }}
                 >
                   <Icon name="close" size={14} /> Clear
                 </button>
@@ -424,127 +422,55 @@ export default function PendingEditsQueue() {
                     return (
                       <tr 
                         key={s.id}
-                        style={{ 
-                          cursor: "pointer", 
-                          transition: "background-color 0.15s",
-                          backgroundColor: "transparent"
-                        }} 
+                        style={{ cursor: "pointer", transition: "background-color 0.15s", backgroundColor: "transparent" }} 
                         onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = colors.creamMid)}
                         onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "transparent")}
                       >
-                        {/* 1. Scholar Column */}
                         <td style={tdStyle}>
                           <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
                             <Avatar name={s.name} size={36} />
                             <div>
-                              <p style={{ margin: 0, fontWeight: 600, fontFamily: fonts.headline, fontSize: 13, color: colors.forestGreen }}>
-                                {s.name}
-                              </p>
-                              <div style={{ 
-                                display: "inline-flex", 
-                                alignItems: "center", 
-                                gap: 4, 
-                                padding: "2px 8px", 
-                                borderRadius: 9999, 
-                                backgroundColor: colors.creamLight, 
-                                border: `1px solid ${colors.creamDark}`, 
-                                marginTop: 4 
-                              }}>
+                              <p style={{ margin: 0, fontWeight: 600, fontFamily: fonts.headline, fontSize: 13, color: colors.forestGreen }}>{s.name}</p>
+                              <div style={{ display: "inline-flex", alignItems: "center", gap: 4, padding: "2px 8px", borderRadius: 9999, backgroundColor: colors.creamLight, border: `1px solid ${colors.creamDark}`, marginTop: 4 }}>
                                 <Icon name="person" size={12} />
-                                <span style={{ fontFamily: fonts.label, fontSize: 10, color: colors.forestGreen, opacity: 0.8 }}>
-                                  {s.originalContributor}
-                                </span>
+                                <span style={{ fontFamily: fonts.label, fontSize: 10, color: colors.forestGreen, opacity: 0.8 }}>{s.originalContributor}</span>
                               </div>
                             </div>
                           </div>
                         </td>
 
-                        {/* 2. Language Column (NEW) */}
                         <td style={tdStyle}>
-                          <div style={{ 
-                            display: "inline-flex", 
-                            alignItems: "center", 
-                            gap: 6, 
-                            padding: "4px 10px", 
-                            borderRadius: 9999, 
-                            backgroundColor: colors.creamMid, 
-                            border: `1px solid ${langColor}`
-                          }}>
-                            <span style={{ 
-                              width: 6, 
-                              height: 6, 
-                              borderRadius: "50%", 
-                              backgroundColor: langColor 
-                            }} />
-                            <span style={{ 
-                              fontFamily: fonts.label, 
-                              fontSize: 11, 
-                              color: colors.forestGreen,
-                              fontWeight: 600,
-                              letterSpacing: "0.02em"
-                            }}>
-                              {getLangName(s.language)}
-                            </span>
+                          <div style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "4px 10px", borderRadius: 9999, backgroundColor: colors.creamMid, border: `1px solid ${langColor}` }}>
+                            <span style={{ width: 6, height: 6, borderRadius: "50%", backgroundColor: langColor }} />
+                            <span style={{ fontFamily: fonts.label, fontSize: 11, color: colors.forestGreen, fontWeight: 600, letterSpacing: "0.02em" }}>{getLangName(s.language)}</span>
                           </div>
                         </td>
 
-                        {/* 3. Editor Column */}
                         <td style={tdStyle}>
                           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                             <Avatar name={s.editor} size={28} />
-                            <span style={{ fontFamily: fonts.body, fontSize: 13, color: colors.forestGreen }}>
-                              {s.editor}
-                            </span>
+                            <span style={{ fontFamily: fonts.body, fontSize: 13, color: colors.forestGreen }}>{s.editor}</span>
                           </div>
                         </td>
 
-                        {/* 4. Submitted Column */}
-                        <td style={{ ...tdStyle, fontFamily: fonts.label, fontSize: 12, color: colors.forestGreen }}>
-                          {s.date}
-                        </td>
+                        <td style={{ ...tdStyle, fontFamily: fonts.label, fontSize: 12, color: colors.forestGreen }}>{s.date}</td>
 
-                        {/* 5. Actions Column */}
                         <td style={{ ...tdStyle, textAlign: isRTL ? "left" : "right" }}>
                           <div style={{ display: "flex", justifyContent: isRTL ? "flex-start" : "flex-end", gap: 6 }}>
-                            <button 
-                              onClick={(e) => { e.stopPropagation(); goToReview(s); }} 
-                              title="Review" 
-                              style={{ 
-                                width: 32, height: 32, display: "flex", alignItems: "center", justifyContent: "center", 
-                                backgroundColor: "transparent", border: `1px solid ${colors.forestGreen}`, borderRadius: 6, color: colors.forestGreen, cursor: "pointer" 
-                              }}
-                            >
+                            <button onClick={(e) => { e.stopPropagation(); goToReview(s); }} title="Review" style={{ width: 32, height: 32, display: "flex", alignItems: "center", justifyContent: "center", backgroundColor: "transparent", border: `1px solid ${colors.forestGreen}`, borderRadius: 6, color: colors.forestGreen, cursor: "pointer" }}>
                               <Icon name="visibility" size={18} />
                             </button>
-                            <button 
-                              onClick={(e) => { e.stopPropagation(); setApproveTarget(s); }} 
-                              title="Approve" 
-                              style={{ 
-                                width: 32, height: 32, display: "flex", alignItems: "center", justifyContent: "center", 
-                                backgroundColor: colors.forestGreen, border: `1px solid ${colors.forestGreen}`, borderRadius: 6, color: colors.creamLight, cursor: "pointer" 
-                              }}
-                            >
+                            <button onClick={(e) => { e.stopPropagation(); setApproveTarget(s); }} title="Approve" style={{ width: 32, height: 32, display: "flex", alignItems: "center", justifyContent: "center", backgroundColor: colors.forestGreen, border: `1px solid ${colors.forestGreen}`, borderRadius: 6, color: colors.creamLight, cursor: "pointer" }}>
                               <Icon name="check" size={18} filled />
                             </button>
-                            <button 
-                              onClick={(e) => { e.stopPropagation(); setRejectTarget(s); }} 
-                              title="Reject" 
-                              style={{ 
-                                width: 32, height: 32, display: "flex", alignItems: "center", justifyContent: "center", 
-                                backgroundColor: "transparent", border: `1px solid ${colors.red}`, borderRadius: 6, color: colors.red, cursor: "pointer" 
-                              }}
-                            >
+                            <button onClick={(e) => { e.stopPropagation(); setRejectTarget(s); }} title="Reject" style={{ width: 32, height: 32, display: "flex", alignItems: "center", justifyContent: "center", backgroundColor: "transparent", border: `1px solid ${colors.red}`, borderRadius: 6, color: colors.red, cursor: "pointer" }}>
                               <Icon name="close" size={18} />
                             </button>
-                            <button 
-                              onClick={(e) => { e.stopPropagation(); setStripTarget(s); }} 
-                              title="Strip" 
-                              style={{ 
-                                width: 32, height: 32, display: "flex", alignItems: "center", justifyContent: "center", 
-                                backgroundColor: "transparent", border: `1px solid ${colors.forestGreen}`, borderRadius: 6, color: colors.forestGreen, cursor: "pointer" 
-                              }}
-                            >
-                              <Icon name="person_remove" size={18} />
+                            {/* ✅ UPDATED: Restrict Button (Amber) */}
+                            <button onClick={(e) => { e.stopPropagation(); setRestrictTarget(s); }} title="Restrict User" style={{ width: 32, height: 32, display: "flex", alignItems: "center", justifyContent: "center", backgroundColor: "transparent", border: `1px solid ${colors.amber}`, borderRadius: 6, color: colors.amber, cursor: "pointer" }}
+                              onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = colors.amber; e.currentTarget.style.color = colors.creamLight; }}
+                              onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = "transparent"; e.currentTarget.style.color = colors.amber; }}>
+                              <Icon name="shield_person" size={18} />
                             </button>
                           </div>
                         </td>
@@ -557,14 +483,7 @@ export default function PendingEditsQueue() {
           </div>
 
           {/* ── Pagination ── */}
-          <div style={{ 
-            display: "flex", 
-            justifyContent: "space-between", 
-            alignItems: "center", 
-            padding: "12px 14px", 
-            borderTop: `1px solid ${colors.forestGreen}`, 
-            backgroundColor: colors.creamMid 
-          }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "12px 14px", borderTop: `1px solid ${colors.forestGreen}`, backgroundColor: colors.creamMid }}>
             <span style={{ fontFamily: fonts.label, fontSize: 11, color: colors.forestGreen, opacity: 0.8 }}>
               Showing 1-{Math.min(10, filtered.length)} of {filtered.length}
             </span>
@@ -581,22 +500,61 @@ export default function PendingEditsQueue() {
           </div>
         </section>
 
-        {/* ── Strip Modal ── */}
-        {stripTarget && (
-          <div style={{ position: "fixed", inset: 0, backgroundColor: "rgba(11, 67, 53, 0.5)", zIndex: 100, display: "flex", alignItems: "center", justifyContent: "center", backdropFilter: "blur(4px)" }} onClick={() => setStripTarget(null)}>
-            <div style={{ ...cardStyle, backgroundColor: colors.creamLight, width: 440, maxWidth: "90vw", padding: 32, boxShadow: "0 20px 60px rgba(0,0,0,0.18)" }} onClick={(e) => e.stopPropagation()}>
-              <div style={{ width: 56, height: 56, borderRadius: "50%", backgroundColor: colors.red, color: colors.creamLight, display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 20, border: `1px solid ${colors.red}` }}>
-                <Icon name="person_remove" size={28} filled />
+        {/* ── Step 1: Choose Restrict Action Modal ── */}
+        {restrictTarget && !confirmAction && (
+          <div style={{ position: "fixed", inset: 0, backgroundColor: "rgba(11, 67, 53, 0.6)", zIndex: 100, display: "flex", alignItems: "center", justifyContent: "center", backdropFilter: "blur(4px)", padding: 20 }} onClick={() => setRestrictTarget(null)}>
+            <div style={{ ...cardStyle, backgroundColor: colors.creamLight, width: 520, maxWidth: "90vw", padding: 32, boxShadow: "0 20px 60px rgba(0,0,0,0.25)" }} onClick={(e) => e.stopPropagation()}>
+              <div style={{ display: "flex", alignItems: "center", gap: 16, marginBottom: 24 }}>
+                <Avatar name={restrictTarget.editor} size={56} />
+                <div>
+                  <h2 style={{ fontFamily: fonts.headline, fontSize: 20, fontWeight: 700, color: colors.forestGreen, margin: 0 }}>Restrict User</h2>
+                  <p style={{ fontFamily: fonts.body, fontSize: 13, color: colors.forestGreen, opacity: 0.7, margin: "4px 0 0" }}>{restrictTarget.editor} edited "{restrictTarget.name}"</p>
+                </div>
               </div>
-              <h2 style={{ fontFamily: fonts.headline, fontSize: 20, fontWeight: 700, color: colors.forestGreen, marginBottom: 12 }}>Strip Editor</h2>
-              <p style={{ fontFamily: fonts.body, fontSize: 14, color: colors.forestGreen, lineHeight: 1.6, marginBottom: 28, opacity: 0.8 }}>
-                Are you sure you want to strip <b>{stripTarget.editor}</b> of this edit?
-                <br />
-                <b style={{ color: colors.red }}>This action cannot be undone.</b>
+
+              <p style={{ fontFamily: fonts.body, fontSize: 14, color: colors.forestGreen, lineHeight: 1.6, marginBottom: 24 }}>
+                Choose an action. This will automatically <b>reject</b> this edit submission as well.
+              </p>
+
+              <div style={{ display: "flex", flexDirection: "column", gap: 12, marginBottom: 24 }}>
+                <button onClick={() => setConfirmAction({ type: 'revoke', target: restrictTarget })} style={{ display: "flex", alignItems: "flex-start", gap: 16, padding: 16, borderRadius: 8, border: `1px solid ${colors.amber}`, backgroundColor: "rgba(184, 134, 11, 0.05)", cursor: "pointer", textAlign: "left", transition: "background 0.2s" }} onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = "rgba(184, 134, 11, 0.1)"; }} onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = "rgba(184, 134, 11, 0.05)"; }}>
+                  <div style={{ width: 32, height: 32, borderRadius: "50%", backgroundColor: colors.amber, color: colors.creamLight, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}><Icon name="person_off" size={18} /></div>
+                  <div>
+                    <p style={{ fontFamily: fonts.headline, fontSize: 14, fontWeight: 700, color: colors.forestGreen, margin: "0 0 4px" }}>Revoke Contribution Access</p>
+                    <p style={{ fontFamily: fonts.body, fontSize: 12, color: colors.forestGreen, opacity: 0.7, margin: 0, lineHeight: 1.5 }}>They can still log in, but cannot submit new edits. (Recommended for low-quality edits)</p>
+                  </div>
+                </button>
+
+                <button onClick={() => setConfirmAction({ type: 'ban', target: restrictTarget })} style={{ display: "flex", alignItems: "flex-start", gap: 16, padding: 16, borderRadius: 8, border: `1px solid ${colors.red}`, backgroundColor: "rgba(139, 44, 44, 0.05)", cursor: "pointer", textAlign: "left", transition: "background 0.2s" }} onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = "rgba(139, 44, 44, 0.1)"; }} onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = "rgba(139, 44, 44, 0.05)"; }}>
+                  <div style={{ width: 32, height: 32, borderRadius: "50%", backgroundColor: colors.red, color: colors.creamLight, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}><Icon name="block" size={18} /></div>
+                  <div>
+                    <p style={{ fontFamily: fonts.headline, fontSize: 14, fontWeight: 700, color: colors.forestGreen, margin: "0 0 4px" }}>Ban Account Completely</p>
+                    <p style={{ fontFamily: fonts.body, fontSize: 12, color: colors.forestGreen, opacity: 0.7, margin: 0, lineHeight: 1.5 }}>They will be completely locked out of the platform. (Use for spam, abuse, or severe violations)</p>
+                  </div>
+                </button>
+              </div>
+
+              <div style={{ display: "flex", justifyContent: "flex-end" }}>
+                <button onClick={() => setRestrictTarget(null)} style={{ padding: "10px 24px", borderRadius: 8, cursor: "pointer", border: `1px solid ${colors.forestGreen}`, backgroundColor: colors.creamLight, fontFamily: fonts.body, fontSize: 13, fontWeight: 600, color: colors.forestGreen }}>Cancel</button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ── Step 2: Final Confirmation Modal ── */}
+        {confirmAction && (
+          <div style={{ position: "fixed", inset: 0, backgroundColor: "rgba(11, 67, 53, 0.6)", zIndex: 101, display: "flex", alignItems: "center", justifyContent: "center", backdropFilter: "blur(4px)", padding: 20 }} onClick={() => setConfirmAction(null)}>
+            <div style={{ ...cardStyle, backgroundColor: colors.creamLight, width: 440, maxWidth: "90vw", padding: 32, boxShadow: "0 20px 60px rgba(0,0,0,0.25)" }} onClick={(e) => e.stopPropagation()}>
+              <div style={{ width: 56, height: 56, borderRadius: "50%", backgroundColor: confirmAction.type === 'ban' ? colors.red : colors.amber, color: colors.creamLight, display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 20, border: `1px solid ${confirmAction.type === 'ban' ? colors.red : colors.amber}` }}>
+                <Icon name={confirmAction.type === 'ban' ? "block" : "person_off"} size={28} filled />
+              </div>
+              <h2 style={{ fontFamily: fonts.headline, fontSize: 20, fontWeight: 700, color: colors.forestGreen, marginBottom: 12 }}>Confirm {confirmAction.type === 'ban' ? 'Ban' : 'Revocation'}</h2>
+              <p style={{ fontFamily: fonts.body, fontSize: 14, color: colors.forestGreen, lineHeight: 1.6, marginBottom: 24, opacity: 0.8 }}>
+                This will <b>{confirmAction.type === 'ban' ? 'BAN' : 'REVOKE CONTRIBUTION ACCESS FOR'} {confirmAction.target.editor}</b> <br/>and automatically <b>REJECT</b> the edit for "{confirmAction.target.name}".<br/><br/><b style={{ color: colors.red }}>This action cannot be undone from this screen.</b>
               </p>
               <div style={{ display: "flex", gap: 12, justifyContent: "flex-end" }}>
-                <button onClick={() => setStripTarget(null)} style={{ padding: "10px 24px", borderRadius: 8, cursor: "pointer", border: `1px solid ${colors.forestGreen}`, backgroundColor: colors.creamLight, fontFamily: fonts.body, fontSize: 13, fontWeight: 600, color: colors.forestGreen }}>Cancel</button>
-                <button onClick={confirmStrip} style={{ padding: "10px 24px", borderRadius: 8, cursor: "pointer", border: `1px solid ${colors.red}`, backgroundColor: colors.red, fontFamily: fonts.body, fontSize: 13, fontWeight: 700, color: colors.creamLight }}>Confirm</button>
+                <button onClick={() => setConfirmAction(null)} style={{ padding: "10px 24px", borderRadius: 8, cursor: "pointer", border: `1px solid ${colors.forestGreen}`, backgroundColor: colors.creamLight, fontFamily: fonts.body, fontSize: 13, fontWeight: 600, color: colors.forestGreen }}>Go Back</button>
+                <button onClick={executeRestrictionAndReject} style={{ padding: "10px 24px", borderRadius: 8, cursor: "pointer", border: "none", backgroundColor: confirmAction.type === 'ban' ? colors.red : colors.amber, color: colors.creamLight, fontFamily: fonts.body, fontSize: 13, fontWeight: 700 }}>Confirm & Reject</button>
               </div>
             </div>
           </div>
@@ -604,7 +562,7 @@ export default function PendingEditsQueue() {
 
         {/* ── Approve Confirmation Modal ── */}
         {approveTarget && (
-          <div style={{ position: "fixed", inset: 0, backgroundColor: "rgba(11, 67, 53, 0.5)", zIndex: 100, display: "flex", alignItems: "center", justifyContent: "center", backdropFilter: "blur(4px)" }} onClick={() => setApproveTarget(null)}>
+          <div style={{ position: "fixed", inset: 0, backgroundColor: "rgba(11, 67, 53, 0.5)", zIndex: 100, display: "flex", alignItems: "center", justifyContent: "center", backdropFilter: "blur(4px)" }} onClick={() => { setApproveTarget(null); setApproveReason(""); }}>
             <div style={{ ...cardStyle, backgroundColor: colors.creamLight, width: 500, maxWidth: "90vw", padding: 32, boxShadow: "0 20px 60px rgba(0,0,0,0.18)" }} onClick={(e) => e.stopPropagation()}>
               <div style={{ width: 56, height: 56, borderRadius: "50%", backgroundColor: colors.forestGreen, color: colors.creamLight, display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 20, border: `1px solid ${colors.forestGreen}` }}>
                 <Icon name="check_circle" size={28} filled />
@@ -618,13 +576,24 @@ export default function PendingEditsQueue() {
                 <p style={{ margin: "0 0 4px", fontFamily: fonts.body, fontSize: 13, color: colors.forestGreen }}><strong>Date:</strong> {approveTarget.date}</p>
                 <p style={{ margin: 0, fontFamily: fonts.body, fontSize: 13, color: colors.forestGreen }}><strong>Discipline:</strong> {approveTarget.discipline}</p>
               </div>
+
+              {/* ✅ ADDED: Approval Notes Field */}
+              <div style={{ marginBottom: 24 }}>
+                <label style={{ fontFamily: fonts.label, fontSize: 11, letterSpacing: "0.06em", fontWeight: 600, color: colors.forestGreen, display: "block", marginBottom: 6 }}>APPROVAL NOTES (Optional)</label>
+                <textarea 
+                  value={approveReason} 
+                  onChange={(e) => setApproveReason(e.target.value)}
+                  placeholder="Add any notes about this approval..."
+                  style={{ width: "100%", padding: 12, borderRadius: 8, border: `1px solid ${colors.forestGreen}`, fontFamily: fonts.body, fontSize: 13, color: colors.forestGreen, backgroundColor: colors.creamLight, outline: "none", resize: "vertical", minHeight: 80 }}
+                />
+              </div>
               
               <p style={{ fontFamily: fonts.body, fontSize: 14, color: colors.forestGreen, marginBottom: 24, lineHeight: 1.6 }}>
                 This will publish the edited scholar to the portal. This action cannot be undone.
               </p>
               
               <div style={{ display: "flex", gap: 12, justifyContent: "flex-end" }}>
-                <button onClick={() => setApproveTarget(null)} style={{ padding: "10px 24px", borderRadius: 8, cursor: "pointer", border: `1px solid ${colors.forestGreen}`, backgroundColor: colors.creamLight, fontFamily: fonts.body, fontSize: 13, fontWeight: 600, color: colors.forestGreen }}>Cancel</button>
+                <button onClick={() => { setApproveTarget(null); setApproveReason(""); }} style={{ padding: "10px 24px", borderRadius: 8, cursor: "pointer", border: `1px solid ${colors.forestGreen}`, backgroundColor: colors.creamLight, fontFamily: fonts.body, fontSize: 13, fontWeight: 600, color: colors.forestGreen }}>Cancel</button>
                 <button onClick={() => handleApprove(approveTarget.id)} style={{ padding: "10px 24px", borderRadius: 8, cursor: "pointer", border: "none", backgroundColor: colors.forestGreen, color: colors.creamLight, fontFamily: fonts.body, fontSize: 13, fontWeight: 700 }}>Confirm Approval</button>
               </div>
             </div>
@@ -648,10 +617,6 @@ export default function PendingEditsQueue() {
                 <p style={{ margin: 0, fontFamily: fonts.body, fontSize: 13, color: colors.forestGreen }}><strong>Discipline:</strong> {rejectTarget.discipline}</p>
               </div>
               
-              <p style={{ fontFamily: fonts.body, fontSize: 14, color: colors.forestGreen, marginBottom: 16, lineHeight: 1.6 }}>
-                Are you sure you want to reject this edit? This action cannot be undone.
-              </p>
-
               <div style={{ marginBottom: 24 }}>
                 <label style={{ display: "block", fontFamily: fonts.label, fontSize: 11, color: colors.forestGreen, marginBottom: 6, letterSpacing: "0.05em" }}>REJECTION REASON *</label>
                 <textarea

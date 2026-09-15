@@ -69,6 +69,31 @@ const StatusBadge: React.FC<{ status: string }> = ({ status }) => {
   );
 };
 
+const Avatar: React.FC<{ name: string; size?: number }> = ({ name, size = 28 }) => {
+  const initials = name.split(" ").map((p) => p[0]).slice(0, 2).join("").toUpperCase();
+  return (
+    <div
+      style={{
+        width: size,
+        height: size,
+        borderRadius: "50%",
+        backgroundColor: colors.creamMid,
+        color: colors.forestGreen,
+        border: `1px solid ${colors.forestGreen}`,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        fontFamily: fonts.headline,
+        fontWeight: 700,
+        fontSize: size * 0.4,
+        flexShrink: 0,
+      }}
+    >
+      {initials}
+    </div>
+  );
+};
+
 /* ------------------------------------------------------------------ */
 /*  Types                                                              */
 /* ------------------------------------------------------------------ */
@@ -110,7 +135,8 @@ interface Reference { id?: number; reference_id?: number; title: string; citatio
 interface RecentRevision { date: string; author: string; action: string; authorUrl?: string; }
 
 interface ScholarDetail {
-  id: number; versionId: number; status?: string;imageId?: number | null;
+  id: number; versionId: number; status?: string; imageId?: number | null;
+  createdById?: number | null; // ✅ ADDED: To support Ban/Restrict
   name: Record<Language, string>; subtitle: Record<Language, string>;
   createdBy: string; createdByUrl: string; createdDate: string;
   image: string;
@@ -123,26 +149,6 @@ interface ScholarDetail {
   academicReferences: Reference[]; recentRevisions: RecentRevision[];
 }
 
-/* ------------------------------------------------------------------ */
-/*  Mock Data (Fallback if API fails)                                  */
-/* ------------------------------------------------------------------ */
-const MOCK_SCHOLAR: ScholarDetail = {
-  id: 1, versionId: 101, status: "Pending Review",
-  name: { EN: "Ibn al-Haytham", AR: "ابن الهيثم", FR: "Alhazen" },
-  subtitle: { EN: "The Father of Modern Optics", AR: "أبو البصريات", FR: "Le Père de l'Optique Moderne" },
-  createdBy: "Karim Mansouri", createdByUrl: "/profile/1", createdDate: "June 14, 2026",
-  image: "https://ui-avatars.com/api/?name=Ibn+al-Haytham&background=0b4335&color=fff&size=128",
-  overviewText: { EN: "Pioneering polymath.", AR: "عالم موسوعي رائد.", FR: "Polymathe pionnier." },
-  body: { EN: ["He made significant contributions to optics."], AR: ["قدم مساهمات كبيرة في البصريات."], FR: ["Il a apporté des contributions significatives."] },
-  atAGlance: { fullName: "Abu Ali al-Hasan ibn al-Haytham", born: "965 CE", died: "1040 CE", century: "10th–11th century", region: "Basra, Iraq", discipline: "Optics, Mathematics" },
-  contributors: [{ name: "Karim Mansouri", contributions: 1, profileUrl: "/profile/1" }],
-  works: [{ id: 1, title: "Book of Optics", year: 1021, format: "BOOK", digitalAccess: "pdf", accessUrl: "#", accessSource: "upload", uploadedBy: "Karim Mansouri" }],
-  media: [{ id: 1, media_id: 1, type: "pdf", title: "Manuscript Scan", description: "High-res scan", viewCount: 124, likeCount: 15, action: "DOWNLOAD FILE", actionIcon: "download", accessUrl: "#", accessSource: "upload" }],
-  intellectualLineage: [{ initials: "BM", color: colors.forestGreen, textColor: colors.creamLight, name: "Banu Musa", role: "HISTORICAL INFLUENCE", profileUrl: "/scholars/2" }],
-  notableDisciples: [{ initials: "RB", color: colors.amber, textColor: colors.forestGreen, name: "Roger Bacon", role: "DISCIPLE", profileUrl: "/scholars/3" }],
-  academicReferences: [{ id: 1, title: "The Optics of Ibn al-Haytham", citation: "Sabra, A. I. (1989).", url: "https://example.com/ref1" }],
-  recentRevisions: [{ date: "June 14, 2026", author: "Karim Mansouri", action: "Version 101 - Pending Review", authorUrl: "/profile/1" }]
-};
 
 /* ------------------------------------------------------------------ */
 /*  FILE UTILS & HELPERS                                               */
@@ -163,7 +169,6 @@ function getAccessType(filename: string): Work["digitalAccess"] {
   return "pdf";
 }
 
-// ✅ HELPER FUNCTION to determine media type with correct typing
 function getMediaType(fileType: string | undefined): MediaItem["type"] {
   if (!fileType) return "pdf";
   const lowerType = fileType.toLowerCase();
@@ -348,44 +353,44 @@ function MediaCard({
       opacity: isRejected ? 0.7 : 1 
     }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
-  <Icon name={item.type === "video" ? "movie" : item.type === "audio" ? "graphic_eq" : "article"} size={24} />
-  <button 
-    onClick={onToggleReject}
-    title={isRejected ? "Click to Approve this media" : "Click to Reject this media"}
-    style={{ 
-      padding: "6px 12px", 
-      borderRadius: 6, 
-      border: `1.5px solid ${isRejected ? colors.red : colors.creamDark}`, 
-      backgroundColor: isRejected ? colors.red : "transparent", 
-      color: isRejected ? colors.creamLight : colors.red, 
-      cursor: "pointer", 
-      fontFamily: fonts.label, 
-      fontSize: 11, 
-      fontWeight: 700,
-      display: "flex", 
-      alignItems: "center", 
-      gap: 6,
-      transition: "all 0.2s"
-    }}
-    onMouseEnter={(e) => {
-      if (!isRejected) {
-        e.currentTarget.style.backgroundColor = colors.red;
-        e.currentTarget.style.color = colors.creamLight;
-        e.currentTarget.style.borderColor = colors.red;
-      }
-    }}
-    onMouseLeave={(e) => {
-      if (!isRejected) {
-        e.currentTarget.style.backgroundColor = "transparent";
-        e.currentTarget.style.color = colors.red;
-        e.currentTarget.style.borderColor = colors.creamDark;
-      }
-    }}
-  >
-    <Icon name={isRejected ? "cancel" : "block"} size={16} /> 
-    {isRejected ? "Rejected" : "Reject"}
-  </button>
-</div>
+        <Icon name={item.type === "video" ? "movie" : item.type === "audio" ? "graphic_eq" : "article"} size={24} />
+        <button 
+          onClick={onToggleReject}
+          title={isRejected ? "Click to Approve this media" : "Click to Reject this media"}
+          style={{ 
+            padding: "6px 12px", 
+            borderRadius: 6, 
+            border: `1.5px solid ${isRejected ? colors.red : colors.creamDark}`, 
+            backgroundColor: isRejected ? colors.red : "transparent", 
+            color: isRejected ? colors.creamLight : colors.red, 
+            cursor: "pointer", 
+            fontFamily: fonts.label, 
+            fontSize: 11, 
+            fontWeight: 700,
+            display: "flex", 
+            alignItems: "center", 
+            gap: 6,
+            transition: "all 0.2s"
+          }}
+          onMouseEnter={(e) => {
+            if (!isRejected) {
+              e.currentTarget.style.backgroundColor = colors.red;
+              e.currentTarget.style.color = colors.creamLight;
+              e.currentTarget.style.borderColor = colors.red;
+            }
+          }}
+          onMouseLeave={(e) => {
+            if (!isRejected) {
+              e.currentTarget.style.backgroundColor = "transparent";
+              e.currentTarget.style.color = colors.red;
+              e.currentTarget.style.borderColor = colors.creamDark;
+            }
+          }}
+        >
+          <Icon name={isRejected ? "cancel" : "block"} size={16} /> 
+          {isRejected ? "Rejected" : "Reject"}
+        </button>
+      </div>
       <p style={{ fontFamily: fonts.headline, fontSize: 14, fontWeight: 600, margin: 0, lineHeight: 1.3 }}>{item.title}</p>
       <p style={{ fontFamily: fonts.body, fontSize: 12, color: colors.forestGreen, opacity: 0.8, margin: 0, lineHeight: 1.4 }}>{item.description}</p>
       
@@ -468,6 +473,14 @@ export default function ScholarReview() {
   const [showRejectConfirm, setShowRejectConfirm] = useState(false);
   const [imgGray, setImgGray] = useState(true);
 
+  // ✅ NEW: Reason states for Approve and Reject
+  const [approveReason, setApproveReason] = useState("");
+  const [rejectReason, setRejectReason] = useState("");
+
+  // ✅ NEW: Restrict User Modal States
+  const [showRestrictModal, setShowRestrictModal] = useState(false);
+  const [confirmAction, setConfirmAction] = useState<{ type: 'revoke' | 'ban' } | null>(null);
+
   // ✅ STATE: Track individually rejected items before final approval
   const [rejectedItems, setRejectedItems] = useState<{
     works: number[];
@@ -549,7 +562,6 @@ export default function ScholarReview() {
           const bioText = found.biography || "";
           const bioParts = bioText.split(/\n\n+/);
 
-          // ✅ EXACT MAPPING: Ensures file_path/media_url becomes accessUrl
           const mappedWorks = (found.scholar_works || []).map((w: any) => ({
             id: w.work_id || w.id,
             work_id: w.work_id,
@@ -564,11 +576,10 @@ export default function ScholarReview() {
             uploadedByUrl: w.users?.id ? `/profile/${w.users.id}` : undefined,
           }));
 
-          // ✅ FIXED: Use helper function for proper type inference
           const mappedMedia = (found.media || []).map((m: any): MediaItem => ({
             id: m.media_id || m.id,
             media_id: m.media_id,
-            type: getMediaType(m.file_type), // ✅ Uses typed helper function
+            type: getMediaType(m.file_type),
             title: m.title || m.file_name || "Untitled Media",
             description: m.description || `${(m.file_type || "pdf").toUpperCase()} file`,
             viewCount: m.view_count || 0,
@@ -594,7 +605,8 @@ export default function ScholarReview() {
             id: found.scholar_id,
             versionId: found.version_id,
             status: found.status,
-            imageId: found.img_versions?.[0]?.img_version_id || null, // ✅ ADD THIS LINE
+            createdById: found.users?.id || null, // ✅ ADDED: For Ban/Restrict
+            imageId: found.img_versions?.[0]?.img_version_id || null,
             name: { 
               EN: found.canonical_name || "Unknown", 
               AR: found.canonical_name || "Unknown", 
@@ -640,9 +652,11 @@ export default function ScholarReview() {
     fetchData();
   }, [id]);
 
+  // ✅ UPDATED: Approve Handler (Sends reason)
   const handleApprove = async () => {
     try {
       const payload = {
+        reason: approveReason || "Approved", // ✅ Send internal notes
         reject_works: rejectedItems.works,
         reject_references: rejectedItems.references,
         reject_media: rejectedItems.media,
@@ -657,15 +671,55 @@ export default function ScholarReview() {
     setShowApproveConfirm(false);
   };
 
+  // ✅ UPDATED: Reject Handler (Sends reason)
   const handleReject = async () => {
+    if (!rejectReason.trim()) {
+      alert("Please provide a rejection reason");
+      return;
+    }
     try {
-      await adminApi.scholars.reject(data!.versionId, "Rejected by reviewer");
+      await adminApi.scholars.reject(data!.versionId, rejectReason);
       navigate("/admin/pending/scholars");
     } catch (error) {
       console.error("Rejection failed", error);
       alert("Failed to reject scholar. Please try again.");
     }
     setShowRejectConfirm(false);
+  };
+
+  // ✅ NEW: Restrict User + Auto-Reject Handler
+  const executeRestrictionAndReject = async () => {
+    if (!confirmAction || !data) return;
+    try {
+      const userId = data.createdById;
+      const scholarId = data.versionId;
+
+      if (!userId) {
+        alert("Cannot restrict system-generated submissions.");
+        setConfirmAction(null);
+        setShowRestrictModal(false);
+        return;
+      }
+
+      // 1. Restrict the User
+      if (confirmAction.type === 'revoke') {
+        await adminApi.users.toggleContribute(userId);
+      } else {
+        await adminApi.users.ban(userId);
+      }
+
+      // 2. Automatically Reject the Scholar Submission
+      const defaultReason = confirmAction.type === 'ban' ? "Contributor banned" : "Contribution access revoked";
+      await adminApi.scholars.reject(scholarId, defaultReason);
+
+      // 3. Navigate away and close modals
+      navigate("/admin/pending/scholars");
+      setConfirmAction(null);
+      setShowRestrictModal(false);
+    } catch (err) {
+      console.error("Action failed:", err);
+      alert("Failed to process action. Please try again.");
+    }
   };
 
   if (isLoading || !data) {
@@ -728,13 +782,17 @@ export default function ScholarReview() {
               </div>
             </div>
 
+            {/* ✅ UPDATED: Action Buttons (Added Restrict) */}
             <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
               <button onClick={() => setShowRejectConfirm(true)} style={{ display: "flex", alignItems: "center", gap: 6, padding: "10px 18px", backgroundColor: "transparent", border: `1px solid ${colors.red}`, borderRadius: 8, fontFamily: fonts.body, fontSize: 13, fontWeight: 500, color: colors.red, cursor: "pointer" }}>
                 <Icon name="close" size={16} /> {isRTL ? "رفض" : "Reject"}
               </button>
-              <button style={{ display: "flex", alignItems: "center", gap: 6, padding: "10px 18px", backgroundColor: "transparent", border: `1px solid ${colors.forestGreen}`, borderRadius: 8, fontFamily: fonts.body, fontSize: 13, fontWeight: 500, color: colors.forestGreen, cursor: "pointer" }}>
-                <Icon name="edit" size={16} /> {isRTL ? "طلب تعديلات" : "Request Changes"}
+              <button onClick={() => setShowRestrictModal(true)} style={{ display: "flex", alignItems: "center", gap: 6, padding: "10px 18px", backgroundColor: "transparent", border: `1px solid ${colors.amber}`, borderRadius: 8, fontFamily: fonts.body, fontSize: 13, fontWeight: 500, color: colors.amber, cursor: "pointer" }}
+                onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = colors.amber; e.currentTarget.style.color = colors.creamLight; }}
+                onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = "transparent"; e.currentTarget.style.color = colors.amber; }}>
+                <Icon name="shield_person" size={16} /> {isRTL ? "تقييد المستخدم" : "Restrict User"}
               </button>
+              
               <button onClick={() => setShowApproveConfirm(true)} style={{ display: "flex", alignItems: "center", gap: 6, padding: "10px 18px", backgroundColor: colors.forestGreen, border: `1px solid ${colors.forestGreen}`, borderRadius: 8, fontFamily: fonts.body, fontSize: 13, fontWeight: 600, color: colors.creamLight, cursor: "pointer" }}>
                 <Icon name="check" size={16} filled /> {isRTL ? "موافقة على العالم" : "Approve Scholar"}
               </button>
@@ -764,45 +822,45 @@ export default function ScholarReview() {
                       onMouseLeave={() => setImgGray(true)} 
                     />
                    <button 
-  onClick={() => toggleReject('images', data.imageId ?? 0)} 
-  title={rejectedItems.images.includes(data.imageId ?? 0) ? "Click to Approve this image" : "Click to Reject this image"}
-  style={{ 
-    position: "absolute", 
-    bottom: 12, 
-    right: 12, 
-    padding: "8px 14px",
-    borderRadius: 8, 
-    border: `2px solid ${rejectedItems.images.includes(data.imageId ?? 0) ? colors.red : colors.creamDark}`, 
-    backgroundColor: rejectedItems.images.includes(data.imageId ?? 0) ? colors.red : "rgba(255,255,255,0.95)", 
-    color: rejectedItems.images.includes(data.imageId ?? 0) ? colors.creamLight : colors.red, 
-    cursor: "pointer", 
-    display: "flex", 
-    alignItems: "center", 
-    gap: 6,
-    fontFamily: fonts.label,
-    fontSize: 11,
-    fontWeight: 700,
-    boxShadow: "0 2px 8px rgba(0,0,0,0.15)",
-    transition: "all 0.2s"
-  }}
-  onMouseEnter={(e) => {
-    if (!rejectedItems.images.includes(data.imageId ?? 0)) {
-      e.currentTarget.style.backgroundColor = colors.red;
-      e.currentTarget.style.color = colors.creamLight;
-      e.currentTarget.style.borderColor = colors.red;
-    }
-  }}
-  onMouseLeave={(e) => {
-    if (!rejectedItems.images.includes(data.imageId ?? 0)) {
-      e.currentTarget.style.backgroundColor = "rgba(255,255,255,0.95)";
-      e.currentTarget.style.color = colors.red;
-      e.currentTarget.style.borderColor = colors.creamDark;
-    }
-  }}
->
-  <Icon name={rejectedItems.images.includes(data.imageId ?? 0) ? "cancel" : "block"} size={18} />
-  {rejectedItems.images.includes(data.imageId ?? 0) ? (isRTL ? "مرفوض" : "Rejected") : (isRTL ? "رفض" : "Reject")}
-</button>
+                      onClick={() => toggleReject('images', data.imageId ?? 0)} 
+                      title={rejectedItems.images.includes(data.imageId ?? 0) ? "Click to Approve this image" : "Click to Reject this image"}
+                      style={{ 
+                        position: "absolute", 
+                        bottom: 12, 
+                        right: 12, 
+                        padding: "8px 14px",
+                        borderRadius: 8, 
+                        border: `2px solid ${rejectedItems.images.includes(data.imageId ?? 0) ? colors.red : colors.creamDark}`, 
+                        backgroundColor: rejectedItems.images.includes(data.imageId ?? 0) ? colors.red : "rgba(255,255,255,0.95)", 
+                        color: rejectedItems.images.includes(data.imageId ?? 0) ? colors.creamLight : colors.red, 
+                        cursor: "pointer", 
+                        display: "flex", 
+                        alignItems: "center", 
+                        gap: 6,
+                        fontFamily: fonts.label,
+                        fontSize: 11,
+                        fontWeight: 700,
+                        boxShadow: "0 2px 8px rgba(0,0,0,0.15)",
+                        transition: "all 0.2s"
+                      }}
+                      onMouseEnter={(e) => {
+                        if (!rejectedItems.images.includes(data.imageId ?? 0)) {
+                          e.currentTarget.style.backgroundColor = colors.red;
+                          e.currentTarget.style.color = colors.creamLight;
+                          e.currentTarget.style.borderColor = colors.red;
+                        }
+                      }}
+                      onMouseLeave={(e) => {
+                        if (!rejectedItems.images.includes(data.imageId ?? 0)) {
+                          e.currentTarget.style.backgroundColor = "rgba(255,255,255,0.95)";
+                          e.currentTarget.style.color = colors.red;
+                          e.currentTarget.style.borderColor = colors.creamDark;
+                        }
+                      }}
+                    >
+                      <Icon name={rejectedItems.images.includes(data.imageId ?? 0) ? "cancel" : "block"} size={18} />
+                      {rejectedItems.images.includes(data.imageId ?? 0) ? (isRTL ? "مرفوض" : "Rejected") : (isRTL ? "رفض" : "Reject")}
+                    </button>
                   </>
                 ) : (
                   <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center", color: "#c0c9c3" }}>
@@ -868,80 +926,80 @@ export default function ScholarReview() {
               <div style={{ overflowX: "auto" }}>
                 <table style={{ width: "100%", borderCollapse: "collapse" }}>
                   <thead style={{ backgroundColor: colors.creamMid }}>
-  <tr>
-    <th style={thStyle}>{isRTL ? "العنوان" : "Title"}</th>
-    <th style={thStyle}>{isRTL ? "السنة" : "Year"}</th>
-    <th style={thStyle}>{isRTL ? "الصيغة" : "Format"}</th>
-    <th style={thStyle}>{isRTL ? "الوصول" : "Access"}</th>
-    <th style={{ ...thStyle, textAlign: "center" }}>{isRTL ? "الحالة" : "Status"}</th>
-  </tr>
-</thead>
+                    <tr>
+                      <th style={thStyle}>{isRTL ? "العنوان" : "Title"}</th>
+                      <th style={thStyle}>{isRTL ? "السنة" : "Year"}</th>
+                      <th style={thStyle}>{isRTL ? "الصيغة" : "Format"}</th>
+                      <th style={thStyle}>{isRTL ? "الوصول" : "Access"}</th>
+                      <th style={{ ...thStyle, textAlign: "center" }}>{isRTL ? "الحالة" : "Status"}</th>
+                    </tr>
+                  </thead>
                   <tbody>
-  {data.works.map((w: any, i) => {
-    const itemId = w.id || w.work_id || i;
-    const isRejected = rejectedItems.works.includes(itemId);
-    return (
-    <tr key={i} style={{ transition: "background-color 0.15s", backgroundColor: isRejected ? "rgba(139, 44, 44, 0.1)" : "transparent" }} onMouseEnter={(e) => { if (!isRejected) e.currentTarget.style.backgroundColor = colors.creamMid }} onMouseLeave={(e) => { if (!isRejected) e.currentTarget.style.backgroundColor = "transparent" }}>
-      <td style={tdStyle}>
-        <div>
-          <p style={{ margin: 0, fontWeight: 600, fontFamily: fonts.headline, fontSize: 13 }}>{w.title || "Untitled"}</p>
-          {w.uploadedBy && <p style={{ margin: "2px 0 0", fontFamily: fonts.label, fontSize: 10, opacity: 0.7 }}>{isRTL ? "بواسطة" : "by"} {w.uploadedBy}</p>}
-        </div>
-      </td>
-      <td style={{ ...tdStyle, fontFamily: fonts.label, fontSize: 12 }}>{w.year || "-"}</td>
-      <td style={tdStyle}>
-        <span style={{ padding: "3px 8px", borderRadius: 6, backgroundColor: colors.creamMid, border: `1px solid ${colors.creamDark}`, fontFamily: fonts.label, fontSize: 11 }}>
-          {w.format || "UNKNOWN"}
-        </span>
-      </td>
-      <td style={tdStyle}>
-        <WorkActions work={w} />
-      </td>
-      {/* ✅ REJECT BUTTON MOVED TO END - RED & NOTICEABLE */}
-      <td style={{ ...tdStyle, textAlign: "center" }}>
-        <button 
-          onClick={() => toggleReject('works', itemId)}
-          title={isRejected ? "Click to Approve this work" : "Click to Reject this work"}
-          style={{ 
-            padding: "6px 12px", 
-            borderRadius: 6, 
-            border: `1.5px solid ${isRejected ? colors.red : colors.creamDark}`, 
-            backgroundColor: isRejected ? colors.red : "transparent", 
-            color: isRejected ? colors.creamLight : colors.red, 
-            cursor: "pointer", 
-            fontFamily: fonts.label, 
-            fontSize: 11, 
-            fontWeight: 700,
-            display: "flex", 
-            alignItems: "center", 
-            gap: 6, 
-            flexShrink: 0,
-            transition: "all 0.2s",
-            marginLeft: "auto",
-            marginRight: "auto"
-          }}
-          onMouseEnter={(e) => {
-            if (!isRejected) {
-              e.currentTarget.style.backgroundColor = colors.red;
-              e.currentTarget.style.color = colors.creamLight;
-              e.currentTarget.style.borderColor = colors.red;
-            }
-          }}
-          onMouseLeave={(e) => {
-            if (!isRejected) {
-              e.currentTarget.style.backgroundColor = "transparent";
-              e.currentTarget.style.color = colors.red;
-              e.currentTarget.style.borderColor = colors.creamDark;
-            }
-          }}
-        >
-          <Icon name={isRejected ? "cancel" : "block"} size={16} /> 
-          {isRejected ? (isRTL ? "مرفوض" : "Rejected") : (isRTL ? "رفض" : "Reject")}
-        </button>
-      </td>
-    </tr>
-  )})}
-</tbody>
+                    {data.works.map((w: any, i) => {
+                      const itemId = w.id || w.work_id || i;
+                      const isRejected = rejectedItems.works.includes(itemId);
+                      return (
+                        <tr key={i} style={{ transition: "background-color 0.15s", backgroundColor: isRejected ? "rgba(139, 44, 44, 0.1)" : "transparent" }} onMouseEnter={(e) => { if (!isRejected) e.currentTarget.style.backgroundColor = colors.creamMid }} onMouseLeave={(e) => { if (!isRejected) e.currentTarget.style.backgroundColor = "transparent" }}>
+                          <td style={tdStyle}>
+                            <div>
+                              <p style={{ margin: 0, fontWeight: 600, fontFamily: fonts.headline, fontSize: 13 }}>{w.title || "Untitled"}</p>
+                              {w.uploadedBy && <p style={{ margin: "2px 0 0", fontFamily: fonts.label, fontSize: 10, opacity: 0.7 }}>{isRTL ? "بواسطة" : "by"} {w.uploadedBy}</p>}
+                            </div>
+                          </td>
+                          <td style={{ ...tdStyle, fontFamily: fonts.label, fontSize: 12 }}>{w.year || "-"}</td>
+                          <td style={tdStyle}>
+                            <span style={{ padding: "3px 8px", borderRadius: 6, backgroundColor: colors.creamMid, border: `1px solid ${colors.creamDark}`, fontFamily: fonts.label, fontSize: 11 }}>
+                              {w.format || "UNKNOWN"}
+                            </span>
+                          </td>
+                          <td style={tdStyle}>
+                            <WorkActions work={w} />
+                          </td>
+                          <td style={{ ...tdStyle, textAlign: "center" }}>
+                            <button 
+                              onClick={() => toggleReject('works', itemId)}
+                              title={isRejected ? "Click to Approve this work" : "Click to Reject this work"}
+                              style={{ 
+                                padding: "6px 12px", 
+                                borderRadius: 6, 
+                                border: `1.5px solid ${isRejected ? colors.red : colors.creamDark}`, 
+                                backgroundColor: isRejected ? colors.red : "transparent", 
+                                color: isRejected ? colors.creamLight : colors.red, 
+                                cursor: "pointer", 
+                                fontFamily: fonts.label, 
+                                fontSize: 11, 
+                                fontWeight: 700,
+                                display: "flex", 
+                                alignItems: "center", 
+                                gap: 6, 
+                                flexShrink: 0,
+                                transition: "all 0.2s",
+                                marginLeft: "auto",
+                                marginRight: "auto"
+                              }}
+                              onMouseEnter={(e) => {
+                                if (!isRejected) {
+                                  e.currentTarget.style.backgroundColor = colors.red;
+                                  e.currentTarget.style.color = colors.creamLight;
+                                  e.currentTarget.style.borderColor = colors.red;
+                                }
+                              }}
+                              onMouseLeave={(e) => {
+                                if (!isRejected) {
+                                  e.currentTarget.style.backgroundColor = "transparent";
+                                  e.currentTarget.style.color = colors.red;
+                                  e.currentTarget.style.borderColor = colors.creamDark;
+                                }
+                              }}
+                            >
+                              <Icon name={isRejected ? "cancel" : "block"} size={16} /> 
+                              {isRejected ? (isRTL ? "مرفوض" : "Rejected") : (isRTL ? "رفض" : "Reject")}
+                            </button>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
                 </table>
               </div>
             </section>
@@ -1011,57 +1069,58 @@ export default function ScholarReview() {
                   const itemId = r.id || r.reference_id || i;
                   const isRejected = rejectedItems.references.includes(itemId);
                   return (
-                  <div key={i} style={{ padding: 12, backgroundColor: isRejected ? "rgba(139, 44, 44, 0.1)" : colors.creamMid, border: `1px solid ${isRejected ? colors.red : colors.creamDark}`, borderRadius: 8, opacity: isRejected ? 0.7 : 1 }}>
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 8 }}>
-                      <div style={{ flex: 1 }}>
-                        <p style={{ fontFamily: fonts.headline, fontSize: 13, fontWeight: 600, color: colors.forestGreen, margin: "0 0 4px" }}>{r.title || "Untitled Reference"}</p>
-                        <p style={{ fontFamily: fonts.body, fontSize: 12, color: colors.forestGreen, opacity: 0.8, margin: "0 0 6px", lineHeight: 1.5 }}>{r.citation || ""}</p>
-                        {r.url && (
-                          <a href={r.url} target="_blank" rel="noopener noreferrer" style={{ display: "inline-flex", alignItems: "center", gap: 4, fontFamily: fonts.label, fontSize: 11, color: colors.forestGreen, textDecoration: "underline" }}>
-                            <Icon name="link" size={12} /> {isRTL ? "عرض المصدر" : "View Source"}
-                          </a>
-                        )}
+                    <div key={i} style={{ padding: 12, backgroundColor: isRejected ? "rgba(139, 44, 44, 0.1)" : colors.creamMid, border: `1px solid ${isRejected ? colors.red : colors.creamDark}`, borderRadius: 8, opacity: isRejected ? 0.7 : 1 }}>
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 8 }}>
+                        <div style={{ flex: 1 }}>
+                          <p style={{ fontFamily: fonts.headline, fontSize: 13, fontWeight: 600, color: colors.forestGreen, margin: "0 0 4px" }}>{r.title || "Untitled Reference"}</p>
+                          <p style={{ fontFamily: fonts.body, fontSize: 12, color: colors.forestGreen, opacity: 0.8, margin: "0 0 6px", lineHeight: 1.5 }}>{r.citation || ""}</p>
+                          {r.url && (
+                            <a href={r.url} target="_blank" rel="noopener noreferrer" style={{ display: "inline-flex", alignItems: "center", gap: 4, fontFamily: fonts.label, fontSize: 11, color: colors.forestGreen, textDecoration: "underline" }}>
+                              <Icon name="link" size={12} /> {isRTL ? "عرض المصدر" : "View Source"}
+                            </a>
+                          )}
+                        </div>
+                        <button 
+                          onClick={() => toggleReject('references', itemId)}
+                          title={isRejected ? "Click to Approve this reference" : "Click to Reject this reference"}
+                          style={{ 
+                            padding: "6px 12px", 
+                            borderRadius: 6, 
+                            border: `1.5px solid ${isRejected ? colors.red : colors.creamDark}`, 
+                            backgroundColor: isRejected ? colors.red : "transparent", 
+                            color: isRejected ? colors.creamLight : colors.red, 
+                            cursor: "pointer", 
+                            fontFamily: fonts.label, 
+                            fontSize: 11, 
+                            fontWeight: 700,
+                            display: "flex", 
+                            alignItems: "center", 
+                            gap: 6, 
+                            flexShrink: 0,
+                            transition: "all 0.2s"
+                          }}
+                          onMouseEnter={(e) => {
+                            if (!isRejected) {
+                              e.currentTarget.style.backgroundColor = colors.red;
+                              e.currentTarget.style.color = colors.creamLight;
+                              e.currentTarget.style.borderColor = colors.red;
+                            }
+                          }}
+                          onMouseLeave={(e) => {
+                            if (!isRejected) {
+                              e.currentTarget.style.backgroundColor = "transparent";
+                              e.currentTarget.style.color = colors.red;
+                              e.currentTarget.style.borderColor = colors.creamDark;
+                            }
+                          }}
+                        >
+                          <Icon name={isRejected ? "cancel" : "block"} size={16} /> 
+                          {isRejected ? (isRTL ? "مرفوض" : "Rejected") : (isRTL ? "رفض" : "Reject")}
+                        </button>
                       </div>
-                      <button 
-  onClick={() => toggleReject('references', itemId)}
-  title={isRejected ? "Click to Approve this reference" : "Click to Reject this reference"}
-  style={{ 
-    padding: "6px 12px", 
-    borderRadius: 6, 
-    border: `1.5px solid ${isRejected ? colors.red : colors.creamDark}`, 
-    backgroundColor: isRejected ? colors.red : "transparent", 
-    color: isRejected ? colors.creamLight : colors.red, 
-    cursor: "pointer", 
-    fontFamily: fonts.label, 
-    fontSize: 11, 
-    fontWeight: 700,
-    display: "flex", 
-    alignItems: "center", 
-    gap: 6, 
-    flexShrink: 0,
-    transition: "all 0.2s"
-  }}
-  onMouseEnter={(e) => {
-    if (!isRejected) {
-      e.currentTarget.style.backgroundColor = colors.red;
-      e.currentTarget.style.color = colors.creamLight;
-      e.currentTarget.style.borderColor = colors.red;
-    }
-  }}
-  onMouseLeave={(e) => {
-    if (!isRejected) {
-      e.currentTarget.style.backgroundColor = "transparent";
-      e.currentTarget.style.color = colors.red;
-      e.currentTarget.style.borderColor = colors.creamDark;
-    }
-  }}
->
-  <Icon name={isRejected ? "cancel" : "block"} size={16} /> 
-  {isRejected ? (isRTL ? "مرفوض" : "Rejected") : (isRTL ? "رفض" : "Reject")}
-</button>
                     </div>
-                  </div>
-                )})}
+                  );
+                })}
               </div>
             </section>
 
@@ -1088,43 +1147,186 @@ export default function ScholarReview() {
           </div>
         </div>
 
+        {/* ── Step 1: Choose Restrict Action Modal ── */}
+        {showRestrictModal && !confirmAction && (
+          <div style={{ position: "fixed", inset: 0, backgroundColor: "rgba(11, 67, 53, 0.6)", zIndex: 100, display: "flex", alignItems: "center", justifyContent: "center", backdropFilter: "blur(4px)", padding: 20 }} onClick={() => setShowRestrictModal(false)}>
+            <div style={{ ...cardStyle, backgroundColor: colors.creamLight, width: 520, maxWidth: "90vw", padding: 32, boxShadow: "0 20px 60px rgba(0,0,0,0.25)" }} onClick={(e) => e.stopPropagation()}>
+              
+              <div style={{ display: "flex", alignItems: "center", gap: 16, marginBottom: 24 }}>
+                <Avatar name={data.createdBy} size={56} />
+                <div>
+                  <h2 style={{ fontFamily: fonts.headline, fontSize: 20, fontWeight: 700, color: colors.forestGreen, margin: 0 }}>{isRTL ? "تقييد المستخدم" : "Restrict User"}</h2>
+                  <p style={{ fontFamily: fonts.body, fontSize: 13, color: colors.forestGreen, opacity: 0.7, margin: "4px 0 0" }}>{data.createdBy} {isRTL ? "أرسل" : "submitted"} "{data.name[lang]}"</p>
+                </div>
+              </div>
+
+              <p style={{ fontFamily: fonts.body, fontSize: 14, color: colors.forestGreen, lineHeight: 1.6, marginBottom: 24 }}>
+                {isRTL ? "اختر إجراءً. سيتم أيضًا " : "Choose an action. This will automatically "}
+                <b>{isRTL ? "رفض" : "reject"}</b> {isRTL ? "هذا العالم تلقائيًا." : "this scholar submission as well."}
+              </p>
+
+              <div style={{ display: "flex", flexDirection: "column", gap: 12, marginBottom: 24 }}>
+                <button 
+                  onClick={() => setConfirmAction({ type: 'revoke' })}
+                  style={{ display: "flex", alignItems: "flex-start", gap: 16, padding: 16, borderRadius: 8, border: `1px solid ${colors.amber}`, backgroundColor: "rgba(184, 134, 11, 0.05)", cursor: "pointer", textAlign: "left", transition: "background 0.2s" }}
+                  onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = "rgba(184, 134, 11, 0.1)"; }}
+                  onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = "rgba(184, 134, 11, 0.05)"; }}
+                >
+                  <div style={{ width: 32, height: 32, borderRadius: "50%", backgroundColor: colors.amber, color: colors.creamLight, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                    <Icon name="person_off" size={18} />
+                  </div>
+                  <div>
+                    <p style={{ fontFamily: fonts.headline, fontSize: 14, fontWeight: 700, color: colors.forestGreen, margin: "0 0 4px" }}>{isRTL ? "إلغاء صلاحية المساهمة" : "Revoke Contribution Access"}</p>
+                    <p style={{ fontFamily: fonts.body, fontSize: 12, color: colors.forestGreen, opacity: 0.7, margin: 0, lineHeight: 1.5 }}>{isRTL ? "يمكنه تسجيل الدخول ولكن لا يمكنه إضافة محتوى جديد." : "They can still log in, but cannot submit new content. (Recommended for low-quality submissions)"}</p>
+                  </div>
+                </button>
+
+                <button 
+                  onClick={() => setConfirmAction({ type: 'ban' })}
+                  style={{ display: "flex", alignItems: "flex-start", gap: 16, padding: 16, borderRadius: 8, border: `1px solid ${colors.red}`, backgroundColor: "rgba(139, 44, 44, 0.05)", cursor: "pointer", textAlign: "left", transition: "background 0.2s" }}
+                  onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = "rgba(139, 44, 44, 0.1)"; }}
+                  onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = "rgba(139, 44, 44, 0.05)"; }}
+                >
+                  <div style={{ width: 32, height: 32, borderRadius: "50%", backgroundColor: colors.red, color: colors.creamLight, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                    <Icon name="block" size={18} />
+                  </div>
+                  <div>
+                    <p style={{ fontFamily: fonts.headline, fontSize: 14, fontWeight: 700, color: colors.forestGreen, margin: "0 0 4px" }}>{isRTL ? "حظر الحساب تمامًا" : "Ban Account Completely"}</p>
+                    <p style={{ fontFamily: fonts.body, fontSize: 12, color: colors.forestGreen, opacity: 0.7, margin: 0, lineHeight: 1.5 }}>{isRTL ? "سيتم قفل حسابه تمامًا." : "They will be completely locked out of the platform. (Use for spam, abuse, or severe violations)"}</p>
+                  </div>
+                </button>
+              </div>
+
+              <div style={{ display: "flex", justifyContent: "flex-end" }}>
+                <button onClick={() => setShowRestrictModal(false)} style={{ padding: "10px 24px", borderRadius: 8, cursor: "pointer", border: `1px solid ${colors.forestGreen}`, backgroundColor: colors.creamLight, fontFamily: fonts.body, fontSize: 13, fontWeight: 600, color: colors.forestGreen }}>
+                  {isRTL ? "إلغاء" : "Cancel"}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ── Step 2: Final Confirmation Modal ── */}
+        {confirmAction && (
+          <div style={{ position: "fixed", inset: 0, backgroundColor: "rgba(11, 67, 53, 0.6)", zIndex: 101, display: "flex", alignItems: "center", justifyContent: "center", backdropFilter: "blur(4px)", padding: 20 }} onClick={() => setConfirmAction(null)}>
+            <div style={{ ...cardStyle, backgroundColor: colors.creamLight, width: 440, maxWidth: "90vw", padding: 32, boxShadow: "0 20px 60px rgba(0,0,0,0.25)" }} onClick={(e) => e.stopPropagation()}>
+              
+              <div style={{ width: 56, height: 56, borderRadius: "50%", backgroundColor: confirmAction.type === 'ban' ? colors.red : colors.amber, color: colors.creamLight, display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 20, border: `1px solid ${confirmAction.type === 'ban' ? colors.red : colors.amber}` }}>
+                <Icon name={confirmAction.type === 'ban' ? "block" : "person_off"} size={28} filled />
+              </div>
+              
+              <h2 style={{ fontFamily: fonts.headline, fontSize: 20, fontWeight: 700, color: colors.forestGreen, marginBottom: 12 }}>
+                {isRTL ? (confirmAction.type === 'ban' ? 'تأكيد الحظر' : 'تأكيد الإلغاء') : `Confirm ${confirmAction.type === 'ban' ? 'Ban' : 'Revocation'}`}
+              </h2>
+              
+              <p style={{ fontFamily: fonts.body, fontSize: 14, color: colors.forestGreen, lineHeight: 1.6, marginBottom: 24, opacity: 0.8 }}>
+                {isRTL ? (
+                  <>سيتم <b>{confirmAction.type === 'ban' ? 'حظر' : 'إلغاء صلاحية المساهمة لـ'} {data.createdBy}</b> <br/>و<b>رفض</b> العالم "{data.name[lang]}" تلقائيًا.<br/><br/><b style={{ color: colors.red }}>لا يمكن التراجع عن هذا الإجراء من هذه الشاشة.</b></>
+                ) : (
+                  <>This will <b>{confirmAction.type === 'ban' ? 'BAN' : 'REVOKE CONTRIBUTION ACCESS FOR'} {data.createdBy}</b> <br/>and automatically <b>REJECT</b> the scholar "{data.name[lang]}".<br/><br/><b style={{ color: colors.red }}>This action cannot be undone from this screen.</b></>
+                )}
+              </p>
+              
+              <div style={{ display: "flex", gap: 12, justifyContent: "flex-end" }}>
+                <button onClick={() => setConfirmAction(null)} style={{ padding: "10px 24px", borderRadius: 8, cursor: "pointer", border: `1px solid ${colors.forestGreen}`, backgroundColor: colors.creamLight, fontFamily: fonts.body, fontSize: 13, fontWeight: 600, color: colors.forestGreen }}>
+                  {isRTL ? "العودة" : "Go Back"}
+                </button>
+                <button onClick={executeRestrictionAndReject} style={{ padding: "10px 24px", borderRadius: 8, cursor: "pointer", border: "none", backgroundColor: confirmAction.type === 'ban' ? colors.red : colors.amber, color: colors.creamLight, fontFamily: fonts.body, fontSize: 13, fontWeight: 700 }}>
+                  {isRTL ? "تأكيد ورفض" : "Confirm & Reject"}
+                </button>
+              </div>
+
+            </div>
+          </div>
+        )}
+
+        {/* ── Approve Confirmation Modal ─ */}
         {showApproveConfirm && (
           <div style={{ position: "fixed", inset: 0, backgroundColor: "rgba(11, 67, 53, 0.5)", zIndex: 100, display: "flex", alignItems: "center", justifyContent: "center", backdropFilter: "blur(4px)" }} onClick={() => setShowApproveConfirm(false)}>
-            <div style={{ ...cardStyle, backgroundColor: colors.creamLight, width: 440, maxWidth: "90vw", padding: 32, boxShadow: "0 20px 60px rgba(0,0,0,0.18)" }} onClick={(e) => e.stopPropagation()}>
+            <div style={{ ...cardStyle, backgroundColor: colors.creamLight, width: 500, maxWidth: "90vw", padding: 32, boxShadow: "0 20px 60px rgba(0,0,0,0.18)" }} onClick={(e) => e.stopPropagation()}>
               <div style={{ width: 56, height: 56, borderRadius: "50%", backgroundColor: colors.forestGreen, color: colors.creamLight, display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 20, border: `1px solid ${colors.forestGreen}` }}>
                 <Icon name="check_circle" size={28} filled />
               </div>
-              <h2 style={{ fontFamily: fonts.headline, fontSize: 20, fontWeight: 700, color: colors.forestGreen, marginBottom: 12 }}>{isRTL ? "موافقة على العالم" : "Approve Scholar"}</h2>
-              <p style={{ fontFamily: fonts.body, fontSize: 14, color: colors.forestGreen, lineHeight: 1.6, marginBottom: 28, opacity: 0.8 }}>
-                {isRTL ? `هل أنت متأكد من الموافقة على "${data.name[lang]}"؟ سيتم نشر ملف العالم على البوابة.` : `Are you sure you want to approve "${data.name[lang]}"? This will publish the scholar profile to the portal.`}
+              <h2 style={{ fontFamily: fonts.headline, fontSize: 20, fontWeight: 700, color: colors.forestGreen, marginBottom: 16 }}>{isRTL ? "موافقة على العالم" : "Approve Scholar?"}</h2>
+              
+              <div style={{ backgroundColor: colors.creamMid, padding: 16, borderRadius: 8, marginBottom: 20 }}>
+                <p style={{ margin: "0 0 8px", fontFamily: fonts.headline, fontSize: 16, fontWeight: 600, color: colors.forestGreen }}>{data.name[lang]}</p>
+                <p style={{ margin: "0 0 4px", fontFamily: fonts.body, fontSize: 13, color: colors.forestGreen }}><strong>{isRTL ? "اللغة:" : "Language:"}</strong> {lang}</p>
+                <p style={{ margin: "0 0 4px", fontFamily: fonts.body, fontSize: 13, color: colors.forestGreen }}><strong>{isRTL ? "أرسلت بواسطة:" : "Submitted by:"}</strong> {data.createdBy}</p>
+                <p style={{ margin: "0 0 4px", fontFamily: fonts.body, fontSize: 13, color: colors.forestGreen }}><strong>{isRTL ? "التاريخ:" : "Date:"}</strong> {data.createdDate}</p>
+                <p style={{ margin: 0, fontFamily: fonts.body, fontSize: 13, color: colors.forestGreen }}><strong>{isRTL ? "التخصص:" : "Discipline:"}</strong> {data.atAGlance.discipline}</p>
+              </div>
+
+              {/* ✅ ADDED: Approval Notes Field */}
+              <div style={{ marginBottom: 24 }}>
+                <label style={{ fontFamily: fonts.label, fontSize: 11, letterSpacing: "0.06em", fontWeight: 600, color: colors.forestGreen, display: "block", marginBottom: 6 }}>
+                  {isRTL ? "ملاحظات الموافقة (اختياري)" : "APPROVAL NOTES (Optional)"}
+                </label>
+                <textarea 
+                  value={approveReason} 
+                  onChange={(e) => setApproveReason(e.target.value)}
+                  placeholder={isRTL ? "أضف أي ملاحظات حول هذه الموافقة..." : "Add any notes about this approval..."}
+                  style={{ width: "100%", padding: 12, borderRadius: 8, border: `1px solid ${colors.forestGreen}`, fontFamily: fonts.body, fontSize: 13, color: colors.forestGreen, backgroundColor: colors.creamLight, outline: "none", resize: "vertical", minHeight: 80 }}
+                />
+              </div>
+              
+              <p style={{ fontFamily: fonts.body, fontSize: 14, color: colors.forestGreen, marginBottom: 24, lineHeight: 1.6 }}>
+                {isRTL ? "سيتم نشر ملف العالم على البوابة. لا يمكن التراجع عن هذا الإجراء." : "This will publish the scholar to the portal. This action cannot be undone."}
                 {Object.values(rejectedItems).flat().length > 0 && (
                   <span style={{ display: "block", marginTop: 12, color: colors.red, fontWeight: 600 }}>
                     {isRTL ? `ملاحظة: سيتم رفض ${Object.values(rejectedItems).flat().length} عنصر محدد.` : `Note: ${Object.values(rejectedItems).flat().length} specific item(s) will be rejected.`}
                   </span>
                 )}
               </p>
+              
               <div style={{ display: "flex", gap: 12, justifyContent: "flex-end" }}>
-                <button onClick={() => setShowApproveConfirm(false)} style={{ padding: "10px 24px", borderRadius: 8, cursor: "pointer", border: `1px solid ${colors.forestGreen}`, backgroundColor: colors.creamLight, fontFamily: fonts.body, fontSize: 13, fontWeight: 600, color: colors.forestGreen }}>{isRTL ? "إلغاء" : "Cancel"}</button>
-                <button onClick={handleApprove} style={{ padding: "10px 24px", borderRadius: 8, cursor: "pointer", border: `1px solid ${colors.forestGreen}`, backgroundColor: colors.forestGreen, fontFamily: fonts.body, fontSize: 13, fontWeight: 700, color: colors.creamLight }}>{isRTL ? "تأكيد الموافقة" : "Confirm Approve"}</button>
+                <button onClick={() => { setShowApproveConfirm(false); setApproveReason(""); }} style={{ padding: "10px 24px", borderRadius: 8, cursor: "pointer", border: `1px solid ${colors.forestGreen}`, backgroundColor: colors.creamLight, fontFamily: fonts.body, fontSize: 13, fontWeight: 600, color: colors.forestGreen }}>
+                  {isRTL ? "إلغاء" : "Cancel"}
+                </button>
+                <button onClick={handleApprove} style={{ padding: "10px 24px", borderRadius: 8, cursor: "pointer", border: "none", backgroundColor: colors.forestGreen, color: colors.creamLight, fontFamily: fonts.body, fontSize: 13, fontWeight: 700 }}>
+                  {isRTL ? "تأكيد الموافقة" : "Confirm Approval"}
+                </button>
               </div>
             </div>
           </div>
         )}
 
+        {/* ── Reject Confirmation Modal ── */}
         {showRejectConfirm && (
-          <div style={{ position: "fixed", inset: 0, backgroundColor: "rgba(11, 67, 53, 0.5)", zIndex: 100, display: "flex", alignItems: "center", justifyContent: "center", backdropFilter: "blur(4px)" }} onClick={() => setShowRejectConfirm(false)}>
-            <div style={{ ...cardStyle, backgroundColor: colors.creamLight, width: 440, maxWidth: "90vw", padding: 32, boxShadow: "0 20px 60px rgba(0,0,0,0.18)" }} onClick={(e) => e.stopPropagation()}>
+          <div style={{ position: "fixed", inset: 0, backgroundColor: "rgba(11, 67, 53, 0.5)", zIndex: 100, display: "flex", alignItems: "center", justifyContent: "center", backdropFilter: "blur(4px)" }} onClick={() => { setShowRejectConfirm(false); setRejectReason(""); }}>
+            <div style={{ ...cardStyle, backgroundColor: colors.creamLight, width: 500, maxWidth: "90vw", padding: 32, boxShadow: "0 20px 60px rgba(0,0,0,0.18)" }} onClick={(e) => e.stopPropagation()}>
               <div style={{ width: 56, height: 56, borderRadius: "50%", backgroundColor: colors.red, color: colors.creamLight, display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 20, border: `1px solid ${colors.red}` }}>
                 <Icon name="cancel" size={28} filled />
               </div>
-              <h2 style={{ fontFamily: fonts.headline, fontSize: 20, fontWeight: 700, color: colors.forestGreen, marginBottom: 12 }}>{isRTL ? "رفض الطلب" : "Reject Submission"}</h2>
-              <p style={{ fontFamily: fonts.body, fontSize: 14, color: colors.forestGreen, lineHeight: 1.6, marginBottom: 28, opacity: 0.8 }}>
-                {isRTL ? `هل أنت متأكد من رفض "${data.name[lang]}"؟ سيتم إشعار المساهم.` : `Are you sure you want to reject "${data.name[lang]}"? The contributor will be notified.`}
-                <br /><b style={{ color: colors.red }}>{isRTL ? "لا يمكن التراجع عن هذا الإجراء." : "This action cannot be undone."}</b>
-              </p>
+              <h2 style={{ fontFamily: fonts.headline, fontSize: 20, fontWeight: 700, color: colors.forestGreen, marginBottom: 16 }}>{isRTL ? "رفض العالم؟" : "Reject Scholar?"}</h2>
+              
+              <div style={{ backgroundColor: colors.creamMid, padding: 16, borderRadius: 8, marginBottom: 24 }}>
+                <p style={{ margin: "0 0 8px", fontFamily: fonts.headline, fontSize: 16, fontWeight: 600, color: colors.forestGreen }}>{data.name[lang]}</p>
+                <p style={{ margin: "0 0 4px", fontFamily: fonts.body, fontSize: 13, color: colors.forestGreen }}><strong>{isRTL ? "اللغة:" : "Language:"}</strong> {lang}</p>
+                <p style={{ margin: "0 0 4px", fontFamily: fonts.body, fontSize: 13, color: colors.forestGreen }}><strong>{isRTL ? "أرسلت بواسطة:" : "Submitted by:"}</strong> {data.createdBy}</p>
+                <p style={{ margin: "0 0 4px", fontFamily: fonts.body, fontSize: 13, color: colors.forestGreen }}><strong>{isRTL ? "التاريخ:" : "Date:"}</strong> {data.createdDate}</p>
+                <p style={{ margin: 0, fontFamily: fonts.body, fontSize: 13, color: colors.forestGreen }}><strong>{isRTL ? "التخصص:" : "Discipline:"}</strong> {data.atAGlance.discipline}</p>
+              </div>
+              
+              <div style={{ marginBottom: 24 }}>
+                <label style={{ fontFamily: fonts.label, fontSize: 11, letterSpacing: "0.06em", fontWeight: 600, color: colors.forestGreen, display: "block", marginBottom: 6 }}>
+                  {isRTL ? "سبب الرفض *" : "REJECTION REASON *"}
+                </label>
+                <textarea 
+                  value={rejectReason} 
+                  onChange={(e) => setRejectReason(e.target.value)}
+                  placeholder={isRTL ? "يرجى شرح سبب رفض هذا الطلب..." : "Please explain why this submission is being rejected..."}
+                  style={{ width: "100%", padding: 12, borderRadius: 8, border: `1px solid ${colors.forestGreen}`, fontFamily: fonts.body, fontSize: 13, color: colors.forestGreen, backgroundColor: colors.creamLight, outline: "none", resize: "vertical", minHeight: 80 }}
+                />
+              </div>
+              
               <div style={{ display: "flex", gap: 12, justifyContent: "flex-end" }}>
-                <button onClick={() => setShowRejectConfirm(false)} style={{ padding: "10px 24px", borderRadius: 8, cursor: "pointer", border: `1px solid ${colors.forestGreen}`, backgroundColor: colors.creamLight, fontFamily: fonts.body, fontSize: 13, fontWeight: 600, color: colors.forestGreen }}>{isRTL ? "إلغاء" : "Cancel"}</button>
-                <button onClick={handleReject} style={{ padding: "10px 24px", borderRadius: 8, cursor: "pointer", border: `1px solid ${colors.red}`, backgroundColor: colors.red, fontFamily: fonts.body, fontSize: 13, fontWeight: 700, color: colors.creamLight }}>{isRTL ? "تأكيد الرفض" : "Confirm Reject"}</button>
+                <button onClick={() => { setShowRejectConfirm(false); setRejectReason(""); }} style={{ padding: "10px 24px", borderRadius: 8, cursor: "pointer", border: `1px solid ${colors.forestGreen}`, backgroundColor: colors.creamLight, fontFamily: fonts.body, fontSize: 13, fontWeight: 600, color: colors.forestGreen }}>
+                  {isRTL ? "إلغاء" : "Cancel"}
+                </button>
+                <button onClick={handleReject} style={{ padding: "10px 24px", borderRadius: 8, cursor: "pointer", border: "none", backgroundColor: colors.red, color: colors.creamLight, fontFamily: fonts.body, fontSize: 13, fontWeight: 700 }}>
+                  {isRTL ? "تأكيد الرفض" : "Confirm Rejection"}
+                </button>
               </div>
             </div>
           </div>

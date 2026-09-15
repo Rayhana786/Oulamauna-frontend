@@ -1,86 +1,158 @@
-// Home.tsx
 import React, { useEffect, useRef, useState } from "react";
-import { Link, useLocation } from "react-router-dom";
+import { createPortal } from "react-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import Hero from "../components/Hero";
+import ScholarImage from "../components/ScholarImage";
 import { useLang } from "../context/LanguageContext";
+import { fetchHomeData } from "../api/homeApi";
+import { searchGlobal, SearchResponse } from "../api/searchApi";
 
 type Language = "EN" | "AR" | "FR";
 
 /* ------------------------------------------------------------------ */
-/*  MOCK DATA — STRICTLY MATCHING PRISMA SCHEMA                       */
+/*  API DATA SHAPES                                                   */
 /* ------------------------------------------------------------------ */
-const featuredScholars = [
-  {
-    version_id: 1,
-    canonical_name: "Ibn Khaldun",
-    century_gregorian_start: 1332,
-    century_gregorian_end: 1406,
-    region_name: "North Africa",
-    discipline_name: "History & Sociology",
-    image_url: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&h=400&fit=crop",
-    biography: "Pioneer of historiography and sociology, best known for his masterpiece, the Muqaddimah.",
-  },
-  {
-    version_id: 2,
-    canonical_name: "Al-Ghazali",
-    century_gregorian_start: 1058,
-    century_gregorian_end: 1111,
-    region_name: "Persia",
-    discipline_name: "Theology & Philosophy",
-    image_url: "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=400&h=400&fit=crop",
-    biography: "Theologian, jurist, and philosopher whose work shaped Islamic thought for centuries.",
-  },
-  {
-    version_id: 3,
-    canonical_name: "Ibn Sina (Avicenna)",
-    century_gregorian_start: 980,
-    century_gregorian_end: 1037,
-    region_name: "Central Asia",
-    discipline_name: "Medicine & Philosophy",
-    image_url: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=400&h=400&fit=crop",
-    biography: "Polymath and physician, author of The Canon of Medicine, a standard medical text for centuries.",
-  },
-  {
-    version_id: 4,
-    canonical_name: "Emir Abdelkader",
-    century_gregorian_start: 1808,
-    century_gregorian_end: 1883,
-    region_name: "Algeria",
-    discipline_name: "Islamic Jurisprudence",
-    image_url: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=400&h=400&fit=crop",
-    biography: "Scholar, resistance leader, and founder of modern Algeria, known for his chivalry and writings.",
-  },
-];
+interface ApiScholar {
+  scholar_id: number;
+  version_id: number;
+  canonical_name: string | null;
+  century_gregorian_start: number | null;
+  century_gregorian_end: number | null;
+  region_name: string | null;
+  discipline_name: string | null;
+  image_url: string | null;
+  biography: string | null;
+  language_code: string;
+}
 
-const recentScholars = [
-  { version_id: 101, canonical_name: "Abdelhamid Ibn Badis", century_gregorian_start: 1889, image_url: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=300&h=300&fit=crop", created_at: "2024-01-15T10:00:00Z" },
-  { version_id: 102, canonical_name: "Malik Ibn Nabi", century_gregorian_start: 1905, image_url: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=300&h=300&fit=crop", created_at: "2024-01-12T14:30:00Z" },
-  { version_id: 103, canonical_name: "Ibn Rushd (Averroes)", century_gregorian_start: 1126, image_url: "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=300&h=300&fit=crop", created_at: "2024-01-10T09:15:00Z" },
-  { version_id: 104, canonical_name: "Fatima al-Fihri", century_gregorian_start: 800, image_url: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=300&h=300&fit=crop", created_at: "2024-01-08T16:45:00Z" },
-];
+interface ApiRecentScholar {
+  scholar_id: number;
+  version_id: number;
+  canonical_name: string | null;
+  century_gregorian_start: number | null;
+  image_url: string | null;
+  created_at: string;
+  language_code: string;
+}
 
-const disciplines = [
-  { discipline_id: 1, name: "Theology", count: 245, icon: "auto_stories" },
-  { discipline_id: 2, name: "Jurisprudence", count: 189, icon: "gavel" },
-  { discipline_id: 3, name: "Philosophy", count: 156, icon: "psychology" },
-  { discipline_id: 4, name: "History", count: 134, icon: "history" },
-  { discipline_id: 5, name: "Medicine", count: 98, icon: "medical_services" },
-  { discipline_id: 6, name: "Literature", count: 87, icon: "menu_book" },
-];
+interface ApiDiscipline {
+  discipline_id: number;
+  name: string;
+  count: number;
+}
 
-const eras = [
-  { name: "Classical Era", period: "7th-10th Century", scholars_count: 156, image_url: "https://images.unsplash.com/photo-1566127444979-b3d2b654e3d7?w=600&h=200&fit=crop" },
-  { name: "Golden Age", period: "10th-13th Century", scholars_count: 234, image_url: "https://images.unsplash.com/photo-154203710828b-496739ed6887?w=600&h=200&fit=crop" },
-  { name: "Andalusian Era", period: "11th-15th Century", scholars_count: 189, image_url: "https://images.unsplash.com/photo-1534447677768-be436bb09401?w=600&h=200&fit=crop" },
-  { name: "Ottoman Era", period: "16th-19th Century", scholars_count: 145, image_url: "https://images.unsplash.com/photo-1564507592333-c60657eea523?w=600&h=200&fit=crop" },
-  { name: "Modern Era", period: "19th Century - Present", scholars_count: 176, image_url: "https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=600&h=200&fit=crop" },
-];
+interface ApiEra {
+  name: string;
+  period: string;
+  image_url: string;
+  scholars_count: number;
+  startYear: number;
+  endYear: number;
+}
 
-const featuredWorks = [
-  { work_id: 1, title: "The Muqaddimah", year: 1377, format: "BOOK", media_url: "https://images.unsplash.com/photo-1535905557558-afc487cdc42d?w=400&h=300&fit=crop", description: "A pioneering work of historiography and sociology." },
-  { work_id: 2, title: "The Canon of Medicine", year: 1025, format: "MANUSCRIPT", media_url: "https://images.unsplash.com/photo-1457369804613-52c61a468e7d?w=400&h=300&fit=crop", description: "An encyclopedia of medicine in five books." },
-  { work_id: 3, title: "Tahafut al-Falasifa", year: 1095, format: "TREATISE", media_url: "https://images.unsplash.com/photo-1524995997946-a1c2e315a42f?w=400&h=300&fit=crop", description: "The Incoherence of the Philosophers, a landmark in Islamic philosophy." },
-];
+interface ApiWork {
+  work_id: number;
+  scholar_id: number;
+  work_lang: string;
+  title: string;
+  year: number | null;
+  format: string;
+  media_url: string | null;
+  description: string | null;
+}
+
+interface ApiStats {
+  scholars: number;
+  manuscripts: number;
+  disciplines: number;
+  centuries: number;
+}
+
+interface HomeApiData {
+  featuredScholars: ApiScholar[];
+  recentScholars: ApiRecentScholar[];
+  disciplines: ApiDiscipline[];
+  eras: ApiEra[];
+  featuredWorks: ApiWork[];
+  stats: ApiStats;
+}
+
+/* ------------------------------------------------------------------ */
+/*  Discipline & Work Icons                                           */
+/* ------------------------------------------------------------------ */
+const DISCIPLINE_ICONS: Record<string, string> = {
+  theolog: "auto_stories",
+  jurisprudence: "gavel",
+  philosoph: "psychology",
+  histor: "history",
+  medic: "medical_services",
+  literature: "menu_book",
+};
+
+const getDisciplineIcon = (name: string): string => {
+  const lower = name.toLowerCase();
+  const key = Object.keys(DISCIPLINE_ICONS).find((k) => lower.includes(k));
+  return key ? DISCIPLINE_ICONS[key] : "school";
+};
+
+/* ------------------------------------------------------------------ */
+/*  ENHANCED WORK COVER COMPONENT                                     */
+/* ------------------------------------------------------------------ */
+const WorkCover: React.FC<{ work: ApiWork; className?: string }> = ({ work, className = "" }) => {
+  const [broken, setBroken] = useState(false);
+
+  if (work.media_url && !broken) {
+    return (
+      <img
+        src={work.media_url}
+        alt={work.title ?? ""}
+        className={className}
+        onError={() => setBroken(true)}
+      />
+    );
+  }
+
+  const getGradientColors = () => {
+    const format = work.format.toUpperCase();
+    if (['BOOK', 'MANUSCRIPT', 'COMMENTARY'].includes(format)) return 'from-[#8B6914] to-[#5C4D0F]';
+    if (['ARTICLE', 'RESEARCH', 'TREATISE'].includes(format)) return 'from-[#1e3a5f] to-[#0f1f33]';
+    if (['FATWA', 'SERMON', 'LECTURE'].includes(format)) return 'from-[#1e4d3a] to-[#0f291f]';
+    if (['POEM', 'LETTER'].includes(format)) return 'from-[#4a1942] to-[#2a0f26]';
+    if (['SOFTWARE', 'DEVICE', 'INVENTION'].includes(format)) return 'from-[#374151] to-[#1f2937]';
+    return 'from-[#1e4d3a] to-[#173a2c]';
+  };
+
+  const getIcon = () => {
+    const format = work.format.toUpperCase();
+    if (['MANUSCRIPT', 'BOOK'].includes(format)) return 'history_edu';
+    if (format === 'POEM') return 'auto_stories';
+    if (format === 'LETTER') return 'mail';
+    if (format === 'FATWA') return 'gavel';
+    if (format === 'LECTURE') return 'record_voice_over';
+    if (format === 'SOFTWARE') return 'code';
+    if (format === 'MAP') return 'map';
+    if (['ARTICLE', 'RESEARCH', 'TREATISE'].includes(format)) return 'description';
+    return 'menu_book';
+  };
+
+  return (
+    <div
+      className={`${className} flex flex-col items-center justify-center gap-3 bg-gradient-to-br ${getGradientColors()} px-6 text-center group-hover:scale-105 transition-transform duration-500`}
+    >
+      <span className="material-symbols-outlined text-[48px] text-[#e5d5a8] opacity-90">
+        {getIcon()}
+      </span>
+      <span className="font-['JetBrains_Mono'] text-[11px] uppercase tracking-widest text-[#e5d5a8]/80 line-clamp-2 max-w-[80%]">
+        {work.title}
+      </span>
+      {work.year && (
+        <span className="font-['Inter'] text-[10px] text-[#e5d5a8]/60">
+          {work.year}
+        </span>
+      )}
+    </div>
+  );
+};
 
 /* ------------------------------------------------------------------ */
 /*  TRANSLATIONS                                                      */
@@ -157,9 +229,6 @@ const content: Record<Language, HomeContent> = {
   },
 };
 
-/* ------------------------------------------------------------------ */
-/*  "WHY OULAMAUNA" — left-column copy for the text+image+stats block */
-/* ------------------------------------------------------------------ */
 interface WhyContent {
   tagline: string;
   titleLine1: string;
@@ -211,23 +280,56 @@ const whyContent: Record<Language, WhyContent> = {
   },
 };
 
-/* ------------------------------------------------------------------ */
-/*  STATS DATA (icon-driven, matches reference layout)                */
-/* ------------------------------------------------------------------ */
-const archiveStats = [
-  { icon: "groups", value: "500+", labelEN: "Scholars", labelFR: "Savants", labelAR: "عالم" },
-  { icon: "menu_book", value: "1,200+", labelEN: "Manuscripts", labelFR: "Manuscrits", labelAR: "مخطوطة" },
-  { icon: "category", value: "6", labelEN: "Disciplines", labelFR: "Disciplines", labelAR: "تخصصات" },
-  { icon: "history_edu", value: "10+", labelEN: "Centuries", labelFR: "Siècles", labelAR: "قرون" },
+interface SearchDropdownContent {
+  scholars: string;
+  works: string;
+  media: string;
+  discussions: string;
+  searching: string;
+  noResultsPrefix: string;
+}
+
+const searchDropdownContent: Record<Language, SearchDropdownContent> = {
+  EN: {
+    scholars: "Scholars",
+    works: "Works",
+    media: "Media",
+    discussions: "Discussions",
+    searching: "Searching...",
+    noResultsPrefix: "No results found for",
+  },
+  AR: {
+    scholars: "علماء",
+    works: "أعمال",
+    media: "وسائط",
+    discussions: "نقاشات",
+    searching: "جارٍ البحث...",
+    noResultsPrefix: "لا توجد نتائج لـ",
+  },
+  FR: {
+    scholars: "Savants",
+    works: "Œuvres",
+    media: "Médias",
+    discussions: "Discussions",
+    searching: "Recherche en cours...",
+    noResultsPrefix: "Aucun résultat pour",
+  },
+};
+
+const buildArchiveStats = (stats: ApiStats) => [
+  { icon: "groups", value: `${stats.scholars}+`, labelEN: "Scholars", labelFR: "Savants", labelAR: "عالم" },
+  { icon: "menu_book", value: `${stats.manuscripts}+`, labelEN: "Manuscripts", labelFR: "Manuscrits", labelAR: "مخطوطة" },
+  { icon: "category", value: `${stats.disciplines}`, labelEN: "Disciplines", labelFR: "Disciplines", labelAR: "تخصصات" },
+  { icon: "history_edu", value: `${stats.centuries}+`, labelEN: "Centuries", labelFR: "Siècles", labelAR: "قرون" },
 ];
 
 /* ------------------------------------------------------------------ */
-/*  LIGHTWEIGHT SCROLL ANIMATION COMPONENT                            */
+/*  UI COMPONENTS                                                     */
 /* ------------------------------------------------------------------ */
-const FadeIn: React.FC<{ children: React.ReactNode; delay?: number; className?: string }> = ({ 
-  children, 
-  delay = 0, 
-  className = "" 
+const FadeIn: React.FC<{ children: React.ReactNode; delay?: number; className?: string }> = ({
+  children,
+  delay = 0,
+  className = "",
 }) => {
   const ref = useRef<HTMLDivElement>(null);
   const [isVisible, setIsVisible] = useState(false);
@@ -240,7 +342,7 @@ const FadeIn: React.FC<{ children: React.ReactNode; delay?: number; className?: 
       ([entry]) => {
         if (entry.isIntersecting) {
           setIsVisible(true);
-          observer.unobserve(currentRef); // Stop observing once visible for max performance
+          observer.unobserve(currentRef);
         }
       },
       { threshold: 0.1, rootMargin: "0px 0px -50px 0px" }
@@ -263,15 +365,98 @@ const FadeIn: React.FC<{ children: React.ReactNode; delay?: number; className?: 
   );
 };
 
+const Skeleton: React.FC<{ className?: string }> = ({ className = "" }) => (
+  <div className={`animate-pulse bg-[#1e4d3a]/10 rounded ${className}`} />
+);
+
 /* ------------------------------------------------------------------ */
 /*  MAIN COMPONENT                                                    */
 /* ------------------------------------------------------------------ */
 const Home: React.FC = () => {
   const { lang } = useLang();
   const location = useLocation();
+  const navigate = useNavigate();
   const t = content[lang as Language] || content.EN;
   const w = whyContent[lang as Language] || whyContent.EN;
+  const sc = searchDropdownContent[lang as Language] || searchDropdownContent.EN;
   const isRTL = lang === "AR";
+
+  const [homeData, setHomeData] = useState<HomeApiData | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const [searchQuery, setSearchQuery] = useState("");
+  const [searchResults, setSearchResults] = useState<SearchResponse | null>(null);
+  const [isSearching, setIsSearching] = useState(false);
+  const [showDropdown, setShowDropdown] = useState(false);
+  const searchRef = useRef<HTMLDivElement>(null);
+
+  const dropdownRef = useRef<HTMLDivElement>(null);
+  const [dropdownRect, setDropdownRect] = useState<{ top: number; left: number; width: number } | null>(null);
+
+  useEffect(() => {
+    if (!showDropdown || !searchRef.current) return;
+    const updateRect = () => {
+      const rect = searchRef.current!.getBoundingClientRect();
+      setDropdownRect({
+        top: rect.bottom + 8,
+        left: rect.left,
+        width: rect.width,
+      });
+    };
+    updateRect();
+    window.addEventListener("scroll", updateRect, true);
+    window.addEventListener("resize", updateRect);
+    return () => {
+      window.removeEventListener("scroll", updateRect, true);
+      window.removeEventListener("resize", updateRect);
+    };
+  }, [showDropdown]);
+
+  const loadHomeData = () => {
+    setLoading(true);
+    setError(null);
+    fetchHomeData(lang)
+      .then((data: HomeApiData) => setHomeData(data))
+      .catch((err: Error) => setError(err.message || "Something went wrong."))
+      .finally(() => setLoading(false));
+  };
+
+  useEffect(() => {
+    loadHomeData();
+  }, [lang]);
+
+  useEffect(() => {
+    if (searchQuery.trim().length < 2) {
+      setSearchResults(null);
+      return;
+    }
+    const timer = setTimeout(async () => {
+      setIsSearching(true);
+      try {
+        const data = await searchGlobal(searchQuery, lang);
+        setSearchResults(data);
+      } catch (err) {
+        console.error("Search failed:", err);
+      } finally {
+        setIsSearching(false);
+      }
+    }, 400);
+    return () => clearTimeout(timer);
+  }, [searchQuery, lang]);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as Node;
+      const insideInput = searchRef.current?.contains(target);
+      const insideDropdown = dropdownRef.current?.contains(target);
+      if (!insideInput && !insideDropdown) {
+        setShowDropdown(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   useEffect(() => {
     if (location.hash) {
@@ -287,16 +472,163 @@ const Home: React.FC = () => {
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
     const now = new Date();
-    const diffTime = Math.abs(now.getTime() - date.getTime());
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    const diffTime = now.getTime() - date.getTime();
+    const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+    
+    if (diffDays < 1) {
+      const diffHours = Math.floor(diffTime / (1000 * 60 * 60));
+      if (diffHours < 1) {
+        const diffMinutes = Math.floor(diffTime / (1000 * 60));
+        return isRTL ? `منذ ${diffMinutes} دقيقة` : `${diffMinutes}m ago`;
+      }
+      return isRTL ? `منذ ${diffHours} ساعة` : `${diffHours}h ago`;
+    }
+    
     if (diffDays === 1) return isRTL ? "أمس" : "Yesterday";
     if (diffDays < 7) return isRTL ? `منذ ${diffDays} أيام` : `${diffDays} days ago`;
     if (diffDays < 30) return isRTL ? `منذ ${Math.floor(diffDays / 7)} أسابيع` : `${Math.floor(diffDays / 7)} weeks ago`;
     return date.toLocaleDateString(isRTL ? "ar-DZ" : lang === "FR" ? "fr-FR" : "en-US");
   };
 
-  const statLabel = (stat: (typeof archiveStats)[number]) =>
+  const statLabel = (stat: ReturnType<typeof buildArchiveStats>[number]) =>
     isRTL ? stat.labelAR : lang === "FR" ? stat.labelFR : stat.labelEN;
+
+  const featuredScholars = homeData?.featuredScholars ?? [];
+  const recentScholars = homeData?.recentScholars ?? [];
+  const disciplines = homeData?.disciplines ?? [];
+  const eras = homeData?.eras ?? [];
+  const featuredWorks = homeData?.featuredWorks ?? [];
+  const archiveStats = homeData ? buildArchiveStats(homeData.stats) : [];
+
+  const getUrlWithLang = (url: string) => {
+    return `${url}${url.includes("?") ? "&" : "?"}lang=${lang}`;
+  };
+
+  const dropdownContent =
+    showDropdown && searchQuery.trim().length >= 2 && searchResults && dropdownRect
+      ? createPortal(
+          <>
+            <div className="fixed inset-0 z-[999998]" onClick={() => setShowDropdown(false)} />
+            <div
+              ref={dropdownRef}
+              className="fixed bg-[#fbf9f4] border-2 border-[#1e4d3a] rounded-xl shadow-2xl z-[999999] overflow-y-auto text-left"
+              dir="ltr"
+              style={{
+                top: dropdownRect.top,
+                left: dropdownRect.left,
+                width: dropdownRect.width,
+                maxHeight: "min(350px, calc(100vh - 300px))",
+              }}
+            >
+              {isSearching ? (
+                <div className="p-6 text-center text-[#1e4d3a]/60 font-['Inter']">{sc.searching}</div>
+              ) : (
+                <div className="p-2">
+                  {searchResults.scholars && searchResults.scholars.length > 0 && (
+                    <div className="mb-2">
+                      <div className="px-3 py-1.5 text-[10px] font-['JetBrains_Mono'] uppercase tracking-widest text-[#C9A84C] font-bold">{sc.scholars}</div>
+                      {searchResults.scholars.map((item, idx) => (
+                        <Link
+                          key={`s-${idx}`}
+                          to={item.scholar_id ? `/scholars/${item.scholar_id}?lang=${item.lang}` : '#'}
+                          onClick={(e) => {
+                            if (!item.scholar_id) e.preventDefault();
+                            setShowDropdown(false);
+                            setSearchQuery('');
+                          }}
+                          className="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-[#1e4d3a]/5 transition-colors group cursor-pointer"
+                        >
+                          <span className="material-symbols-outlined text-[#1e4d3a] text-[18px]">person</span>
+                          <div>
+                            <div className="font-['Hanken_Grotesk'] text-[14px] font-semibold text-[#1e4d3a] group-hover:text-[#C9A84C]">{item.title}</div>
+                            <div className="font-['Inter'] text-[11px] text-[#1e4d3a]/60">{item.subtitle}</div>
+                          </div>
+                        </Link>
+                      ))}
+                    </div>
+                  )}
+                  {searchResults.works && searchResults.works.length > 0 && (
+                    <div className="mb-2 border-t border-[#1e4d3a]/10 pt-2">
+                      <div className="px-3 py-1.5 text-[10px] font-['JetBrains_Mono'] uppercase tracking-widest text-[#C9A84C] font-bold">{sc.works}</div>
+                      {searchResults.works.map((item, idx) => (
+                        <Link
+                          key={`w-${idx}`}
+                          to={item.scholar_id ? `/scholars/${item.scholar_id}?lang=${item.lang}&focus=${item.focus_type}-${item.focus_id}` : '#'}
+                          onClick={(e) => {
+                            if (!item.scholar_id) e.preventDefault();
+                            setShowDropdown(false);
+                            setSearchQuery('');
+                          }}
+                          className="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-[#1e4d3a]/5 transition-colors group cursor-pointer"
+                        >
+                          <span className="material-symbols-outlined text-[#1e4d3a] text-[18px]">menu_book</span>
+                          <div>
+                            <div className="font-['Hanken_Grotesk'] text-[14px] font-semibold text-[#1e4d3a] group-hover:text-[#C9A84C]">{item.title}</div>
+                            <div className="font-['Inter'] text-[11px] text-[#1e4d3a]/60">{item.subtitle}</div>
+                          </div>
+                        </Link>
+                      ))}
+                    </div>
+                  )}
+                  {searchResults.media && searchResults.media.length > 0 && (
+                    <div className="mb-2 border-t border-[#1e4d3a]/10 pt-2">
+                      <div className="px-3 py-1.5 text-[10px] font-['JetBrains_Mono'] uppercase tracking-widest text-[#C9A84C] font-bold">{sc.media}</div>
+                      {searchResults.media.map((item, idx) => (
+                        <Link
+                          key={`m-${idx}`}
+                          to={item.scholar_id ? `/scholars/${item.scholar_id}?lang=${item.lang}&focus=${item.focus_type}-${item.focus_id}` : '#'}
+                          onClick={(e) => {
+                            if (!item.scholar_id) e.preventDefault();
+                            setShowDropdown(false);
+                            setSearchQuery('');
+                          }}
+                          className="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-[#1e4d3a]/5 transition-colors group cursor-pointer"
+                        >
+                          <span className="material-symbols-outlined text-[#1e4d3a] text-[18px]">image</span>
+                          <div>
+                            <div className="font-['Hanken_Grotesk'] text-[14px] font-semibold text-[#1e4d3a] group-hover:text-[#C9A84C]">{item.title}</div>
+                            <div className="font-['Inter'] text-[11px] text-[#1e4d3a]/60">{item.subtitle}</div>
+                          </div>
+                        </Link>
+                      ))}
+                    </div>
+                  )}
+                  {searchResults.posts && searchResults.posts.length > 0 && (
+                    <div className="mb-2 border-t border-[#1e4d3a]/10 pt-2">
+                      <div className="px-3 py-1.5 text-[10px] font-['JetBrains_Mono'] uppercase tracking-widest text-[#C9A84C] font-bold">{sc.discussions}</div>
+                      {searchResults.posts.map((item, idx) => (
+                        <Link
+                          key={`p-${idx}`}
+                          to={item.post_id ? `/forum/${item.post_id}` : '#'}
+                          onClick={(e) => {
+                            if (!item.post_id) e.preventDefault();
+                            setShowDropdown(false);
+                            setSearchQuery('');
+                          }}
+                          className="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-[#1e4d3a]/5 transition-colors group cursor-pointer"
+                        >
+                          <span className="material-symbols-outlined text-[#1e4d3a] text-[18px]">forum</span>
+                          <div className="min-w-0">
+                            <div className="font-['Hanken_Grotesk'] text-[14px] font-semibold text-[#1e4d3a] group-hover:text-[#C9A84C] truncate">{item.title}</div>
+                            <div className="font-['Inter'] text-[11px] text-[#1e4d3a]/60 truncate">{item.subtitle}</div>
+                          </div>
+                        </Link>
+                      ))}
+                    </div>
+                  )}
+                  {(!searchResults.scholars || searchResults.scholars.length === 0) &&
+                    (!searchResults.works || searchResults.works.length === 0) &&
+                    (!searchResults.media || searchResults.media.length === 0) &&
+                    (!searchResults.posts || searchResults.posts.length === 0) && (
+                      <div className="p-6 text-center text-[#1e4d3a]/60 font-['Inter'] text-sm">{sc.noResultsPrefix} "{searchQuery}"</div>
+                    )}
+                </div>
+              )}
+            </div>
+          </>,
+          document.body
+        )
+      : null;
 
   return (
     <div className="antialiased min-h-screen selection:bg-[#C9A84C] selection:text-[#1e4d3a] flex flex-col bg-[#fbf9f4]">
@@ -308,9 +640,17 @@ const Home: React.FC = () => {
 
       <Hero />
 
-      <main className="flex-grow pt-16 md:pt-0" dir={isRTL ? "rtl" : "ltr"}>
+      {error && (
+        <div className="max-w-[1280px] mx-auto px-[20px] md:px-[64px] pt-6 w-full">
+          <div className="flex items-center justify-between gap-4 bg-[#fdecea] border border-[#b3261e]/30 text-[#7a1f1f] rounded-lg px-4 py-3 text-sm font-['Inter']">
+            <span>We couldn't load the latest data for this page.</span>
+            <button onClick={loadHomeData} className="shrink-0 font-semibold underline hover:no-underline">Retry</button>
+          </div>
+        </div>
+      )}
 
-               {/* 1. Feature Pillars */}
+      <main className="flex-grow pt-16 md:pt-0" dir={isRTL ? "rtl" : "ltr"}>
+        {/* 1. Feature Pillars */}
         <FadeIn>
           <section className="px-[20px] md:px-[64px] max-w-[1040px] mx-auto py-14 md:py-16">
             <div className="flex flex-col md:flex-row justify-between gap-10 md:gap-6 text-center">
@@ -322,17 +662,11 @@ const Home: React.FC = () => {
               ].map((card, i) => (
                 <FadeIn key={i} delay={100 + i * 100} className="flex-1 flex flex-col items-center gap-3 group cursor-pointer">
                   <div className="mb-0.5 transition-transform duration-300 group-hover:-translate-y-1">
-                    <span className="material-symbols-outlined text-[22px] text-[#1e4d3a]" style={{ fontVariationSettings: "'FILL' 0, 'wght' 100" }}>
-                      {card.icon}
-                    </span>
+                    <span className="material-symbols-outlined text-[22px] text-[#1e4d3a]" style={{ fontVariationSettings: "'FILL' 0, 'wght' 100" }}>{card.icon}</span>
                   </div>
                   <div>
-                    <h4 className="font-['Inter'] text-[11px] leading-[16px] text-[#1e4d3a] uppercase tracking-[0.12em] mb-1.5 font-semibold">
-                      {card.title}
-                    </h4>
-                    <p className="font-['Inter'] text-[13px] leading-[20px] text-[#1e4d3a]/60">
-                      {card.desc}
-                    </p>
+                    <h4 className="font-['Inter'] text-[11px] leading-[16px] text-[#1e4d3a] uppercase tracking-[0.12em] mb-1.5 font-semibold">{card.title}</h4>
+                    <p className="font-['Inter'] text-[13px] leading-[20px] text-[#1e4d3a]/60">{card.desc}</p>
                   </div>
                 </FadeIn>
               ))}
@@ -343,32 +677,28 @@ const Home: React.FC = () => {
         {/* 2. Welcome & Search Section */}
         <FadeIn>
           <section className="py-12 px-[20px] md:px-[64px] bg-[#fbf9f4] max-w-[1280px] mx-auto text-center flex flex-col items-center">
-            <h2 className="font-['JetBrains_Mono'] text-[11px] leading-[16px] text-[#C9A84C] uppercase tracking-[0.2em] font-bold mb-4">
-              {t.tagline}
-            </h2>
-            <h3 className="font-['Hanken_Grotesk'] text-4xl md:text-5xl leading-tight text-[#1e4d3a] font-bold mb-6 max-w-4xl">
-              {t.title}
-            </h3>
-            <p className="font-['Inter'] text-[18px] leading-[1.7] text-[#1e4d3a]/80 mb-10 max-w-3xl">
-              {t.subtitle}
-            </p>
+            <h2 className="font-['JetBrains_Mono'] text-[11px] leading-[16px] text-[#C9A84C] uppercase tracking-[0.2em] font-bold mb-4">{t.tagline}</h2>
+            <h3 className="font-['Hanken_Grotesk'] text-4xl md:text-5xl leading-tight text-[#1e4d3a] font-bold mb-6 max-w-4xl">{t.title}</h3>
+            <p className="font-['Inter'] text-[18px] leading-[1.7] text-[#1e4d3a]/80 mb-10 max-w-3xl">{t.subtitle}</p>
 
-            <div className="w-full max-w-2xl relative mb-10">
+            <div ref={searchRef} className="w-full max-w-2xl relative mb-10">
               <input
                 className="w-full px-6 py-4 rounded-xl border-2 border-[#1e4d3a] bg-[#fbf9f4] focus:border-[#C9A84C] focus:ring-1 focus:ring-[#C9A84C] transition-all font-['Inter'] text-[15px] shadow-sm outline-none text-[#1e4d3a]"
                 placeholder={t.searchPlaceholder}
                 type="text"
                 dir={isRTL ? "rtl" : "ltr"}
+                value={searchQuery}
+                onChange={(e) => { setSearchQuery(e.target.value); setShowDropdown(true); }}
+                onFocus={() => searchQuery.trim().length >= 2 && setShowDropdown(true)}
               />
               <button className={`absolute ${isRTL ? "left-5" : "right-5"} top-1/2 -translate-y-1/2 text-[#1e4d3a] hover:text-[#C9A84C] transition-colors`}>
-                <span className="material-symbols-outlined text-[22px]">search</span>
+                <span className={`material-symbols-outlined text-[22px] ${isSearching ? "animate-spin" : ""}`}>
+                  {isSearching ? "hourglass_empty" : "search"}
+                </span>
               </button>
             </div>
 
-            <Link
-              to="/scholars"
-              className="inline-flex items-center gap-2 px-8 py-3.5 bg-[#1e4d3a] text-[#fbf9f4] border-2 border-[#1e4d3a] rounded-lg text-[13px] font-bold tracking-[0.05em] font-['Hanken_Grotesk'] hover:bg-[#fbf9f4] hover:text-[#1e4d3a] transition-all duration-300"
-            >
+            <Link to="/scholars" className="inline-flex items-center gap-2 px-8 py-3.5 bg-[#1e4d3a] text-[#fbf9f4] border-2 border-[#1e4d3a] rounded-lg text-[13px] font-bold tracking-[0.05em] font-['Hanken_Grotesk'] hover:bg-[#fbf9f4] hover:text-[#1e4d3a] transition-all duration-300">
               {t.exploreButton}
               <span className="material-symbols-outlined text-[18px]">{isRTL ? "arrow_back" : "arrow_forward"}</span>
             </Link>
@@ -380,12 +710,8 @@ const Home: React.FC = () => {
           <section className="py-20 px-[20px] md:px-[64px] max-w-[1280px] mx-auto">
             <div className="flex justify-between items-end mb-12 pb-4 border-b-2 border-[#1e4d3a]">
               <div>
-                <p className="font-['JetBrains_Mono'] text-[10px] uppercase tracking-[0.15em] font-bold text-[#C9A84C] mb-2">
-                  {t.featuredLabel}
-                </p>
-                <h2 className="font-['Hanken_Grotesk'] text-3xl font-bold text-[#1e4d3a]">
-                  {isRTL ? "تعرف على العملاقة" : lang === "FR" ? "Rencontrez les Géants" : "Meet the Giants"}
-                </h2>
+                <p className="font-['JetBrains_Mono'] text-[10px] uppercase tracking-[0.15em] font-bold text-[#C9A84C] mb-2">{t.featuredLabel}</p>
+                <h2 className="font-['Hanken_Grotesk'] text-3xl font-bold text-[#1e4d3a]">{isRTL ? "تعرف على العملاقة" : lang === "FR" ? "Rencontrez les Géants" : "Meet the Giants"}</h2>
               </div>
               <Link to="/scholars" className="font-['JetBrains_Mono'] text-[12px] font-semibold text-[#1e4d3a] hover:text-[#C9A84C] flex items-center gap-1.5 transition-colors">
                 {t.viewAll}
@@ -394,26 +720,24 @@ const Home: React.FC = () => {
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-              {featuredScholars.map((scholar, index) => (
-                <FadeIn key={scholar.version_id} delay={100 + index * 100}>
-                  <Link
-                    to={`/scholars/${scholar.version_id}`}
-                    className="group block bg-[#F5F3EC] rounded-2xl overflow-hidden border border-[#1e4d3a]/10 hover:shadow-xl hover:-translate-y-1 transition-all duration-300"
-                  >
-                    <div className="relative h-64 bg-[#e5d5a8]">
-                      <img src={scholar.image_url} alt={scholar.canonical_name} className="w-full h-full object-cover" />
+              {loading ? Array.from({ length: 4 }).map((_, i) => (
+                <div key={i} className="bg-[#F5F3EC] rounded-2xl overflow-hidden border border-[#1e4d3a]/10">
+                  <Skeleton className="h-64 w-full rounded-none" />
+                  <div className="p-6 space-y-3"><Skeleton className="h-5 w-3/4" /><Skeleton className="h-3 w-1/2" /><Skeleton className="h-3 w-full" /><Skeleton className="h-3 w-full" /></div>
+                </div>
+              )) : featuredScholars.map((scholar, index) => (
+                <FadeIn key={scholar.version_id} delay={100 + index * 100} className="h-full">
+                  <Link to={`/scholars/${scholar.scholar_id}?lang=${scholar.language_code}`} className="group flex flex-col h-full bg-[#F5F3EC] rounded-2xl overflow-hidden border border-[#1e4d3a]/10 hover:shadow-xl hover:-translate-y-1 transition-all duration-300">
+                    <div className="relative h-64 shrink-0 bg-[#e5d5a8]">
+                      <ScholarImage src={scholar.image_url} alt={scholar.canonical_name ?? ""} className="w-full h-full object-cover" />
                       <div className="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-[#1e4d3a]/90 to-transparent">
-                        <span className="font-['JetBrains_Mono'] text-[10px] text-[#C9A84C] tracking-widest uppercase">
-                          {scholar.region_name}
-                        </span>
+                        <span className="font-['JetBrains_Mono'] text-[10px] text-[#C9A84C] tracking-widest uppercase">{scholar.region_name}</span>
                       </div>
                     </div>
-                    <div className="p-6">
+                    <div className="p-6 flex flex-col flex-1">
                       <h3 className="font-['Hanken_Grotesk'] text-xl font-bold text-[#1e4d3a] mb-2">{scholar.canonical_name}</h3>
-                      <p className="font-['JetBrains_Mono'] text-[11px] text-[#C9A84C] font-semibold mb-3">
-                        {scholar.century_gregorian_start}-{scholar.century_gregorian_end} • {scholar.discipline_name}
-                      </p>
-                      <p className="font-['Inter'] text-sm text-[#1e4d3a]/80 leading-relaxed">{scholar.biography}</p>
+                      <p className="font-['JetBrains_Mono'] text-[11px] text-[#C9A84C] font-semibold mb-3">{scholar.century_gregorian_start}-{scholar.century_gregorian_end} • {scholar.discipline_name}</p>
+                      <p className="font-['Inter'] text-sm text-[#1e4d3a]/80 leading-relaxed line-clamp-3">{scholar.biography}</p>
                     </div>
                   </Link>
                 </FadeIn>
@@ -427,24 +751,29 @@ const Home: React.FC = () => {
           <section className="py-20 px-[20px] md:px-[64px] bg-[#F5F3EC] border-y-2 border-[#1e4d3a]/10">
             <div className="max-w-[1280px] mx-auto">
               <div className="flex justify-between items-center mb-12">
-                <h2 className="font-['Hanken_Grotesk'] text-2xl md:text-3xl font-bold text-[#1e4d3a]">
-                  {t.recentLabel}
-                </h2>
+                <h2 className="font-['Hanken_Grotesk'] text-2xl md:text-3xl font-bold text-[#1e4d3a]">{t.recentLabel}</h2>
                 <Link to="/scholars" className="font-['JetBrains_Mono'] text-[12px] font-semibold text-[#1e4d3a] hover:text-[#C9A84C] flex items-center gap-1.5 transition-colors">
                   {t.viewAll}
                   <span className="material-symbols-outlined text-[16px]">{isRTL ? "arrow_back" : "arrow_forward"}</span>
                 </Link>
               </div>
-
               <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
-                {recentScholars.map((scholar, index) => (
+                {loading ? Array.from({ length: 4 }).map((_, i) => (
+                  <div key={i} className="text-center">
+                    <Skeleton className="w-28 h-28 md:w-32 md:h-32 mx-auto rounded-full mb-4" />
+                    <Skeleton className="h-4 w-24 mx-auto mb-2" />
+                    <Skeleton className="h-3 w-16 mx-auto" />
+                  </div>
+                )) : recentScholars.map((scholar, index) => (
                   <FadeIn key={scholar.version_id} delay={100 + index * 100} className="group text-center">
-                    <Link to={`/scholars/${scholar.version_id}`}>
+                    <Link to={`/scholars/${scholar.scholar_id}?lang=${scholar.language_code}`}>
                       <div className="w-28 h-28 md:w-32 md:h-32 mx-auto rounded-full overflow-hidden border-2 border-[#1e4d3a] mb-4 bg-[#fbf9f4]">
-                        <img src={scholar.image_url} alt={scholar.canonical_name} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
+                        <ScholarImage src={scholar.image_url} alt={scholar.canonical_name ?? ""} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
                       </div>
                       <h3 className="font-['Hanken_Grotesk'] text-base font-semibold text-[#1e4d3a] mb-1">{scholar.canonical_name}</h3>
-                      <p className="font-['JetBrains_Mono'] text-[10px] text-[#C9A84C] font-semibold mb-1">{scholar.century_gregorian_start}</p>
+                      <p className="font-['JetBrains_Mono'] text-[10px] text-[#C9A84C] font-semibold mb-1">
+                        {scholar.century_gregorian_start ? `${scholar.century_gregorian_start} CE` : "Unknown Century"}
+                      </p>
                       <p className="font-['Inter'] text-xs text-[#1e4d3a]/60">{formatDate(scholar.created_at)}</p>
                     </Link>
                   </FadeIn>
@@ -458,62 +787,38 @@ const Home: React.FC = () => {
         <FadeIn>
           <section className="py-20 px-[20px] md:px-[64px] max-w-[1280px] mx-auto">
             <div className="grid grid-cols-1 lg:grid-cols-[1fr_1.3fr_auto] gap-12 lg:gap-10 items-center">
-
               <FadeIn delay={100} className={isRTL ? "text-right" : "text-left"}>
-                <p className="font-['JetBrains_Mono'] text-[10px] uppercase tracking-[0.15em] font-bold text-[#C9A84C] mb-4">
-                  {w.tagline}
-                </p>
-                <h2 className="font-['Hanken_Grotesk'] text-3xl md:text-[34px] leading-tight font-bold text-[#1e4d3a] mb-5">
-                  {w.titleLine1}
-                  <br />
-                  {w.titleLine2}
-                </h2>
-                <p className="font-['Inter'] text-[14px] leading-[1.7] text-[#1e4d3a]/70 mb-6">
-                  {w.description}
-                </p>
+                <p className="font-['JetBrains_Mono'] text-[10px] uppercase tracking-[0.15em] font-bold text-[#C9A84C] mb-4">{w.tagline}</p>
+                <h2 className="font-['Hanken_Grotesk'] text-3xl md:text-[34px] leading-tight font-bold text-[#1e4d3a] mb-5">{w.titleLine1}<br />{w.titleLine2}</h2>
+                <p className="font-['Inter'] text-[14px] leading-[1.7] text-[#1e4d3a]/70 mb-6">{w.description}</p>
                 <ul className="flex flex-col gap-3 mb-8">
                   {w.bullets.map((bullet, i) => (
                     <li key={i} className={`flex items-center gap-2.5 font-['Inter'] text-[13px] text-[#1e4d3a]/80 ${isRTL ? "flex-row-reverse" : ""}`}>
-                      <span className="material-symbols-outlined text-[16px] text-[#C9A84C] flex-shrink-0">check_circle</span>
-                      {bullet}
+                      <span className="material-symbols-outlined text-[16px] text-[#C9A84C] flex-shrink-0">check_circle</span>{bullet}
                     </li>
                   ))}
                 </ul>
-                <Link
-                  to="/about"
-                  className="inline-flex items-center gap-2 px-6 py-3 border-2 border-[#1e4d3a] rounded-lg text-[12px] font-bold tracking-[0.05em] font-['Hanken_Grotesk'] text-[#1e4d3a] hover:bg-[#1e4d3a] hover:text-[#fbf9f4] transition-all duration-300"
-                >
+                <Link to="/about" className="inline-flex items-center gap-2 px-6 py-3 border-2 border-[#1e4d3a] rounded-lg text-[12px] font-bold tracking-[0.05em] font-['Hanken_Grotesk'] text-[#1e4d3a] hover:bg-[#1e4d3a] hover:text-[#fbf9f4] transition-all duration-300">
                   {w.ctaButton}
                   <span className="material-symbols-outlined text-[16px]">{isRTL ? "arrow_back" : "arrow_forward"}</span>
                 </Link>
               </FadeIn>
-
               <FadeIn delay={200} className="rounded-2xl overflow-hidden h-[360px] md:h-[420px] bg-[#F5F3EC]">
-                <img
-                  src="https://images.unsplash.com/photo-1457369804613-52c61a468e7d?w=800&h=1000&fit=crop"
-                  alt={w.titleLine1}
-                  className="w-full h-full object-cover"
-                />
+                <img src="https://images.unsplash.com/photo-1457369804613-52c61a468e7d?w=800&h=1000&fit=crop" alt={w.titleLine1} className="w-full h-full object-cover" />
               </FadeIn>
-
               <FadeIn delay={300} className="flex flex-col gap-7 lg:pl-4">
-                {archiveStats.map((stat, i) => (
+                {(loading ? Array.from({ length: 4 }) : archiveStats).map((stat: any, i) => (
                   <div key={i} className={`flex items-center gap-4 group ${isRTL ? "flex-row-reverse" : ""}`}>
                     <div className="w-11 h-11 flex-shrink-0 rounded-full border border-[#C9A84C]/50 flex items-center justify-center group-hover:border-[#C9A84C] group-hover:bg-[#f6efdc] transition-colors duration-300">
-                      <span
-                        className="material-symbols-outlined text-[18px] text-[#C9A84C]"
-                        style={{ fontVariationSettings: "'FILL' 0, 'wght' 200" }}
-                      >
-                        {stat.icon}
-                      </span>
+                      {loading ? <Skeleton className="w-5 h-5 rounded-full" /> : (
+                        <span className="material-symbols-outlined text-[18px] text-[#C9A84C]" style={{ fontVariationSettings: "'FILL' 0, 'wght' 200" }}>{stat.icon}</span>
+                      )}
                     </div>
                     <div className={isRTL ? "text-right" : "text-left"}>
-                      <div className="font-['Hanken_Grotesk'] text-2xl md:text-[26px] font-bold text-[#1e4d3a] leading-tight whitespace-nowrap">
-                        {stat.value}
-                      </div>
-                      <div className="font-['Inter'] text-[13px] text-[#1e4d3a]/60 whitespace-nowrap">
-                        {statLabel(stat)}
-                      </div>
+                      {loading ? (<><Skeleton className="h-6 w-14 mb-1" /><Skeleton className="h-3 w-20" /></>) : (<>
+                        <div className="font-['Hanken_Grotesk'] text-2xl md:text-[26px] font-bold text-[#1e4d3a] leading-tight whitespace-nowrap">{stat.value}</div>
+                        <div className="font-['Inter'] text-[13px] text-[#1e4d3a]/60 whitespace-nowrap">{statLabel(stat)}</div>
+                      </>)}
                     </div>
                   </div>
                 ))}
@@ -525,63 +830,79 @@ const Home: React.FC = () => {
         {/* 6. Featured Works & Manuscripts */}
         <FadeIn>
           <section id="works" className="scroll-mt-32 py-20 px-[20px] md:px-[64px] max-w-[1280px] mx-auto">
-            <h2 className="font-['Hanken_Grotesk'] text-3xl font-bold text-[#1e4d3a] text-center mb-12">
-              {t.worksLabel}
-            </h2>
-
+            <h2 className="font-['Hanken_Grotesk'] text-3xl font-bold text-[#1e4d3a] text-center mb-12">{t.worksLabel}</h2>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              {featuredWorks.map((work, index) => (
-                <FadeIn key={work.work_id} delay={100 + index * 150}>
-                  <div className="bg-[#F5F3EC] rounded-2xl overflow-hidden border border-[#1e4d3a]/10 hover:shadow-lg transition-all duration-300">
-                    <img src={work.media_url} alt={work.title} className="w-full h-56 object-cover" />
-                    <div className="p-6">
-                      <span className="inline-block px-3 py-1 bg-[#e5d5a8]/30 border border-[#1e4d3a]/20 rounded text-[10px] font-['JetBrains_Mono'] font-bold text-[#1e4d3a] mb-3">
-                        {work.format}
-                      </span>
+              {loading ? Array.from({ length: 3 }).map((_, i) => (
+                <div key={i} className="bg-[#F5F3EC] rounded-2xl overflow-hidden border border-[#1e4d3a]/10">
+                  <Skeleton className="w-full h-56 rounded-none" />
+                  <div className="p-6 space-y-3"><Skeleton className="h-4 w-16" /><Skeleton className="h-5 w-2/3" /><Skeleton className="h-3 w-1/3" /><Skeleton className="h-3 w-full" /></div>
+                </div>
+              )) : featuredWorks.map((work, index) => (
+                <FadeIn key={work.work_id} delay={100 + index * 150} className="h-full">
+                  <Link 
+                    to={`/scholars/${work.scholar_id}?lang=${work.work_lang}&focus=work-${work.work_id}`}
+                    className="h-full flex flex-col bg-[#F5F3EC] rounded-2xl overflow-hidden border border-[#1e4d3a]/10 hover:shadow-lg hover:-translate-y-1 transition-all duration-300 group"
+                  >
+                    <WorkCover work={work} className="w-full h-56 object-cover shrink-0" />
+                    <div className="p-6 flex flex-col flex-1">
+                      <span className="inline-block w-fit px-3 py-1 bg-[#e5d5a8]/30 border border-[#1e4d3a]/20 rounded text-[10px] font-['JetBrains_Mono'] font-bold text-[#1e4d3a] mb-3">{work.format}</span>
                       <h3 className="font-['Hanken_Grotesk'] text-xl font-bold text-[#1e4d3a] mb-1">{work.title}</h3>
                       <p className="font-['JetBrains_Mono'] text-[11px] text-[#C9A84C] font-semibold mb-3">{work.year}</p>
-                      <p className="font-['Inter'] text-sm text-[#1e4d3a]/80 leading-relaxed">{work.description}</p>
+                      <p className="font-['Inter'] text-sm text-[#1e4d3a]/80 leading-relaxed line-clamp-3">{work.description}</p>
                     </div>
-                  </div>
+                  </Link>
                 </FadeIn>
               ))}
             </div>
           </section>
         </FadeIn>
 
-        {/* 7. Eras Timeline */}
+        {/* 7. Eras Timeline - WITH LOCAL IMAGES */}
         <FadeIn>
           <section className="py-20 px-[20px] md:px-[64px] bg-[#fbf9f4]">
             <div className="max-w-[1280px] mx-auto">
-              <h2 className="font-['Hanken_Grotesk'] text-3xl font-bold text-[#1e4d3a] text-center mb-12">
-                {t.erasLabel}
-              </h2>
-
+              <h2 className="font-['Hanken_Grotesk'] text-3xl font-bold text-[#1e4d3a] text-center mb-12">{t.erasLabel}</h2>
               <div className="flex flex-col gap-6">
-                {eras.map((era, index) => (
-                  <FadeIn key={era.name} delay={100 + index * 100}>
-                    <Link
-                      to={`/scholars?era=${era.name}`}
-                      className="group flex bg-white rounded-xl overflow-hidden border border-[#1e4d3a]/10 hover:shadow-lg hover:translate-x-1 transition-all duration-300"
-                    >
-                      <div className="w-48 flex-shrink-0 bg-[#F5F3EC] hidden md:block">
-                        <img src={era.image_url} alt={era.name} className="w-full h-full object-cover min-h-[150px]" />
-                      </div>
-                      <div className="flex-1 p-6 flex items-center justify-between">
-                        <div>
-                          <h3 className="font-['Hanken_Grotesk'] text-xl font-bold text-[#1e4d3a] mb-1">{era.name}</h3>
-                          <p className="font-['JetBrains_Mono'] text-xs text-[#C9A84C] font-semibold">{era.period}</p>
+                {loading ? Array.from({ length: 5 }).map((_, i) => (
+                  <div key={i} className="flex bg-white rounded-xl overflow-hidden border border-[#1e4d3a]/10">
+                    <Skeleton className="w-48 flex-shrink-0 hidden md:block rounded-none min-h-[150px]" />
+                    <div className="flex-1 p-6 flex items-center justify-between">
+                      <div className="space-y-2"><Skeleton className="h-5 w-40" /><Skeleton className="h-3 w-28" /></div>
+                      <Skeleton className="h-16 w-20" />
+                    </div>
+                  </div>
+                )) : eras.map((era, index) => {
+                  // ✅ MAP ERA NAME TO LOCAL IMAGE PATH
+                  const localImageMap: Record<string, string> = {
+                    "Classical Era": "/images/eras/classical.jpg",
+                    "Golden Age": "/images/eras/golden.jpg",
+                    "Andalusian Era": "/images/eras/andalusian.jpg",
+                    "Ottoman Era": "/images/eras/ottoman.jpg",
+                    "Modern Era": "/images/eras/modern.jpg",
+                  };
+                  
+                  const imageSrc = localImageMap[era.name] || era.image_url;
+
+                  return (
+                    <FadeIn key={era.name} delay={100 + index * 100}>
+                      <Link to={`/scholars?minYear=${era.startYear}&maxYear=${era.endYear}&era=${encodeURIComponent(era.name)}`} className="group flex bg-white rounded-xl overflow-hidden border border-[#1e4d3a]/10 hover:shadow-lg hover:translate-x-1 transition-all duration-300">
+                        <div className="w-48 flex-shrink-0 bg-[#F5F3EC] hidden md:block">
+                          <img src={imageSrc} alt={era.name} className="w-full h-full object-cover min-h-[150px]" />
                         </div>
-                        <div className="text-center px-6 py-4 bg-[#1e4d3a]/80 rounded-lg backdrop-blur-sm">
-                          <div className="font-['Hanken_Grotesk'] text-2xl font-bold text-[#e5d5a8]">{era.scholars_count}</div>
-                          <div className="font-['JetBrains_Mono'] text-[9px] text-[#fbf9f4]/80 tracking-wider mt-1">
-                            {isRTL ? "عالم" : lang === "FR" ? "SAVANTS" : "SCHOLARS"}
+                        <div className="flex-1 p-6 flex items-center justify-between">
+                          <div>
+                            <h3 className="font-['Hanken_Grotesk'] text-xl font-bold text-[#1e4d3a] mb-1">{era.name}</h3>
+                            <p className="font-['JetBrains_Mono'] text-xs text-[#C9A84C] font-semibold">{era.period}</p>
+                          </div>
+                          <div className="text-center px-6 py-4 bg-[#1e4d3a]/80 rounded-lg backdrop-blur-sm">
+                            <div className="font-['Hanken_Grotesk'] text-2xl font-bold text-[#e5d5a8]">{era.scholars_count}</div>
+                            <div className="font-['JetBrains_Mono'] text-[9px] text-[#fbf9f4]/80 tracking-wider mt-1">{isRTL ? "عالم" : lang === "FR" ? "SAVANTS" : "SCHOLARS"}</div>
                           </div>
                         </div>
-                      </div>
-                    </Link>
-                  </FadeIn>
-                ))}
+                      </Link>
+                    </FadeIn>
+                  );
+                })}
               </div>
             </div>
           </section>
@@ -590,45 +911,25 @@ const Home: React.FC = () => {
         {/* 8. Disciplines Grid */}
         <FadeIn>
           <section id="disciplines" className="scroll-mt-32 py-20 px-[20px] md:px-[64px] max-w-[1280px] mx-auto">
-            <h2 className="font-['Hanken_Grotesk'] text-3xl font-bold text-[#1e4d3a] text-center mb-4">
-              {t.disciplinesLabel}
-            </h2>
+            <h2 className="font-['Hanken_Grotesk'] text-3xl font-bold text-[#1e4d3a] text-center mb-4">{t.disciplinesLabel}</h2>
             <p className="font-['Inter'] text-[15px] text-[#1e4d3a]/60 text-center mb-12 max-w-2xl mx-auto">
-              {isRTL
-                ? "استكشف مجالات المعرفة التي شكّلت الحضارة الإسلامية عبر القرون"
-                : lang === "FR"
-                  ? "Explorez les domaines du savoir qui ont façonné la civilisation islamique à travers les siècles"
-                  : "Explore the fields of knowledge that shaped Islamic civilization across the centuries"}
+              {isRTL ? "استكشف مجالات المعرفة التي شكّلت الحضارة الإسلامية عبر القرون" : lang === "FR" ? "Explorez les domaines du savoir qui ont façonné la civilisation islamique à travers les siècles" : "Explore the fields of knowledge that shaped Islamic civilization across the centuries"}
             </p>
-
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-              {disciplines.map((disc, index) => (
+              {loading ? Array.from({ length: 6 }).map((_, i) => (
+                <div key={i} className="p-6 bg-[#fcfaf5] rounded-[12px] border border-[#1e4d3a]/20">
+                  <Skeleton className="w-7 h-7 rounded-[6px] mb-4" /><Skeleton className="h-4 w-20 mb-2" /><Skeleton className="h-4 w-12" />
+                </div>
+              )) : disciplines.map((disc, index) => (
                 <FadeIn key={disc.discipline_id} delay={50 + index * 50}>
-                  <Link
-                    to={`/scholars?discipline=${disc.name}`}
-                    className="group block p-6 bg-[#fcfaf5] rounded-[12px] border border-[#1e4d3a] shadow-[0px_4px_20px_rgba(30,77,58,0.08)] hover:shadow-[0px_6px_24px_rgba(30,77,58,0.12)] hover:-translate-y-1 transition-all duration-300"
-                    style={{ backgroundColor: '#fcfaf5' }}
-                  >
+                  <Link to={`/scholars?discipline=${disc.name}`} className="group block p-6 bg-[#fcfaf5] rounded-[12px] border border-[#1e4d3a] shadow-[0px_4px_20px_rgba(30,77,58,0.08)] hover:shadow-[0px_6px_24px_rgba(30,77,58,0.12)] hover:-translate-y-1 transition-all duration-300" style={{ backgroundColor: '#fcfaf5' }}>
                     <div className="w-7 h-7 rounded-[6px] bg-[#f6efdc] border border-[#1e4d3a] flex items-center justify-center mb-4 group-hover:bg-[#1e4d3a] group-hover:border-[#1e4d3a] transition-colors duration-300">
-                      <span
-                        className="material-symbols-outlined text-[16px] text-[#1e4d3a] group-hover:text-[#fcfaf5] transition-colors duration-300"
-                        style={{ fontVariationSettings: "'FILL' 0, 'wght' 400" }}
-                      >
-                        {disc.icon}
-                      </span>
+                      <span className="material-symbols-outlined text-[16px] text-[#1e4d3a] group-hover:text-[#fcfaf5] transition-colors duration-300" style={{ fontVariationSettings: "'FILL' 0, 'wght' 400" }}>{getDisciplineIcon(disc.name)}</span>
                     </div>
-
-                    <div className="font-['Hanken_Grotesk'] text-[15px] font-semibold text-[#1e4d3a] mb-2 group-hover:text-[#1e4d3a] transition-colors">
-                      {disc.name}
-                    </div>
-
+                    <div className="font-['Hanken_Grotesk'] text-[15px] font-semibold text-[#1e4d3a] mb-2 group-hover:text-[#1e4d3a] transition-colors">{disc.name}</div>
                     <div className="inline-flex items-baseline gap-1.5">
-                      <span className="font-['Hanken_Grotesk'] text-xl font-bold text-[#1e4d3a] group-hover:text-[#1e4d3a] transition-colors">
-                        {disc.count}
-                      </span>
-                      <span className="font-['Inter'] text-[11px] text-[#1e4d3a]/70 group-hover:text-[#1e4d3a] transition-colors">
-                        {isRTL ? "عالم" : lang === "FR" ? "savants" : "scholars"}
-                      </span>
+                      <span className="font-['Hanken_Grotesk'] text-xl font-bold text-[#1e4d3a] group-hover:text-[#1e4d3a] transition-colors">{disc.count}</span>
+                      <span className="font-['Inter'] text-[11px] text-[#1e4d3a]/70 group-hover:text-[#1e4d3a] transition-colors">{isRTL ? "عالم" : lang === "FR" ? "savants" : "scholars"}</span>
                     </div>
                   </Link>
                 </FadeIn>
@@ -642,26 +943,19 @@ const Home: React.FC = () => {
           <section className="py-24 px-[20px] md:px-[64px] text-center bg-[#1e4d3a] relative overflow-hidden">
             <div className="absolute -top-24 -right-24 w-72 h-72 rounded-full border-2 border-[#C9A84C] opacity-20" />
             <div className="absolute -bottom-20 -left-20 w-64 h-64 rounded-full border-2 border-[#C9A84C] opacity-10" />
-
             <div className="relative z-10 max-w-2xl mx-auto">
-              <h2 className="font-['Hanken_Grotesk'] text-3xl md:text-4xl font-bold text-[#fbf9f4] mb-4">
-                {t.ctaTitle}
-              </h2>
-              <p className="font-['Inter'] text-base text-[#fbf9f4]/80 mb-8 leading-relaxed">
-                {t.ctaText}
-              </p>
-              <Link
-                to="/register"
-                className="inline-flex items-center gap-2 px-10 py-4 bg-[#C9A84C] text-[#1e4d3a] border-2 border-[#C9A84C] rounded-lg text-xs font-bold tracking-[0.1em] font-['JetBrains_Mono'] uppercase hover:bg-[#fbf9f4] transition-colors duration-300"
-              >
+              <h2 className="font-['Hanken_Grotesk'] text-3xl md:text-4xl font-bold text-[#fbf9f4] mb-4">{t.ctaTitle}</h2>
+              <p className="font-['Inter'] text-base text-[#fbf9f4]/80 mb-8 leading-relaxed">{t.ctaText}</p>
+              <Link to="/register" className="inline-flex items-center gap-2 px-10 py-4 bg-[#C9A84C] text-[#1e4d3a] border-2 border-[#C9A84C] rounded-lg text-xs font-bold tracking-[0.1em] font-['JetBrains_Mono'] uppercase hover:bg-[#fbf9f4] transition-colors duration-300">
                 {t.ctaButton}
                 <span className="material-symbols-outlined text-[18px]">{isRTL ? "arrow_back" : "arrow_forward"}</span>
               </Link>
             </div>
           </section>
         </FadeIn>
-
       </main>
+
+      {dropdownContent}
     </div>
   );
 };

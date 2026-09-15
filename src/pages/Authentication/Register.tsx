@@ -3,13 +3,11 @@ import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import { useLang } from "../../context/LanguageContext"; 
 import libraryImg from "../../assets/library2.jpg";
-import oulamaunaLogo from '../../assets/OOLOGO.png';
+import oulamaunaLogo from '../../assets/logo.png';
 import axios from "axios";
 
-type Language = "EN" | "AR" | "FR";
-
 const Register: React.FC = () => {
-  const { lang } = useLang();
+  const { lang, t } = useLang();
   const navigate = useNavigate();
   const { login } = useAuth();
   
@@ -27,91 +25,6 @@ const Register: React.FC = () => {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [submitted, setSubmitted] = useState(false);
 
-  const content: Record<Language, any> = {
-    EN: {
-      title: "Create your account",
-      subtitle: "Start your journey with Oulamauna today",
-      usernameLabel: "Full Name",
-      usernamePlaceholder: "Enter your full name",
-      emailLabel: "Email",
-      emailPlaceholder: "Enter your email",
-      passwordLabel: "Password",
-      passwordPlaceholder: "Create a password",
-      confirmLabel: "Confirm Password",
-      confirmPlaceholder: "Confirm your password",
-      button: "Sign Up",
-      google: "Sign up with Google",
-      haveAccount: "Already have an account?",
-      signIn: "Sign in",
-      or: "or",
-      loading: "Creating account...",
-      errors: {
-        usernameEmpty: "Full name is required",
-        emailEmpty: "Email is required",
-        emailInvalid: "Invalid email address",
-        passwordEmpty: "Password is required",
-        passwordWeak: "Password must be at least 8 characters with uppercase, number, and symbol",
-        confirmEmpty: "Please confirm your password",
-        confirmMatch: "Passwords do not match",
-      },
-    },
-    AR: {
-      title: "إنشاء حساب",
-      subtitle: "ابدأ رحلتك مع علماؤنا اليوم",
-      usernameLabel: "الاسم الكامل",
-      usernamePlaceholder: "أدخل اسمك الكامل",
-      emailLabel: "البريد الإلكتروني",
-      emailPlaceholder: "أدخل بريدك الإلكتروني",
-      passwordLabel: "كلمة المرور",
-      passwordPlaceholder: "أنشئ كلمة مرور",
-      confirmLabel: "تأكيد كلمة المرور",
-      confirmPlaceholder: "أكد كلمة المرور",
-      button: "إنشاء حساب",
-      google: "التسجيل عبر Google",
-      haveAccount: "لديك حساب بالفعل؟",
-      signIn: "تسجيل الدخول",
-      or: "أو",
-      loading: "جاري إنشاء الحساب...",
-      errors: {
-        usernameEmpty: "الاسم الكامل مطلوب",
-        emailEmpty: "البريد الإلكتروني مطلوب",
-        emailInvalid: "عنوان بريد غير صالح",
-        passwordEmpty: "كلمة المرور مطلوبة",
-        passwordWeak: "كلمة المرور يجب أن تكون 8 أحرف على الأقل مع حرف كبير ورقم ورمز",
-        confirmEmpty: "يرجى تأكيد كلمة المرور",
-        confirmMatch: "كلمتا المرور لا تتطابقان",
-      },
-    },
-    FR: {
-      title: "Créer un compte",
-      subtitle: "Commencez votre voyage avec Oulamauna aujourd'hui",
-      usernameLabel: "Nom complet",
-      usernamePlaceholder: "Entrez votre nom complet",
-      emailLabel: "E-mail",
-      emailPlaceholder: "Entrez votre e-mail",
-      passwordLabel: "Mot de passe",
-      passwordPlaceholder: "Créez un mot de passe",
-      confirmLabel: "Confirmer le mot de passe",
-      confirmPlaceholder: "Confirmez votre mot de passe",
-      button: "S'inscrire",
-      google: "S'inscrire avec Google",
-      haveAccount: "Vous avez déjà un compte ?",
-      signIn: "Se connecter",
-      or: "ou",
-      loading: "Création du compte...",
-      errors: {
-        usernameEmpty: "Nom complet requis",
-        emailEmpty: "E-mail requis",
-        emailInvalid: "E-mail invalide",
-        passwordEmpty: "Mot de passe requis",
-        passwordWeak: "Le mot de passe doit contenir au moins 8 caractères avec majuscule, chiffre et symbole",
-        confirmEmpty: "Veuillez confirmer votre mot de passe",
-        confirmMatch: "Les mots de passe ne correspondent pas",
-      },
-    },
-  };
-
-  const t = content[lang] || content.EN;
   const isRTL = lang === "AR";
 
   const isStrong = (val: string) =>
@@ -119,13 +32,13 @@ const Register: React.FC = () => {
 
   const validate = () => {
     const e: Record<string, string> = {};
-    if (!form.username.trim()) e.username = t.errors.usernameEmpty;
-    if (!form.email.trim()) e.email = t.errors.emailEmpty;
-    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) e.email = t.errors.emailInvalid;
-    if (!form.password) e.password = t.errors.passwordEmpty;
-    else if (!isStrong(form.password)) e.password = t.errors.passwordWeak;
-    if (!form.confirm) e.confirm = t.errors.confirmEmpty;
-    else if (form.confirm !== form.password) e.confirm = t.errors.confirmMatch;
+    if (!form.username.trim()) e.username = t("register.errors.usernameEmpty");
+    if (!form.email.trim()) e.email = t("register.errors.emailEmpty");
+    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) e.email = t("register.errors.emailInvalid");
+    if (!form.password) e.password = t("register.errors.passwordEmpty");
+    else if (!isStrong(form.password)) e.password = t("register.errors.passwordWeak");
+    if (!form.confirm) e.confirm = t("register.errors.confirmEmpty");
+    else if (form.confirm !== form.password) e.confirm = t("register.errors.confirmMatch");
     setErrors(e);
     return Object.keys(e).length === 0;
   };
@@ -144,7 +57,56 @@ const Register: React.FC = () => {
       });
       navigate(`/verify-email-pending?email=${encodeURIComponent(form.email)}`);
     } catch (error: any) {
-      setErrors(prev => ({ ...prev, server: error.response?.data?.message || "Error" }));
+      const response = error.response;
+      const data = response?.data;
+
+      // Get the error message returned by the backend
+      const message =
+        data?.message ||
+        data?.error ||
+        data?.detail ||
+        "";
+
+      const normalizedMessage = String(message).toLowerCase();
+
+      const newErrors: Record<string, string> = {};
+
+      // Username already exists
+      if (
+        normalizedMessage.includes("username already exists") ||
+        normalizedMessage.includes("username already taken") ||
+        normalizedMessage.includes("username is already taken") ||
+        normalizedMessage.includes("username exists") ||
+        normalizedMessage.includes("name already exists") ||
+        normalizedMessage.includes("name is already taken")
+      ) {
+        newErrors.username = t("register.errors.usernameTaken");
+      }
+
+      // Email already exists
+      else if (
+        normalizedMessage.includes("email already exists") ||
+        normalizedMessage.includes("email already registered") ||
+        normalizedMessage.includes("email already taken") ||
+        normalizedMessage.includes("email exists")
+      ) {
+        newErrors.email = t("register.errors.emailTaken");
+      }
+
+      // Backend tells us which field has the error
+      else if (data?.field) {
+        newErrors[data.field] = message || t("register.errors.server");
+      }
+
+      // General server error
+      else {
+        newErrors.server = message || t("register.errors.server");
+      }
+
+      setErrors(prev => ({
+        ...prev,
+        ...newErrors,
+      }));
     } finally {
       setIsLoading(false);
     }
@@ -174,10 +136,10 @@ const Register: React.FC = () => {
           {/* Header */}
           <div className="mb-8">
             <h1 className="text-3xl font-bold text-[#1e4d3a] mb-2" style={{ fontFamily: "'Hanken Grotesk', sans-serif" }}>
-              {t.title}
+              {t("register.title")}
             </h1>
             <p className="text-[#1e4d3a]/60 text-sm" style={{ fontFamily: "'Inter', sans-serif" }}>
-              {t.subtitle}
+              {t("register.subtitle")}
             </p>
           </div>
 
@@ -193,7 +155,7 @@ const Register: React.FC = () => {
               <path fill="#FBBC05" d="M5.52 14.59C5.07 13.4 4.82 12.12 4.82 11s.25-2.4.7-3.59H2.18C1.43 9.1 1 10.02 1 11s.43 1.9 1.18 2.59z"/>
               <path fill="#EA4335" d="M12 4.75c1.7 0 3.24.59 4.45 1.73l3.32-3.32C17.46 1.4 14.88 0 12 0 7.72 0 4.07 2.9 2.18 7.09l3.34 2.97C6.43 6.78 8.99 4.75 12 4.75z"/>
             </svg>
-            {t.google}
+            {t("register.google")}
           </button>
 
           {/* Divider */}
@@ -202,7 +164,7 @@ const Register: React.FC = () => {
               <div className="w-full border-t border-[#1e4d3a]/20"></div>
             </div>
             <div className="relative flex justify-center text-sm">
-              <span className="px-4 bg-[#fbf9f4] text-[#1e4d3a]/60" style={{ fontFamily: "'Inter', sans-serif" }}>{t.or}</span>
+              <span className="px-4 bg-[#fbf9f4] text-[#1e4d3a]/60" style={{ fontFamily: "'Inter', sans-serif" }}>{t("register.or")}</span>
             </div>
           </div>
 
@@ -216,14 +178,14 @@ const Register: React.FC = () => {
 
             <div>
               <label htmlFor="username" className="block text-sm font-semibold text-[#1e4d3a] mb-1.5" style={{ fontFamily: "'Inter', sans-serif" }}>
-                {t.usernameLabel}
+                {t("register.usernameLabel")}
               </label>
               <input
                 id="username"
                 type="text"
                 value={form.username}
                 onChange={(e) => handleChange("username", e.target.value)}
-                placeholder={t.usernamePlaceholder}
+                placeholder={t("register.usernamePlaceholder")}
                 className={`w-full px-5 py-3.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#1e4d3a]/20 focus:border-[#1e4d3a] transition-all duration-200 text-base bg-white text-[#1e4d3a] placeholder-[#1e4d3a]/40 ${errors.username ? 'border-[#b23b3b] focus:ring-[#b23b3b]/20 focus:border-[#b23b3b]' : 'border-[#1e4d3a]/25'}`}
                 style={{ fontFamily: "'Inter', sans-serif" }}
               />
@@ -232,14 +194,14 @@ const Register: React.FC = () => {
 
             <div>
               <label htmlFor="email" className="block text-sm font-semibold text-[#1e4d3a] mb-1.5" style={{ fontFamily: "'Inter', sans-serif" }}>
-                {t.emailLabel}
+                {t("register.emailLabel")}
               </label>
               <input
                 id="email"
                 type="email"
                 value={form.email}
                 onChange={(e) => handleChange("email", e.target.value)}
-                placeholder={t.emailPlaceholder}
+                placeholder={t("register.emailPlaceholder")}
                 className={`w-full px-5 py-3.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#1e4d3a]/20 focus:border-[#1e4d3a] transition-all duration-200 text-base bg-white text-[#1e4d3a] placeholder-[#1e4d3a]/40 ${errors.email ? 'border-[#b23b3b] focus:ring-[#b23b3b]/20 focus:border-[#b23b3b]' : 'border-[#1e4d3a]/25'}`}
                 style={{ fontFamily: "'Inter', sans-serif" }}
               />
@@ -248,7 +210,7 @@ const Register: React.FC = () => {
 
             <div>
               <label htmlFor="password" className="block text-sm font-semibold text-[#1e4d3a] mb-1.5" style={{ fontFamily: "'Inter', sans-serif" }}>
-                {t.passwordLabel}
+                {t("register.passwordLabel")}
               </label>
               <div className="relative">
                 <input
@@ -256,14 +218,14 @@ const Register: React.FC = () => {
                   type={showPassword ? "text" : "password"}
                   value={form.password}
                   onChange={(e) => handleChange("password", e.target.value)}
-                  placeholder={t.passwordPlaceholder}
+                  placeholder={t("register.passwordPlaceholder")}
                   className={`w-full px-5 py-3.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#1e4d3a]/20 focus:border-[#1e4d3a] transition-all duration-200 text-base pr-12 bg-white text-[#1e4d3a] placeholder-[#1e4d3a]/40 ${errors.password ? 'border-[#b23b3b] focus:ring-[#b23b3b]/20 focus:border-[#b23b3b]' : 'border-[#1e4d3a]/25'}`}
                   style={{ fontFamily: "'Inter', sans-serif" }}
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-4 top-1/2 -translate-y-1/2 text-[#1e4d3a]/40 hover:text-[#1e4d3a] transition-colors"
+                  className={`absolute ${isRTL ? "left-4" : "right-4"} top-1/2 -translate-y-1/2 text-[#1e4d3a]/40 hover:text-[#1e4d3a] transition-colors`}
                 >
                   {showPassword ? (
                     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -282,7 +244,7 @@ const Register: React.FC = () => {
 
             <div>
               <label htmlFor="confirm" className="block text-sm font-semibold text-[#1e4d3a] mb-1.5" style={{ fontFamily: "'Inter', sans-serif" }}>
-                {t.confirmLabel}
+                {t("register.confirmLabel")}
               </label>
               <div className="relative">
                 <input
@@ -290,14 +252,14 @@ const Register: React.FC = () => {
                   type={showConfirm ? "text" : "password"}
                   value={form.confirm}
                   onChange={(e) => handleChange("confirm", e.target.value)}
-                  placeholder={t.confirmPlaceholder}
+                  placeholder={t("register.confirmPlaceholder")}
                   className={`w-full px-5 py-3.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#1e4d3a]/20 focus:border-[#1e4d3a] transition-all duration-200 text-base pr-12 bg-white text-[#1e4d3a] placeholder-[#1e4d3a]/40 ${errors.confirm ? 'border-[#b23b3b] focus:ring-[#b23b3b]/20 focus:border-[#b23b3b]' : 'border-[#1e4d3a]/25'}`}
                   style={{ fontFamily: "'Inter', sans-serif" }}
                 />
                 <button
                   type="button"
                   onClick={() => setShowConfirm(!showConfirm)}
-                  className="absolute right-4 top-1/2 -translate-y-1/2 text-[#1e4d3a]/40 hover:text-[#1e4d3a] transition-colors"
+                  className={`absolute ${isRTL ? "left-4" : "right-4"} top-1/2 -translate-y-1/2 text-[#1e4d3a]/40 hover:text-[#1e4d3a] transition-colors`}
                 >
                   {showConfirm ? (
                     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -320,57 +282,47 @@ const Register: React.FC = () => {
               className="w-full bg-[#1e4d3a] text-white py-3.5 rounded-lg font-bold hover:bg-white hover:text-[#1e4d3a] border-2 border-[#1e4d3a] focus:outline-none focus:ring-2 focus:ring-[#1e4d3a]/30 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed text-base"
               style={{ fontFamily: "'Hanken Grotesk', sans-serif", letterSpacing: "0.05em" }}
             >
-              {isLoading ? t.loading : t.button}
+              {isLoading ? t("register.loading") : t("register.button")}
             </button>
           </form>
 
           {/* Sign In Link */}
           <p className="mt-6 text-center text-sm text-[#1e4d3a]/70" style={{ fontFamily: "'Inter', sans-serif" }}>
-            {t.haveAccount}{" "}
+            {t("register.haveAccount")}{" "}
             <Link to="/login" className="font-semibold text-[#C9A84C] hover:text-[#1e4d3a] transition-colors duration-200">
-              {t.signIn}
+              {t("register.signIn")}
             </Link>
           </p>
         </div>
       </div>
 
-      {/* Right Side - Wider Image Card */}
+      {/* Right Side - Image Card */}
       <div className="hidden lg:flex lg:flex-1 justify-center p-1 relative">
-        {/* Increased width from max-w-md to max-w-lg */}
         <div className="relative w-full max-w-lg h-full">
-          {/* Main Floating Card */}
           <div className="relative bg-white rounded-3xl overflow-hidden shadow-2xl h-full" style={{ boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)' }}>
-            {/* Image Container */}
             <div className="relative h-full min-h-[750px]">
-              <img 
-                src={libraryImg} 
-                alt="Library" 
-                className="absolute inset-0 w-full h-full object-cover"
-              />
-              
-              {/* Dark Overlay Gradient */}
+              <img src={libraryImg} alt="Library" className="absolute inset-0 w-full h-full object-cover" />
               <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent"></div>
 
-              {/* Content - Minimal Padding */}
               <div className="absolute bottom-0 left-0 right-0 p-4 text-white">
-                <h2 className="text-2xl font-bold mb-2" style={{ fontFamily: "'Hanken Grotesk', sans-serif" }}>Join Our Community</h2>
+                <h2 className="text-2xl font-bold mb-2" style={{ fontFamily: "'Hanken Grotesk', sans-serif" }}>
+                  {t("register.imageTitle")}
+                </h2>
                 <p className="text-white/80 text-xs leading-relaxed mb-3" style={{ fontFamily: "'Inter', sans-serif" }}>
-                  Become a contributor and help preserve Islamic scholarly heritage.
+                  {t("register.imageSubtitle")}
                 </p>
                 
-                {/* Badges */}
                 <div className="flex gap-2 flex-wrap">
                   <div className="flex items-center gap-1 px-3 py-1.5 bg-white/10 backdrop-blur-sm rounded-full border border-white/20">
                     <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
                     </svg>
-                    <span className="text-[10px] font-medium" style={{ fontFamily: "'Inter', sans-serif" }}>Join 1000+ Scholars</span>
-                  </div>
+                    </div>
                   <div className="flex items-center gap-1 px-3 py-1.5 bg-white/10 backdrop-blur-sm rounded-full border border-white/20">
                     <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
                     </svg>
-                    <span className="text-[10px] font-medium" style={{ fontFamily: "'Inter', sans-serif" }}>Secure & Verified</span>
+                    <span className="text-[10px] font-medium" style={{ fontFamily: "'Inter', sans-serif" }}>{t("register.badge2")}</span>
                   </div>
                 </div>
               </div>

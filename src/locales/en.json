@@ -1,39 +1,594 @@
-{
-  "sidebar": {
-    "brandName": "Oulamauna",
-    "role": "Portal Administrator",
-    "signOut": "Sign out",
-    "section": {
-      "archives": "Archives & Manuscripts",
-      "engagement": "Engagement",
-      "administration": "Administration"
+{ 
+  
+
+ "contact": {
+  "breadcrumb": "HOME › CONTACT",
+  "title": "Contact Us",
+  "description": "Have questions, suggestions, or want to contribute? We'd love to hear from you.",
+  "info": {
+    "emailLabel": "EMAIL",
+    "emailValue": "contact@oulamauna.org",
+    "locationLabel": "LOCATION",
+    "locationValue": "Algeria",
+    "phoneLabel": "PHONE",
+    "phoneValue": "+213 (0) 000 000 000"
+  },
+  "directContact": "Direct Contact",
+  "formTitle": "Send a Message",
+  "labels": {
+    "name": "NAME",
+    "email": "EMAIL",
+    "message": "MESSAGE",
+    "btn": "SEND MESSAGE"
+  },
+  "placeholders": {
+    "name": "Full name",
+    "email": "example@mail.com",
+    "message": "How can we help?"
+  },
+  "errors": {
+    "nameEmpty": "Please enter your name.",
+    "emailEmpty": "Please enter your email address.",
+    "emailInvalid": "Please enter a valid email address.",
+    "messageEmpty": "Please write your message.",
+    "messageShort": "Message must be at least 10 characters."
+  },
+  "sentTitle": "Message Sent!",
+  "sentSubtitle": "Thank you for reaching out. We'll get back to you as soon as possible.",
+  "sentBack": "SEND ANOTHER MESSAGE"
+},
+"about": {
+  "breadcrumb": "HOME › ABOUT",
+  "title": "About Us",
+  "heroDescription": "A free, collaborative encyclopedia dedicated to the scholars and thinkers of the Islamic intellectual tradition.",
+  "introLeft": "Oulamauna was created with a clear purpose: to preserve the lives and works of the scholars who shaped Islamic thought, and to make that knowledge easy to find, read, and pass on.",
+  "introRight": "With years of care behind every entry, our contributors are driven by respect for scholarship and a love of the tradition they document.",
+  "whatLabel": "What we do?",
+  "whatBody": "We gather biographies, manuscripts, and academic references into one multilingual archive.",
+  "archiveLabel": "Our Archive",
+  "archiveP1": "Every entry brings together a scholar's biography, notable works, and available manuscripts in one place — in Arabic, English, and French.",
+  "archiveP2": "To keep entries reliable, we ask contributors to cite their sources, and every submission passes a review before it goes live.",
+  "accessLabel": "Openness",
+  "accessBody": "At Oulamauna, openness is at the heart of what we do. We believe scholarly heritage should be easy to reach and easy to understand.",
+  "accessSub": "That's why every entry is free to read in three languages, so no single language limits who can learn from it.",
+  "teamLabel": "Our Contributors",
+  "teamBody": "Our contributors aren't just adding names — they're researchers and readers with a deep respect for the tradition they document. Their care for sources and accuracy is what keeps the archive trustworthy.",
+  "exploreLink": "EXPLORE SCHOLARS",
+  "ctaLabel": "GET IN TOUCH",
+  "ctaTitle": "Have a correction, a scholar to suggest, or a question about the archive? We'd love to hear from you.",
+  "ctaButton": "CONTACT US"
+},
+"notifications": {
+  "title": "Notifications",
+  "all": "All",
+  "unread": "Unread",
+  "markAllRead": "Mark all as read",
+  "noNotifications": "No notifications",
+  "caughtUp": "You're all caught up!",
+  "willNotify": "We'll notify you when something happens.",
+  "new": "New",
+  "week": "This week",
+  "earlier": "Earlier",
+  "loadMore": "See previous notifications",
+  "readMore": "Read more",
+  "readLess": "Read less",
+  "time": {
+    "justNow": "just now",
+    "minsAgo": "m ago",
+    "hoursAgo": "h ago",
+    "daysAgo": "d ago"
+  }
+},
+"forum": {
+    "pageTitle": "Discussions",
+    "searchPlaceholder": "Search by title, content, or author...",
+    "newPostButton": "Start New Discussion",
+    "allDiscussions": "All Discussions",
+    "categoriesLabel": "Categories",
+    "sortRecent": "Latest first",
+    "sortPopular": "Popular first",
+    "sortUnanswered": "Unanswered",
+    "loadMore": "Load More",
+    "noResults": "No discussions match your filters.",
+    "composerTitle": "Start a Discussion",
+    "composerCategoryLabel": "Category",
+    "composerCategoryPlaceholder": "Choose a category",
+    "composerTitleLabel": "Title",
+    "composerTitlePlaceholder": "What's your question or topic?",
+    "composerContentLabel": "Content",
+    "composerContentPlaceholder": "Share details, context, or sources...",
+    "composerCancel": "Cancel",
+    "composerPublish": "Publish",
+    "comments": "Comments",
+    "posts": "posts",
+    "report": "Report",
+    "reportPost": "Report Post",
+    "confirmReport": "Are you sure you want to report this post?",
+    "reportReason": "Reason for reporting (optional)",
+    "cancel": "Cancel",
+    "submit": "Submit",
+    "deletePost": "Delete",
+    "confirmDeletePost": "Are you sure you want to delete this post? This cannot be undone.",
+    "loadingDiscussions": "Loading discussions...",
+    "uncategorized": "Uncategorized",
+    "anonymous": "Anonymous",
+    "failedToPublish": "Failed to publish post.",
+    "reportSubmitted": "Report submitted successfully.",
+    "failedToReport": "Failed to submit report.",
+    "failedToDelete": "Failed to delete post."
+  },
+  "forumPost": {
+    "backToForum": "Back to Discussions",
+    "postedBy": "Posted by",
+    "onDate": "on",
+    "views": "Views",
+    "comments": "Comments",
+    "commentPlaceholder": "Share your thoughts...",
+    "postComment": "Post Comment",
+    "noComments": "No comments yet. Be the first to share your thoughts!",
+    "replyingTo": "Replying to",
+    "cancelReply": "Cancel",
+    "reply": "Reply",
+    "loading": "Loading post...",
+    "report": "Report",
+    "reportPost": "Report Post",
+    "reportComment": "Report Comment",
+    "confirmReport": "Are you sure you want to report this?",
+    "reportReason": "Reason for reporting (optional)",
+    "cancel": "Cancel",
+    "submit": "Submit",
+    "fullscreen": "Fullscreen",
+    "exitFullscreen": "Exit Fullscreen",
+    "loadMoreComments": "Load more comments",
+    "viewReplies": "View replies",
+    "hideReplies": "Hide replies",
+    "sortNewest": "Newest",
+    "sortOldest": "Oldest",
+    "deletePost": "Delete Post",
+    "deleteComment": "Delete",
+    "confirmDeletePost": "Are you sure you want to delete this post? This cannot be undone.",
+    "confirmDeleteComment": "Are you sure you want to delete this comment?",
+    "deletedComment": "[This comment was deleted]",
+    "uncategorized": "Uncategorized",
+    "unknownUser": "Unknown User",
+    "postNotFound": "Post not found.",
+    "failedToPostComment": "Failed to post comment. Please try again.",
+    "reportSubmitted": "Report submitted successfully.",
+    "failedToReport": "Failed to submit report.",
+    "failedToDeletePost": "Failed to delete post.",
+    "failedToDeleteComment": "Failed to delete comment.",
+    "time": {
+      "justNow": "just now",
+      "minsAgo": "m ago",
+      "hoursAgo": "h ago",
+      "daysAgo": "d ago"
+    }
+  },
+  "errors": {
+    "server": {
+      "title": "Patience is Key",
+      "desc": "Our library is currently undergoing a brief restoration. Please try again in a few moments.",
+      "button": "REFRESH PAGE"
     },
-    "dashboard": "Dashboard",
+    "notFound": {
+      "title": "404",
+      "subtitle": "Page Missing",
+      "desc": "The knowledge you seek is not in this section of the library.",
+      "button": "RETURN TO HOME"
+    },
+    "invalidToken": {
+      "title": "Link Expired",
+      "desc": "This verification link is no longer valid. It may have expired or already been used.",
+      "login": "LOG IN AGAIN",
+      "help": "NEED HELP?"
+    },
+    "forbidden": {
+      "title": "Access Restricted",
+      "desc": "You do not have the necessary permissions to view this page.",
+      "button": "Go Back Home"
+    }
+  },
+
+  "login": {
+    "title": "Welcome back",
+    "subtitle": "Enter your credentials to access your account",
+    "emailLabel": "Email",
+    "emailPlaceholder": "Enter your email",
+    "passwordLabel": "Password",
+    "passwordPlaceholder": "Enter your password",
+    "forgot": "Forgot password?",
+    "button": "Sign In",
+    "loading": "Signing in...",
+    "google": "Sign in with Google",
+    "noAccount": "Don't have an account?",
+    "join": "Sign up",
+    "or": "or",
+    "errEmailEmpty": "Email is required",
+    "errEmailInvalid": "Invalid email address",
+    "errPasswordEmpty": "Password is required",
+    "errInvalidAuth": "Invalid email or password",
+    "errServer": "Server connection failed",
+    "imageTitle": "Preserving Islamic Scholarly Heritage",
+    "imageSubtitle": "Discover centuries of knowledge from renowned scholars.",
+    "badge1": "Verified Sources",
+    "badge2": "500+ Scholars"
+  },
+  "register": {
+    "title": "Create your account",
+    "subtitle": "Start your journey with Oulamauna today",
+    "usernameLabel": "Full Name",
+    "usernamePlaceholder": "Enter your full name",
+    "emailLabel": "Email",
+    "emailPlaceholder": "Enter your email",
+    "passwordLabel": "Password",
+    "passwordPlaceholder": "Create a password",
+    "confirmLabel": "Confirm Password",
+    "confirmPlaceholder": "Confirm your password",
+    "button": "Sign Up",
+    "google": "Sign up with Google",
+    "haveAccount": "Already have an account?",
+    "signIn": "Sign in",
+    "or": "or",
+    "loading": "Creating account...",
+    "errors": {
+      "usernameEmpty": "Full name is required",
+      "emailEmpty": "Email is required",
+      "emailInvalid": "Invalid email address",
+      "passwordEmpty": "Password is required",
+      "passwordWeak": "Password must be at least 8 characters with uppercase, number, and symbol",
+      "confirmEmpty": "Please confirm your password",
+      "confirmMatch": "Passwords do not match",
+      "server": "An error occurred. Please try again."
+    },
+    "imageTitle": "Join Our Community",
+    "imageSubtitle": "Become a contributor and help preserve Islamic scholarly heritage.",
+    "badge1": "Join 1000+ Scholars",
+    "badge2": "Secure & Verified"
+  },
+  "forgotPassword": {
+    "back": "Back to Sign In", "title": "Forgot Password?", "subtitle": "Enter your email and we'll send you a link to reset your password.",
+    "emailLabel": "EMAIL ADDRESS", "emailPlaceholder": "scholar@oulamauna.org", "button": "SEND RESET LINK", "sending": "Sending...",
+    "errEmpty": "Please enter your email address.", "errInvalid": "Please enter a valid email address.", "errServer": "Server connection failed. Please try again.",
+    "sentTitle": "Check your inbox", "sentSubtitle": "We sent a reset link to", "sentNote": "Didn't receive it? Check your spam or", "sentRetry": "try another email", "sentBack": "BACK TO SIGN IN"
+  },
+  "resetPassword": {
+    "back": " Back to Sign In", "title": "Reset Password", "subtitle": "Choose a new password for your account.",
+    "passwordLabel": "NEW PASSWORD", "passwordPlaceholder": "Enter new password",
+    "confirmLabel": "CONFIRM PASSWORD", "confirmPlaceholder": "Confirm new password",
+    "button": "RESET PASSWORD", "sending": "Resetting...",
+    "errPasswordEmpty": "Please enter a new password.", "errPasswordWeak": "Please satisfy all password requirements.",
+    "errConfirmEmpty": "Please confirm your password.", "errConfirmMatch": "Passwords do not match.", "errServer": "Failed to reset password.",
+    "doneTitle": "Password Updated", "doneSubtitle": "Your password has been reset successfully. You can now sign in.", "doneButton": "SIGN IN",
+    "invalidToken": "This reset link is invalid or has expired.", "invalidBack": "Request a new link",
+    "checks": { "length": "At least 8 characters", "upper": "One uppercase letter", "number": "One number", "symbol": "One symbol", "add": "Add:", "allGood": "Strong password!" }
+  },
+  "verifyEmail": {
+    "category": "ACCOUNT SECURITY", "loadingTitle": "Verifying your email...", "loadingSubtitle": "Please wait while we activate your account",
+    "successTitle": "Email Verified!", "successSubtitle": "Your account is now active. You will be redirected to login shortly.",
+    "successRedirect": "Redirecting to login", "successBack": "Go to Login Now", "successHome": "or go Home", "counting": "in",
+    "resendPlaceholder": "Enter your email address", "resendButton": "Send New Link", "resendSent": "Email sent! Check your inbox.",
+    "resendErrorEmpty": "Please enter your email.", "resendErrorFailed": "Could not send. Please try again.",
+    "errors": {
+      "no_token": { "title": "Missing Link", "subtitle": "No verification token was found. Enter your email to get a new link.", "backHome": "Back to Home" },
+      "invalid_token": { "title": "Invalid Link", "subtitle": "This link has already been used or is not recognized.", "backHome": "Back to Home", "register": "or create a new account" },
+      "expired_token": { "title": "Link Expired", "subtitle": "This link has expired. Enter your email to receive a new one.", "backHome": "Back to Home" },
+      "network": { "title": "Connection Error", "subtitle": "Could not reach the server. Please check your internet connection.", "tryAgain": "Try Again", "backHome": "Back to Home" },
+      "server": { "title": "Server Error", "subtitle": "Something went wrong on our end. Please try again in a few moments.", "tryAgain": "Try Again", "backHome": "Back to Home" },
+      "unknown": { "title": "Verification Failed", "subtitle": "An unexpected error occurred. Please try again or contact support.", "backHome": "Back to Home" }
+    }
+  },
+  "verifyEmailPending": {
+    "category": "ACCOUNT SECURITY", "title": "Verify your email", "subtitle": "A confirmation link has been sent to your inbox.",
+    "alreadyVerifiedTitle": "Email Already Verified", "alreadyVerifiedSub": "Your email is already confirmed. You're all set.",
+    "alreadyVerifiedBack": "Go back", "alreadyVerifiedHome": "or go Home",
+    "cta": "OPEN GMAIL", "resend": "RESEND LINK", "resentSuccess": "SENT", "backToLogin": "BACK TO LOGIN",
+    "checking": "Checking your status...", "errorMessage": "Something went wrong. Please try again."
+  }
+
+,
+ "dashboard": {
+  "title": "DASHBOARD",
+  "welcome": "Welcome",
+  "welcomeUser": "Welcome to your dashboard",
+  "roleLabel": "Role",
+  "roleAdmin": "Admin",
+  "roleContributor": "Contributor",
+  "tabs": {
+    "overview": "OVERVIEW",
+    "submissions": "MY SUBMISSIONS",
+    "media": "MEDIA",
+    "works": "WORKS & REFERENCES",
+    "notifications": "NOTIFICATIONS"
+  },
+  "stats": {
     "scholars": "Scholars",
-    "allScholars": "All Scholars",
-    "addScholar": "Add New Scholar",
-    "reviewDesk": "Review Desk",
-    "newScholars": "New Scholars",
-    "pendingEdits": "Pending Edits",
-    "mediaVerification": "Media Verification",
-    "worksVerification": "Works Verification",
-    "activeReview": "Active Review",
-    "archive": "Archive",
-    "changesRequested": "Changes Requested",
+    "versions": "Versions",
+    "media": "Media",
+    "works": "Works"
+  },
+  "overview": {
+    "recentActivity": "Recent Activity"
+  },
+  "activity": {
+    "newScholar": "New scholar submitted",
+    "editProposed": "Edit proposed"
+  },
+  "empty": {
+    "recent": "No recent activity",
+    "submissions": "No submissions found",
+    "media": "No media uploaded yet",
+    "works": "No works added yet",
+    "notifications": "No notifications yet"
+  },
+  "loading": {
+    "submissions": "Loading submissions...",
+    "media": "Loading media...",
+    "works": "Loading works..."
+  },
+  "filter": {
+    "all": "All",
+    "draft": "Draft",
+    "pending": "Pending",
+    "approved": "Approved",
     "rejected": "Rejected",
+    "superseded": "Superseded"
+  },
+  "status": {
+    "draft": "DRAFT",
+    "pending": "PENDING",
+    "approved": "APPROVED",
+    "rejected": "REJECTED",
+    "superseded": "SUPERSEDED"
+  },
+  "table": {
+    "type": "Type",
+    "scholar": "Scholar",
+    "language": "Language",
+    "version": "Version",
+    "date": "Date",
+    "status": "Status",
+    "actions": "Actions",
+    "file": "File",
+    "title": "Title"
+  },
+  "actions": {
+    "view": "View",
+    "edit": "Edit",
+    "delete": "Delete",
+    "continue": "Continue",
+    "newScholar": "New Scholar +",
+    "viewFile": "VIEW FILE",
+    "download": "DOWNLOAD",
+    "openLink": "OPEN LINK",
+    "viewOnScholarPage": "VIEW ON SCHOLAR PAGE"
+  },
+  "confirm": {
+    "deleteDraft": "Are you sure you want to permanently delete this draft?",
+    "deleteRejected": "Are you sure you want to permanently delete this rejected submission?"
+  },
+  "success": {
+    "draftDeleted": "Draft deleted successfully!",
+    "rejectedDeleted": "Rejected submission deleted successfully!"
+  },
+  "error": {
+    "deleteDraft": "Failed to delete draft. Please try again.",
+    "deleteRejected": "Failed to delete. Please try again."
+  },
+  "cta": {
+    "title": "Ready to contribute?",
+    "desc": "Start adding scholars, works, and media to the platform.",
+    "button": "New Submission"
+  },
+  "media": {
+    "tempNote": "Media management is coming soon."
+  },
+  "scholarInfo": {
+    "region": "Region",
+    "dates": "Dates",
+    "alsoKnownAs": "Also Known As"
+  },
+  "banner": {
+    "pendingDesc": "An admin is currently reviewing this submission.",
+    "supersededDesc": "This version was replaced by a newer approved version.",
+    "draftDesc": "This item hasn't been submitted for review yet.",
+    "pendingItemDesc": "An admin is currently reviewing this item.",
+    "approvedDesc": "This item is live on the scholar's page.",
+    "rejectedDesc": "This item was not approved.",
+    "supersededItemDesc": "This item was replaced by a newer version."
+  },
+  "biography": "Biography",
+  "loadingDetails": "Loading details...",
+  "errorLoadData": "Failed to load data.",
+  "untitledSubmission": "Untitled Submission",
+  "newScholarSubmission": "New Scholar Submission",
+  "editProposal": "Edit Proposal",
+  "submitted": "Submitted",
+  "noFileAttached": "No file attached.",
+  "pagination": {
+    "previous": "Previous",
+    "next": "Next"
+  },
+  "kind": {
+    "new": "New",
+    "edit": "Edit"
+  },
+  "unknownScholar": "Unknown Scholar",
+  "unknown": "Unknown",
+  "untitled": "Untitled"
+},
+"logout": {
+    "confirmMessage": "Are you sure you want to sign out? Any unsaved changes may be lost.",
+    "cancel": "Cancel",
+    "confirm": "Sign Out"
+  },
+   "footer": {
+    "tagline": "Dedicated to Islamic Scholarly Preservation",
+    "quickLinks": "Quick Links",
+    "about": "About Us",
+    "scholars": "Scholars",
+    "works": "Works & Manuscripts",
     "disciplines": "Disciplines",
-    "communityHub": "Community Hub",
-    "allPosts": "All Posts",
-    "reported": "Reported",
-    "userManagement": "User Management",
-    "contributors": "Contributors",
-    "bannedUsers": "Banned Users",
-    "reports": "Reports",
-    "notifications": "Notifications",
+    "resources": "Resources",
+    "forum": "Forum",
+    "faq": "FAQ",
+    "privacy": "Privacy Policy",
+    "contact": "Contact",
+    "address": "Algiers, Algeria",
+    "email": "contact@oulamauna.com",
+    "phone": "+213 (0) XX XX XX XX",
+    "copyright": "© 2026 Oulamauna. All rights reserved.",
+    "terms": "Terms of Use",
+    "privacyLink": "Privacy"
+  },
+    "hero": {
+    "tagline": "WELCOME TO OULAMAUNA",
+    "title": "Discover the Scholars Who Shaped Islamic Thought",
+    "subtitle": "Explore centuries of knowledge, from the Classical era to modern times. Verified biographies, original works, and manuscript archives — all in one place.",
+    "exploreButton": "Start Exploring"
+  },
+  
+  
+    "sidebar": {
+    "dashboard": "Dashboard",
+    "editProfile": "Edit Profile",
     "settings": "Settings",
-    "translation": "Translation",
-    "regions": "Regions",
-    "backups": "Backups"
+    "signOut": "Sign Out",
+    "profileCompletion": "Profile Completion",
+    "completeHint": "Add more details to increase your visibility.",
+    "links": "Links"
+  },
+  "profileMenu": {
+    "dashboard": "Dashboard",
+    "editProfile": "Edit Profile",
+    "settings": "Settings",
+    "logout": "Sign out",
+    "ariaLabel": "Profile menu"
+  },
+    "profile": {
+    "loading": "Loading profile...",
+    "roleUser": "User",
+    "roleAdmin": "Admin",
+    "roleContributor": "Contributor",
+    "joined": "Joined",
+    "stats": {
+      "contributions": "Contributions",
+      "forumPosts": "Forum Posts",
+      "contribs": "Contribs",
+      "forum": "Forum"
+    },
+    "activityTitle": "ACTIVITY",
+    "activity": {
+      "recentContributions": "Recent Contributions",
+      "hiddenContributions": "This user has hidden their contributions.",
+      "noContributions": "No contributions yet.",
+      "forumActivity": "Forum Activity",
+      "noForumActivity": "No forum activity yet."
+    },
+    "contributionTag": {
+      "annotation": "Annotation",
+      "translation": "Translation",
+      "media": "Media",
+      "research": "Research"
+    },
+    "contribution": {
+      "untitled": "Untitled",
+      "mediaUpload": "Media upload",
+      "newEdition": "New edition",
+      "work": "Work",
+      "submission": "submission",
+      "newScholarEntry": "New scholar entry"
+    },
+    "forum": {
+      "general": "General"
+    },
+    "reply": "reply",
+    "replies": "replies",
+    "status": {
+      "deleted": "This account has been deleted",
+      "banned": "This account has been suspended",
+      "deactivated": "This account is deactivated",
+      "private": "This profile is private",
+      "registeredOnly": "Log in to view this profile"
+    },
+    "loginRequired": {
+      "title": "You need to log in",
+      "desc": "Log in to see and manage your profile.",
+      "button": "Log in"
+    },
+    "error": {
+      "notFound": {
+        "title": "Profile not found",
+        "desc": "No profile exists for this ID."
+      },
+      "general": "Error loading profile",
+      "generalDesc": "Please try again later."
+    }
+  },
+    "editProfile": {
+    "loading": "Loading profile...",
+    "title": "EDIT PROFILE",
+    "success": "Profile Updated Successfully!",
+    "error": {
+      "load": "Failed to load profile data.",
+      "update": "Failed to update profile.",
+      "general": "An error occurred while saving."
+    },
+    "newImageSelected": "New image selected",
+    "changePicture": "Change profile picture",
+    "roleAdmin": "Admin",
+    "roleUser": "User",
+    "roleContributor": "Contributor",
+    "statusBrowsing": "Browsing",
+    "statusContributing": "Contributing",
+    "newImageReady": "New image ready to save",
+    "personalInfo": "Personal Information",
+    "displayName": "Display Name",
+    "username": "Username",
+    "email": "Email",
+    "bio": "Bio",
+    "links": "Links",
+    "linksHint": "Add your social media or personal website links.",
+    "linkPlaceholder": "https://...",
+    "addLink": "Add Link",
+    "cancel": "Cancel",
+    "saving": "Saving...",
+    "saveProfile": "Save Profile"
+  },
+  "settings": {
+    "loading": "Loading settings...",
+    "errorLoad": "Failed to load settings.",
+    "errorUpdate": "Failed to update settings. Please try again.",
+    "errorDeactivate": "Failed to deactivate account.",
+    "errorDelete": "Failed to delete account.",
+    "saved": "SAVED",
+    "processing": "Processing...",
+    "cancel": "Cancel",
+    "title": "Account Settings",
+    "desc": "Manage your preferences, privacy, and account status.",
+    "language": "Language",
+    "preferredLanguage": "Preferred Language",
+    "notifications": "Notifications",
+    "enableNotifications": "Enable Notifications",
+    "notificationsDesc": "Receive global notifications about your account and contributions.",
+    "privacy": "Privacy",
+    "profileVisibility": "Profile Visibility",
+    "visibilityPublic": "Public",
+    "visibilityRegistered": "Registered Users Only",
+    "visibilityPrivate": "Private",
+    "showEmail": "Show Email",
+    "showEmailDesc": "Display your email address on your public profile.",
+    "showContributions": "Show Contributions",
+    "showContributionsDesc": "Display your contribution history on your public profile.",
+    "accountManagement": "Account Management",
+    "deactivateAccount": "Deactivate Account",
+    "deactivateAccountDesc": "Temporarily disable your account. You can reactivate by logging in again.",
+    "deactivate": "Deactivate",
+    "deactivateConfirmMessage": "Are you sure you want to deactivate your account? Your data will be preserved, and you can reactivate it at any time by logging back in.",
+    "deleteAccount": "Delete Account",
+    "deleteAccountDesc": "Permanently anonymize your account. This cannot be undone.",
+    "deleteAccountWarning": "This is irreversible. Your account will be anonymized, your password will be destroyed, and you will not be able to log in again. Your past contributions will remain visible under an anonymized username.",
+    "typeDeleteToConfirm": "Type DELETE to confirm:",
+    "deleteAccountConfirm": "Delete Account"
   },
   "navbar": {
     "dashboard": "Dashboard",
@@ -57,108 +612,7 @@
       "reportedSub": "User flagged a translation"
     }
   },
-  "dashboard": {
-    "header": {
-      "eyebrow": "OULAMAUNA · ADMIN",
-      "title": "Administrative Overview",
-      "subtitle": "Review submissions, monitor platform health, and manage the scholarly archive."
-    },
-    "stat": {
-      "scholars": "Registered Scholars",
-      "scholarsSub": "+12 added this month",
-      "works": "Archived Works",
-      "worksSub": "98% data integrity",
-      "pending": "Pending Review",
-      "pendingSub": "12 high-priority items",
-      "contributors": "Contributors",
-      "contributorsSub": "Active academic accounts"
-    },
-    "chart": {
-      "eyebrow": "MANUSCRIPT ACTIVITY",
-      "title": "Submissions over time",
-      "hijri": "HIJRI",
-      "gregorian": "GREGORIAN"
-    },
-    "month": {
-      "muharram": "Muh.",
-      "safar": "Saf.",
-      "rabiI": "Rab. I",
-      "rabiII": "Rab. II",
-      "jumadaI": "Jum. I",
-      "jumadaII": "Jum. II",
-      "rajab": "Raj."
-    },
-    "review": {
-      "eyebrow": "REVIEW QUEUE",
-      "reports": "Reported Content",
-      "blogFlag": "Flagged Blog Posts",
-      "notifs": "Notifications",
-      "viewAll": "View all pending"
-    },
-    "cat": {
-      "eyebrow": "DISCIPLINES",
-      "title": "Scholars by specialisation",
-      "fiqh": "Fiqh (Islamic Law)",
-      "hadith": "Hadith Sciences",
-      "tafsir": "Quranic Exegesis",
-      "usul": "Usul al-Fiqh",
-      "tasawwuf": "Tasawwuf",
-      "nahw": "Arabic Grammar"
-    },
-    "century": {
-      "eyebrow": "TIMELINE",
-      "title": "Scholars by Hijri century",
-      "label": "Hijri centuries (I – X)",
-      "scholars": "scholars"
-    },
-    "region": {
-      "eyebrow": "REGIONS",
-      "maghreb": "Maghreb",
-      "mashriq": "Mashriq",
-      "andalus": "Andalusia",
-      "other": "Other"
-    },
-    "activity": {
-      "eyebrow": "RECENT ACTIVITY",
-      "viewAll": "View all",
-      "duplicateBio": "Duplicate Profile",
-      "duplicateBioSub": "Subject: Ibn Taymiyya",
-      "newTranslation": "New Translation Draft",
-      "newTranslationSub": "Work: Al-Muqaddimah",
-      "newContributor": "New Contributor Request",
-      "newContributorSub": "User: dr_fatima_a",
-      "contentReported": "Content Reported",
-      "contentReportedSub": "Blog post flagged by 2 users",
-      "time2m": "2m ago",
-      "time3h": "3h ago",
-      "time8h": "8h ago",
-      "timeYesterday": "Yesterday"
-    },
-    "badge": {
-      "urgent": "High Priority",
-      "pending": "Under Review",
-      "requestAccess": "Access Request",
-      "review": "Needs Review"
-    },
-    "quick": {
-      "eyebrow": "QUICK ACTIONS",
-      "addScholar": "Add Scholar",
-      "reviewPending": "Review Pending",
-      "moderateForum": "Moderate Forum",
-      "manageUsers": "Manage Users",
-      "viewReports": "View Reports",
-      "systemSettings": "System Settings"
-    },
-    "health": {
-      "eyebrow": "PLATFORM HEALTH",
-      "backup": "Backup OK",
-      "search": "Search OK",
-      "media": "Media OK",
-      "email": "Email Error",
-      "lastBackup": "Last backup",
-      "lastBackupValue": "Today, 03:00 AM"
-    }
-  },
+  
   "scholars": {
     "newScholars": {
       "title": "New Scholars",
@@ -887,188 +1341,6 @@
     "saveDraft": "SAVE DRAFT",
     "next": "NEXT",
     "submit": "SUBMIT FOR REVIEW"
-  }
-},
-"editProfile": {
-  "myProfile": "My Profile",
-  "dashboard": "Dashboard",
-  "editProfile": "Edit Profile",
-  "settings": "Settings",
-  "signOut": "Sign Out",
-  "personalInfo": "Personal Information",
-  "displayName": "Display Name",
-  "username": "Username (Required)",
-  "fullName": "Full Name",
-  "email": "Email (Required)",
-  "bio": "Bio",
-  "country": "Country",
-  "links": "Links",
-  "linksHint": "Add links to Facebook, Instagram, or any other page.",
-  "linkPlaceholder": "https://facebook.com/yourname",
-  "addLink": "Add link",
-  "cancel": "Cancel",
-  "saveChanges": "Save Changes",
-  "saved": "Saved!",
-  "discard": "Discard Changes",
-  "saveProfile": "Save Profile",
-  "profileUpdated": "Profile Updated!",
-  "profileCompletion": "Profile Completion",
-  "completeHint": "Complete your profile to unlock more features.",
-  "becomeContributor": "Become a Contributor",
-  "upgradeHint": "Submit a new scholar page to upgrade your status.",
-  "upgradeNow": "Upgrade Now",
-  "contributing": "Contribute to scholar pages",
-  "browsing": "Browsing the archive",
-  "user": "User",
-  "contributor": "Contributor"
-},
-"dashboard": {
-  "welcome": "Welcome",
-  "roleLabel": "Role",
-  "roleContributor": "CONTRIBUTOR",
-  "welcomeUser": "Welcome to your OULAMAUNA workspace.",
-  "tabs": {
-    "overview": "OVERVIEW",
-    "notifications": "NOTIFICATIONS",
-    "watchlist": "WATCHLIST",
-    "submissions": "MY SUBMISSIONS",
-    "media": "MEDIA",
-    "works": "WORKS & REFERENCES"
-  },
-  "stats": {
-    "scholars": "Scholars submitted",
-    "versions": "Versions submitted",
-    "media": "Media submitted",
-    "works": "Works / refs submitted"
-  },
-  "overview": {
-    "profileTitle": "My Profile",
-    "profileDesc": "View and edit your profile details.",
-    "watchlistTitle": "My Watchlist",
-    "watchlistDesc": "Scholars you're following.",
-    "notificationsTitle": "Recent Notifications",
-    "notificationsDesc": "Nothing new right now.",
-    "recentActivity": "Recent Activity"
-  },
-  "cta": {
-    "title": "Contribute to OULAMAUNA",
-    "desc": "Help preserve and expand our scholarly encyclopedia.",
-    "button": "SUBMIT A SCHOLAR"
-  },
-  "table": {
-    "type": "Type",
-    "scholar": "Scholar",
-    "language": "Language",
-    "version": "Version",
-    "date": "Date",
-    "status": "Status",
-    "actions": "Actions",
-    "file": "File",
-    "title": "Title"
-  },
-  "status": {
-    "draft": "DRAFT",
-    "pending": "PENDING",
-    "approved": "APPROVED",
-    "rejected": "REJECTED"
-  },
-  "kind": {
-    "new": "New Scholar",
-    "edit": "Edit"
-  },
-  "filter": {
-    "all": "All"
-  },
-  "actions": {
-    "newScholar": "New Scholar",
-    "editExisting": "Edit Existing",
-    "continue": "Continue",
-    "delete": "Delete",
-    "view": "View",
-    "history": "History",
-    "resubmit": "Edit & Resubmit"
-  },
-  "media": {
-    "addButton": "ADD MEDIA",
-    "tempNote": "Temporary data — backend endpoint for user media submissions not yet available."
-  },
-  "works": {
-    "addButton": "ADD WORK / REFERENCE"
-  },
-  "empty": {
-    "submissions": "No submissions yet. Start a new scholar page or edit an existing one.",
-    "media": "No media submitted yet.",
-    "works": "No works or references submitted yet.",
-    "notifications": "You're all caught up.",
-    "watchlist": "You're not watching any scholars yet."
-  }
-},
-"settings": {
-  "title": "Settings",
-  "subtitle": "Manage your Oulamauna account and preferences.",
-  "common": { "cancel": "Cancel", "save": "Save", "saving": "Saving…" },
-  "language": {
-    "title": "Language & Interface",
-    "language": "Language"
-  },
-  "notif": {
-    "title": "Notification Preferences",
-    "email": "Email Notifications",
-    "emailDesc": "Receive notifications by email.",
-    "commentReply": "Comment & Reply Notifications",
-    "commentReplyDesc": "When someone interacts with your comments.",
-    "discussion": "Discussion Notifications",
-    "discussionDesc": "Activity related to your discussions.",
-    "system": "System Notifications",
-    "systemDesc": "Important platform announcements.",
-    "contributorTitle": "Contributor Notifications",
-    "contribApproved": "Submission approved",
-    "contribRejected": "Submission rejected",
-    "contribChanges": "Submission requires changes",
-    "contribTranslation": "Translation reviewed",
-    "contribStatus": "Contribution status changes"
-  },
-  "privacy": {
-    "title": "Privacy",
-    "visibility": "Profile Visibility",
-    "visibilityPublic": "Public",
-    "visibilityRegistered": "Registered users only",
-    "showEmail": "Show my email address on my public profile",
-    "showEmailDesc": "Off by default.",
-    "showActivity": "Show my activity on my profile",
-    "showContributions": "Show my contributions on my profile",
-    "showContributionsDesc": "Controls public visibility only — administrators can always see your contribution records.",
-    "adminNote": "Administrators retain full visibility into contribution records regardless of these settings, for editorial traceability."
-  },
-  "security": {
-    "title": "Security",
-    "password": "Password",
-    "changePassword": "Change Password",
-    "pwCurrent": "Current password",
-    "pwNew": "New password",
-    "pwConfirm": "Confirm new password",
-    "pwErrorCurrent": "Enter your current password.",
-    "pwErrorLength": "New password must be at least 8 characters.",
-    "pwErrorMatch": "New password and confirmation don't match.",
-    "pwSuccess": "Password updated successfully.",
-    "emailVerification": "Email Verification",
-    "verified": "Verified",
-    "notVerified": "Not verified",
-    "resend": "Resend verification email",
-    "resendSent": "Sent!"
-  },
-  "account": {
-    "title": "Account",
-    "deactivate": "Deactivate Account",
-    "deactivateDesc": "Temporarily disable your account. You can reactivate it later.",
-    "deactivateTitle": "Deactivate your account?",
-    "deactivateWarning": "Your profile and contributions will be hidden until you log back in to reactivate.",
-    "deactivateConfirm": "Deactivate",
-    "deleteTitle": "Delete Account",
-    "deleteDesc": "Permanently delete your account and associated data.",
-    "deleteWarning": "This action may be permanent and cannot be undone. All your personal data will be removed according to our data policy.",
-    "deleteTypeConfirm": "Type DELETE to confirm",
-    "deleteConfirm": "Delete my account"
   }
 }
 }

@@ -3,11 +3,22 @@ import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { useLang } from "../context/LanguageContext";
 import { notificationApi } from "../api/notificationApi";
-import NotificationsPanel from "./NotificationsPanel"; // ⚠️ adjust this path to wherever NotificationsPanel.tsx actually lives relative to Navbar.tsx (was wrongly pointing at the full page before)
+import NotificationsPanel from "./NotificationsPanel";
 
-import oulamaunaLogo from '../assets/bgt1.png';
+// ✅ IMPORT ALL THREE LANGUAGE LOGOS + GENERIC MOBILE LOGO
+import logoEn from "../assets/logo_en.png";
+import logoAr from "../assets/logo_ar.png";
+import logoFr from "../assets/logo_fr.png";
+import logoMobile from "../assets/logo.png"; // ✅ Generic logo for mobile
 
 type Language = "EN" | "AR" | "FR";
+
+// ✅ MAP LANGUAGES TO THEIR RESPECTIVE LOGOS (Desktop only)
+const LOGOS: Record<Language, string> = {
+  EN: logoEn,
+  AR: logoAr,
+  FR: logoFr,
+};
 
 const NAV_IDS = ["HOME", "SCHOLARS", "FORUM", "ABOUT", "CONTACT"] as const;
 const PATHS: Record<string, string> = {
@@ -86,9 +97,6 @@ const Navbar: React.FC = () => {
   const [showNavbar, setShowNavbar] = useState(true);
 
   const [unreadCount, setUnreadCount] = useState(0);
-  // ✅ NEW: controls the floating dropdown panel. The bell no longer navigates directly —
-  // it opens this panel first; the panel itself has the "See all notifications" action
-  // that pushes to /notifications.
   const [notifPanelOpen, setNotifPanelOpen] = useState(false);
 
   const langRef = useRef<HTMLDivElement>(null);
@@ -98,18 +106,13 @@ const Navbar: React.FC = () => {
 
   const location = useLocation();
   const isHome = location.pathname === "/";
-  // ✅ When we're already on the full notifications page, the bell shouldn't
-  // pop the floating panel back on top of it — that's just noise since the
-  // user is already looking at the same list.
   const isNotificationsPage = location.pathname === "/notifications";
   const isRTL = lang === "AR";
-  const t = T[lang];
+  const t = T[lang] || T.EN;
 
   const userRole = (user as any)?.role || (user as any)?.role_name;
   const isAdmin = userRole && String(userRole).toLowerCase() === 'admin';
 
-  // ✅ Extracted so we can also refresh it right after the panel closes
-  // (e.g. after marking something as read inside the dropdown).
   const fetchUnreadCount = async () => {
     if (!isLoggedIn) {
       setUnreadCount(0);
@@ -129,13 +132,11 @@ const Navbar: React.FC = () => {
     fetchUnreadCount();
   }, [isLoggedIn]);
 
-  // Active link sync
   useEffect(() => {
     const m = NAV_IDS.find((id) => PATHS[id] === location.pathname);
     if (m) setActive(m);
   }, [location.pathname]);
 
-  // Prevent body scroll when mobile menu is open
   useEffect(() => {
     if (mobileMenuOpen) {
       document.body.style.overflow = 'hidden';
@@ -147,7 +148,6 @@ const Navbar: React.FC = () => {
     };
   }, [mobileMenuOpen]);
 
-  // Scroll behavior - hide/show navbar (MOBILE ONLY)
   useEffect(() => {
     const fn = () => {
       const currentScrollY = window.scrollY;
@@ -173,7 +173,6 @@ const Navbar: React.FC = () => {
     };
   }, [lastScrollY]);
 
-  // Close dropdowns on outside click
   useEffect(() => {
     const fn = (e: MouseEvent) => {
       if (langRef.current && !langRef.current.contains(e.target as Node)) setLangOpen(false);
@@ -184,12 +183,10 @@ const Navbar: React.FC = () => {
     return () => document.removeEventListener("mousedown", fn);
   }, []);
 
-  // Auto-focus search when opened
   useEffect(() => {
     if (searchOpen) setTimeout(() => inputRef.current?.focus(), 100);
   }, [searchOpen]);
 
-  // Search navigation
   useEffect(() => {
     const query = searchQuery.trim();
     if (query.length > 0) {
@@ -215,10 +212,6 @@ const Navbar: React.FC = () => {
     fetchUnreadCount();
   };
 
-  // ✅ Single handler for both the desktop and mobile bell.
-  // On any other page: toggles the floating panel.
-  // On /notifications itself: just scrolls the already-open list back to top —
-  // no floating panel, since we're already "in" notifications.
   const handleBellClick = () => {
     if (isNotificationsPage) {
       window.scrollTo({ top: 0, behavior: "smooth" });
@@ -301,12 +294,12 @@ const Navbar: React.FC = () => {
           }
         `}
       >
-        {/* Logo */}
+        {/* ✅ Logo (Desktop) - Language-specific logos */}
         <Link to="/" className="flex items-center group order-1 md:order-none md:col-start-1 md:justify-self-start flex-shrink-0">
           <img
             alt="Oulamauna Logo"
             className="h-10 w-auto object-contain transition-transform duration-300 group-hover:scale-105"
-            src={oulamaunaLogo}
+            src={LOGOS[lang]}
             style={{ filter: isTransparent ? 'brightness(0) invert(1)' : 'none' }}
           />
         </Link>
@@ -378,7 +371,7 @@ const Navbar: React.FC = () => {
 
           {isLoggedIn && <div className={`w-px h-5 mx-1 ${isTransparent ? 'bg-white/30' : 'bg-white/20'}`} />}
 
-          {/* ✅ Notifications Bell (Desktop) — opens the floating panel, does NOT navigate */}
+          {/* Notifications Bell (Desktop) */}
           {isLoggedIn && (
             <button
               onClick={handleBellClick}
@@ -527,7 +520,6 @@ const Navbar: React.FC = () => {
 
         {/* Mobile Utilities */}
         <div className="md:hidden flex items-center gap-2 order-2">
-          {/* ✅ Notifications Bell (Mobile Top Bar) — opens the floating panel too */}
           {isLoggedIn && (
             <button
               onClick={handleBellClick}
@@ -558,7 +550,7 @@ const Navbar: React.FC = () => {
         </div>
       </nav>
 
-      {/* ✅ Floating notifications panel — lives outside <nav> so it overlays everything */}
+      {/* Floating notifications panel */}
       <NotificationsPanel isOpen={notifPanelOpen} onClose={handleCloseNotifPanel} />
 
       {/* Full-Page Mobile Menu */}
@@ -568,8 +560,9 @@ const Navbar: React.FC = () => {
           dir={isRTL ? 'rtl' : 'ltr'}
         >
           <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex justify-between items-center z-10">
+            {/* ✅ Logo (Mobile Menu) - Uses generic logo.png for ALL languages */}
             <Link to="/" onClick={() => setMobileMenuOpen(false)} className="flex items-center">
-              <img alt="Oulamauna Logo" className="h-8 w-auto object-contain" src={oulamaunaLogo} />
+              <img alt="Oulamauna Logo" className="h-8 w-auto object-contain" src={logoMobile} />
             </Link>
             <button
               onClick={() => { setMobileMenuOpen(false); setMobileProfileExpanded(false); }}

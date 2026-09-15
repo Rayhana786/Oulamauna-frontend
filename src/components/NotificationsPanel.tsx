@@ -1,3 +1,4 @@
+// src/components/NotificationsPanel.tsx
 import React, { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { notificationApi, Notification } from "../api/notificationApi";
@@ -44,7 +45,7 @@ interface NotificationsPanelProps {
 }
 
 const NotificationsPanel: React.FC<NotificationsPanelProps> = ({ isOpen, onClose }) => {
-  const { lang } = useLang();
+  const { lang, t } = useLang(); // Now using the dynamic t() function
   const navigate = useNavigate();
   const panelRef = useRef<HTMLDivElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
@@ -128,7 +129,8 @@ const NotificationsPanel: React.FC<NotificationsPanelProps> = ({ isOpen, onClose
       return;
     }
 
-    const entity = notification.related_entity;
+    // Fix: Use optional chaining for related_entity
+    const entity = (notification as any).related_entity;
     if (!entity) return;
 
     let baseUrl = "";
@@ -169,12 +171,6 @@ const NotificationsPanel: React.FC<NotificationsPanelProps> = ({ isOpen, onClose
     navigate("/notifications");
   };
 
-  const t = {
-    EN: { title: "Notifications", all: "All", unread: "Unread", new: "New", viewAll: "See all notifications", markAllRead: "Mark all as read", loadMore: "See more", noNotifications: "No notifications", caughtUp: "You're all caught up!", willNotify: "We'll notify you when something happens." },
-    AR: { title: "الإشعارات", all: "الكل", unread: "غير المقروء", new: "جديد", viewAll: "عرض كل الإشعارات", markAllRead: "تحديد الكل كمقروء", loadMore: "عرض المزيد", noNotifications: "لا توجد إشعارات", caughtUp: "لقد قرأت كل شيء!", willNotify: "سنخطرك عند حدوث شيء." },
-    FR: { title: "Notifications", all: "Tout", unread: "Non lu", new: "Nouveau", viewAll: "Voir toutes les notifications", markAllRead: "Marquer tout comme lu", loadMore: "Voir plus", noNotifications: "Aucune notification", caughtUp: "Vous êtes à jour !", willNotify: "Nous vous informerons quand quelque chose se passera." }
-  }[lang];
-
   if (!isOpen) return null;
 
   return (
@@ -194,7 +190,7 @@ const NotificationsPanel: React.FC<NotificationsPanelProps> = ({ isOpen, onClose
 
         {/* Header */}
         <div className="bg-[#1e4d3a] px-4 py-3.5 flex items-center justify-between">
-          <h2 className="text-lg font-bold text-white">{t.title}</h2>
+          <h2 className="text-lg font-bold text-white">{t('notifications.title')}</h2>
           <div className="relative" ref={menuRef}>
             <button onClick={() => setShowMenu(!showMenu)} className="p-1.5 hover:bg-white/10 rounded-full transition-colors">
               <span className="material-symbols-outlined text-white" style={{ fontSize: '20px' }}>more_horiz</span>
@@ -204,12 +200,12 @@ const NotificationsPanel: React.FC<NotificationsPanelProps> = ({ isOpen, onClose
               <div className="absolute right-0 mt-2 w-60 bg-white rounded-xl shadow-lg border border-[#C9A84C]/20 py-1.5 z-50">
                 <button onClick={handleMarkAllAsRead} className="w-full px-4 py-2.5 text-left hover:bg-[#F5F3EC] flex items-center gap-3 transition-colors">
                   <span className="material-symbols-outlined text-[#1e4d3a]" style={{ fontSize: '18px' }}>done_all</span>
-                  <span className="text-sm font-medium text-[#1e4d3a]">{t.markAllRead}</span>
+                  <span className="text-sm font-medium text-[#1e4d3a]">{t('notifications.markAllRead')}</span>
                 </button>
                 <div className="border-t border-[#C9A84C]/10 my-1"></div>
                 <button onClick={handleViewAll} className="w-full px-4 py-2.5 text-left hover:bg-[#F5F3EC] flex items-center gap-3 transition-colors">
                   <span className="material-symbols-outlined text-[#1e4d3a]" style={{ fontSize: '18px' }}>open_in_new</span>
-                  <span className="text-sm font-medium text-[#1e4d3a]">{t.viewAll}</span>
+                  <span className="text-sm font-medium text-[#1e4d3a]">{t('notifications.viewAll')}</span>
                 </button>
               </div>
             )}
@@ -219,10 +215,10 @@ const NotificationsPanel: React.FC<NotificationsPanelProps> = ({ isOpen, onClose
         {/* Filter tabs */}
         <div className="px-3 py-2.5 flex gap-1.5 border-b border-[#C9A84C]/10 bg-white">
           <button onClick={() => setFilter("all")} className={`px-3.5 py-1.5 rounded-full text-[13px] font-semibold transition-all ${filter === "all" ? "bg-[#1e4d3a] text-white" : "text-gray-600 hover:bg-[#F5F3EC]"}`}>
-            {t.all}
+            {t('notifications.all')}
           </button>
           <button onClick={() => setFilter("unread")} className={`px-3.5 py-1.5 rounded-full text-[13px] font-semibold transition-all flex items-center gap-1.5 ${filter === "unread" ? "bg-[#1e4d3a] text-white" : "text-gray-600 hover:bg-[#F5F3EC]"}`}>
-            {t.unread}
+            {t('notifications.unread')}
             {unreadCount > 0 && <span className="bg-[#C9A84C] text-[#1e4d3a] text-[10px] font-bold px-1.5 py-0.5 rounded-full">{unreadCount}</span>}
           </button>
         </div>
@@ -242,8 +238,8 @@ const NotificationsPanel: React.FC<NotificationsPanelProps> = ({ isOpen, onClose
           ) : notifications.length === 0 ? (
             <div className="text-center py-12 px-4">
               <span className="material-symbols-outlined text-5xl text-gray-300 mb-3">notifications_off</span>
-              <h3 className="text-base font-semibold text-gray-700 mb-1">{t.noNotifications}</h3>
-              <p className="text-gray-500 text-sm">{filter === "unread" ? t.caughtUp : t.willNotify}</p>
+              <h3 className="text-base font-semibold text-gray-700 mb-1">{t('notifications.noNotifications')}</h3>
+              <p className="text-gray-500 text-sm">{filter === "unread" ? t('notifications.caughtUp') : t('notifications.willNotify')}</p>
             </div>
           ) : (
             <>
@@ -261,7 +257,7 @@ const NotificationsPanel: React.FC<NotificationsPanelProps> = ({ isOpen, onClose
                       {showHeader && (
                         <div className={`px-4 pt-3 pb-1 ${idx > 0 ? "border-t border-[#C9A84C]/10 mt-1" : ""}`}>
                           <h4 className="text-[10.5px] font-bold text-[#1e4d3a]/55 uppercase tracking-wider">
-                            {group === "new" ? t.new : t.earlier}
+                            {group === "new" ? t('notifications.new') : t('notifications.earlier')}
                           </h4>
                         </div>
                       )}
@@ -292,7 +288,7 @@ const NotificationsPanel: React.FC<NotificationsPanelProps> = ({ isOpen, onClose
               {!isLoading && hasMore && (
                 <div className="px-4 py-3 text-center">
                   <button onClick={handleLoadMore} className="w-full py-2 text-sm text-[#1e4d3a] hover:bg-[#F5F3EC] font-semibold rounded-lg transition-colors">
-                    {t.loadMore}
+                    {t('notifications.loadMore')}
                   </button>
                 </div>
               )}
@@ -305,7 +301,7 @@ const NotificationsPanel: React.FC<NotificationsPanelProps> = ({ isOpen, onClose
           onClick={handleViewAll}
           className="w-full py-3 text-sm font-semibold text-[#1e4d3a] border-t border-[#C9A84C]/15 hover:bg-[#F5F3EC] transition-colors"
         >
-          {t.viewAll}
+          {t('notifications.viewAll')}
         </button>
       </div>
     </>

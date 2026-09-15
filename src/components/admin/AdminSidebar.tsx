@@ -1,7 +1,10 @@
 import React, { useState, useRef, useEffect } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useLang } from "../../context/LanguageContext";
-import { useAuth } from "../../context/AuthContext"; // ✅ ADDED
+import { useAuth } from "../../context/AuthContext";
+
+// ✅ IMPORT THE LOGO (Adjust the path if your folder structure is different)
+import logoImg from "../../assets/logo.png"; 
 
 /* ------------------------------------------------------------------ */
 /*  Design tokens — Oulamnauna admin palette                          */
@@ -21,9 +24,6 @@ const fonts = {
   label: "'JetBrains Mono', monospace",
 };
 
-/* ------------------------------------------------------------------ */
-/*  Icon                                                                */
-/* ------------------------------------------------------------------ */
 const Icon: React.FC<{ name: string; size?: number; filled?: boolean }> = ({
   name,
   size = 18,
@@ -41,21 +41,14 @@ const Icon: React.FC<{ name: string; size?: number; filled?: boolean }> = ({
   </span>
 );
 
-/* ------------------------------------------------------------------ */
-/*  Nav structure                                                       */
-/* ------------------------------------------------------------------ */
 type NavLink = { icon: string; labelKey: string; to: string };
 type NavGroup = { sectionKey?: string; links: NavLink[] };
 
 const navGroups: NavGroup[] = [
-  {
-    links: [{ icon: "grid_view", labelKey: "navbar.dashboard", to: "/admin/dashboard" }],
-  },
+  { links: [{ icon: "grid_view", labelKey: "navbar.dashboard", to: "/admin/dashboard" }] },
   {
     sectionKey: "sidebar.section.scholars",
-    links: [
-      { icon: "school", labelKey: "sidebar.allScholars", to: "/admin/scholars" },
-    ],
+    links: [{ icon: "school", labelKey: "sidebar.allScholars", to: "/admin/scholars" }],
   },
   {
     sectionKey: "sidebar.section.review",
@@ -71,22 +64,19 @@ const navGroups: NavGroup[] = [
     sectionKey: "sidebar.section.classification",
     links: [
       { icon: "category", labelKey: "sidebar.disciplines", to: "/admin/disciplines" },
-      { icon: "public", labelKey: "sidebar.regions", to: "/admin/regions" }, 
+      { icon: "public", labelKey: "sidebar.regions", to: "/admin/regions" },
     ],
   },
   {
-    sectionKey: "sidebar.section.blog",
+    sectionKey: "sidebar.section.discussions",
     links: [
-      { icon: "article", labelKey: "sidebar.allPosts", to: "/admin/blog" },
-      { icon: "flag", labelKey: "sidebar.reported", to: "/admin/blog/reported" },
+      { icon: "forum", labelKey: "sidebar.allDiscussions", to: "/admin/discussions" },
+      { icon: "category", labelKey: "sidebar.discussionCategories", to: "/admin/discussions/categories" },
     ],
   },
   {
     sectionKey: "sidebar.section.community",
-    links: [
-      { icon: "group", labelKey: "sidebar.contributors", to: "/admin/users/contributors" },
-      { icon: "person_off", labelKey: "sidebar.bannedUsers", to: "/admin/users/banned" },
-    ],
+    links: [{ icon: "manage_accounts", labelKey: "sidebar.userManagement", to: "/admin/users" }],
   },
   {
     links: [
@@ -106,26 +96,22 @@ const navGroups: NavGroup[] = [
 /* ------------------------------------------------------------------ */
 /*  Sidebar                                                             */
 /* ------------------------------------------------------------------ */
-const AdminSidebar: React.FC = () => {
+
+interface AdminSidebarProps {
+  collapsed: boolean;
+  onToggle: () => void;
+}
+
+const AdminSidebar: React.FC<AdminSidebarProps> = ({ collapsed, onToggle }) => {
   const location = useLocation();
-  const navigate = useNavigate(); // ✅ ADDED
+  const navigate = useNavigate();
   const { t, lang } = useLang();
-  const { user, logout } = useAuth(); // ✅ ADDED: Get real user and logout function
+  const { user, logout } = useAuth();
   const isRTL = lang === "AR";
 
-  // ✅ REAL User Data from Auth Context
-  const currentUser = {
-    username: user?.username || "User",
-    role: "Administrator",
-    initial: (user?.name || user?.username || "U").charAt(0).toUpperCase(),
-    profile_picture: (user as any)?.profile_picture || (user as any)?.avatar,
-  };
-
-  // ✅ Dropdown State
   const [profileOpen, setProfileOpen] = useState(false);
   const profileRef = useRef<HTMLDivElement>(null);
 
-  // Close dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (profileRef.current && !profileRef.current.contains(event.target as Node)) {
@@ -136,10 +122,18 @@ const AdminSidebar: React.FC = () => {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
+  const currentUser = {
+    username: user?.username || "User",
+    role: "Administrator",
+    // ✅ Fixed TypeScript error: safely access 'name' or fallback to 'username'
+    initial: ((user as any)?.name || user?.username || "U").charAt(0).toUpperCase(),
+    profile_picture: (user as any)?.profile_picture || (user as any)?.avatar,
+  };
+
   return (
     <nav
       style={{
-        width: 248,
+        width: collapsed ? 72 : 248,
         height: "100vh",
         position: "fixed",
         top: 0,
@@ -152,10 +146,10 @@ const AdminSidebar: React.FC = () => {
         zIndex: 50,
         display: "flex",
         flexDirection: "column",
-        justifyContent: "space-between",
         paddingTop: 18,
         paddingBottom: 12,
-        overflowY: "auto",
+        transition: "width 0.3s ease",
+        overflow: "hidden",
       }}
     >
       <style>{`
@@ -175,118 +169,159 @@ const AdminSidebar: React.FC = () => {
         .admin-sidebar-scroll::-webkit-scrollbar-thumb { background: ${colors.creamDark}; border-radius: 10px; }
       `}</style>
 
-      <div>
-        {/* Logo / header */}
+      {/* ✅ Collapse/Expand Arrow Button */}
+      <button
+        onClick={onToggle}
+        style={{
+          position: "absolute",
+          top: 18,
+          [isRTL ? "left" : "right"]: 8,
+          width: 24,
+          height: 24,
+          borderRadius: "50%",
+          border: `1px solid ${colors.forestGreen}`,
+          backgroundColor: colors.creamLight,
+          cursor: "pointer",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          transition: "all 0.2s",
+          zIndex: 60,
+        }}
+        onMouseEnter={(e) => {
+          e.currentTarget.style.backgroundColor = colors.forestGreen;
+          e.currentTarget.style.color = colors.creamLight;
+        }}
+        onMouseLeave={(e) => {
+          e.currentTarget.style.backgroundColor = colors.creamLight;
+          e.currentTarget.style.color = colors.forestGreen;
+        }}
+        title={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+      >
+        <Icon 
+          name={collapsed ? (isRTL ? "arrow_back" : "arrow_forward") : (isRTL ? "arrow_forward" : "arrow_back")} 
+          size={16} 
+        />
+      </button>
+
+      {/* ✅ Logo / header using imported image + Text */}
+      <div style={{ padding: "0 18px", marginBottom: 20 }}>
         <Link
           to="/admin/dashboard"
           style={{
-            padding: "0 18px",
-            marginBottom: 20,
             display: "flex",
             alignItems: "center",
-            gap: 9,
+            justifyContent: collapsed ? "center" : "flex-start",
             textDecoration: "none",
+            gap: 10, // ✅ Adds space between the logo and the text
           }}
         >
-          <div
-            style={{
-              width: 26,
-              height: 26,
-              borderRadius: "50%",
-              border: `1px solid ${colors.forestGreen}`,
-              backgroundColor: colors.forestGreen,
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              color: colors.creamLight,
-              fontFamily: fonts.headline,
-              fontWeight: 700,
-              fontSize: 12,
-              flexShrink: 0,
-            }}
-          >
-            ع
-          </div>
-          <span
-            style={{
-              fontFamily: fonts.headline,
-              fontSize: 18,
-              lineHeight: "24px",
-              fontWeight: 700,
-              color: colors.forestGreen,
-            }}
-          >
-            Oulamnauna
-          </span>
+          <img 
+            src={logoImg} 
+            alt="Oulamnauna Logo" 
+            style={{ 
+              height: collapsed ? 32 : 44, // Scales down smoothly when collapsed
+              width: "auto", 
+              maxWidth: "100%",
+              objectFit: "contain",
+              transition: "height 0.3s ease",
+            }} 
+          />
+          
+          {/* ✅ Text that hides when collapsed */}
+          {!collapsed && (
+            <span
+              style={{
+                fontFamily: fonts.headline,
+                fontSize: 18,
+                lineHeight: "24px",
+                fontWeight: 700,
+                color: colors.forestGreen,
+                whiteSpace: "nowrap",
+                overflow: "hidden",
+              }}
+            >
+              Oulamnauna
+            </span>
+          )}
         </Link>
-
-        {/* Nav groups */}
-        <div className="admin-sidebar-scroll" style={{ display: "flex", flexDirection: "column", gap: 12, padding: "0 8px" }}>
-          {navGroups.map((group, idx) => (
-            <div key={group.sectionKey ?? `group-${idx}`} style={{ marginBottom: idx === navGroups.length - 1 ? "100px" : "0" }}>
-              {group.sectionKey && (
-                <p
-                  style={{
-                    fontFamily: fonts.label,
-                    fontSize: 10,
-                    letterSpacing: "0.05em",
-                    textTransform: "uppercase",
-                    color: colors.forestGreen,
-                    opacity: 0.55,
-                    margin: "0 0 4px",
-                    padding: "0 8px",
-                  }}
-                >
-                  {t(group.sectionKey)}
-                </p>
-              )}
-              <ul style={{ listStyle: "none", display: "flex", flexDirection: "column", gap: 1, margin: 0, padding: 0 }}>
-                {group.links.map((item) => {
-                  const active = location.pathname === item.to || location.pathname.startsWith(item.to + "/");
-                  return (
-                    <li key={item.to}>
-                      <Link
-                        to={item.to}
-                        style={{
-                          display: "flex",
-                          alignItems: "center",
-                          gap: 9,
-                          padding: "7px 9px",
-                          borderRadius: 7,
-                          fontFamily: fonts.body,
-                          fontSize: 13,
-                          textDecoration: "none",
-                          transition: "background-color 0.15s, color 0.15s",
-                          ...(active
-                            ? { backgroundColor: colors.forestGreen, color: colors.creamLight }
-                            : { color: colors.forestGreen }),
-                        }}
-                        onMouseEnter={(e) => {
-                          if (!active) e.currentTarget.style.backgroundColor = colors.creamMid;
-                        }}
-                        onMouseLeave={(e) => {
-                          if (!active) e.currentTarget.style.backgroundColor = "transparent";
-                        }}
-                      >
-                        <Icon name={item.icon} size={16} filled={active} />
-                        <span>{t(item.labelKey)}</span>
-                      </Link>
-                    </li>
-                  );
-                })}
-              </ul>
-            </div>
-          ))}
-        </div>
       </div>
 
-      {/* ✅ User Profile & Dropdown Menu */}
+      {/* Nav groups - SCROLLABLE AREA */}
+      <div className="admin-sidebar-scroll" style={{ flex: 1, overflowY: "auto", padding: "0 8px", marginBottom: 12 }}>
+        {navGroups.map((group, idx) => (
+          <div key={group.sectionKey ?? `group-${idx}`} style={{ marginBottom: 16 }}>
+            {!collapsed && group.sectionKey && (
+              <p
+                style={{
+                  fontFamily: fonts.label,
+                  fontSize: 10,
+                  letterSpacing: "0.05em",
+                  textTransform: "uppercase",
+                  color: colors.forestGreen,
+                  opacity: 0.55,
+                  margin: "0 0 4px",
+                  padding: "0 8px",
+                }}
+              >
+                {t(group.sectionKey)}
+              </p>
+            )}
+            <ul style={{ listStyle: "none", display: "flex", flexDirection: "column", gap: 1, margin: 0, padding: 0 }}>
+              {group.links.map((item) => {
+                const active = location.pathname === item.to || location.pathname.startsWith(item.to + "/");
+                return (
+                  <li key={item.to}>
+                    <Link
+                      to={item.to}
+                      title={collapsed ? t(item.labelKey) : ""}
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 9,
+                        padding: collapsed ? "7px" : "7px 9px",
+                        borderRadius: 7,
+                        fontFamily: fonts.body,
+                        fontSize: 13,
+                        textDecoration: "none",
+                        transition: "background-color 0.15s, color 0.15s",
+                        ...(active
+                          ? { backgroundColor: colors.forestGreen, color: colors.creamLight }
+                          : { color: colors.forestGreen }),
+                        justifyContent: collapsed ? "center" : "flex-start",
+                        whiteSpace: "nowrap",
+                      }}
+                      onMouseEnter={(e) => {
+                        if (!active) e.currentTarget.style.backgroundColor = colors.creamMid;
+                      }}
+                      onMouseLeave={(e) => {
+                        if (!active) e.currentTarget.style.backgroundColor = "transparent";
+                      }}
+                    >
+                      <Icon name={item.icon} size={16} filled={active} />
+                      {!collapsed && (
+                        <span style={{ overflow: "hidden", textOverflow: "ellipsis" }}>
+                          {t(item.labelKey)}
+                        </span>
+                      )}
+                    </Link>
+                  </li>
+                );
+              })}
+            </ul>
+          </div>
+        ))}
+      </div>
+
+      {/* User Profile & Dropdown Menu - STICKY AT BOTTOM */}
       <div 
         ref={profileRef}
         style={{ 
           padding: "12px 18px 0", 
-          borderTop: `1px solid ${colors.forestGreen}`, 
-          position: "relative" 
+          borderTop: `1px solid ${colors.forestGreen}`,
+          backgroundColor: colors.creamLight,
+          zIndex: 10,
+          position: "relative",
         }}
       >
         <button
@@ -301,6 +336,7 @@ const AdminSidebar: React.FC = () => {
             cursor: "pointer",
             padding: 0,
             textAlign: isRTL ? "right" : "left",
+            justifyContent: collapsed ? "center" : "flex-start",
           }}
         >
           <div
@@ -321,36 +357,39 @@ const AdminSidebar: React.FC = () => {
               overflow: "hidden"
             }}
           >
-            {/* ✅ Show real avatar or initial */}
             {currentUser.profile_picture ? (
               <img src={currentUser.profile_picture} alt="Avatar" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
             ) : (
               currentUser.initial
             )}
           </div>
-          <div style={{ display: "flex", flexDirection: "column", flex: 1, minWidth: 0 }}>
-            <span style={{ fontFamily: fonts.body, fontSize: 12, fontWeight: 600, color: colors.forestGreen }}>
-              Hello {currentUser.username}
-            </span>
-            <span style={{ fontFamily: fonts.label, fontSize: 10, color: colors.forestGreen, opacity: 0.7 }}>
-              {currentUser.role}
-            </span>
-          </div>
-          <Icon name={profileOpen ? "expand_less" : "expand_more"} size={16} />
+          {!collapsed && (
+            <>
+              <div style={{ display: "flex", flexDirection: "column", flex: 1, minWidth: 0 }}>
+                <span style={{ fontFamily: fonts.body, fontSize: 12, fontWeight: 600, color: colors.forestGreen }}>
+                  Hello {currentUser.username}
+                </span>
+                <span style={{ fontFamily: fonts.label, fontSize: 10, color: colors.forestGreen, opacity: 0.7 }}>
+                  {currentUser.role}
+                </span>
+              </div>
+              <Icon name={profileOpen ? "expand_less" : "expand_more"} size={16} />
+            </>
+          )}
         </button>
 
+        {/* ✅ Dropdown Menu - Fixed position so it NEVER gets cut off */}
         {profileOpen && (
           <div
             style={{
-              position: "absolute",
-              bottom: "100%",
-              [isRTL ? "right" : "left"]: 18,
+              position: "fixed",
+              bottom: 80,
+              [isRTL ? "right" : "left"]: collapsed ? 80 : 18,
               width: 212,
               backgroundColor: colors.creamLight,
               border: `1px solid ${colors.forestGreen}`,
               borderRadius: 8,
               boxShadow: "0px -4px 20px rgba(11, 67, 53, 0.12)",
-              marginBottom: 8,
               overflow: "hidden",
               zIndex: 100,
             }}
@@ -379,7 +418,6 @@ const AdminSidebar: React.FC = () => {
 
             <div style={{ height: 1, backgroundColor: colors.forestGreen, opacity: 0.1, margin: "4px 0" }} />
 
-            {/* ✅ REAL LOGOUT ACTION */}
             <button
               onClick={() => { 
                 logout(); 

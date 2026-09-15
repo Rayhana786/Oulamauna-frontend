@@ -1,40 +1,667 @@
 {
-  "sidebar": {
-    "brandName": "Oulamauna",
-    "role": "Administrateur du portail",
-    "signOut": "Se déconnecter",
-    "section": {
-      "archives": "Archives & Manuscrits",
-      "engagement": "Engagement",
-      "administration": "Administration"
-    },
-    "dashboard": "Tableau de bord",
-    "scholars": "Savants",
-    "allScholars": "Tous les savants",
-    "addScholar": "Ajouter un savant",
-    "reviewDesk": "Bureau de révision",
-    "newScholars": "Nouveaux savants",
-    "pendingEdits": "Modifications en attente",
-    "mediaVerification": "Vérification des médias",
-    "worksVerification": "Vérification des œuvres",
-    "activeReview": "En cours de révision",
-    "archive": "Archive",
-    "changesRequested": "Modifications demandées",
-    "rejected": "Rejeté",
-    "disciplines": "Disciplines",
-    "communityHub": "Espace communautaire",
-    "allPosts": "Tous les articles",
-    "reported": "Signalés",
-    "userManagement": "Gestion des utilisateurs",
-    "contributors": "Contributeurs",
-    "bannedUsers": "Utilisateurs bannis",
-    "reports": "Rapports",
-    "notifications": "Notifications",
-    "settings": "Paramètres",
-    "translation": "Traduction",
-    "regions": "Régions",
-    "backups": "Sauvegardes"
+ "contact": {
+  "breadcrumb": "ACCUEIL › CONTACT",
+  "title": "Contactez-nous",
+  "description": "Des questions, des suggestions ou vous souhaitez contribuer ? Nous serions ravis de vous entendre.",
+  "info": {
+    "emailLabel": "E-MAIL",
+    "emailValue": "contact@oulamauna.org",
+    "locationLabel": "LIEU",
+    "locationValue": "Algérie",
+    "phoneLabel": "TÉLÉPHONE",
+    "phoneValue": "+213 (0) 000 000 000"
   },
+  "directContact": "Contact direct",
+  "formTitle": "Envoyer un message",
+  "labels": {
+    "name": "NOM",
+    "email": "E-MAIL",
+    "message": "MESSAGE",
+    "btn": "ENVOYER"
+  },
+  "placeholders": {
+    "name": "Nom complet",
+    "email": "exemple@mail.com",
+    "message": "Comment pouvons-nous vous aider ?"
+  },
+  "errors": {
+    "nameEmpty": "Veuillez entrer votre nom.",
+    "emailEmpty": "Veuillez entrer votre adresse e-mail.",
+    "emailInvalid": "Veuillez entrer une adresse e-mail valide.",
+    "messageEmpty": "Veuillez écrire votre message.",
+    "messageShort": "Le message doit contenir au moins 10 caractères."
+  },
+  "sentTitle": "Message envoyé !",
+  "sentSubtitle": "Merci de nous avoir contactés. Nous vous répondrons dans les plus brefs délais.",
+  "sentBack": "ENVOYER UN AUTRE MESSAGE"
+},
+"about": {
+  "breadcrumb": "ACCUEIL › À PROPOS",
+  "title": "À propos",
+  "heroDescription": "Une encyclopédie collaborative et gratuite consacrée aux savants et penseurs de la tradition intellectuelle islamique.",
+  "introLeft": "Oulamauna est né d'un objectif clair : préserver la vie et l'œuvre des savants qui ont façonné la pensée islamique, et rendre ce savoir facile à trouver, à lire et à transmettre.",
+  "introRight": "Portés par des années d'attention apportée à chaque fiche, nos contributeurs sont animés par le respect du savoir et l'amour de la tradition qu'ils documentent.",
+  "whatLabel": "Que faisons-nous ?",
+  "whatBody": "Nous rassemblons biographies, manuscrits et références académiques dans une seule archive multilingue.",
+  "archiveLabel": "Notre archive",
+  "archiveP1": "Chaque fiche réunit la biographie d'un savant, ses œuvres notables et les manuscrits disponibles en un seul endroit — en arabe, en anglais et en français.",
+  "archiveP2": "Pour garantir la fiabilité des fiches, nous demandons aux contributeurs de citer leurs sources, et chaque soumission passe par une relecture avant sa publication.",
+  "accessLabel": "Ouverture",
+  "accessBody": "Chez Oulamauna, l'ouverture est au cœur de notre démarche. Nous croyons que le patrimoine savant doit être facile d'accès et facile à comprendre.",
+  "accessSub": "C'est pourquoi chaque fiche se lit gratuitement en trois langues, pour qu'aucune langue ne limite l'accès au savoir.",
+  "teamLabel": "Nos contributeurs",
+  "teamBody": "Nos contributeurs ne se contentent pas d'ajouter des noms — ce sont des chercheurs et des lecteurs animés d'un profond respect pour la tradition qu'ils documentent. Leur souci des sources et de l'exactitude est ce qui garantit la fiabilité de l'archive.",
+  "exploreLink": "PARCOURIR LES SAVANTS",
+  "ctaLabel": "RESTONS EN CONTACT",
+  "ctaTitle": "Une correction à signaler, un savant à suggérer, ou une question sur l'archive ? Nous serions ravis de vous lire.",
+  "ctaButton": "NOUS CONTACTER"
+},
+"notifications": {
+  "title": "Notifications",
+  "all": "Tout",
+  "unread": "Non lu",
+  "markAllRead": "Marquer tout comme lu",
+  "noNotifications": "Aucune notification",
+  "caughtUp": "Vous êtes à jour !",
+  "willNotify": "Nous vous informerons quand quelque chose se passera.",
+  "new": "Nouveau",
+  "week": "Cette semaine",
+  "earlier": "Plus tôt",
+  "loadMore": "Voir les notifications précédentes",
+  "readMore": "Lire plus",
+  "readLess": "Lire moins",
+  "time": {
+    "justNow": "à l'instant",
+    "minsAgo": "min",
+    "hoursAgo": "h",
+    "daysAgo": "j"
+  }
+},
+"forum": {
+    "pageTitle": "Discussions",
+    "searchPlaceholder": "Rechercher par titre, contenu ou auteur...",
+    "newPostButton": "Nouvelle Discussion",
+    "allDiscussions": "Toutes les Discussions",
+    "categoriesLabel": "Catégories",
+    "sortRecent": "Plus récent",
+    "sortPopular": "Plus populaire",
+    "sortUnanswered": "Sans réponse",
+    "loadMore": "Charger Plus",
+    "noResults": "Aucune discussion ne correspond à vos filtres.",
+    "composerTitle": "Lancer une Discussion",
+    "composerCategoryLabel": "Catégorie",
+    "composerCategoryPlaceholder": "Choisissez une catégorie",
+    "composerTitleLabel": "Titre",
+    "composerTitlePlaceholder": "Quelle est votre question ou votre sujet?",
+    "composerContentLabel": "Contenu",
+    "composerContentPlaceholder": "Partagez des détails, du contexte ou des sources...",
+    "composerCancel": "Annuler",
+    "composerPublish": "Publier",
+    "comments": "Commentaires",
+    "posts": "publications",
+    "report": "Signaler",
+    "reportPost": "Signaler le Post",
+    "confirmReport": "Êtes-vous sûr de vouloir signaler ce post?",
+    "reportReason": "Raison du signalement (optionnel)",
+    "cancel": "Annuler",
+    "submit": "Soumettre",
+    "deletePost": "Supprimer",
+    "confirmDeletePost": "Es-tu sûr(e) de vouloir supprimer ce post ? Cette action est irréversible.",
+    "loadingDiscussions": "Chargement des discussions...",
+    "uncategorized": "Non classé",
+    "anonymous": "Anonyme",
+    "failedToPublish": "Échec de la publication du post.",
+    "reportSubmitted": "Signalement envoyé avec succès.",
+    "failedToReport": "Échec de l'envoi du signalement.",
+    "failedToDelete": "Échec de la suppression du post."
+  },
+  "forumPost": {
+    "backToForum": "Retour aux Discussions",
+    "postedBy": "Publié par",
+    "onDate": "le",
+    "views": "Vues",
+    "comments": "Commentaires",
+    "commentPlaceholder": "Partagez vos pensées...",
+    "postComment": "Publier le Commentaire",
+    "noComments": "Aucun commentaire pour le moment. Soyez le premier à partager vos pensées!",
+    "replyingTo": "Répondre à",
+    "cancelReply": "Annuler",
+    "reply": "Répondre",
+    "loading": "Chargement du post...",
+    "report": "Signaler",
+    "reportPost": "Signaler le Post",
+    "reportComment": "Signaler le Commentaire",
+    "confirmReport": "Êtes-vous sûr de vouloir signaler ceci?",
+    "reportReason": "Raison du signalement (optionnel)",
+    "cancel": "Annuler",
+    "submit": "Soumettre",
+    "fullscreen": "Plein écran",
+    "exitFullscreen": "Quitter le plein écran",
+    "loadMoreComments": "Voir plus de commentaires",
+    "viewReplies": "Voir les réponses",
+    "hideReplies": "Masquer les réponses",
+    "sortNewest": "Plus récent",
+    "sortOldest": "Plus ancien",
+    "deletePost": "Supprimer le Post",
+    "deleteComment": "Supprimer",
+    "confirmDeletePost": "Es-tu sûr(e) de vouloir supprimer ce post ? Cette action est irréversible.",
+    "confirmDeleteComment": "Es-tu sûr(e) de vouloir supprimer ce commentaire ?",
+    "deletedComment": "[Ce commentaire a été supprimé]",
+    "uncategorized": "Non classé",
+    "unknownUser": "Utilisateur inconnu",
+    "postNotFound": "Post introuvable.",
+    "failedToPostComment": "Échec de la publication du commentaire. Veuillez réessayer.",
+    "reportSubmitted": "Signalement envoyé avec succès.",
+    "failedToReport": "Échec de l'envoi du signalement.",
+    "failedToDeletePost": "Échec de la suppression du post.",
+    "failedToDeleteComment": "Échec de la suppression du commentaire.",
+    "time": {
+      "justNow": "à l'instant",
+      "minsAgo": "m",
+      "hoursAgo": "h",
+      "daysAgo": "j"
+    }
+  },
+  "errors": {
+    "server": {
+      "title": "La Patience est une Vertu",
+      "desc": "Notre bibliothèque est en cours de restauration. Veuillez réessayer dans quelques instants.",
+      "button": "RAFRAÎCHIR"
+    },
+    "notFound": {
+      "title": "404",
+      "subtitle": "Page introuvable",
+      "desc": "Les connaissances que vous recherchez ne se trouvent pas dans cette section.",
+      "button": "RETOUR À L'ACCUEIL"
+    },
+    "invalidToken": {
+      "title": "Lien Expiré",
+      "desc": "Ce lien de vérification n'est plus valide. Il a peut-être expiré ou a déjà été utilisé.",
+      "login": "SE CONNECTER À NOUVEAU",
+      "help": "BESOIN D'AIDE ?"
+    },
+    "forbidden": {
+      "title": "Accès Restreint",
+      "desc": "Vous n'avez pas les autorisations nécessaires pour voir cette page.",
+      "button": "Retour à l'accueil"
+    }
+  },
+
+  
+  "login": {
+    "title": "Bon retour",
+    "subtitle": "Entrez vos identifiants pour accéder à votre compte",
+    "emailLabel": "E-mail",
+    "emailPlaceholder": "Entrez votre e-mail",
+    "passwordLabel": "Mot de passe",
+    "passwordPlaceholder": "Entrez votre mot de passe",
+    "forgot": "Mot de passe oublié ?",
+    "button": "Se connecter",
+    "loading": "Connexion en cours...",
+    "google": "Se connecter avec Google",
+    "noAccount": "Pas encore de compte ?",
+    "join": "S'inscrire",
+    "or": "ou",
+    "errEmailEmpty": "E-mail requis",
+    "errEmailInvalid": "E-mail invalide",
+    "errPasswordEmpty": "Mot de passe requis",
+    "errInvalidAuth": "E-mail ou mot de passe incorrect",
+    "errServer": "Échec de la connexion au serveur",
+    "imageTitle": "Préservation du patrimoine scientifique islamique",
+    "imageSubtitle": "Découvrez des siècles de savoir de la part de savants renommés.",
+    "badge1": "Sources vérifiées",
+    "badge2": "Plus de 500 savants"
+  },
+  "register": {
+    "title": "Créer un compte",
+    "subtitle": "Commencez votre voyage avec Oulamauna aujourd'hui",
+    "usernameLabel": "Nom complet",
+    "usernamePlaceholder": "Entrez votre nom complet",
+    "emailLabel": "E-mail",
+    "emailPlaceholder": "Entrez votre e-mail",
+    "passwordLabel": "Mot de passe",
+    "passwordPlaceholder": "Créez un mot de passe",
+    "confirmLabel": "Confirmer le mot de passe",
+    "confirmPlaceholder": "Confirmez votre mot de passe",
+    "button": "S'inscrire",
+    "google": "S'inscrire avec Google",
+    "haveAccount": "Vous avez déjà un compte ?",
+    "signIn": "Se connecter",
+    "or": "ou",
+    "loading": "Création du compte...",
+    "errors": {
+      "usernameEmpty": "Nom complet requis",
+      "emailEmpty": "E-mail requis",
+      "emailInvalid": "E-mail invalide",
+      "passwordEmpty": "Mot de passe requis",
+      "passwordWeak": "Le mot de passe doit contenir au moins 8 caractères avec majuscule, chiffre et symbole",
+      "confirmEmpty": "Veuillez confirmer votre mot de passe",
+      "confirmMatch": "Les mots de passe ne correspondent pas",
+      "server": "Une erreur est survenue. Veuillez réessayer."
+    },
+    "imageTitle": "Rejoignez notre communauté",
+    "imageSubtitle": "Devenez contributeur et aidez à préserver le patrimoine scientifique islamique.",
+    "badge1": "Rejoignez plus de 1000 savants",
+    "badge2": "Sécurisé et vérifié"
+  },
+  
+  "forgotPassword": {
+    "back": "← Retour à la connexion",
+    "title": "Mot de passe oublié ?",
+    "subtitle": "Entrez votre adresse e-mail et nous vous enverrons un lien pour réinitialiser votre mot de passe.",
+    "emailLabel": "ADRESSE E-MAIL",
+    "emailPlaceholder": "scholar@oulamauna.org",
+    "button": "ENVOYER LE LIEN",
+    "sending": "Envoi en cours...",
+    "errEmpty": "Veuillez entrer votre adresse e-mail.",
+    "errInvalid": "Veuillez entrer une adresse e-mail valide.",
+    "errServer": "Échec de la connexion au serveur. Veuillez réessayer.",
+    "sentTitle": "Vérifiez votre boîte de réception",
+    "sentSubtitle": "Nous avons envoyé un lien de réinitialisation à",
+    "sentNote": "Vous ne l'avez pas reçu ? Vérifiez vos spams ou",
+    "sentRetry": "essayez un autre e-mail",
+    "sentBack": "RETOUR À LA CONNEXION"
+  },
+  "resetPassword": {
+    "back": " Retour à la connexion",
+    "title": "Réinitialiser le mot de passe",
+    "subtitle": "Choisissez un nouveau mot de passe pour votre compte.",
+    "passwordLabel": "NOUVEAU MOT DE PASSE",
+    "passwordPlaceholder": "Entrez le nouveau mot de passe",
+    "confirmLabel": "CONFIRMER LE MOT DE PASSE",
+    "confirmPlaceholder": "Confirmez le nouveau mot de passe",
+    "button": "RÉINITIALISER LE MOT DE PASSE",
+    "sending": "Réinitialisation...",
+    "errPasswordEmpty": "Veuillez entrer un nouveau mot de passe.",
+    "errPasswordWeak": "Veuillez satisfaire toutes les exigences du mot de passe.",
+    "errConfirmEmpty": "Veuillez confirmer votre mot de passe.",
+    "errConfirmMatch": "Les mots de passe ne correspondent pas.",
+    "errServer": "Échec de la réinitialisation du mot de passe.",
+    "doneTitle": "Mot de passe mis à jour",
+    "doneSubtitle": "Votre mot de passe a été réinitialisé avec succès. Vous pouvez maintenant vous connecter.",
+    "doneButton": "SE CONNECTER",
+    "invalidToken": "Ce lien de réinitialisation est invalide ou a expiré.",
+    "invalidBack": "Demander un nouveau lien",
+    "checks": {
+      "length": "Au moins 8 caractères",
+      "upper": "Une lettre majuscule",
+      "number": "Un chiffre",
+      "symbol": "Un symbole",
+      "add": "Ajoutez :",
+      "allGood": "Mot de passe fort !"
+    }
+  },
+  "verifyEmail": {
+    "category": "SÉCURITÉ DU COMPTE",
+    "loadingTitle": "Vérification de votre e-mail...",
+    "loadingSubtitle": "Veuillez patienter pendant l'activation de votre compte",
+    "successTitle": "E-mail vérifié !",
+    "successSubtitle": "Votre compte est maintenant actif. Vous serez redirigé vers la connexion sous peu.",
+    "successRedirect": "Redirection vers la connexion",
+    "successBack": "Aller à la connexion maintenant",
+    "successHome": "ou aller à l'accueil",
+    "counting": "dans",
+    "resendPlaceholder": "Entrez votre adresse e-mail",
+    "resendButton": "Envoyer un nouveau lien",
+    "resendSent": "E-mail envoyé ! Vérifiez votre boîte de réception.",
+    "resendErrorEmpty": "Veuillez entrer votre e-mail.",
+    "resendErrorFailed": "Échec de l'envoi. Veuillez réessayer.",
+    "errors": {
+      "no_token": {
+        "title": "Lien manquant",
+        "subtitle": "Aucun jeton de vérification n'a été trouvé. Entrez votre e-mail pour obtenir un nouveau lien.",
+        "backHome": "Retour à l'accueil"
+      },
+      "invalid_token": {
+        "title": "Lien invalide",
+        "subtitle": "Ce lien a déjà été utilisé ou n'est pas reconnu.",
+        "backHome": "Retour à l'accueil",
+        "register": "ou créer un nouveau compte"
+      },
+      "expired_token": {
+        "title": "Lien expiré",
+        "subtitle": "Ce lien a expiré. Entrez votre e-mail pour en recevoir un nouveau.",
+        "backHome": "Retour à l'accueil"
+      },
+      "network": {
+        "title": "Erreur de connexion",
+        "subtitle": "Impossible de joindre le serveur. Veuillez vérifier votre connexion Internet.",
+        "tryAgain": "Réessayer",
+        "backHome": "Retour à l'accueil"
+      },
+      "server": {
+        "title": "Erreur serveur",
+        "subtitle": "Un problème est survenu de notre côté. Veuillez réessayer dans quelques instants.",
+        "tryAgain": "Réessayer",
+        "backHome": "Retour à l'accueil"
+      },
+      "unknown": {
+        "title": "Échec de la vérification",
+        "subtitle": "Une erreur inattendue s'est produite. Veuillez réessayer ou contacter le support.",
+        "backHome": "Retour à l'accueil"
+      }
+    }
+  },
+  "verifyEmailPending": {
+    "category": "SÉCURITÉ DU COMPTE",
+    "title": "Vérifiez votre e-mail",
+    "subtitle": "Un lien de confirmation a été envoyé dans votre boîte de réception.",
+    "alreadyVerifiedTitle": "E-mail déjà vérifié",
+    "alreadyVerifiedSub": "Votre e-mail est déjà confirmé. Vous êtes prêt.",
+    "alreadyVerifiedBack": "Retour",
+    "alreadyVerifiedHome": "ou aller à l'accueil",
+    "cta": "OUVRIR GMAIL",
+    "resend": "RENVOYER LE LIEN",
+    "resentSuccess": "ENVOYÉ",
+    "backToLogin": "RETOUR À LA CONNEXION",
+    "checking": "Vérification de votre statut...",
+    "errorMessage": "Un problème est survenu. Veuillez réessayer."
+  },
+
+ "dashboard": {
+  "title": "TABLEAU DE BORD",
+  "welcome": "Bienvenue",
+  "welcomeUser": "Bienvenue sur votre tableau de bord",
+  "roleLabel": "Rôle",
+  "roleAdmin": "Administrateur",
+  "roleContributor": "Contributeur",
+  "tabs": {
+    "overview": "APERÇU",
+    "submissions": "MES SOUMISSIONS",
+    "media": "MÉDIAS",
+    "works": "ŒUVRES & RÉFÉRENCES",
+    "notifications": "NOTIFICATIONS"
+  },
+  "stats": {
+    "scholars": "Savants",
+    "versions": "Versions",
+    "media": "Médias",
+    "works": "Œuvres"
+  },
+  "overview": {
+    "recentActivity": "Activité récente"
+  },
+  "activity": {
+    "newScholar": "Nouveau savant soumis",
+    "editProposed": "Modification proposée"
+  },
+  "empty": {
+    "recent": "Aucune activité récente",
+    "submissions": "Aucune soumission trouvée",
+    "media": "Aucun média téléchargé pour le moment",
+    "works": "Aucune œuvre ajoutée pour le moment",
+    "notifications": "Aucune notification pour le moment"
+  },
+  "loading": {
+    "submissions": "Chargement des soumissions...",
+    "media": "Chargement des médias...",
+    "works": "Chargement des œuvres..."
+  },
+  "filter": {
+    "all": "Tout",
+    "draft": "Brouillon",
+    "pending": "En attente",
+    "approved": "Approuvé",
+    "rejected": "Rejeté",
+    "superseded": "Remplacé"
+  },
+  "status": {
+    "draft": "BROUILLON",
+    "pending": "EN ATTENTE",
+    "approved": "APPROUVÉ",
+    "rejected": "REJETÉ",
+    "superseded": "REMPLACÉ"
+  },
+  "table": {
+    "type": "Type",
+    "scholar": "Savant",
+    "language": "Langue",
+    "version": "Version",
+    "date": "Date",
+    "status": "Statut",
+    "actions": "Actions",
+    "file": "Fichier",
+    "title": "Titre"
+  },
+  "actions": {
+    "view": "Voir",
+    "edit": "Modifier",
+    "delete": "Supprimer",
+    "continue": "Continuer",
+    "newScholar": "Nouveau Savant +",
+    "viewFile": "VOIR LE FICHIER",
+    "download": "TÉLÉCHARGER",
+    "openLink": "OUVRIR LE LIEN",
+    "viewOnScholarPage": "VOIR SUR LA PAGE DU SAVANT"
+  },
+  "confirm": {
+    "deleteDraft": "Êtes-vous sûr de vouloir supprimer définitivement ce brouillon ?",
+    "deleteRejected": "Êtes-vous sûr de vouloir supprimer définitivement cette soumission rejetée ?"
+  },
+  "success": {
+    "draftDeleted": "Brouillon supprimé avec succès !",
+    "rejectedDeleted": "Soumission rejetée supprimée avec succès !"
+  },
+  "error": {
+    "deleteDraft": "Échec de la suppression du brouillon. Veuillez réessayer.",
+    "deleteRejected": "Échec de la suppression. Veuillez réessayer."
+  },
+  "cta": {
+    "title": "Prêt à contribuer ?",
+    "desc": "Commencez à ajouter des savants, des œuvres et des médias à la plateforme.",
+    "button": "Nouvelle Soumission"
+  },
+  "media": {
+    "tempNote": "La gestion des médias arrive bientôt."
+  },
+  "scholarInfo": {
+    "region": "Région",
+    "dates": "Dates",
+    "alsoKnownAs": "Aussi connu sous le nom de"
+  },
+  "banner": {
+    "pendingDesc": "Un administrateur examine actuellement cette soumission.",
+    "supersededDesc": "Cette version a été remplacée par une version approuvée plus récente.",
+    "draftDesc": "Cet élément n'a pas encore été soumis pour examen.",
+    "pendingItemDesc": "Un administrateur examine actuellement cet élément.",
+    "approvedDesc": "Cet élément est en ligne sur la page du savant.",
+    "rejectedDesc": "Cet élément n'a pas été approuvé.",
+    "supersededItemDesc": "Cet élément a été remplacé par une version plus récente."
+  },
+  "biography": "Biographie",
+  "loadingDetails": "Chargement des détails...",
+  "errorLoadData": "Échec du chargement des données.",
+  "untitledSubmission": "Soumission sans titre",
+  "newScholarSubmission": "Nouvelle soumission de savant",
+  "editProposal": "Proposition de modification",
+  "submitted": "Soumis le",
+  "noFileAttached": "Aucun fichier joint.",
+  "pagination": {
+    "previous": "Précédent",
+    "next": "Suivant"
+  },
+  "kind": {
+    "new": "Nouveau",
+    "edit": "Modification"
+  },
+  "unknownScholar": "Savant inconnu",
+  "unknown": "Inconnu",
+  "untitled": "Sans titre"
+},
+  "editProfile": {
+    "loading": "Chargement du profil...",
+    "title": "MODIFIER LE PROFIL",
+    "success": "Profil mis à jour avec succès !",
+    "error": {
+      "load": "Échec du chargement des données du profil.",
+      "update": "Échec de la mise à jour du profil.",
+      "general": "Une erreur s'est produite lors de l'enregistrement."
+    },
+    "newImageSelected": "Nouvelle image sélectionnée",
+    "changePicture": "Changer la photo de profil",
+    "roleAdmin": "Administrateur",
+    "roleUser": "Utilisateur",
+    "roleContributor": "Contributeur",
+    "statusBrowsing": "Navigation",
+    "statusContributing": "Contribution",
+    "newImageReady": "Nouvelle image prête à être enregistrée",
+    "personalInfo": "Informations personnelles",
+    "displayName": "Nom d'affichage",
+    "username": "Nom d'utilisateur",
+    "email": "E-mail",
+    "bio": "Biographie",
+    "links": "Liens",
+    "linksHint": "Ajoutez vos liens de réseaux sociaux ou de site web personnel.",
+    "linkPlaceholder": "https://...",
+    "addLink": "Ajouter un lien",
+    "cancel": "Annuler",
+    "saving": "Enregistrement...",
+    "saveProfile": "Enregistrer le profil"
+  },
+  "settings": {
+    "loading": "Chargement des paramètres...",
+    "errorLoad": "Échec du chargement des paramètres.",
+    "errorUpdate": "Échec de la mise à jour des paramètres. Veuillez réessayer.",
+    "errorDeactivate": "Échec de la désactivation du compte.",
+    "errorDelete": "Échec de la suppression du compte.",
+    "saved": "ENREGISTRÉ",
+    "processing": "Traitement en cours...",
+    "cancel": "Annuler",
+    "title": "Paramètres du compte",
+    "desc": "Gérez vos préférences, votre confidentialité et le statut de votre compte.",
+    "language": "Langue",
+    "preferredLanguage": "Langue préférée",
+    "notifications": "Notifications",
+    "enableNotifications": "Activer les notifications",
+    "notificationsDesc": "Recevez des notifications globales concernant votre compte et vos contributions.",
+    "privacy": "Confidentialité",
+    "profileVisibility": "Visibilité du profil",
+    "visibilityPublic": "Public",
+    "visibilityRegistered": "Utilisateurs enregistrés uniquement",
+    "visibilityPrivate": "Privé",
+    "showEmail": "Afficher l'e-mail",
+    "showEmailDesc": "Afficher votre adresse e-mail sur votre profil public.",
+    "showContributions": "Afficher les contributions",
+    "showContributionsDesc": "Afficher l'historique de vos contributions sur votre profil public.",
+    "accountManagement": "Gestion du compte",
+    "deactivateAccount": "Désactiver le compte",
+    "deactivateAccountDesc": "Désactivez temporairement votre compte. Vous pouvez le réactiver en vous reconnectant.",
+    "deactivate": "Désactiver",
+    "deactivateConfirmMessage": "Êtes-vous sûr de vouloir désactiver votre compte ? Vos données seront conservées et vous pourrez le réactiver à tout moment en vous reconnectant.",
+    "deleteAccount": "Supprimer le compte",
+    "deleteAccountDesc": "Anonymisez définitivement votre compte. Cette action est irréversible.",
+    "deleteAccountWarning": "Cette action est irréversible. Votre compte sera anonymisé, votre mot de passe sera détruit et vous ne pourrez plus vous connecter. Vos contributions passées resteront visibles sous un nom d'utilisateur anonymisé.",
+    "typeDeleteToConfirm": "Tapez DELETE pour confirmer :",
+    "deleteAccountConfirm": "Supprimer le compte"
+  },
+   "logout": {
+    "confirmMessage": "Êtes-vous sûr de vouloir vous déconnecter ? Les modifications non enregistrées seront perdues.",
+    "cancel": "Annuler",
+    "confirm": "Se déconnecter"
+  }, 
+  "footer": {
+    "tagline": "Dédié à la Préservation du Patrimoine Savant Islamique",
+    "quickLinks": "Liens Rapides",
+    "about": "À Propos",
+    "scholars": "Savants",
+    "works": "Œuvres et Manuscrits",
+    "disciplines": "Disciplines",
+    "resources": "Ressources",
+    "forum": "Forum",
+    "faq": "FAQ",
+    "privacy": "Politique de Confidentialité",
+    "contact": "Contact",
+    "address": "Alger, Algérie",
+    "email": "contact@oulamauna.com",
+    "phone": "+213 (0) XX XX XX XX",
+    "copyright": "© 2026 Oulamauna. Tous droits réservés.",
+    "terms": "Conditions d'Utilisation",
+    "privacyLink": "Confidentialité"
+  },
+    "hero": {
+    "tagline": "BIENVENUE SUR OULAMAUNA",
+    "title": "Découvrez les Savants qui ont Façonné la Pensée Islamique",
+    "subtitle": "Explorez des siècles de savoir, de l'époque classique aux temps modernes. Biographies vérifiées, œuvres originales et archives de manuscrits — tout en un seul endroit.",
+    "exploreButton": "Commencer l'exploration"
+  },
+
+    "sidebar": {
+    "dashboard": "Tableau de bord",
+    "editProfile": "Modifier le profil",
+    "settings": "Paramètres",
+    "signOut": "Déconnexion",
+    "profileCompletion": "Complétion du profil",
+    "completeHint": "Ajoutez plus de détails pour augmenter votre visibilité.",
+    "links": "Liens"
+  },
+  "profileMenu": {
+    "dashboard": "Tableau de bord",
+    "editProfile": "Modifier le profil",
+    "settings": "Paramètres",
+    "logout": "Déconnexion",
+    "ariaLabel": "Menu de profil"
+  },
+    "profile": {
+    "loading": "Chargement du profil...",
+    "roleUser": "Utilisateur",
+    "roleAdmin": "Administrateur",
+    "roleContributor": "Contributeur",
+    "joined": "Inscrit le",
+    "stats": {
+      "contributions": "Contributions",
+      "forumPosts": "Messages du forum",
+      "contribs": "Contribs",
+      "forum": "Forum"
+    },
+    "activityTitle": "ACTIVITÉ",
+    "activity": {
+      "recentContributions": "Contributions récentes",
+      "hiddenContributions": "Cet utilisateur a masqué ses contributions.",
+      "noContributions": "Aucune contribution pour le moment.",
+      "forumActivity": "Activité du forum",
+      "noForumActivity": "Aucune activité sur le forum pour le moment."
+    },
+    "contributionTag": {
+      "annotation": "Annotation",
+      "translation": "Traduction",
+      "media": "Média",
+      "research": "Recherche"
+    },
+    "contribution": {
+      "untitled": "Sans titre",
+      "mediaUpload": "Téléchargement de média",
+      "newEdition": "Nouvelle édition",
+      "work": "Œuvre",
+      "submission": "soumission",
+      "newScholarEntry": "Nouvelle entrée de savant"
+    },
+    "forum": {
+      "general": "Général"
+    },
+    "reply": "réponse",
+    "replies": "réponses",
+    "status": {
+      "deleted": "Ce compte a été supprimé",
+      "banned": "Ce compte a été suspendu",
+      "deactivated": "Ce compte est désactivé",
+      "private": "Ce profil est privé",
+      "registeredOnly": "Connectez-vous pour voir ce profil"
+    },
+    "loginRequired": {
+      "title": "Vous devez vous connecter",
+      "desc": "Connectez-vous pour voir et gérer votre profil.",
+      "button": "Se connecter"
+    },
+    "error": {
+      "notFound": {
+        "title": "Profil introuvable",
+        "desc": "Aucun profil n'existe pour cet identifiant."
+      },
+      "general": "Erreur lors du chargement du profil",
+      "generalDesc": "Veuillez réessayer plus tard."
+    }
+  },
+
   "navbar": {
     "dashboard": "Tableau de bord",
     "searchPlaceholder": "Rechercher dans les archives...",
@@ -57,108 +684,7 @@
       "reportedSub": "Un utilisateur a signalé une traduction"
     }
   },
-  "dashboard": {
-    "header": {
-      "eyebrow": "OULAMAUNA · ADMIN",
-      "title": "Vue d'ensemble administrative",
-      "subtitle": "Révisez les soumissions, surveillez la santé de la plateforme et gérez les archives savantes."
-    },
-    "stat": {
-      "scholars": "Savants enregistrés",
-      "scholarsSub": "+12 ajoutés ce mois",
-      "works": "Œuvres archivées",
-      "worksSub": "98 % d'intégrité des données",
-      "pending": "En attente de révision",
-      "pendingSub": "12 éléments prioritaires",
-      "contributors": "Contributeurs",
-      "contributorsSub": "Comptes académiques actifs"
-    },
-    "chart": {
-      "eyebrow": "ACTIVITÉ DES MANUSCRITS",
-      "title": "Soumissions dans le temps",
-      "hijri": "HÉGIRIEN",
-      "gregorian": "GRÉGORIEN"
-    },
-    "month": {
-      "muharram": "Muh.",
-      "safar": "Saf.",
-      "rabiI": "Rab. I",
-      "rabiII": "Rab. II",
-      "jumadaI": "Jum. I",
-      "jumadaII": "Jum. II",
-      "rajab": "Raj."
-    },
-    "review": {
-      "eyebrow": "FILE DE RÉVISION",
-      "reports": "Contenu signalé",
-      "blogFlag": "Articles de blog signalés",
-      "notifs": "Notifications",
-      "viewAll": "Voir tout en attente"
-    },
-    "cat": {
-      "eyebrow": "DISCIPLINES",
-      "title": "Savants par spécialisation",
-      "fiqh": "Fiqh (Droit islamique)",
-      "hadith": "Sciences du Hadith",
-      "tafsir": "Exégèse coranique",
-      "usul": "Usul al-Fiqh",
-      "tasawwuf": "Soufisme",
-      "nahw": "Grammaire arabe"
-    },
-    "century": {
-      "eyebrow": "CHRONOLOGIE",
-      "title": "Savants par siècle hégirien",
-      "label": "Siècles hégiriens (I – X)",
-      "scholars": "savants"
-    },
-    "region": {
-      "eyebrow": "RÉGIONS",
-      "maghreb": "Maghreb",
-      "mashriq": "Machreq",
-      "andalus": "Andalousie",
-      "other": "Autre"
-    },
-    "activity": {
-      "eyebrow": "ACTIVITÉ RÉCENTE",
-      "viewAll": "Voir tout",
-      "duplicateBio": "Profil en double",
-      "duplicateBioSub": "Sujet : Ibn Taymiyya",
-      "newTranslation": "Nouveau brouillon de traduction",
-      "newTranslationSub": "Œuvre : Al-Muqaddimah",
-      "newContributor": "Nouvelle demande de contributeur",
-      "newContributorSub": "Utilisateur : dr_fatima_a",
-      "contentReported": "Contenu signalé",
-      "contentReportedSub": "Article signalé par 2 utilisateurs",
-      "time2m": "Il y a 2 min",
-      "time3h": "Il y a 3 h",
-      "time8h": "Il y a 8 h",
-      "timeYesterday": "Hier"
-    },
-    "badge": {
-      "urgent": "Haute priorité",
-      "pending": "En cours de révision",
-      "requestAccess": "Demande d'accès",
-      "review": "À réviser"
-    },
-    "quick": {
-      "eyebrow": "ACTIONS RAPIDES",
-      "addScholar": "Ajouter un savant",
-      "reviewPending": "Réviser les en attente",
-      "moderateForum": "Modérer le forum",
-      "manageUsers": "Gérer les utilisateurs",
-      "viewReports": "Voir les rapports",
-      "systemSettings": "Paramètres système"
-    },
-    "health": {
-      "eyebrow": "SANTÉ DE LA PLATEFORME",
-      "backup": "Sauvegarde OK",
-      "search": "Recherche OK",
-      "media": "Médias OK",
-      "email": "Erreur e-mail",
-      "lastBackup": "Dernière sauvegarde",
-      "lastBackupValue": "Aujourd'hui, 03:00"
-    }
-  },
+  
   "scholars": {
     "newScholars": {
       "title": "Nouveaux savants",
@@ -566,7 +1092,7 @@
   "previewFormatting": "Aperçu de la mise en forme",
   "biography": "Biographie",
   "biographyHint": "Utilisez [[Nom du savant]] pour lier les mentions à d'autres profils. Séparez les paragraphes par une ligne vide.",
-  "startTranslation": "Démarrer la traduction française →",
+  "startTranslation": "Démarrer la traduction française ",
   "notStarted": "Cette page n'a pas encore été contribuée en français.",
   "academicContext": "Contexte académique",
   "teachers": "Professeurs / Lignée intellectuelle",
@@ -649,7 +1175,7 @@
   "cancel": "ANNULER",
   "send": "ENVOYER",
   "noWorksYet": "Aucune œuvre ajoutée pour le moment.",
-  "addFirstWork": "Ajouter la première œuvre →",
+  "addFirstWork": "Ajouter la première œuvre ",
   "addWorkModalTitle": "Ajouter une nouvelle œuvre",
   "addMediaModalTitle": "Ajouter un média",
   "titleRequired": "TITRE *",
@@ -860,188 +1386,7 @@
     "next": "SUIVANT",
     "submit": "SOUMETTRE POUR EXAMEN"
   }
-},
-"editProfile": {
-  "myProfile": "Mon Profil",
-  "dashboard": "Tableau de bord",
-  "editProfile": "Modifier le profil",
-  "settings": "Paramètres",
-  "signOut": "Se déconnecter",
-  "personalInfo": "Informations personnelles",
-  "displayName": "Nom d'affichage",
-  "username": "Nom d'utilisateur (Requis)",
-  "fullName": "Nom complet",
-  "email": "E-mail (Requis)",
-  "bio": "Bio",
-  "country": "Pays",
-  "links": "Liens",
-  "linksHint": "Ajoutez des liens vers Facebook, Instagram, ou toute autre page.",
-  "linkPlaceholder": "https://facebook.com/yourname",
-  "addLink": "Ajouter un lien",
-  "cancel": "Annuler",
-  "saveChanges": "Enregistrer",
-  "saved": "Enregistré !",
-  "discard": "Annuler les modifications",
-  "saveProfile": "Enregistrer le profil",
-  "profileUpdated": "Profil mis à jour !",
-  "profileCompletion": "Complétion du profil",
-  "completeHint": "Complétez votre profil pour débloquer plus de fonctionnalités.",
-  "becomeContributor": "Devenir contributeur",
-  "upgradeHint": "Soumettez une nouvelle page savante pour améliorer votre statut.",
-  "upgradeNow": "Mettre à niveau",
-  "contributing": "Contribuer aux pages savantes",
-  "browsing": "Parcourir les archives",
-  "user": "Utilisateur",
-  "contributor": "Contributeur"
-},
-"dashboard": {
-  "welcome": "Bienvenue",
-  "roleLabel": "Rôle",
-  "roleContributor": "CONTRIBUTEUR",
-  "welcomeUser": "Bienvenue dans votre espace OULAMAUNA.",
-  "tabs": {
-    "overview": "APERÇU",
-    "notifications": "NOTIFICATIONS",
-    "watchlist": "SUIVIS",
-    "submissions": "MES SOUMISSIONS",
-    "media": "MÉDIAS",
-    "works": "ŒUVRES & RÉFÉRENCES"
-  },
-  "stats": {
-    "scholars": "Érudits soumis",
-    "versions": "Versions soumises",
-    "media": "Médias soumis",
-    "works": "Œuvres / réf. soumises"
-  },
-  "overview": {
-    "profileTitle": "Mon profil",
-    "profileDesc": "Voir et modifier les détails de votre profil.",
-    "watchlistTitle": "Ma liste de suivi",
-    "watchlistDesc": "Les érudits que vous suivez.",
-    "notificationsTitle": "Notifications récentes",
-    "notificationsDesc": "Rien de nouveau pour le moment.",
-    "recentActivity": "Activité récente"
-  },
-  "cta": {
-    "title": "Contribuer à OULAMAUNA",
-    "desc": "Aidez à préserver et enrichir notre encyclopédie savante.",
-    "button": "SOUMETTRE UN ÉRUDIT"
-  },
-  "table": {
-    "type": "Type",
-    "scholar": "Érudit",
-    "language": "Langue",
-    "version": "Version",
-    "date": "Date",
-    "status": "Statut",
-    "actions": "Actions",
-    "file": "Fichier",
-    "title": "Titre"
-  },
-  "status": {
-    "draft": "BROUILLON",
-    "pending": "EN ATTENTE",
-    "approved": "APPROUVÉ",
-    "rejected": "REJETÉ"
-  },
-  "kind": {
-    "new": "Nouvel érudit",
-    "edit": "Modification"
-  },
-  "filter": {
-    "all": "Tous"
-  },
-  "actions": {
-    "newScholar": "Nouvel érudit",
-    "editExisting": "Modifier existant",
-    "continue": "Continuer",
-    "delete": "Supprimer",
-    "view": "Voir",
-    "history": "Historique",
-    "resubmit": "Modifier et resoumettre"
-  },
-  "media": {
-    "addButton": "AJOUTER UN MÉDIA",
-    "tempNote": "Données temporaires — l'API pour les médias utilisateur n'est pas encore disponible."
-  },
-  "works": {
-    "addButton": "AJOUTER UNE ŒUVRE / RÉFÉRENCE"
-  },
-  "empty": {
-    "submissions": "Aucune soumission pour l'instant. Commencez un nouvel érudit ou modifiez-en un existant.",
-    "media": "Aucun média soumis pour l'instant.",
-    "works": "Aucune œuvre ou référence soumise pour l'instant.",
-    "notifications": "Vous êtes à jour.",
-    "watchlist": "Vous ne suivez aucun érudit pour l'instant."
-  }
-},
-"settings": {
-  "title": "Paramètres",
-  "subtitle": "Gérez votre compte et vos préférences OULAMAUNA.",
-  "common": { "cancel": "Annuler", "save": "Enregistrer", "saving": "Enregistrement…" },
-  "language": {
-    "title": "Langue & Interface",
-    "language": "Langue"
-  },
-  "notif": {
-    "title": "Préférences de notification",
-    "email": "Notifications par e-mail",
-    "emailDesc": "Recevoir des notifications par e-mail.",
-    "commentReply": "Notifications de commentaires & réponses",
-    "commentReplyDesc": "Quand quelqu'un interagit avec vos commentaires.",
-    "discussion": "Notifications de discussion",
-    "discussionDesc": "Activité liée à vos discussions.",
-    "system": "Notifications système",
-    "systemDesc": "Annonces importantes de la plateforme.",
-    "contributorTitle": "Notifications de contributeur",
-    "contribApproved": "Soumission approuvée",
-    "contribRejected": "Soumission rejetée",
-    "contribChanges": "Soumission nécessitant des modifications",
-    "contribTranslation": "Traduction révisée",
-    "contribStatus": "Changement de statut de contribution"
-  },
-  "privacy": {
-    "title": "Confidentialité",
-    "visibility": "Visibilité du profil",
-    "visibilityPublic": "Public",
-    "visibilityRegistered": "Utilisateurs inscrits uniquement",
-    "showEmail": "Afficher mon e-mail sur mon profil public",
-    "showEmailDesc": "Désactivé par défaut.",
-    "showActivity": "Afficher mon activité sur mon profil",
-    "showContributions": "Afficher mes contributions sur mon profil",
-    "showContributionsDesc": "Contrôle uniquement la visibilité publique — les administrateurs voient toujours vos contributions.",
-    "adminNote": "Les administrateurs conservent un accès complet aux registres de contribution, quels que soient ces réglages, à des fins de traçabilité éditoriale."
-  },
-  "security": {
-    "title": "Sécurité",
-    "password": "Mot de passe",
-    "changePassword": "Changer le mot de passe",
-    "pwCurrent": "Mot de passe actuel",
-    "pwNew": "Nouveau mot de passe",
-    "pwConfirm": "Confirmer le nouveau mot de passe",
-    "pwErrorCurrent": "Saisissez votre mot de passe actuel.",
-    "pwErrorLength": "Le nouveau mot de passe doit contenir au moins 8 caractères.",
-    "pwErrorMatch": "Le nouveau mot de passe et la confirmation ne correspondent pas.",
-    "pwSuccess": "Mot de passe mis à jour avec succès.",
-    "emailVerification": "Vérification de l'e-mail",
-    "verified": "Vérifié",
-    "notVerified": "Non vérifié",
-    "resend": "Renvoyer l'e-mail de vérification",
-    "resendSent": "Envoyé !"
-  },
-  "account": {
-    "title": "Compte",
-    "deactivate": "Désactiver le compte",
-    "deactivateDesc": "Désactivez temporairement votre compte. Vous pourrez le réactiver plus tard.",
-    "deactivateTitle": "Désactiver votre compte ?",
-    "deactivateWarning": "Votre profil et vos contributions seront masqués jusqu'à ce que vous vous reconnectiez pour réactiver.",
-    "deactivateConfirm": "Désactiver",
-    "deleteTitle": "Supprimer le compte",
-    "deleteDesc": "Supprimer définitivement votre compte et vos données associées.",
-    "deleteWarning": "Cette action peut être permanente et irréversible. Toutes vos données personnelles seront supprimées conformément à notre politique de données.",
-    "deleteTypeConfirm": "Tapez DELETE pour confirmer",
-    "deleteConfirm": "Supprimer mon compte"
-  }
 }
+
 
 }

@@ -1,72 +1,11 @@
 // src/components/Footer.tsx
 import { Link } from "react-router-dom";
 import { useLang } from "../context/LanguageContext";
+import logoImg from "../assets/logo.png";
 
 export default function Footer() {
-  const { lang } = useLang();
-  const isRTL = lang === "AR";
-
-  const footerContent = {
-    EN: {
-      tagline: "Dedicated to Islamic Scholarly Preservation",
-      quickLinks: "Quick Links",
-      about: "About Us",
-      scholars: "Scholars",
-      works: "Works & Manuscripts",
-      disciplines: "Disciplines",
-      resources: "Resources",
-      forum: "Forum",
-      faq: "FAQ",
-      privacy: "Privacy Policy",
-      contact: "Contact",
-      address: "Algiers, Algeria",
-      email: "contact@oulamauna.com",
-      phone: "+213 (0) XX XX XX XX",
-      copyright: "© 2026 Oulamauna. All rights reserved.",
-      terms: "Terms of Use",
-      privacyLink: "Privacy",
-    },
-    AR: {
-      tagline: "مكرس للحفاظ على التراث العلمي الإسلامي",
-      quickLinks: "روابط سريعة",
-      about: "من نحن",
-      scholars: "العلماء",
-      works: "الأعمال والمخطوطات",
-      disciplines: "التخصصات",
-      resources: "الموارد",
-      forum: "المنتدى",
-      faq: "الأسئلة الشائعة",
-      privacy: "سياسة الخصوصية",
-      contact: "اتصل بنا",
-      address: "الجزائر العاصمة، الجزائر",
-      email: "contact@oulamauna.com",
-      phone: "+213 (0) XX XX XX XX",
-      copyright: "© 2026 علماؤنا. جميع الحقوق محفوظة.",
-      terms: "شروط الاستخدام",
-      privacyLink: "الخصوصية",
-    },
-    FR: {
-      tagline: "Dédié à la Préservation du Patrimoine Savant Islamique",
-      quickLinks: "Liens Rapides",
-      about: "À Propos",
-      scholars: "Savants",
-      works: "Œuvres et Manuscrits",
-      disciplines: "Disciplines",
-      resources: "Ressources",
-      forum: "Forum",
-      faq: "FAQ",
-      privacy: "Politique de Confidentialité",
-      contact: "Contact",
-      address: "Alger, Algérie",
-      email: "contact@oulamauna.com",
-      phone: "+213 (0) XX XX XX XX",
-      copyright: "© 2026 Oulamauna. Tous droits réservés.",
-      terms: "Conditions d'Utilisation",
-      privacyLink: "Confidentialité",
-    },
-  };
-
-  const t = footerContent[lang as keyof typeof footerContent] || footerContent.EN;
+  const { lang, t } = useLang();
+  const isRTL = lang === "AR"; 
 
   // Real SVG Icons for Social Media
   const socialIcons = {
@@ -93,21 +32,29 @@ export default function Footer() {
   };
 
   return (
-    // ✅ Added dir={isRTL ? "rtl" : "ltr"} for proper Arabic layout alignment
     <footer className="bg-[#F5F3EC] border-t border-[#1e4d3a]/10" dir={isRTL ? "rtl" : "ltr"}>
       <div className="max-w-[1280px] mx-auto px-[20px] md:px-[64px] py-16">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-12">
           
-          {/* Brand Section */}
+          {/* ✅ Brand Section with Logo */}
           <div className="md:col-span-1">
-            <h3 className="font-['Hanken_Grotesk'] text-3xl font-bold text-[#1e4d3a] mb-3">
-              Oulamauna
-            </h3>
-            <p className="font-['Inter'] text-[14px] text-[#1e4d3a]/70 leading-relaxed mb-6">
-              {t.tagline}
+            <div className="flex items-center gap-3 mb-3">
+              <img 
+                src={logoImg} 
+                alt="Oulamauna Logo" 
+                className="h-10 w-auto object-contain" 
+              />
+              {/* ✅ Dynamically switches text based on language */}
+              <h3 className={`text-3xl font-bold text-[#1e4d3a] ${isRTL ? "font-['Amiri']" : "font-['Hanken_Grotesk']"}`}>
+                {isRTL ? "علماؤنا" : "Oulamauna"}
+              </h3>
+            </div>
+            
+            <p className={`text-[14px] text-[#1e4d3a]/70 leading-relaxed mb-6 ${isRTL ? "font-['Amiri']" : "font-['Inter']"}`}>
+              {t('footer.tagline')}
             </p>
             
-            {/* Social Media Icons - Real SVGs */}
+            {/* Social Media Icons */}
             <div className="flex gap-3">
               {[
                 { name: 'facebook', label: 'Facebook' },
@@ -133,20 +80,20 @@ export default function Footer() {
 
           {/* Quick Links */}
           <div>
-            <h4 className="font-['Hanken_Grotesk'] text-xl font-bold text-[#1e4d3a] mb-6">
-              {t.quickLinks}
+            <h4 className={`text-xl font-bold text-[#1e4d3a] mb-6 ${isRTL ? "font-['Amiri']" : "font-['Hanken_Grotesk']"}`}>
+              {t('footer.quickLinks')}
             </h4>
             <ul className="space-y-3">
               {[
-                { label: t.about, path: "/about" },
-                { label: t.scholars, path: "/scholars" },
-                { label: t.works, path: "/#works" },
-                { label: t.disciplines, path: "/#disciplines" },
-              ].map((link) => (
-                <li key={link.label}>
+                { label: t('footer.about'), path: "/about" },
+                { label: t('footer.scholars'), path: "/scholars" },
+                { label: t('footer.works'), path: "/#works" },
+                { label: t('footer.disciplines'), path: "/#disciplines" },
+              ].map((link, index) => (
+                <li key={index}>
                   <Link
                     to={link.path}
-                    className="font-['Inter'] text-[15px] text-[#1e4d3a]/70 hover:text-[#1e4d3a] transition-colors"
+                    className={`text-[15px] text-[#1e4d3a]/70 hover:text-[#1e4d3a] transition-colors ${isRTL ? "font-['Amiri']" : "font-['Inter']"}`}
                   >
                     {link.label}
                   </Link>
@@ -157,19 +104,19 @@ export default function Footer() {
 
           {/* Resources */}
           <div>
-            <h4 className="font-['Hanken_Grotesk'] text-xl font-bold text-[#1e4d3a] mb-6">
-              {t.resources}
+            <h4 className={`text-xl font-bold text-[#1e4d3a] mb-6 ${isRTL ? "font-['Amiri']" : "font-['Hanken_Grotesk']"}`}>
+              {t('footer.resources')}
             </h4>
             <ul className="space-y-3">
               {[
-                { label: t.forum, path: "/forum" },
-                { label: t.faq, path: "/faq" },
-                { label: t.privacy, path: "/privacy" },
-              ].map((link) => (
-                <li key={link.label}>
+                { label: t('footer.forum'), path: "/forum" },
+                { label: t('footer.faq'), path: "/faq" },
+                { label: t('footer.privacy'), path: "/privacy" },
+              ].map((link, index) => (
+                <li key={index}>
                   <Link
                     to={link.path}
-                    className="font-['Inter'] text-[15px] text-[#1e4d3a]/70 hover:text-[#1e4d3a] transition-colors"
+                    className={`text-[15px] text-[#1e4d3a]/70 hover:text-[#1e4d3a] transition-colors ${isRTL ? "font-['Amiri']" : "font-['Inter']"}`}
                   >
                     {link.label}
                   </Link>
@@ -180,26 +127,26 @@ export default function Footer() {
 
           {/* Contact */}
           <div>
-            <h4 className="font-['Hanken_Grotesk'] text-xl font-bold text-[#1e4d3a] mb-6">
-              {t.contact}
+            <h4 className={`text-xl font-bold text-[#1e4d3a] mb-6 ${isRTL ? "font-['Amiri']" : "font-['Hanken_Grotesk']"}`}>
+              {t('footer.contact')}
             </h4>
             <ul className="space-y-4">
               <li className="flex items-center gap-3">
                 <span className="material-symbols-outlined text-[#1e4d3a] text-2xl">location_on</span>
-                <span className="font-['Inter'] text-[15px] text-[#1e4d3a]/70">
-                  {t.address}
+                <span className={`text-[15px] text-[#1e4d3a]/70 ${isRTL ? "font-['Amiri']" : "font-['Inter']"}`}>
+                  {t('footer.address')}
                 </span>
               </li>
               <li className="flex items-center gap-3">
                 <span className="material-symbols-outlined text-[#1e4d3a] text-2xl">mail</span>
-                <a href={`mailto:${t.email}`} className="font-['Inter'] text-[15px] text-[#1e4d3a]/70 hover:text-[#1e4d3a] transition-colors">
-                  {t.email}
+                <a href={`mailto:${t('footer.email')}`} className={`text-[15px] text-[#1e4d3a]/70 hover:text-[#1e4d3a] transition-colors ${isRTL ? "font-['Amiri']" : "font-['Inter']"}`}>
+                  {t('footer.email')}
                 </a>
               </li>
               <li className="flex items-center gap-3">
                 <span className="material-symbols-outlined text-[#1e4d3a] text-2xl">phone</span>
-                <span className="font-['Inter'] text-[15px] text-[#1e4d3a]/70">
-                  {t.phone}
+                <span className={`text-[15px] text-[#1e4d3a]/70 ${isRTL ? "font-['Amiri']" : "font-['Inter']"}`}>
+                  {t('footer.phone')}
                 </span>
               </li>
             </ul>
@@ -209,15 +156,15 @@ export default function Footer() {
         {/* Bottom Bar */}
         <div className="mt-12 pt-8 border-t border-[#1e4d3a]/10">
           <div className="flex flex-col md:flex-row justify-between items-center gap-4">
-            <p className="font-['Inter'] text-[13px] text-[#1e4d3a]/60">
-              {t.copyright}
+            <p className={`text-[13px] text-[#1e4d3a]/60 ${isRTL ? "font-['Amiri']" : "font-['Inter']"}`}>
+              {t('footer.copyright')}
             </p>
             <div className="flex gap-6">
-              <Link to="/terms" className="font-['Inter'] text-[13px] text-[#1e4d3a]/60 hover:text-[#1e4d3a] transition-colors">
-                {t.terms}
+              <Link to="/terms" className={`text-[13px] text-[#1e4d3a]/60 hover:text-[#1e4d3a] transition-colors ${isRTL ? "font-['Amiri']" : "font-['Inter']"}`}>
+                {t('footer.terms')}
               </Link>
-              <Link to="/privacy" className="font-['Inter'] text-[13px] text-[#1e4d3a]/60 hover:text-[#1e4d3a] transition-colors">
-                {t.privacyLink}
+              <Link to="/privacy" className={`text-[13px] text-[#1e4d3a]/60 hover:text-[#1e4d3a] transition-colors ${isRTL ? "font-['Amiri']" : "font-['Inter']"}`}>
+                {t('footer.privacyLink')}
               </Link>
             </div>
           </div>

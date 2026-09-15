@@ -1,10 +1,108 @@
+// src/pages/ResetPassword.tsx
 import React, { useState } from "react";
-import { Link, useSearchParams } from "react-router-dom";
+import { Link, useSearchParams, useNavigate } from "react-router-dom";
 import { useLang } from "../../context/LanguageContext";
-type Language = "EN" | "AR" | "FR";
+import logo from "../../assets/logo.png";
+// --- Your Design System ---
+const colors = {
+  creamLight: "#fcfaf5",
+  creamMid: "#f6efdc",
+  creamDark: "#e5d5a8",
+  forestGreen: "#0b4335",
+  amber: "#b8860b",
+  red: "#8b2c2c",
+};
 
+const GREEN = colors.forestGreen;
+const GOLD = colors.amber;
+const BG = colors.creamLight;
+const CARD_BG = colors.creamLight;
+const BORDER = colors.creamMid;
+const MUTED = "rgba(11, 67, 53, 0.6)";
+const RED = colors.red;
+
+const MONO: React.CSSProperties = { fontFamily: "'JetBrains Mono', monospace" };
+const SERIF: React.CSSProperties = { fontFamily: "'Hanken Grotesk', sans-serif" };
+const SANS: React.CSSProperties = { fontFamily: "'Inter', sans-serif" };
+
+// --- Helper Components ---
+function useIsMobile() {
+  const [isMobile, setIsMobile] = useState(() => (typeof window !== "undefined" ? window.innerWidth < 768 : false));
+  React.useEffect(() => {
+    const handler = () => setIsMobile(window.innerWidth < 768);
+    window.addEventListener("resize", handler);
+    return () => window.removeEventListener("resize", handler);
+  }, []);
+  return isMobile;
+}
+
+function Icon({ name, size = 18, style }: { name: string; size?: number; style?: React.CSSProperties }) {
+  return (
+    <span className="material-symbols-outlined" style={{ fontSize: `${size}px`, lineHeight: 1, userSelect: "none", ...style }}>
+      {name}
+    </span>
+  );
+}
+
+function HoverCard({ children, style }: { children: React.ReactNode; style?: React.CSSProperties }) {
+  const [hov, setHov] = useState(false);
+  return (
+    <div
+      onMouseEnter={() => setHov(true)} onMouseLeave={() => setHov(false)}
+      style={{
+        border: `1px solid rgba(11, 67, 53, 0.1)`,
+        boxShadow: hov ? "0px 6px 24px rgba(11, 67, 53, 0.12)" : "0px 4px 20px rgba(11, 67, 53, 0.08)",
+        transform: hov ? "translateY(-2px)" : "translateY(0)",
+        transition: "all 0.3s ease",
+        backgroundColor: CARD_BG,
+        borderRadius: "12px",
+        ...style,
+      }}
+    >
+      {children}
+    </div>
+  );
+}
+
+function HoverBtn({
+  children, onClick, type = "button", variant = "outline", danger = false, disabled = false, style,
+}: {
+  children: React.ReactNode; onClick?: () => void; type?: "button" | "submit"; variant?: "outline" | "primary"; danger?: boolean; disabled?: boolean; style?: React.CSSProperties;
+}) {
+  const [hov, setHov] = useState(false);
+  const baseColor = danger ? RED : GREEN;
+  let bg = "transparent";
+  let color = baseColor;
+  let border = `2px solid ${baseColor}`;
+
+  if (variant === "primary") {
+    bg = baseColor; color = BG;
+    if (hov && !disabled) { bg = BG; color = baseColor; }
+  } else {
+    if (hov && !disabled) { bg = baseColor; color = BG; }
+  }
+
+  return (
+    <button
+      type={type} onClick={onClick} disabled={disabled}
+      onMouseEnter={() => setHov(true)} onMouseLeave={() => setHov(false)}
+      style={{ 
+        display: "inline-flex", alignItems: "center", justifyContent: "center", gap: "6px", 
+        padding: "12px 24px", border, borderRadius: "8px", backgroundColor: bg, color,
+        fontSize: "12px", fontWeight: 600, letterSpacing: "0.05em", 
+        cursor: disabled ? "not-allowed" : "pointer", opacity: disabled ? 0.6 : 1,
+        transition: "all 0.3s", fontFamily: "'Hanken Grotesk', sans-serif", width: "100%", ...style 
+      }}
+    >
+      {children}
+    </button>
+  );
+}
+
+// --- Main Component ---
 const ResetPassword: React.FC = () => {
-  const { lang } = useLang();
+  const { lang, t } = useLang();
+  const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const token = searchParams.get("token");
 
@@ -15,89 +113,12 @@ const ResetPassword: React.FC = () => {
   const [errors, setErrors] = useState<{ password?: string; confirm?: string }>({});
   const [submitted, setSubmitted] = useState(false);
   const [done, setDone] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
 
-  const content = {
-    EN: {
-      back: "← Back to Sign In",
-      title: "Reset Password",
-      subtitle: "Choose a new password for your account.",
-      passwordLabel: "NEW PASSWORD",
-      passwordPlaceholder: "Enter new password",
-      confirmLabel: "CONFIRM PASSWORD",
-      confirmPlaceholder: "Confirm new password",
-      button: "RESET PASSWORD",
-      errPasswordEmpty: "Please enter a new password.",
-      errPasswordWeak: "Please satisfy all password requirements below.",
-      errConfirmEmpty: "Please confirm your password.",
-      errConfirmMatch: "Passwords do not match.",
-      doneTitle: "Password Updated",
-      doneSubtitle: "Your password has been reset successfully. You can now sign in.",
-      doneButton: "SIGN IN",
-      invalidToken: "This reset link is invalid or has expired.",
-      invalidBack: "Request a new link",
-      checks: {
-        length: "At least 8 characters",
-        upper: "One uppercase letter (A–Z)",
-        number: "One number (0–9)",
-        symbol: "One symbol (@, #, !, …)",
-      },
-    },
-    AR: {
-      back: "→ العودة لتسجيل الدخول",
-      title: "إعادة تعيين كلمة المرور",
-      subtitle: "اختر كلمة مرور جديدة لحسابك.",
-      passwordLabel: "كلمة المرور الجديدة",
-      passwordPlaceholder: "أدخل كلمة مرور جديدة",
-      confirmLabel: "تأكيد كلمة المرور",
-      confirmPlaceholder: "أعد إدخال كلمة المرور",
-      button: "تعيين كلمة المرور",
-      errPasswordEmpty: "الرجاء إدخال كلمة مرور جديدة.",
-      errPasswordWeak: "يرجى استيفاء جميع متطلبات كلمة المرور أدناه.",
-      errConfirmEmpty: "الرجاء تأكيد كلمة المرور.",
-      errConfirmMatch: "كلمتا المرور غير متطابقتين.",
-      doneTitle: "تم تحديث كلمة المرور",
-      doneSubtitle: "تمت إعادة تعيين كلمة المرور بنجاح. يمكنك الآن تسجيل الدخول.",
-      doneButton: "تسجيل الدخول",
-      invalidToken: "رابط إعادة التعيين غير صالح أو منتهي الصلاحية.",
-      invalidBack: "طلب رابط جديد",
-      checks: {
-        length: "8 أحرف على الأقل",
-        upper: "حرف كبير واحد (A–Z)",
-        number: "رقم واحد (0–9)",
-        symbol: "رمز واحد (@، #، !، …)",
-      },
-    },
-    FR: {
-      back: "← Retour à la connexion",
-      title: "Réinitialiser le mot de passe",
-      subtitle: "Choisissez un nouveau mot de passe pour votre compte.",
-      passwordLabel: "NOUVEAU MOT DE PASSE",
-      passwordPlaceholder: "Entrez un nouveau mot de passe",
-      confirmLabel: "CONFIRMER LE MOT DE PASSE",
-      confirmPlaceholder: "Confirmez le mot de passe",
-      button: "RÉINITIALISER",
-      errPasswordEmpty: "Veuillez entrer un nouveau mot de passe.",
-      errPasswordWeak: "Veuillez satisfaire toutes les exigences ci-dessous.",
-      errConfirmEmpty: "Veuillez confirmer votre mot de passe.",
-      errConfirmMatch: "Les mots de passe ne correspondent pas.",
-      doneTitle: "Mot de passe mis à jour",
-      doneSubtitle: "Votre mot de passe a été réinitialisé avec succès. Vous pouvez maintenant vous connecter.",
-      doneButton: "SE CONNECTER",
-      invalidToken: "Ce lien de réinitialisation est invalide ou a expiré.",
-      invalidBack: "Demander un nouveau lien",
-      checks: {
-        length: "8 caractères minimum",
-        upper: "Une majuscule (A–Z)",
-        number: "Un chiffre (0–9)",
-        symbol: "Un symbole (@, #, !, …)",
-      },
-    },
-  };
+  const isMobile = useIsMobile();
+  const isRTL = lang === "AR"; // Adjust "AR" if your Arabic lang code is different (e.g., "ar")
 
-  const t = content[lang];
-  const isRTL = lang === "AR";
-
-  // Strong password: min 8 chars, at least 1 uppercase, 1 number, 1 special char
+  // Strong password validation
   const isStrong = (val: string) =>
     val.length >= 8 &&
     /[A-Z]/.test(val) &&
@@ -107,216 +128,290 @@ const ResetPassword: React.FC = () => {
   const validate = () => {
     const newErrors: { password?: string; confirm?: string } = {};
     if (!password.trim()) {
-      newErrors.password = t.errPasswordEmpty;
+      newErrors.password = t("resetPassword.errPasswordEmpty");
     } else if (!isStrong(password)) {
-      newErrors.password = t.errPasswordWeak;
+      newErrors.password = t("resetPassword.errPasswordWeak");
     }
     if (!confirm.trim()) {
-      newErrors.confirm = t.errConfirmEmpty;
+      newErrors.confirm = t("resetPassword.errConfirmEmpty");
     } else if (password !== confirm) {
-      newErrors.confirm = t.errConfirmMatch;
+      newErrors.confirm = t("resetPassword.errConfirmMatch");
     }
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setSubmitted(true);
-    if (validate()) {
+    if (!validate()) return;
+
+    setIsLoading(true);
+    try {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/auth/reset-password`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ token, password }),
+      });
+
+      const data = await response.json();
+      if (!response.ok) {
+        // If the backend returns an invalid/expired token error, redirect to request a new one
+        const msg = (data.message || "").toLowerCase();
+        if (msg.includes("invalid") || msg.includes("expired") || msg.includes("not found")) {
+          navigate("/forgot-password?error=invalid_token");
+        } else {
+          setErrors({ password: data.message || t("resetPassword.errServer") });
+        }
+        return;
+      }
+
       setDone(true);
-      // TODO: call your API with token + password
+    } catch (err) {
+      console.error("Reset password error:", err);
+      setErrors({ password: t("resetPassword.errServer") });
+    } finally {
+      setIsLoading(false);
     }
   };
 
-  const iconBase = "w-4 h-4 text-[#7DA89B] transition-colors duration-200 group-hover:text-[#C9A84C]";
-  const inputBase = "w-full bg-[#f8fafc] border rounded-2xl pl-12 pr-12 py-3 text-sm outline-none transition-all duration-200 group-hover:border-[#C9A84C]/50 focus:border-[#C9A84C]";
-
-  // Single eye icon used for both fields
-  const EyeIcon = ({ open }: { open: boolean }) =>
-    open ? (
-      <svg className={iconBase} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-      </svg>
-    ) : (
-      <svg className={iconBase} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" />
-      </svg>
-    );
-
-  const LockIcon = () => (
-    <svg className={iconBase} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-    </svg>
-  );
-
-  const ErrorMsg = ({ msg }: { msg: string }) => (
-    <p className="text-red-500 text-[11px] mt-1.5 flex items-center gap-1">
-      <svg className="w-3 h-3 shrink-0" fill="currentColor" viewBox="0 0 20 20">
-        <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
-      </svg>
-      {msg}
-    </p>
-  );
+  const inputStyle: React.CSSProperties = {
+    backgroundColor: "rgba(11, 67, 53, 0.04)",
+    border: `1.5px solid ${BORDER}`,
+    padding: "12px 14px",
+    borderRadius: "8px",
+    fontSize: "14px",
+    color: GREEN,
+    ...SANS,
+    outline: "none",
+    transition: "all 0.15s",
+    width: "100%",
+    boxSizing: "border-box",
+  };
 
   return (
-    <div
-      className={`min-h-screen bg-white flex flex-col items-center justify-center px-6 ${isRTL ? "text-right" : ""}`}
-      dir={isRTL ? "rtl" : "ltr"}
-    >
-      <div className="w-full max-w-sm">
+    <div dir={isRTL ? "rtl" : "ltr"} style={{ ...SANS, backgroundColor: BG, backgroundImage: "radial-gradient(circle at 50% 0%, rgba(184, 134, 11, 0.06) 0%, transparent 60%)", minHeight: "100vh", color: GREEN, display: "flex", alignItems: "center", justifyContent: "center", padding: isMobile ? "24px 16px" : "40px" }}>
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;700&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=swap');
+        .material-symbols-outlined { font-variation-settings: 'FILL' 0,'wght' 400,'GRAD' 0,'opsz' 24; font-family: 'Material Symbols Outlined'; display: inline-block; vertical-align: middle; }
+        .op-input:focus { border-color: ${GREEN} !important; box-shadow: inset 0 0 0 1px rgba(11,67,53,0.12); background-color: ${BG} !important; }
+      `}</style>
 
-        {/* Logo placeholder */}
-        <div className="mb-8 text-center">
-          <div className="w-12 h-12 rounded-xl bg-[#285B4B]/8 flex items-center justify-center mx-auto mb-3">
-            <svg className="w-6 h-6 text-[#285B4B]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
-            </svg>
-          </div>
-          <p className="text-xs tracking-[0.3em] text-[#285B4B] font-black uppercase">OULAMAUNA</p>
-        </div>
+      <div style={{ width: "100%", maxWidth: "440px", display: "flex", flexDirection: "column", gap: "24px" }}>
+        
+       {/* Logo */}
+<div style={{ textAlign: "center", marginBottom: "8px" }}>
+  <img
+    src={logo}
+    alt="OULAMAUNA"
+    style={{
+      width: "56px",
+      height: "56px",
+      objectFit: "contain",
+      margin: "0 auto 12px",
+      display: "block",
+    }}
+  />
 
-        {/* Invalid / missing token */}
+  <p
+  style={{
+    ...MONO,
+    fontSize: isRTL ? "17px" : "11px",
+    letterSpacing: isRTL ? "0" : "0.3em",
+    color: GREEN,
+    fontWeight: 700,
+    margin: 0,
+    textTransform: isRTL ? "none" : "uppercase",
+    direction: isRTL ? "rtl" : "ltr",
+  }}
+>
+  {isRTL ? "علماؤنا" : "OULAMAUNA"}
+</p>
+</div>
+
         {!token ? (
-          <div className="text-center">
-            <div className="w-14 h-14 rounded-2xl bg-red-50 flex items-center justify-center mx-auto mb-5">
-              <svg className="w-7 h-7 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" />
-              </svg>
+          /* Invalid Token State */
+          <HoverCard style={{ padding: isMobile ? "24px 20px" : "32px 28px", textAlign: "center" }}>
+            <div style={{ width: "64px", height: "64px", borderRadius: "50%", backgroundColor: "rgba(139, 44, 44, 0.08)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 20px" }}>
+              <Icon name="link_off" size={32} style={{ color: RED }} />
             </div>
-            <p className="text-[#285B4B] text-sm font-medium mb-1">{t.invalidToken}</p>
+            <p style={{ fontSize: "15px", color: RED, fontWeight: 600, margin: "0 0 16px" }}>
+              {t("resetPassword.invalidToken")}
+            </p>
             <Link
               to="/forgot-password"
-              className="text-xs text-[#7DA89B] hover:text-[#C9A84C] transition-colors duration-200 underline underline-offset-2"
+              style={{ fontSize: "12px", color: GOLD, textDecoration: "none", fontWeight: 600, letterSpacing: "0.05em", transition: "color 0.2s" }}
             >
-              {t.invalidBack}
+              {t("resetPassword.invalidBack")}
             </Link>
-          </div>
-
+          </HoverCard>
         ) : done ? (
-          /* ── SUCCESS STATE ── */
-          <div className="text-center">
-            <div className="w-14 h-14 rounded-2xl bg-[#285B4B]/8 flex items-center justify-center mx-auto mb-5">
-              <svg className="w-7 h-7 text-[#285B4B]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
-              </svg>
+          /* Success State */
+          <HoverCard style={{ padding: isMobile ? "24px 20px" : "32px 28px", textAlign: "center" }}>
+            <div style={{ width: "64px", height: "64px", borderRadius: "50%", backgroundColor: "rgba(11, 67, 53, 0.08)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 20px" }}>
+              <Icon name="check_circle" size={32} style={{ color: GREEN }} />
             </div>
-            <h2 className="text-3xl font-serif text-[#285B4B] mb-1">{t.doneTitle}</h2>
-            <p className="text-[#B8B09A] text-sm mb-6 leading-relaxed">{t.doneSubtitle}</p>
-            <Link
-              to="/login"
-              className="block w-full text-center bg-[#285B4B] text-white py-3 rounded-2xl text-xs font-black tracking-[0.3em] uppercase hover:bg-[#C9A84C] active:scale-[0.98] transition-all duration-300"
-            >
-              {t.doneButton}
-            </Link>
-          </div>
-
+            <h2 style={{ ...SERIF, fontSize: "24px", fontWeight: 700, color: GREEN, margin: "0 0 8px" }}>
+              {t("resetPassword.doneTitle")}
+            </h2>
+            <p style={{ fontSize: "14px", color: MUTED, margin: "0 0 24px", lineHeight: 1.5 }}>
+              {t("resetPassword.doneSubtitle")}
+            </p>
+            <HoverBtn variant="primary" onClick={() => navigate("/login")}>
+              {t("resetPassword.doneButton")}
+            </HoverBtn>
+          </HoverCard>
         ) : (
-          /* ── FORM STATE ── */
-          <>
-            <div className="mb-6">
-              <h2 className="text-3xl font-serif text-[#285B4B]">{t.title}</h2>
-              <p className="text-[#B8B09A] text-sm mt-1 leading-relaxed">{t.subtitle}</p>
-              <div className="w-10 h-px bg-[#D8BF86]/50 mt-4" />
+          /* Form State */
+          <HoverCard style={{ padding: isMobile ? "24px 20px" : "32px 28px" }}>
+            <div style={{ marginBottom: "24px" }}>
+              <h2 style={{ ...SERIF, fontSize: "26px", fontWeight: 700, color: GREEN, margin: "0 0 8px" }}>
+                {t("resetPassword.title")}
+              </h2>
+              <p style={{ fontSize: "14px", color: MUTED, margin: 0, lineHeight: 1.5 }}>
+                {t("resetPassword.subtitle")}
+              </p>
+              <div style={{ width: "40px", height: "2px", backgroundColor: "rgba(184, 134, 11, 0.5)", marginTop: "16px" }} />
             </div>
 
-            <form onSubmit={handleSubmit} className="space-y-4" noValidate>
-
-              {/* New Password */}
-              <div>
-                <label className="text-[10px] tracking-[0.25em] text-[#B8B09A] font-bold uppercase block mb-1.5">
-                  {t.passwordLabel}
+            <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: "20px" }} noValidate>
+              
+              {/* Password Field */}
+              <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+                <label style={{ ...MONO, fontSize: "10px", color: MUTED, letterSpacing: "0.12em", textTransform: "uppercase", fontWeight: 600 }}>
+                  {t("resetPassword.passwordLabel")}
                 </label>
-                <div className="relative group">
-                  <div className="absolute inset-y-0 left-5 flex items-center pointer-events-none">
-                    <LockIcon />
+                <div style={{ position: "relative" }}>
+                  <div style={{ position: "absolute", top: "50%", transform: "translateY(-50%)", [isRTL ? "right" : "left"]: "14px", display: "flex", alignItems: "center", pointerEvents: "none" }}>
+                    <Icon name="lock" size={18} style={{ color: MUTED }} />
                   </div>
                   <input
                     type={showPassword ? "text" : "password"}
                     value={password}
-                    onChange={e => { setPassword(e.target.value); if (submitted) setErrors(prev => ({ ...prev, password: undefined })); }}
-                    placeholder={t.passwordPlaceholder}
-                    className={`${inputBase} ${errors.password ? "border-red-300 bg-red-50/30" : "border-gray-100"}`}
+                    onChange={(e) => { setPassword(e.target.value); if (submitted) setErrors(prev => ({ ...prev, password: undefined })); }}
+                    placeholder={t("resetPassword.passwordPlaceholder")}
+                    className="op-input"
+                    style={{
+                      ...inputStyle,
+                      [isRTL ? "paddingRight" : "paddingLeft"]: "42px",
+                      borderColor: errors.password ? RED : BORDER,
+                      backgroundColor: errors.password ? "rgba(139, 44, 44, 0.04)" : inputStyle.backgroundColor,
+                    }}
                   />
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-4 top-1/2 -translate-y-1/2 p-1"
-                    aria-label={showPassword ? "Hide" : "Show"}
+                    style={{
+                      position: "absolute", top: "50%", transform: "translateY(-50%)",
+                      [isRTL ? "left" : "right"]: "14px", background: "none", border: "none", cursor: "pointer",
+                      color: MUTED, display: "flex", alignItems: "center", justifyContent: "center"
+                    }}
                   >
-                    <EyeIcon open={showPassword} />
+                    <Icon name={showPassword ? "visibility_off" : "visibility"} size={18} />
                   </button>
                 </div>
-                {/* Live single-sentence hint */}
+                
+                {/* Live Validation Feedback (Fully Dynamic for ANY Language) */}
                 {password.length > 0 && (() => {
-                  const missing: string[] = [];
-                  if (password.length < 8)           missing.push(lang === "AR" ? "8 أحرف" : lang === "FR" ? "8 caractères" : "8 characters");
-                  if (!/[A-Z]/.test(password))        missing.push(lang === "AR" ? "حرف كبير" : lang === "FR" ? "une majuscule" : "uppercase");
-                  if (!/[0-9]/.test(password))        missing.push(lang === "AR" ? "رقم" : lang === "FR" ? "un chiffre" : "a number");
-                  if (!/[^A-Za-z0-9]/.test(password)) missing.push(lang === "AR" ? "رمز" : lang === "FR" ? "un symbole" : "a symbol");
-                  if (missing.length === 0) return (
-                    <p className="text-[#285B4B] text-[11px] mt-1.5 flex items-center gap-1">
-                      <svg className="w-3 h-3 shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" /></svg>
-                      {lang === "AR" ? "كلمة مرور قوية" : lang === "FR" ? "Mot de passe fort" : "Strong password"}
+                  const checks = [
+                    { valid: password.length >= 8, key: "length" },
+                    { valid: /[A-Z]/.test(password), key: "upper" },
+                    { valid: /[0-9]/.test(password), key: "number" },
+                    { valid: /[^A-Za-z0-9]/.test(password), key: "symbol" },
+                  ];
+                  const missing = checks.filter(c => !c.valid).map(c => t(`resetPassword.checks.${c.key}`));
+                  
+                  if (missing.length === 0) {
+                    return (
+                      <p style={{ fontSize: "12px", color: GREEN, margin: "4px 0 0", display: "flex", alignItems: "center", gap: "6px" }}>
+                        <Icon name="check" size={14} style={{ color: GREEN }} />
+                        {t("resetPassword.checks.allGood")}
+                      </p>
+                    );
+                  }
+                  return (
+                    <p style={{ fontSize: "12px", color: MUTED, margin: "4px 0 0" }}>
+                      {t("resetPassword.checks.add")} {missing.join(", ")}
                     </p>
                   );
-                  const prefix = lang === "AR" ? "أضف " : lang === "FR" ? "Ajoutez " : "Add ";
-                  const joined = missing.join(lang === "AR" ? " و" : ", ");
-                  return (
-                    <p className="text-[#B8B09A] text-[11px] mt-1.5">{prefix}{joined}</p>
-                  );
                 })()}
-                {errors.password && <ErrorMsg msg={errors.password} />}
+                
+                {errors.password && (
+                  <p style={{ fontSize: "12px", color: RED, margin: "4px 0 0", display: "flex", alignItems: "center", gap: "6px" }}>
+                    <Icon name="error" size={14} />
+                    {errors.password}
+                  </p>
+                )}
               </div>
 
-              {/* Confirm Password */}
-              <div>
-                <label className="text-[10px] tracking-[0.25em] text-[#B8B09A] font-bold uppercase block mb-1.5">
-                  {t.confirmLabel}
+              {/* Confirm Field */}
+              <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+                <label style={{ ...MONO, fontSize: "10px", color: MUTED, letterSpacing: "0.12em", textTransform: "uppercase", fontWeight: 600 }}>
+                  {t("resetPassword.confirmLabel")}
                 </label>
-                <div className="relative group">
-                  <div className="absolute inset-y-0 left-5 flex items-center pointer-events-none">
-                    <LockIcon />
+                <div style={{ position: "relative" }}>
+                  <div style={{ position: "absolute", top: "50%", transform: "translateY(-50%)", [isRTL ? "right" : "left"]: "14px", display: "flex", alignItems: "center", pointerEvents: "none" }}>
+                    <Icon name="lock" size={18} style={{ color: MUTED }} />
                   </div>
                   <input
                     type={showConfirm ? "text" : "password"}
                     value={confirm}
-                    onChange={e => { setConfirm(e.target.value); if (submitted) setErrors(prev => ({ ...prev, confirm: undefined })); }}
-                    placeholder={t.confirmPlaceholder}
-                    className={`${inputBase} ${errors.confirm ? "border-red-300 bg-red-50/30" : "border-gray-100"}`}
+                    onChange={(e) => { setConfirm(e.target.value); if (submitted) setErrors(prev => ({ ...prev, confirm: undefined })); }}
+                    placeholder={t("resetPassword.confirmPlaceholder")}
+                    className="op-input"
+                    style={{
+                      ...inputStyle,
+                      [isRTL ? "paddingRight" : "paddingLeft"]: "42px",
+                      borderColor: errors.confirm ? RED : BORDER,
+                      backgroundColor: errors.confirm ? "rgba(139, 44, 44, 0.04)" : inputStyle.backgroundColor,
+                    }}
                   />
                   <button
                     type="button"
                     onClick={() => setShowConfirm(!showConfirm)}
-                    className="absolute right-4 top-1/2 -translate-y-1/2 p-1"
-                    aria-label={showConfirm ? "Hide" : "Show"}
+                    style={{
+                      position: "absolute", top: "50%", transform: "translateY(-50%)",
+                      [isRTL ? "left" : "right"]: "14px", background: "none", border: "none", cursor: "pointer",
+                      color: MUTED, display: "flex", alignItems: "center", justifyContent: "center"
+                    }}
                   >
-                    <EyeIcon open={showConfirm} />
+                    <Icon name={showConfirm ? "visibility_off" : "visibility"} size={18} />
                   </button>
                 </div>
-                {errors.confirm && <ErrorMsg msg={errors.confirm} />}
+                {errors.confirm && (
+                  <p style={{ fontSize: "12px", color: RED, margin: "4px 0 0", display: "flex", alignItems: "center", gap: "6px" }}>
+                    <Icon name="error" size={14} />
+                    {errors.confirm}
+                  </p>
+                )}
               </div>
 
-              <button
-                type="submit"
-                className="w-full bg-[#285B4B] text-white py-3 rounded-2xl text-xs font-black tracking-[0.3em] uppercase hover:bg-[#C9A84C] active:scale-[0.98] transition-all duration-300"
-              >
-                {t.button}
-              </button>
+              <HoverBtn type="submit" variant="primary" disabled={isLoading}>
+                {isLoading ? (
+                  <>
+                    <Icon name="hourglass_empty" size={14} />
+                    {t("resetPassword.sending")}
+                  </>
+                ) : (
+                  t("resetPassword.button")
+                )}
+              </HoverBtn>
             </form>
 
-            <div className="mt-5 text-center">
+            <div style={{ marginTop: "24px", textAlign: "center" }}>
               <Link
                 to="/login"
-                className="text-xs text-[#B8B09A] hover:text-[#C9A84C] transition-colors duration-200 tracking-widest"
+                style={{ fontSize: "12px", color: MUTED, textDecoration: "none", fontWeight: 600, letterSpacing: "0.05em", transition: "color 0.2s", display: "inline-flex", alignItems: "center", gap: "6px" }}
+                onMouseEnter={(e) => (e.currentTarget.style.color = GOLD)}
+                onMouseLeave={(e) => (e.currentTarget.style.color = MUTED)}
               >
-                {t.back}
+                <Icon name={isRTL ? "arrow_forward" : "arrow_back"} size={16} />
+                {t("resetPassword.back")}
               </Link>
             </div>
-          </>
+          </HoverCard>
         )}
-
       </div>
     </div>
   );

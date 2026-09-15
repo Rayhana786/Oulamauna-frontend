@@ -1,252 +1,70 @@
-// src/pages/VerifyEmail.tsx
 import React, { useState, useEffect, useRef } from "react";
 import { Link, useSearchParams, useNavigate } from "react-router-dom";
-import { BadgeCheck, RefreshCw, ArrowLeft, AlertCircle, LogIn, MailX, Clock, Wifi, Check, Send } from "lucide-react";
-// @ts-ignore
-import libraryImg from "../../assets/library-1.jpg";
 import { useLang } from "../../context/LanguageContext";
-type Language = "EN" | "AR" | "FR";
+import logo from "../../assets/logo.png";
+// --- Design System ---
+const colors = { creamLight: "#fcfaf5", creamMid: "#f6efdc", forestGreen: "#0b4335", amber: "#b8860b", red: "#8b2c2c" };
+const GREEN = colors.forestGreen; const BG = colors.creamLight; const CARD_BG = colors.creamLight; const BORDER = colors.creamMid; const MUTED = "rgba(11, 67, 53, 0.6)";
+const MONO: React.CSSProperties = { fontFamily: "'JetBrains Mono', monospace" };
+const SERIF: React.CSSProperties = { fontFamily: "'Hanken Grotesk', sans-serif" };
+const SANS: React.CSSProperties = { fontFamily: "'Inter', sans-serif" };
+
+function useIsMobile() {
+  const [isMobile, setIsMobile] = useState(() => window.innerWidth < 768);
+  useEffect(() => {
+    const handler = () => setIsMobile(window.innerWidth < 768);
+    window.addEventListener("resize", handler);
+    return () => window.removeEventListener("resize", handler);
+  }, []);
+  return isMobile;
+}
+
+function Icon({ name, size = 18, style }: { name: string; size?: number; style?: React.CSSProperties }) {
+  return <span className="material-symbols-outlined" style={{ fontSize: `${size}px`, lineHeight: 1, userSelect: "none", ...style }}>{name}</span>;
+}
+
+function HoverCard({ children, style }: { children: React.ReactNode; style?: React.CSSProperties }) {
+  const [hov, setHov] = useState(false);
+  return (
+    <div onMouseEnter={() => setHov(true)} onMouseLeave={() => setHov(false)}
+      style={{ border: `1px solid rgba(11, 67, 53, 0.1)`, boxShadow: hov ? "0px 6px 24px rgba(11, 67, 53, 0.12)" : "0px 4px 20px rgba(11, 67, 53, 0.08)", transform: hov ? "translateY(-2px)" : "translateY(0)", transition: "all 0.3s ease", backgroundColor: CARD_BG, borderRadius: "12px", ...style }}>
+      {children}
+    </div>
+  );
+}
+
+function HoverBtn({ children, onClick, type = "button", variant = "outline", disabled = false, style }: any) {
+  const [hov, setHov] = useState(false);
+  let bg = "transparent", color = GREEN, border = `2px solid ${GREEN}`;
+  if (variant === "primary") { bg = GREEN; color = BG; if (hov && !disabled) { bg = BG; color = GREEN; } }
+  else { if (hov && !disabled) { bg = GREEN; color = BG; } }
+  return (
+    <button type={type} onClick={onClick} disabled={disabled} onMouseEnter={() => setHov(true)} onMouseLeave={() => setHov(false)}
+      style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", gap: "6px", padding: "10px 20px", border, borderRadius: "8px", backgroundColor: bg, color, fontSize: "11px", fontWeight: 600, letterSpacing: "0.05em", cursor: disabled ? "not-allowed" : "pointer", opacity: disabled ? 0.6 : 1, transition: "all 0.3s", fontFamily: "'Hanken Grotesk', sans-serif", ...style }}>
+      {children}
+    </button>
+  );
+}
+
 type ErrorType = "invalid_token" | "expired_token" | "no_token" | "network" | "server" | "unknown";
 
 const VerifyEmail: React.FC = () => {
-  const { lang } = useLang();
+  const { lang, t } = useLang();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const [visible, setVisible] = useState(false);
+  const token = searchParams.get("token");
+  const isMobile = useIsMobile();
+  const isRTL = lang === "AR";
+
   const [status, setStatus] = useState<"loading" | "success" | "error">("loading");
   const [errorType, setErrorType] = useState<ErrorType>("unknown");
   const [countdown, setCountdown] = useState(3);
   const hasCalled = useRef(false);
 
-  // ── Resend form state ──
   const [resendEmail, setResendEmail] = useState("");
   const [resendLoading, setResendLoading] = useState(false);
   const [resendDone, setResendDone] = useState(false);
   const [resendError, setResendError] = useState("");
-
-  const token = searchParams.get("token");
-
-  const content: Record<Language, any> = {
-    EN: {
-      category: "ACCOUNT SECURITY",
-      loadingTitle: "Verifying your email...",
-      loadingSubtitle: "Please wait while we activate your account",
-      successTitle: "Email Verified!",
-      successSubtitle: "Your account is now active. You will be redirected to login shortly.",
-      successRedirect: "Redirecting to login",
-      successBack: "Go to Login Now",
-      successHome: "or go Home",
-      counting: "in",
-      resendPlaceholder: "Enter your email address",
-      resendButton: "Send New Link",
-      resendSent: "Email sent! Check your inbox.",
-      resendErrorEmpty: "Please enter your email.",
-      resendErrorFailed: "Could not send. Please try again.",
-      errors: {
-        no_token: {
-          title: "Missing Link",
-          subtitle: "No verification token was found. Enter your email to get a new link.",
-          icon: "mail",
-          showResend: true,
-          actions: [
-            { label: "Back to Home", to: "/", primary: false },
-          ],
-        },
-        invalid_token: {
-          title: "Invalid Link",
-          subtitle: "This link has already been used or is not recognized.",
-          icon: "mail",
-          showResend: false,
-          actions: [
-            { label: "Back to Home", to: "/", primary: true },
-            { label: "or create a new account", to: "/register", primary: false },
-          ],
-        },
-        expired_token: {
-          title: "Link Expired",
-          subtitle: "This link has expired. Enter your email to receive a new one.",
-          icon: "clock",
-          showResend: true,
-          actions: [
-            { label: "Back to Home", to: "/", primary: false },
-          ],
-        },
-        network: {
-          title: "Connection Error",
-          subtitle: "Could not reach the server. Please check your internet connection.",
-          icon: "wifi",
-          showResend: false,
-          actions: [
-            { label: "Try Again", to: null, primary: true, reload: true },
-            { label: "Back to Home", to: "/", primary: false },
-          ],
-        },
-        server: {
-          title: "Server Error",
-          subtitle: "Something went wrong on our end. Please try again in a few moments.",
-          icon: "alert",
-          showResend: false,
-          actions: [
-            { label: "Try Again", to: null, primary: true, reload: true },
-            { label: "Back to Home", to: "/", primary: false },
-          ],
-        },
-        unknown: {
-          title: "Verification Failed",
-          subtitle: "An unexpected error occurred. Please try again or contact support.",
-          icon: "alert",
-          showResend: false,
-          actions: [
-            { label: "Back to Home", to: "/", primary: true },
-          ],
-        },
-      },
-    },
-    AR: {
-      category: "أمان الحساب",
-      loadingTitle: "جاري التحقق من بريدك...",
-      loadingSubtitle: "يرجى الانتظار بينما نقوم بتفعيل حسابك",
-      successTitle: "تم تأكيد البريد!",
-      successSubtitle: "حسابك الآن مفعل. سيتم توجيهك لتسجيل الدخول قريباً.",
-      successRedirect: "جاري التوجيه لتسجيل الدخول",
-      successBack: "تسجيل الدخول الآن",
-      successHome: "أو الصفحة الرئيسية",
-      counting: "خلال",
-      resendPlaceholder: "أدخل بريدك الإلكتروني",
-      resendButton: "إرسال رابط جديد",
-      resendSent: "تم الإرسال! تحقق من بريدك.",
-      resendErrorEmpty: "يرجى إدخال بريدك الإلكتروني.",
-      resendErrorFailed: "فشل الإرسال. حاول مجدداً.",
-      errors: {
-        no_token: {
-          title: "رابط مفقود",
-          subtitle: "لم يتم العثور على رمز التحقق. أدخل بريدك للحصول على رابط جديد.",
-          icon: "mail",
-          showResend: true,
-          actions: [{ label: "العودة للرئيسية", to: "/", primary: false }],
-        },
-        invalid_token: {
-          title: "رابط غير صالح",
-          subtitle: "هذا الرابط مستخدم أو غير معروف.",
-          icon: "mail",
-          showResend: false,
-          actions: [
-            { label: "العودة للرئيسية", to: "/", primary: true },
-            { label: "أو إنشاء حساب جديد", to: "/register", primary: false },
-          ],
-        },
-        expired_token: {
-          title: "انتهت صلاحية الرابط",
-          subtitle: "انتهت صلاحية الرابط. أدخل بريدك لاستلام رابط جديد.",
-          icon: "clock",
-          showResend: true,
-          actions: [{ label: "العودة للرئيسية", to: "/", primary: false }],
-        },
-        network: {
-          title: "خطأ في الاتصال",
-          subtitle: "تعذر الوصول إلى الخادم. يرجى التحقق من اتصالك.",
-          icon: "wifi",
-          showResend: false,
-          actions: [
-            { label: "حاول مجدداً", to: null, primary: true, reload: true },
-            { label: "العودة للرئيسية", to: "/", primary: false },
-          ],
-        },
-        server: {
-          title: "خطأ في الخادم",
-          subtitle: "حدث خطأ من جانبنا. يرجى المحاولة لاحقاً.",
-          icon: "alert",
-          showResend: false,
-          actions: [
-            { label: "حاول مجدداً", to: null, primary: true, reload: true },
-            { label: "العودة للرئيسية", to: "/", primary: false },
-          ],
-        },
-        unknown: {
-          title: "فشل التأكيد",
-          subtitle: "حدث خطأ غير متوقع. يرجى المحاولة مرة أخرى.",
-          icon: "alert",
-          showResend: false,
-          actions: [
-            { label: "العودة للرئيسية", to: "/", primary: true },
-          ],
-        },
-      },
-    },
-    FR: {
-      category: "SÉCURITÉ DU COMPTE",
-      loadingTitle: "Vérification de votre e-mail...",
-      loadingSubtitle: "Veuillez patienter pendant l'activation de votre compte",
-      successTitle: "E-mail vérifié !",
-      successSubtitle: "Votre compte est actif. Redirection vers la connexion dans un instant.",
-      successRedirect: "Redirection vers la connexion",
-      successBack: "Se connecter maintenant",
-      successHome: "ou aller à l'accueil",
-      counting: "dans",
-      resendPlaceholder: "Entrez votre adresse e-mail",
-      resendButton: "Envoyer un nouveau lien",
-      resendSent: "E-mail envoyé ! Vérifiez votre boîte.",
-      resendErrorEmpty: "Veuillez entrer votre e-mail.",
-      resendErrorFailed: "Échec de l'envoi. Veuillez réessayer.",
-      errors: {
-        no_token: {
-          title: "Lien manquant",
-          subtitle: "Aucun jeton trouvé. Entrez votre e-mail pour recevoir un nouveau lien.",
-          icon: "mail",
-          showResend: true,
-          actions: [{ label: "Retour à l'accueil", to: "/", primary: false }],
-        },
-        invalid_token: {
-          title: "Lien invalide",
-          subtitle: "Ce lien a déjà été utilisé ou n'est pas reconnu.",
-          icon: "mail",
-          showResend: false,
-          actions: [
-            { label: "Retour à l'accueil", to: "/", primary: true },
-            { label: "ou créer un nouveau compte", to: "/register", primary: false },
-          ],
-        },
-        expired_token: {
-          title: "Lien expiré",
-          subtitle: "Ce lien a expiré. Entrez votre e-mail pour en recevoir un nouveau.",
-          icon: "clock",
-          showResend: true,
-          actions: [{ label: "Retour à l'accueil", to: "/", primary: false }],
-        },
-        network: {
-          title: "Erreur de connexion",
-          subtitle: "Impossible de joindre le serveur. Vérifiez votre connexion.",
-          icon: "wifi",
-          showResend: false,
-          actions: [
-            { label: "Réessayer", to: null, primary: true, reload: true },
-            { label: "Retour à l'accueil", to: "/", primary: false },
-          ],
-        },
-        server: {
-          title: "Erreur serveur",
-          subtitle: "Une erreur s'est produite. Veuillez réessayer dans un moment.",
-          icon: "alert",
-          showResend: false,
-          actions: [
-            { label: "Réessayer", to: null, primary: true, reload: true },
-            { label: "Retour à l'accueil", to: "/", primary: false },
-          ],
-        },
-        unknown: {
-          title: "Échec de la vérification",
-          subtitle: "Une erreur inattendue s'est produite. Veuillez réessayer.",
-          icon: "alert",
-          showResend: false,
-          actions: [
-            { label: "Retour à l'accueil", to: "/", primary: true },
-          ],
-        },
-      },
-    },
-  };
-
-  const t = content[lang] || content.EN;
 
   const detectErrorType = (message: string, httpStatus: number): ErrorType => {
     const msg = message.toLowerCase();
@@ -257,231 +75,155 @@ const VerifyEmail: React.FC = () => {
   };
 
   useEffect(() => {
-    setVisible(true);
     if (hasCalled.current) return;
     hasCalled.current = true;
-
     const verifyToken = async () => {
-      if (!token) {
-        setErrorType("no_token");
-        setStatus("error");
-        return;
-      }
-
+      if (!token) { setErrorType("no_token"); setStatus("error"); return; }
       try {
-        const response = await fetch(
-          `${import.meta.env.VITE_API_URL}/api/auth/verify-email?token=${token}`,
-          { method: "GET", headers: { "Content-Type": "application/json" } }
-        );
+        const response = await fetch(`${import.meta.env.VITE_API_URL}/api/auth/verify-email?token=${token}`, { method: "GET", headers: { "Content-Type": "application/json" } });
         const data = await response.json();
-
         if (response.ok) {
           setStatus("success");
           let count = 3;
-          const timer = setInterval(() => {
-            count -= 1;
-            setCountdown(count);
-            if (count <= 0) { clearInterval(timer); navigate("/login"); }
-          }, 1000);
+          const timer = setInterval(() => { count -= 1; setCountdown(count); if (count <= 0) { clearInterval(timer); navigate("/login"); } }, 1000);
           return () => clearInterval(timer);
-        } else {
-          setErrorType(detectErrorType(data.message || "", response.status));
-          setStatus("error");
-        }
-      } catch {
-        setErrorType("network");
-        setStatus("error");
-      }
+        } else { setErrorType(detectErrorType(data.message || "", response.status)); setStatus("error"); }
+      } catch { setErrorType("network"); setStatus("error"); }
     };
-
     verifyToken();
   }, [token, navigate]);
 
-  // ── Inline resend handler ──
   const handleResend = async () => {
     setResendError("");
-    if (!resendEmail.trim()) {
-      setResendError(t.resendErrorEmpty);
-      return;
-    }
+    if (!resendEmail.trim()) { setResendError(t("verifyEmail.resendErrorEmpty")); return; }
     setResendLoading(true);
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/auth/resend-verification`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: resendEmail.trim() }),
-      });
-      if (response.ok) {
-        setResendDone(true);
-      } else {
-        const data = await response.json();
-        setResendError(data.message || t.resendErrorFailed);
-      }
-    } catch {
-      setResendError(t.resendErrorFailed);
-    } finally {
-      setResendLoading(false);
-    }
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/auth/resend-verification`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ email: resendEmail.trim() }) });
+      if (response.ok) setResendDone(true);
+      else { const data = await response.json(); setResendError(data.message || t("verifyEmail.resendErrorFailed")); }
+    } catch { setResendError(t("verifyEmail.resendErrorFailed")); } finally { setResendLoading(false); }
   };
 
-  const ErrorIcon = ({ type }: { type: string }) => {
-    if (type === "clock") return <Clock className="w-7 h-7 stroke-[2px]" />;
-    if (type === "wifi") return <Wifi className="w-7 h-7 stroke-[2px]" />;
-    if (type === "mail") return <MailX className="w-7 h-7 stroke-[2px]" />;
-    return <AlertCircle className="w-7 h-7 stroke-[2px]" />;
+  const getErrorIcon = (type: string) => {
+    if (type === "clock") return "schedule";
+    if (type === "wifi") return "signal_wifi_off";
+    if (type === "mail") return "mail_off";
+    return "error";
   };
 
-  const currentError = t.errors[errorType];
+  const currentErrorType = errorType;
+  const inputStyle: React.CSSProperties = { backgroundColor: "rgba(11, 67, 53, 0.04)", border: `1.5px solid ${BORDER}`, padding: "10px 14px", borderRadius: "8px", fontSize: "13px", color: GREEN, ...SANS, outline: "none", width: "100%", boxSizing: "border-box" };
 
   return (
-    <div className="relative h-screen w-full flex flex-col items-center bg-[#FDFCFB] overflow-hidden font-sans">
+    <div dir={isRTL ? "rtl" : "ltr"} style={{ ...SANS, backgroundColor: BG, minHeight: "100vh", color: GREEN, display: "flex", alignItems: "center", justifyContent: "center", padding: isMobile ? "24px 16px" : "40px" }}>
+      <style>{`@import url('https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;700&display=swap');@import url('https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=swap');.material-symbols-outlined{font-variation-settings:'FILL' 0,'wght' 400,'GRAD' 0,'opsz' 24;font-family:'Material Symbols Outlined';display:inline-block;vertical-align:middle;}`}</style>
+      
+      <div style={{ width: "100%", maxWidth: "440px", display: "flex", flexDirection: "column", gap: "24px" }}>
+        <div style={{ textAlign: "center", marginBottom: "8px" }}>
+  <img
+    src={logo}
+    alt="OULAMAUNA"
+    style={{
+      width: "56px",
+      height: "56px",
+      objectFit: "contain",
+      margin: "0 auto 12px",
+      display: "block",
+    }}
+  />
 
-      {/* Hero Header */}
-      <div className="relative w-full h-[35vh] overflow-hidden flex flex-col items-center justify-center pt-6">
-        <img src={libraryImg} alt="" className="absolute inset-0 w-full h-full object-cover" />
-        <div className="absolute inset-0 bg-[#285B4B]/85 mix-blend-multiply" />
-        <h1 className="relative z-10 text-white text-lg font-serif tracking-[0.4em] uppercase">
-          OULAMAUNA
-        </h1>
-      </div>
+  <p
+    style={{
+      ...MONO,
+      fontSize: isRTL ? "17px" : "11px",
+      letterSpacing: isRTL ? "0" : "0.3em",
+      color: GREEN,
+      fontWeight: 700,
+      margin: 0,
+      textTransform: isRTL ? "none" : "uppercase",
+      direction: isRTL ? "rtl" : "ltr",
+    }}
+  >
+    {isRTL ? "علماؤنا" : "OULAMAUNA"}
+  </p>
+</div>
 
-      {/* Card */}
-      <div
-        className={`relative z-20 -mt-12 w-full max-w-[360px] mx-4 p-6 bg-white rounded shadow-xl border border-gray-50 flex flex-col items-center text-center transition-all duration-700 ${
-          visible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-2"
-        }`}
-        dir={lang === "AR" ? "rtl" : "ltr"}
-      >
-        <span className="text-[#B59A5B] text-[8px] font-bold tracking-[0.2em] uppercase block mb-4">
-          {t.category}
-        </span>
+        <HoverCard style={{ padding: isMobile ? "24px 20px" : "32px 28px", textAlign: "center" }}>
+          <span style={{ ...MONO, fontSize: "9px", color: colors.amber, fontWeight: 700, letterSpacing: "0.2em", textTransform: "uppercase", display: "block", marginBottom: "16px" }}>{t("verifyEmail.category")}</span>
 
-        {/* ── Loading ── */}
-        {status === "loading" && (
-          <div className="flex flex-col items-center py-6 gap-4">
-            <RefreshCw className="w-6 h-6 text-[#B59A5B] animate-spin" />
-            <div className="space-y-2">
-              <p className="text-[#285B4B] font-serif text-lg">{t.loadingTitle}</p>
-              <p className="text-[#7D8471] text-[11px]">{t.loadingSubtitle}</p>
+          {status === "loading" && (
+            <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "16px", padding: "16px 0" }}>
+              <Icon name="autorenew" size={28} style={{ color: colors.amber, animation: "spin 1s linear infinite" }} />
+              <style>{`@keyframes spin { 100% { transform: rotate(360deg); } }`}</style>
+              <div>
+                <p style={{ ...SERIF, fontSize: "18px", color: GREEN, margin: "0 0 8px" }}>{t("verifyEmail.loadingTitle")}</p>
+                <p style={{ fontSize: "12px", color: MUTED, margin: 0 }}>{t("verifyEmail.loadingSubtitle")}</p>
+              </div>
             </div>
-          </div>
-        )}
+          )}
 
-        {/* ── Success ── */}
-        {status === "success" && (
-          <div className="flex flex-col items-center animate-in fade-in zoom-in duration-500">
-            <div className="mb-4 w-14 h-14 bg-[#E8F5E9] rounded-full flex items-center justify-center text-green-700 shadow-inner border-2 border-green-200">
-              <BadgeCheck className="w-7 h-7 stroke-[2px]" />
+          {status === "success" && (
+            <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
+              <div style={{ width: "56px", height: "56px", borderRadius: "50%", backgroundColor: "rgba(11, 67, 53, 0.08)", display: "flex", alignItems: "center", justifyContent: "center", marginBottom: "16px" }}>
+                <Icon name="verified" size={32} style={{ color: GREEN }} />
+              </div>
+              <h2 style={{ ...SERIF, fontSize: "22px", color: GREEN, margin: "0 0 8px" }}>{t("verifyEmail.successTitle")}</h2>
+              <p style={{ fontSize: "13px", color: MUTED, margin: "0 0 16px", lineHeight: 1.5 }}>{t("verifyEmail.successSubtitle")}</p>
+              <div style={{ display: "flex", alignItems: "center", gap: "8px", fontSize: "11px", color: colors.amber, fontWeight: 600, marginBottom: "20px" }}>
+                <Icon name="autorenew" size={14} style={{ animation: "spin 1s linear infinite" }} />
+                {t("verifyEmail.successRedirect")} <span style={{ color: GREEN }}>{countdown}</span> {t("verifyEmail.counting")}...
+              </div>
+              <HoverBtn variant="primary" onClick={() => navigate("/login")} style={{ width: "100%", marginBottom: "12px" }}>{t("verifyEmail.successBack")}</HoverBtn>
+              <Link to="/" style={{ fontSize: "11px", color: MUTED, textDecoration: "none" }}>{t("verifyEmail.successHome")}</Link>
             </div>
-            <h2 className="text-[#285B4B] text-xl font-serif mb-2">{t.successTitle}</h2>
-            <p className="text-[#7D8471] text-[11px] leading-relaxed mb-4">{t.successSubtitle}</p>
-            <div className="flex items-center gap-2 text-[10px] text-[#B59A5B] font-medium mb-5">
-              <RefreshCw className="w-3 h-3 animate-spin" />
-              <span>
-                {t.successRedirect}{" "}
-                <span className="font-bold text-[#285B4B]">{countdown}</span>{" "}
-                {t.counting}...
-              </span>
-            </div>
-            <div className="flex flex-col items-center space-y-3 w-full border-t border-gray-50 pt-4">
-              <button
-                onClick={() => navigate("/login")}
-                className="flex items-center gap-2 text-[9px] text-[#285B4B] hover:text-[#B59A5B] font-bold uppercase tracking-widest transition-colors"
-              >
-                <LogIn className="w-3 h-3" />
-                <span>{t.successBack}</span>
-              </button>
-              <Link to="/" className="text-[8px] text-[#B8B09A] hover:text-[#285B4B] uppercase tracking-widest font-medium transition-colors">
-                {t.successHome}
-              </Link>
-            </div>
-          </div>
-        )}
+          )}
 
-        {/* ── Error ── */}
-        {status === "error" && currentError && (
-          <div className="flex flex-col items-center w-full animate-in fade-in zoom-in duration-500">
-            <div className="mb-4 w-14 h-14 bg-[#FFF3E0] rounded-full flex items-center justify-center text-orange-600 shadow-inner border-2 border-orange-200">
-              <ErrorIcon type={currentError.icon} />
-            </div>
-            <h2 className="text-[#285B4B] text-xl font-serif mb-2">{currentError.title}</h2>
-            <p className="text-[#7D8471] text-[11px] leading-relaxed mb-4">{currentError.subtitle}</p>
+          {status === "error" && (
+            <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
+              <div style={{ width: "56px", height: "56px", borderRadius: "50%", backgroundColor: "rgba(139, 44, 44, 0.08)", display: "flex", alignItems: "center", justifyContent: "center", marginBottom: "16px" }}>
+                <Icon name={getErrorIcon(currentErrorType === "expired_token" ? "clock" : currentErrorType === "network" ? "wifi" : currentErrorType === "no_token" || currentErrorType === "invalid_token" ? "mail" : "error")} size={32} style={{ color: colors.red }} />
+              </div>
+              <h2 style={{ ...SERIF, fontSize: "20px", color: GREEN, margin: "0 0 8px" }}>{t(`verifyEmail.errors.${currentErrorType}.title`)}</h2>
+              <p style={{ fontSize: "13px", color: MUTED, margin: "0 0 16px", lineHeight: 1.5 }}>{t(`verifyEmail.errors.${currentErrorType}.subtitle`)}</p>
 
-            {/* ── Inline Resend Form (only for expired/no_token) ── */}
-            {currentError.showResend && (
-              <div className="w-full mb-4">
-                {resendDone ? (
-                  <div className="flex items-center justify-center gap-2 text-[10px] text-green-700 bg-green-50 border border-green-100 rounded py-2 px-3">
-                    <Check className="w-3 h-3" />
-                    <span>{t.resendSent}</span>
-                  </div>
-                ) : (
-                  <>
-                    <div className="flex gap-2 w-full">
-                      <input
-                        type="email"
-                        value={resendEmail}
-                        onChange={(e) => { setResendEmail(e.target.value); setResendError(""); }}
-                        onKeyDown={(e) => e.key === "Enter" && handleResend()}
-                        placeholder={t.resendPlaceholder}
-                        className="flex-1 border border-gray-200 rounded-sm px-3 py-2 text-[10px] text-[#285B4B] placeholder-gray-300 outline-none focus:border-[#B59A5B] transition-colors"
-                      />
-                      <button
-                        onClick={handleResend}
-                        disabled={resendLoading}
-                        className="bg-[#285B4B] hover:bg-[#1e4437] text-white px-3 py-2 rounded-sm text-[9px] font-bold tracking-widest transition-colors flex items-center gap-1.5 disabled:opacity-60"
-                      >
-                        {resendLoading
-                          ? <RefreshCw className="w-3 h-3 animate-spin" />
-                          : <Send className="w-3 h-3" />
-                        }
-                      </button>
+              {(currentErrorType === "no_token" || currentErrorType === "expired_token") && (
+                <div style={{ width: "100%", marginBottom: "16px" }}>
+                  {resendDone ? (
+                    <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "8px", fontSize: "12px", color: GREEN, backgroundColor: "rgba(11, 67, 53, 0.05)", padding: "10px", borderRadius: "8px" }}>
+                      <Icon name="check" size={16} /> {t("verifyEmail.resendSent")}
                     </div>
-                    {resendError && (
-                      <p className="text-[9px] text-red-400 mt-1.5 text-left">{resendError}</p>
-                    )}
+                  ) : (
+                    <>
+                      <div style={{ display: "flex", gap: "8px" }}>
+                        <input type="email" value={resendEmail} onChange={(e) => { setResendEmail(e.target.value); setResendError(""); }} placeholder={t("verifyEmail.resendPlaceholder")} style={inputStyle} />
+                        <HoverBtn variant="primary" onClick={handleResend} disabled={resendLoading} style={{ padding: "10px 14px", flexShrink: 0 }}>
+                          {resendLoading ? <Icon name="autorenew" size={16} style={{ animation: "spin 1s linear infinite" }} /> : <Icon name="send" size={16} />}
+                        </HoverBtn>
+                      </div>
+                      {resendError && <p style={{ fontSize: "11px", color: colors.red, marginTop: "6px", textAlign: isRTL ? "right" : "left" }}>{resendError}</p>}
+                    </>
+                  )}
+                </div>
+              )}
+
+              <div style={{ display: "flex", flexDirection: "column", gap: "12px", width: "100%", borderTop: `1px solid ${BORDER}`, paddingTop: "16px" }}>
+                {currentErrorType === "network" || currentErrorType === "server" ? (
+                  <HoverBtn variant="primary" onClick={() => { hasCalled.current = false; window.location.reload(); }} style={{ width: "100%" }}>
+                    <Icon name="refresh" size={14} /> {t(`verifyEmail.errors.${currentErrorType}.tryAgain`)}
+                  </HoverBtn>
+                ) : currentErrorType === "invalid_token" ? (
+                  <>
+                    <HoverBtn variant="primary" onClick={() => navigate("/")} style={{ width: "100%" }}>{t(`verifyEmail.errors.${currentErrorType}.backHome`)}</HoverBtn>
+                    <Link to="/register" style={{ fontSize: "11px", color: MUTED, textDecoration: "none" }}>{t(`verifyEmail.errors.${currentErrorType}.register`)}</Link>
                   </>
+                ) : (
+                  <HoverBtn variant="outline" onClick={() => navigate("/")} style={{ width: "100%" }}>{t(`verifyEmail.errors.${currentErrorType}.backHome`)}</HoverBtn>
                 )}
               </div>
-            )}
-
-            {/* ── Actions ── */}
-            <div className="flex flex-col items-center space-y-3 w-full border-t border-gray-50 pt-4">
-              {currentError.actions.map((action: any, i: number) =>
-                action.primary ? (
-                  action.reload ? (
-                    <button
-                      key={i}
-                      onClick={() => { hasCalled.current = false; window.location.reload(); }}
-                      className="flex items-center gap-2 text-[9px] text-[#285B4B] hover:text-[#B59A5B] font-bold uppercase tracking-widest transition-colors"
-                    >
-                      <RefreshCw className="w-3 h-3" />
-                      <span>{action.label}</span>
-                    </button>
-                  ) : (
-                    <Link key={i} to={action.to}
-                      className="flex items-center gap-2 text-[9px] text-[#285B4B] hover:text-[#B59A5B] font-bold uppercase tracking-widest transition-colors"
-                    >
-                      <span>{action.label}</span>
-                    </Link>
-                  )
-                ) : (
-                  action.to ? (
-                    <Link key={i} to={action.to}
-                      className="flex items-center gap-1.5 text-[8px] text-[#B8B09A] hover:text-[#285B4B] uppercase tracking-widest font-medium transition-colors"
-                    >
-                      <ArrowLeft className="w-3 h-3" />
-                      <span>{action.label}</span>
-                    </Link>
-                  ) : null
-                )
-              )}
             </div>
-          </div>
-        )}
+          )}
+        </HoverCard>
       </div>
-
-      <div className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-[#B59A5B] via-[#285B4B] to-[#B59A5B]" />
     </div>
   );
 };

@@ -1,39 +1,41 @@
 // src/i18n.ts
 import i18n from 'i18next';
 import { initReactI18next } from 'react-i18next';
-import LanguageDetector from 'i18next-browser-languagedetector'; // 1. استيراد المكتبة الجديدة
+import LanguageDetector from 'i18next-browser-languagedetector';
 
-// استيراد ملفاتك الحالية
-import en from './locales/en.json';
-import ar from './locales/ar.json';
-import fr from './locales/fr.json';
+// 🪄 MAGIC: Automatically import ALL .json files in the locales folder
+const localeFiles = import.meta.glob('./locales/*.json', { eager: true }) as Record<string, { default: any }>;
 
-const resources = {
-  en: { translation: en },
-  ar: { translation: ar },
-  fr: { translation: fr },
-};
+const resources: Record<string, { translation: any }> = {};
+
+// Build the resources object dynamically based on file names
+for (const path in localeFiles) {
+  // Extract language code from filename (e.g., './locales/es.json' -> 'es')
+  const match = path.match(/\/locales\/([a-zA-Z0-9\-_]+)\.json$/);
+  if (match) {
+    const langCode = match[1].toLowerCase();
+    resources[langCode] = {
+      translation: localeFiles[path].default
+    };
+  }
+}
 
 i18n
-  .use(LanguageDetector) // 2. استخدام كاشف اللغة
+  .use(LanguageDetector)
   .use(initReactI18next)
   .init({
-    resources,
+    resources, // Uses the dynamically generated resources
     fallbackLng: 'en',
     interpolation: {
       escapeValue: false,
     },
-    // 3. إعدادات الكشف عن اللغة
     detection: {
-      // ترتيب الأولوية: نتحقق من localStorage أولاً، ثم لغة المتصفح، ثم إعدادات HTML
-      order: ['localStorage', 'navigator', 'htmlTag', 'path', 'subdomain'],
-      
-      // نربطها بمفتاح localStorage الخاص بك لكي تحترم اختيار المستخدم السابق
-      lookupLocalStorage: 'oulamauna-language', 
-      
-      // نحفظ اللغة المختارة تلقائياً في localStorage
-      caches: ['localStorage'], 
+      order: ['localStorage', 'navigator', 'htmlTag'],
+      lookupLocalStorage: 'oulamauna-language',
+      caches: ['localStorage'],
     },
+    keySeparator: '.', // Enables dot notation like t('pages.home.title')
+    nsSeparator: false,
   });
 
 export default i18n;

@@ -6,41 +6,13 @@ export default function PrivacyPolicy() {
   const { lang } = useLang();
   const isRTL = lang === "AR";
 
-  const headingFont = lang === "AR" ? "'Amiri', serif" : "'Hanken Grotesk', sans-serif";
-  const bodyFont = lang === "AR" ? "'Amiri', serif" : "'Inter', sans-serif";
+  const headingFont = isRTL ? "'Amiri', serif" : "'Hanken Grotesk', sans-serif";
+  const bodyFont = isRTL ? "'Amiri', serif" : "'Inter', sans-serif";
   const monoFont = "'JetBrains Mono', monospace";
 
-  const privacyContent = {
-    AR: {
-      title: "سياسة الخصوصية",
-      intro: "في علماؤنا، نلتزم بحماية خصوصيتك وضمان أمان معلوماتك الشخصية. توضح سياسة الخصوصية هذه كيف نجمع ونستخدم ونحمي بياناتك عند استخدام منصتنا.",
-      sections: [
-        {
-          title: "1. المعلومات التي نجمعها",
-          content: [
-            { subtitle: "المعلومات الشخصية", text: "عند إنشاء حساب أو المساهمة في منصتنا، قد نجمع:\n• الاسم واسم المستخدم\n• عنوان البريد الإلكتروني\n• كلمة المرور (مشفرة)\n• معلومات الملف الشخصي\n• السيرة الذاتية والمؤهلات (للمساهمين)\n• سجل المساهمات والإضافات" },
-            { subtitle: "المعلومات التي تُجمع تلقائياً", text: "نجمع تلقائياً معلومات معينة عند زيارة منصتنا:\n• عنوان IP ونوع المتصفح\n• معلومات الجهاز\n• الصفحات التي تمت زيارتها والوقت المستغرق\n• الموقع الإلكتروني المرجع\n• ملفات تعريف الارتباط والتقنيات المماثلة" }
-          ]
-        },
-        { title: "2. كيف نستخدم معلوماتك", content: [{ subtitle: "", text: "نستخدم المعلومات التي نجمعها لـ:\n• تقديم خدماتنا وصيانتها\n• إنشاء وإدارة حسابك\n• معالجة ومراجعة مساهماتك\n• التواصل معك حول التحديثات والتغييرات\n• تحسين منصتنا وتجربة المستخدم\n• ضمان الأمن ومنع الاحتيال\n• الامتثال للالتزامات القانونية" }] },
-        { title: "3. أمان البيانات", content: [{ subtitle: "", text: "ننفذ تدابير تقنية وتنظيمية مناسبة لحماية معلوماتك الشخصية:\n• تشفير البيانات الحساسة\n• خوادم وقواعد بيانات آمنة\n• تدقيقات أمنية منتظمة\n• ضوابط الوصول والمصادقة\n• نسخ احتياطية منتظمة\n\nومع ذلك، لا توجد طريقة نقل عبر الإنترنت آمنة بنسبة 100٪، ولا يمكننا ضمان الأمان المطلق." }] },
-        {
-          title: "4. مشاركة البيانات والكشف عنها",
-          content: [
-            { subtitle: "نحن لا نبيع بياناتك", text: "نحن لا نبيع أو نتاجر أو نؤجر معلوماتك الشخصية لأطراف ثالثة." },
-            { subtitle: "متى قد نشارك المعلومات", text: "قد نشارك معلوماتك في الظروف التالية:\n• بموافقتك\n• للامتثال للالتزامات القانونية\n• لحماية حقوقنا ومنع الاحتيال\n• مع مقدمي الخدمات الذين يساعدون في عملياتنا (بموجب اتفاقيات السرية)\n• فيما يتعلق بدمج أو استحواذ" }
-          ]
-        },
-        { title: "5. حقوقك", content: [{ subtitle: "", text: "لديك الحقوق التالية فيما يتعلق ببياناتك الشخصية:\n• الوصول: طلب نسخة من بياناتك\n• التصحيح: طلب تصحيح البيانات غير الدقيقة\n• الحذف: طلب حذف بياناتك\n• النقل: طلب نقل بياناتك\n• الاعتراض: الاعتراض على معالجة بياناتك\n• سحب الموافقة: سحب الموافقة في أي وقت\n\nلممارسة هذه الحقوق، اتصل بنا على privacy@oulamauna.com" }] },
-        { title: "6. ملفات تعريف الارتباط (Cookies)", content: [{ subtitle: "", text: "نستخدم ملفات تعريف الارتباط والتقنيات المماثلة لـ:\n• تذكر تفضيلاتك\n• فهم كيفية استخدامك لمنصتنا\n• تحسين تجربة المستخدم\n• تحليل حركة المرور وأنماط الاستخدام\n\nيمكنك التحكم في ملفات تعريف الارتباط من خلال إعدادات المتصفح. ومع ذلك، قد يؤثر تعطيل ملفات تعريف الارتباط على قدرتك على استخدام ميزات معينة من منصتنا." }] },
-        { title: "7. الاحتفاظ بالبيانات", content: [{ subtitle: "", text: "نحتفظ بمعلوماتك الشخصية طالما كان ذلك ضرورياً لـ:\n• تقديم خدماتنا\n• الامتثال للالتزامات القانونية\n• حل النزاعات\n• تنفيذ اتفاقياتنا\n\nعندما لا نحتاج بعد إلى بياناتك، سنحذفها أو نجعلها مجهولة بشكل آمن." }] },
-        { title: "8. نقل البيانات الدولية", content: [{ subtitle: "", text: "إذا كنت تصل إلى منصتنا من خارج الجزائر، فقد يتم نقل بياناتك ومعالجتها في الجزائر. نضمن وجود ضمانات مناسبة لحماية معلوماتك وفقاً لسياسة الخصوصية هذه." }] },
-        { title: "9. خصوصية الأطفال", content: [{ subtitle: "", text: "منصتنا ليست مخصصة للأطفال دون سن 13 عاماً. نحن لا نجمع عمداً معلومات شخصية من الأطفال دون سن 13. إذا اكتشفنا أننا جمعنا بيانات من طفل دون سن 13، سنحذفها فوراً." }] },
-        { title: "10. التغييرات على سياسة الخصوصية هذه", content: [{ subtitle: "", text: "قد نقوم بتحديث سياسة الخصوصية هذه من وقت لآخر. سنخطرك بأي تغييرات من خلال نشر سياسة الخصوصية الجديدة في هذه الصفحة وتحديث تاريخ 'آخر تحديث'. نشجعك على مراجعة سياسة الخصوصية هذه دورياً." }] },
-        { title: "11. اتصل بنا", content: [{ subtitle: "", text: "إذا كانت لديك أي أسئلة أو مخاوف بشأن سياسة الخصوصية هذه أو ممارساتنا المتعلقة بالبيانات، يرجى الاتصال بنا على:\n\nالبريد الإلكتروني: privacy@oulamauna.com\nالعنوان: الجزائر العاصمة، الجزائر\n\nسنرد على استفسارك خلال 30 يوماً." }] }
-      ]
-    },
+  const translations: any = {
     EN: {
+      breadcrumb: { home: "HOME", current: "PRIVACY POLICY" },
       title: "Privacy Policy",
       subtitle: "Last updated: January 2026",
       intro: "At Oulamauna, we are committed to protecting your privacy and ensuring the security of your personal information. This Privacy Policy explains how we collect, use, and safeguard your data when you use our platform.",
@@ -68,9 +40,42 @@ export default function PrivacyPolicy() {
         { title: "9. Children's Privacy", content: [{ subtitle: "", text: "Our platform is not intended for children under 13 years of age. We do not knowingly collect personal information from children under 13. If we discover that we have collected data from a child under 13, we will delete it immediately." }] },
         { title: "10. Changes to This Privacy Policy", content: [{ subtitle: "", text: "We may update this Privacy Policy from time to time. We will notify you of any changes by posting the new Privacy Policy on this page and updating the 'Last updated' date. We encourage you to review this Privacy Policy periodically." }] },
         { title: "11. Contact Us", content: [{ subtitle: "", text: "If you have any questions or concerns about this Privacy Policy or our data practices, please contact us at:\n\nEmail: privacy@oulamauna.com\nAddress: Algiers, Algeria\n\nWe will respond to your inquiry within 30 days." }] }
-      ]
+      ],
+      backToTop: "Back to Top"
+    },
+    AR: {
+      breadcrumb: { home: "الرئيسية", current: "سياسة الخصوصية" },
+      title: "سياسة الخصوصية",
+      intro: "في علماؤنا، نلتزم بحماية خصوصيتك وضمان أمان معلوماتك الشخصية. توضح سياسة الخصوصية هذه كيف نجمع ونستخدم ونحمي بياناتك عند استخدام منصتنا.",
+      sections: [
+        {
+          title: "1. المعلومات التي نجمعها",
+          content: [
+            { subtitle: "المعلومات الشخصية", text: "عند إنشاء حساب أو المساهمة في منصتنا، قد نجمع:\n• الاسم واسم المستخدم\n• عنوان البريد الإلكتروني\n• كلمة المرور (مشفرة)\n• معلومات الملف الشخصي\n• السيرة الذاتية والمؤهلات (للمساهمين)\n• سجل المساهمات والإضافات" },
+            { subtitle: "المعلومات التي تُجمع تلقائياً", text: "نجمع تلقائياً معلومات معينة عند زيارة منصتنا:\n• عنوان IP ونوع المتصفح\n• معلومات الجهاز\n• الصفحات التي تمت زيارتها والوقت المستغرق\n• الموقع الإلكتروني المرجع\n• ملفات تعريف الارتباط والتقنيات المماثلة" }
+          ]
+        },
+        { title: "2. كيف نستخدم معلوماتك", content: [{ subtitle: "", text: "نستخدم المعلومات التي نجمعها لـ:\n• تقديم خدماتنا وصيانتها\n• إنشاء وإدارة حسابك\n• معالجة ومراجعة مساهماتك\n• التواصل معك حول التحديثات والتغييرات\n• تحسين منصتنا وتجربة المستخدم\n• ضمان الأمن ومنع الاحتيال\n• الامتثال للالتزامات القانونية" }] },
+        { title: "3. أمان البيانات", content: [{ subtitle: "", text: "ننفذ تدابير تقنية وتنظيمية مناسبة لحماية معلوماتك الشخصية:\n• تشفير البيانات الحساسة\n• خوادم وقواعد بيانات آمنة\n• تدقيقات أمنية منتظمة\n• ضوابط الوصول والمصادقة\n• نسخ احتياطية منتظمة\n\nومع ذلك، لا توجد طريقة نقل عبر الإنترنت آمنة بنسبة 100٪، ولا يمكننا ضمان الأمان المطلق." }] },
+        {
+          title: "4. مشاركة البيانات والكشف عنها",
+          content: [
+            { subtitle: "نحن لا نبيع بياناتك", text: "نحن لا نبيع أو نتاجر أو نؤجر معلوماتك الشخصية لأطراف ثالثة." },
+            { subtitle: "متى قد نشارك المعلومات", text: "قد نشارك معلوماتك في الظروف التالية:\n• بموافقتك\n• للامتثال للالتزامات القانونية\n• لحماية حقوقنا ومنع الاحتيال\n• مع مقدمي الخدمات الذين يساعدون في عملياتنا (بموجب اتفاقيات السرية)\n• فيما يتعلق بدمج أو استحواذ" }
+          ]
+        },
+        { title: "5. حقوقك", content: [{ subtitle: "", text: "لديك الحقوق التالية فيما يتعلق ببياناتك الشخصية:\n• الوصول: طلب نسخة من بياناتك\n• التصحيح: طلب تصحيح البيانات غير الدقيقة\n• الحذف: طلب حذف بياناتك\n• النقل: طلب نقل بياناتك\n• الاعتراض: الاعتراض على معالجة بياناتك\n• سحب الموافقة: سحب الموافقة في أي وقت\n\nلممارسة هذه الحقوق، اتصل بنا على privacy@oulamauna.com" }] },
+        { title: "6. ملفات تعريف الارتباط (Cookies)", content: [{ subtitle: "", text: "نستخدم ملفات تعريف الارتباط والتقنيات المماثلة لـ:\n• تذكر تفضيلاتك\n• فهم كيفية استخدامك لمنصتنا\n• تحسين تجربة المستخدم\n• تحليل حركة المرور وأنماط الاستخدام\n\nيمكنك التحكم في ملفات تعريف الارتباط من خلال إعدادات المتصفح. ومع ذلك، قد يؤثر تعطيل ملفات تعريف الارتباط على قدرتك على استخدام ميزات معينة من منصتنا." }] },
+        { title: "7. الاحتفاظ بالبيانات", content: [{ subtitle: "", text: "نحتفظ بمعلوماتك الشخصية طالما كان ذلك ضرورياً لـ:\n• تقديم خدماتنا\n• الامتثال للالتزامات القانونية\n• حل النزاعات\n• تنفيذ اتفاقياتنا\n\nعندما لا نحتاج بعد إلى بياناتك، سنحذفها أو نجعلها مجهولة بشكل آمن." }] },
+        { title: "8. نقل البيانات الدولية", content: [{ subtitle: "", text: "إذا كنت تصل إلى منصتنا من خارج الجزائر، فقد يتم نقل بياناتك ومعالجتها في الجزائر. نضمن وجود ضمانات مناسبة لحماية معلوماتك وفقاً لسياسة الخصوصية هذه." }] },
+        { title: "9. خصوصية الأطفال", content: [{ subtitle: "", text: "منصتنا ليست مخصصة للأطفال دون سن 13 عاماً. نحن لا نجمع عمداً معلومات شخصية من الأطفال دون سن 13. إذا اكتشفنا أننا جمعنا بيانات من طفل دون سن 13، سنحذفها فوراً." }] },
+        { title: "10. التغييرات على سياسة الخصوصية هذه", content: [{ subtitle: "", text: "قد نقوم بتحديث سياسة الخصوصية هذه من وقت لآخر. سنخطرك بأي تغييرات من خلال نشر سياسة الخصوصية الجديدة في هذه الصفحة وتحديث تاريخ 'آخر تحديث'. نشجعك على مراجعة سياسة الخصوصية هذه دورياً." }] },
+        { title: "11. اتصل بنا", content: [{ subtitle: "", text: "إذا كانت لديك أي أسئلة أو مخاوف بشأن سياسة الخصوصية هذه أو ممارساتنا المتعلقة بالبيانات، يرجى الاتصال بنا على:\n\nالبريد الإلكتروني: privacy@oulamauna.com\nالعنوان: الجزائر العاصمة، الجزائر\n\nسنرد على استفسارك خلال 30 يوماً." }] }
+      ],
+      backToTop: "العودة للأعلى"
     },
     FR: {
+      breadcrumb: { home: "ACCUEIL", current: "POLITIQUE DE CONFIDENTIALITÉ" },
       title: "Politique de Confidentialité",
       subtitle: "Dernière mise à jour: Janvier 2026",
       intro: "Chez Oulamauna, nous nous engageons à protéger votre vie privée et à assurer la sécurité de vos informations personnelles. Cette Politique de Confidentialité explique comment nous collectons, utilisons et protégeons vos données lorsque vous utilisez notre plateforme.",
@@ -98,19 +103,12 @@ export default function PrivacyPolicy() {
         { title: "9. Vie Privée des Enfants", content: [{ subtitle: "", text: "Notre plateforme n'est pas destinée aux enfants de moins de 13 ans. Nous ne collectons pas sciemment d'informations personnelles auprès d'enfants de moins de 13 ans. Si nous découvrons que nous avons collecté des données d'un enfant de moins de 13 ans, nous les supprimerons immédiatement." }] },
         { title: "10. Modifications de cette Politique de Confidentialité", content: [{ subtitle: "", text: "Nous pouvons mettre à jour cette Politique de Confidentialité de temps à autre. Nous vous informerons de tout changement en publiant la nouvelle Politique de Confidentialité sur cette page et en mettant à jour la date de 'Dernière mise à jour'. Nous vous encourageons à consulter cette Politique de Confidentialité périodiquement." }] },
         { title: "11. Nous Contacter", content: [{ subtitle: "", text: "Si vous avez des questions ou des préoccupations concernant cette Politique de Confidentialité ou nos pratiques en matière de données, veuillez nous contacter à:\n\nE-mail: privacy@oulamauna.com\nAdresse: Alger, Algérie\n\nNous répondrons à votre demande dans un délai de 30 jours." }] }
-      ]
+      ],
+      backToTop: "Retour en haut"
     }
   };
 
-  const t = privacyContent[lang as keyof typeof privacyContent] || privacyContent.EN;
-  
-  const breadcrumbs = {
-    AR: { home: "الرئيسية", current: "سياسة الخصوصية" },
-    EN: { home: "HOME", current: "PRIVACY POLICY" },
-    FR: { home: "ACCUEIL", current: "POLITIQUE DE CONFIDENTIALITÉ" }
-  };
-  const bc = breadcrumbs[lang as keyof typeof breadcrumbs] || breadcrumbs.EN;
-  const backToTopLabel = isRTL ? "العودة للأعلى" : lang === "FR" ? "Retour en haut" : "Back to Top";
+  const t = translations[lang] || translations.EN;
 
   return (
     <div dir={isRTL ? "rtl" : "ltr"} style={{ minHeight: "100vh", backgroundColor: "#fbf9f4", fontFamily: bodyFont }}>
@@ -124,9 +122,9 @@ export default function PrivacyPolicy() {
           fontFamily: monoFont, fontSize: "11px", fontWeight: 700, letterSpacing: "0.2em", color: "#C9A84C",
           textTransform: "uppercase", margin: "0 0 14px 0", display: "flex", alignItems: "center", justifyContent: "center", gap: "8px",
         }}>
-          <BreadcrumbHomeLink label={bc.home} />
+          <BreadcrumbHomeLink label={t.breadcrumb.home} />
           <span style={{ color: "#1e4d3a66" }}>›</span>
-          <span style={{ color: "#1e4d3a" }}>{bc.current}</span>
+          <span style={{ color: "#1e4d3a" }}>{t.breadcrumb.current}</span>
         </p>
         <h1 style={{
           fontFamily: headingFont, fontSize: "clamp(32px, 5vw, 48px)", fontWeight: 700, color: "#1e4d3a",
@@ -134,6 +132,13 @@ export default function PrivacyPolicy() {
         }}>
           {t.title}
         </h1>
+        {t.subtitle && (
+          <p style={{
+            fontFamily: monoFont, fontSize: "12px", color: "#1e4d3a99", margin: "8px 0 0 0"
+          }}>
+            {t.subtitle}
+          </p>
+        )}
       </section>
 
       <div style={{ maxWidth: "900px", margin: "0 auto", padding: "40px 24px 80px" }}>
@@ -155,17 +160,16 @@ export default function PrivacyPolicy() {
                 {section.title}
               </h2>
               
-              {/* Handle both flat 'text' and nested 'content' structures */}
-              {section.content ? (
-                section.content.map((content: any, contentIndex: number) => (
+              {Array.isArray(section.content) ? (
+                section.content.map((contentItem: any, contentIndex: number) => (
                   <div key={contentIndex} style={{ marginBottom: "24px" }}>
-                    {content.subtitle && (
+                    {contentItem.subtitle && (
                       <h3 style={{ fontFamily: headingFont, fontSize: "18px", fontWeight: 700, color: "#1e4d3a", marginBottom: "12px" }}>
-                        {content.subtitle}
+                        {contentItem.subtitle}
                       </h3>
                     )}
                     <div style={{ fontFamily: bodyFont, fontSize: "15px", color: "#1e4d3a99", lineHeight: 1.8, whiteSpace: "pre-line" }}>
-                      {content.text}
+                      {contentItem.text}
                     </div>
                   </div>
                 ))
@@ -180,14 +184,13 @@ export default function PrivacyPolicy() {
 
         {/* Back to Top Button */}
         <div style={{ marginTop: "64px", textAlign: "center" }}>
-          <BackToTopButton label={backToTopLabel} />
+          <BackToTopButton label={t.backToTop} fontFamily={headingFont} />
         </div>
       </div>
     </div>
   );
 }
 
-// ── Breadcrumb Home Link ─────────────────────────────────────────────────
 const BreadcrumbHomeLink: React.FC<{ label: string }> = ({ label }) => {
   const [hovered, setHovered] = useState(false);
   return (
@@ -198,8 +201,7 @@ const BreadcrumbHomeLink: React.FC<{ label: string }> = ({ label }) => {
   );
 };
 
-// ── Back to Top Button with Scholar-style Invert Hover ───────────────────
-const BackToTopButton: React.FC<{ label: string }> = ({ label }) => {
+const BackToTopButton: React.FC<{ label: string; fontFamily: string }> = ({ label, fontFamily }) => {
   const [hovered, setHovered] = useState(false);
   return (
     <button
@@ -211,7 +213,7 @@ const BackToTopButton: React.FC<{ label: string }> = ({ label }) => {
         backgroundColor: hovered ? "#fbf9f4" : "#1e4d3a",
         color: hovered ? "#1e4d3a" : "#fff",
         border: `2px solid #1e4d3a`,
-        borderRadius: "8px", fontFamily: "'Hanken Grotesk', sans-serif", fontSize: "12px",
+        borderRadius: "8px", fontFamily: fontFamily, fontSize: "12px",
         fontWeight: 700, letterSpacing: "0.05em", cursor: "pointer",
         boxShadow: hovered ? "none" : "0 2px 10px rgba(30,77,58,0.18)",
         transition: "all 0.3s ease",

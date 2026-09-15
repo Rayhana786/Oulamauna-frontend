@@ -2,82 +2,20 @@ import React, { useState } from "react";
 import { useAuth } from "../../context/AuthContext";
 import { Link, useNavigate } from "react-router-dom";
 import libraryImg from "../../assets/library2.jpg";
-import logoForBlack from '../../assets/image-removebg-preview (1).png';
+import logoForBlack from '../../assets/logo.png';
 import { useLang } from "../../context/LanguageContext";
 
-type Language = "EN" | "AR" | "FR";
-
 const Login: React.FC = () => {
-  const { lang } = useLang();
+  const { lang, t } = useLang();
   const navigate = useNavigate();
   const { login } = useAuth();
+  
   const [showPassword, setShowPassword] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [errors, setErrors] = useState<{ email?: string; password?: string; general?: string }>({});
   const [isLoading, setIsLoading] = useState(false);
 
-  const content = {
-    EN: {
-      title: "Welcome back",
-      subtitle: "Enter your credentials to access your account",
-      emailLabel: "Email",
-      emailPlaceholder: "Enter your email",
-      passwordLabel: "Password",
-      passwordPlaceholder: "Enter your password",
-      forgot: "Forgot password?",
-      button: "Sign In",
-      google: "Sign in with Google",
-      noAccount: "Don't have an account?",
-      join: "Sign up",
-      or: "or",
-      errEmailEmpty: "Email is required",
-      errEmailInvalid: "Invalid email address",
-      errPasswordEmpty: "Password is required",
-      errInvalidAuth: "Invalid email or password",
-      errServer: "Server connection failed",
-    },
-    AR: {
-      title: "مرحباً بعودتك",
-      subtitle: "أدخل بياناتك للوصول إلى حسابك",
-      emailLabel: "البريد الإلكتروني",
-      emailPlaceholder: "أدخل بريدك الإلكتروني",
-      passwordLabel: "كلمة المرور",
-      passwordPlaceholder: "أدخل كلمة المرور",
-      forgot: "نسيت كلمة المرور؟",
-      button: "تسجيل الدخول",
-      google: "تسجيل الدخول عبر Google",
-      noAccount: "ليس لديك حساب؟",
-      join: "إنشاء حساب",
-      or: "أو",
-      errEmailEmpty: "البريد الإلكتروني مطلوب",
-      errEmailInvalid: "عنوان بريد غير صالح",
-      errPasswordEmpty: "كلمة المرور مطلوبة",
-      errInvalidAuth: "البريد الإلكتروني أو كلمة المرور غير صحيحة",
-      errServer: "فشل الاتصال بالخادم",
-    },
-    FR: {
-      title: "Bon retour",
-      subtitle: "Entrez vos identifiants pour accéder à votre compte",
-      emailLabel: "E-mail",
-      emailPlaceholder: "Entrez votre e-mail",
-      passwordLabel: "Mot de passe",
-      passwordPlaceholder: "Entrez votre mot de passe",
-      forgot: "Mot de passe oublié ?",
-      button: "Se connecter",
-      google: "Se connecter avec Google",
-      noAccount: "Pas encore de compte ?",
-      join: "S'inscrire",
-      or: "ou",
-      errEmailEmpty: "E-mail requis",
-      errEmailInvalid: "E-mail invalide",
-      errPasswordEmpty: "Mot de passe requis",
-      errInvalidAuth: "E-mail ou mot de passe incorrect",
-      errServer: "Échec de la connexion au serveur",
-    },
-  };
-
-  const t = content[lang];
   const isRTL = lang === "AR";
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -85,9 +23,9 @@ const Login: React.FC = () => {
     setErrors({});
     
     let newErrors: any = {};
-    if (!email.trim()) newErrors.email = t.errEmailEmpty;
-    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) newErrors.email = t.errEmailInvalid;
-    if (!password.trim()) newErrors.password = t.errPasswordEmpty;
+    if (!email.trim()) newErrors.email = t("login.errEmailEmpty");
+    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) newErrors.email = t("login.errEmailInvalid");
+    if (!password.trim()) newErrors.password = t("login.errPasswordEmpty");
 
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors);
@@ -117,10 +55,10 @@ const Login: React.FC = () => {
           navigate(`/verify-email-pending?email=${encodeURIComponent(data.email)}`);
           return;
         }
-        setErrors({ password: t.errInvalidAuth });
+        setErrors({ password: t("login.errInvalidAuth") });
       }
     } catch (error) {
-      setErrors({ general: t.errServer });
+      setErrors({ general: t("login.errServer") });
     } finally {
       setIsLoading(false);
     }
@@ -145,14 +83,14 @@ const Login: React.FC = () => {
           {/* Header */}
           <div className="mb-8">
             <h1 className="text-3xl font-bold text-[#1e4d3a] mb-2" style={{ fontFamily: "'Hanken Grotesk', sans-serif" }}>
-              {t.title}
+              {t("login.title")}
             </h1>
             <p className="text-[#1e4d3a]/60 text-sm" style={{ fontFamily: "'Inter', sans-serif" }}>
-              {t.subtitle}
+              {t("login.subtitle")}
             </p>
           </div>
 
-          {/* Google Sign In - LARGER */}
+          {/* Google Sign In */}
           <button
             type="button"
             className="w-full flex items-center justify-center gap-3 px-4 py-3.5 border border-[#1e4d3a]/30 rounded-lg bg-white text-[#1e4d3a] font-medium hover:bg-[#1e4d3a]/10 hover:border-[#1e4d3a]/50 transition-all duration-200 mb-6"
@@ -164,7 +102,7 @@ const Login: React.FC = () => {
               <path fill="#FBBC05" d="M5.52 14.59C5.07 13.4 4.82 12.12 4.82 11s.25-2.4.7-3.59H2.18C1.43 9.1 1 10.02 1 11s.43 1.9 1.18 2.59z"/>
               <path fill="#EA4335" d="M12 4.75c1.7 0 3.24.59 4.45 1.73l3.32-3.32C17.46 1.4 14.88 0 12 0 7.72 0 4.07 2.9 2.18 7.09l3.34 2.97C6.43 6.78 8.99 4.75 12 4.75z"/>
             </svg>
-            {t.google}
+            {t("login.google")}
           </button>
 
           {/* Divider */}
@@ -173,7 +111,7 @@ const Login: React.FC = () => {
               <div className="w-full border-t border-[#1e4d3a]/20"></div>
             </div>
             <div className="relative flex justify-center text-sm">
-              <span className="px-4 bg-[#fbf9f4] text-[#1e4d3a]/60" style={{ fontFamily: "'Inter', sans-serif" }}>{t.or}</span>
+              <span className="px-4 bg-[#fbf9f4] text-[#1e4d3a]/60" style={{ fontFamily: "'Inter', sans-serif" }}>{t("login.or")}</span>
             </div>
           </div>
 
@@ -187,14 +125,14 @@ const Login: React.FC = () => {
 
             <div>
               <label htmlFor="email" className="block text-sm font-semibold text-[#1e4d3a] mb-1.5" style={{ fontFamily: "'Inter', sans-serif" }}>
-                {t.emailLabel}
+                {t("login.emailLabel")}
               </label>
               <input
                 id="email"
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder={t.emailPlaceholder}
+                placeholder={t("login.emailPlaceholder")}
                 className={`w-full px-5 py-3.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#1e4d3a]/20 focus:border-[#1e4d3a] transition-all duration-200 text-base bg-white text-[#1e4d3a] placeholder-[#1e4d3a]/40 ${errors.email ? 'border-[#b23b3b] focus:ring-[#b23b3b]/20 focus:border-[#b23b3b]' : 'border-[#1e4d3a]/25'}`}
                 style={{ fontFamily: "'Inter', sans-serif" }}
               />
@@ -204,10 +142,10 @@ const Login: React.FC = () => {
             <div>
               <div className="flex items-center justify-between mb-1.5">
                 <label htmlFor="password" className="block text-sm font-semibold text-[#1e4d3a]" style={{ fontFamily: "'Inter', sans-serif" }}>
-                  {t.passwordLabel}
+                  {t("login.passwordLabel")}
                 </label>
                 <Link to="/forgot-password" className="text-sm text-[#C9A84C] hover:text-[#1e4d3a] transition-colors duration-200" style={{ fontFamily: "'Inter', sans-serif" }}>
-                  {t.forgot}
+                  {t("login.forgot")}
                 </Link>
               </div>
               <div className="relative">
@@ -216,14 +154,14 @@ const Login: React.FC = () => {
                   type={showPassword ? "text" : "password"}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  placeholder={t.passwordPlaceholder}
+                  placeholder={t("login.passwordPlaceholder")}
                   className={`w-full px-5 py-3.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#1e4d3a]/20 focus:border-[#1e4d3a] transition-all duration-200 text-base pr-12 bg-white text-[#1e4d3a] placeholder-[#1e4d3a]/40 ${errors.password ? 'border-[#b23b3b] focus:ring-[#b23b3b]/20 focus:border-[#b23b3b]' : 'border-[#1e4d3a]/25'}`}
                   style={{ fontFamily: "'Inter', sans-serif" }}
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-4 top-1/2 -translate-y-1/2 text-[#1e4d3a]/40 hover:text-[#1e4d3a] transition-colors"
+                  className={`absolute ${isRTL ? "left-4" : "right-4"} top-1/2 -translate-y-1/2 text-[#1e4d3a]/40 hover:text-[#1e4d3a] transition-colors`}
                 >
                   {showPassword ? (
                     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -246,58 +184,48 @@ const Login: React.FC = () => {
               className="w-full bg-[#1e4d3a] text-white py-3.5 rounded-lg font-bold hover:bg-white hover:text-[#1e4d3a] border-2 border-[#1e4d3a] focus:outline-none focus:ring-2 focus:ring-[#1e4d3a]/30 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed text-base"
               style={{ fontFamily: "'Hanken Grotesk', sans-serif", letterSpacing: "0.05em" }}
             >
-              {isLoading ? (isRTL ? "جاري التحميل..." : "Loading...") : t.button}
+              {isLoading ? t("login.loading") : t("login.button")}
             </button>
           </form>
 
           {/* Sign Up Link */}
           <p className="mt-6 text-center text-sm text-[#1e4d3a]/70" style={{ fontFamily: "'Inter', sans-serif" }}>
-            {t.noAccount}{" "}
+            {t("login.noAccount")}{" "}
             <Link to="/register" className="font-semibold text-[#C9A84C] hover:text-[#1e4d3a] transition-colors duration-200">
-              {t.join}
+              {t("login.join")}
             </Link>
           </p>
         </div>
       </div>
 
-      {/* Right Side - Wider Image Card */}
+      {/* Right Side - Image Card */}
       <div className="hidden lg:flex lg:flex-1 justify-center p-1 relative">
-        {/* Floating Card Container - WIDER */}
         <div className="relative w-full max-w-lg">
-          {/* Main Floating Card */}
           <div className="relative bg-white rounded-3xl overflow-hidden shadow-2xl" style={{ boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)' }}>
-            {/* Image Container */}
             <div className="relative h-[750px]">
-              <img 
-                src={libraryImg} 
-                alt="Library" 
-                className="absolute inset-0 w-full h-full object-cover"
-              />
-              
-              {/* Dark Overlay Gradient */}
+              <img src={libraryImg} alt="Library" className="absolute inset-0 w-full h-full object-cover" />
               <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent"></div>
 
-              {/* Content - Minimal Padding */}
               <div className="absolute bottom-0 left-0 right-0 p-4 text-white">
-                <h2 className="text-2xl font-bold mb-2" style={{ fontFamily: "'Hanken Grotesk', sans-serif" }}>Preserving Islamic Scholarly Heritage</h2>
+                <h2 className="text-2xl font-bold mb-2" style={{ fontFamily: "'Hanken Grotesk', sans-serif" }}>
+                  {t("login.imageTitle")}
+                </h2>
                 <p className="text-white/80 text-xs leading-relaxed mb-3" style={{ fontFamily: "'Inter', sans-serif" }}>
-                  Discover centuries of knowledge from renowned scholars.
+                  {t("login.imageSubtitle")}
                 </p>
                 
-                {/* Badges */}
                 <div className="flex gap-2 flex-wrap">
                   <div className="flex items-center gap-1 px-3 py-1.5 bg-white/10 backdrop-blur-sm rounded-full border border-white/20">
                     <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                     </svg>
-                    <span className="text-[10px] font-medium" style={{ fontFamily: "'Inter', sans-serif" }}>Verified Sources</span>
+                    <span className="text-[10px] font-medium" style={{ fontFamily: "'Inter', sans-serif" }}>{t("login.badge1")}</span>
                   </div>
                   <div className="flex items-center gap-1 px-3 py-1.5 bg-white/10 backdrop-blur-sm rounded-full border border-white/20">
                     <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
                     </svg>
-                    <span className="text-[10px] font-medium" style={{ fontFamily: "'Inter', sans-serif" }}>500+ Scholars</span>
-                  </div>
+                    </div>
                 </div>
               </div>
             </div>

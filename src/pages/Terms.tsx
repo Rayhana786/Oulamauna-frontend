@@ -6,25 +6,13 @@ export default function Terms() {
   const { lang } = useLang();
   const isRTL = lang === "AR";
 
-  const headingFont = lang === "AR" ? "'Amiri', serif" : "'Hanken Grotesk', sans-serif";
-  const bodyFont = lang === "AR" ? "'Amiri', serif" : "'Inter', sans-serif";
+  const headingFont = isRTL ? "'Amiri', serif" : "'Hanken Grotesk', sans-serif";
+  const bodyFont = isRTL ? "'Amiri', serif" : "'Inter', sans-serif";
   const monoFont = "'JetBrains Mono', monospace";
 
-  const termsContent = {
-    AR: {
-      title: "شروط الاستخدام",
-      intro: "مرحباً بكم في علماؤنا. من خلال الوصول إلى منصتنا أو استخدامها، فإنك توافق على الالتزام بشروط الاستخدام هذه. يرجى قراءتها بعناية.",
-      sections: [
-        { title: "1. قبول الشروط", text: "من خلال الوصول إلى علماؤنا، فإنك توافق على الالتزام بهذه الشروط والالتزام بها قانوناً. إذا كنت لا توافق، يرجى عدم استخدام منصتنا." },
-        { title: "2. مسؤوليات المستخدم", text: "• يجب عليك تقديم معلومات دقيقة وصحيحة عند إنشاء حساب.\n• أنت مسؤول عن الحفاظ على سرية بيانات اعتماد حسابك.\n• توافق على عدم استخدام المنصة لأي غرض غير قانوني أو محظور." },
-        { title: "3. المحتوى والمساهمات", text: "• تحتفظ بملكية المحتوى الذي تقدمه، لكنك تمنح علماؤنا ترخيصاً غير حصري وعالمي لعرضه وتوزيعه.\n• يجب عليك التأكد من أن مساهماتك لا تنتهك أي حقوق طبع ونشر أو حقوق ملكية فكرية.\n• نحتفظ بالحق في مراجعة أو تعديل أو إزالة أي تقديم ينتهك إرشاداتنا." },
-        { title: "4. الملكية الفكرية", text: "جميع محتويات وتصميم ووظائف منصة علماؤنا (باستثناء المحتوى المقدم من المستخدم) مملوكة لعلماؤنا ومحمية بموجب قوانين حقوق النشر والملكية الفكرية." },
-        { title: "5. تحديد المسؤولية", text: "تُقدم منصة علماؤنا 'كما هي'. نحن لا نضمن أن المنصة ستكون متاحة دون انقطاع أو خالية من الأخطاء. نحن لسنا مسؤولين عن أي أخطاء تاريخية في المحتوى المقدم من المستخدمين." },
-        { title: "6. التغييرات على الشروط", text: "نحتفظ بالحق في تعديل هذه الشروط في أي وقت. يشكل الاستخدام المستمر للمنصة بعد التغييرات قبولاً للشروط الجديدة." },
-        { title: "7. الاتصال", text: "للأسئلة المتعلقة بهذه الشروط، يرجى الاتصال بنا على: legal@oulamauna.com" }
-      ]
-    },
+  const translations: any = {
     EN: {
+      breadcrumb: { home: "HOME", current: "TERMS OF USE" },
       title: "Terms of Use",
       intro: "Welcome to Oulamauna. By accessing or using our platform, you agree to be bound by these Terms of Use. Please read them carefully.",
       sections: [
@@ -35,9 +23,26 @@ export default function Terms() {
         { title: "5. Limitation of Liability", text: "Oulamauna is provided 'as is'. We do not guarantee that the platform will be uninterrupted or error-free. We are not liable for any historical inaccuracies in user-submitted content." },
         { title: "6. Changes to Terms", text: "We reserve the right to modify these Terms at any time. Continued use of the platform after changes constitutes acceptance of the new Terms." },
         { title: "7. Contact", text: "For questions regarding these Terms, please contact us at: legal@oulamauna.com" }
-      ]
+      ],
+      backToTop: "Back to Top"
+    },
+    AR: {
+      breadcrumb: { home: "الرئيسية", current: "شروط الاستخدام" },
+      title: "شروط الاستخدام",
+      intro: "مرحباً بكم في علماؤنا. من خلال الوصول إلى منصتنا أو استخدامها، فإنك توافق على الالتزام بشروط الاستخدام هذه. يرجى قراءتها بعناية.",
+      sections: [
+        { title: "1. قبول الشروط", text: "من خلال الوصول إلى علماؤنا، فإنك توافق على الالتزام بهذه الشروط والالتزام بها قانوناً. إذا كنت لا توافق، يرجى عدم استخدام منصتنا." },
+        { title: "2. مسؤوليات المستخدم", text: "• يجب عليك تقديم معلومات دقيقة وصحيحة عند إنشاء حساب.\n• أنت مسؤول عن الحفاظ على سرية بيانات اعتماد حسابك.\n• توافق على عدم استخدام المنصة لأي غرض غير قانوني أو محظور." },
+        { title: "3. المحتوى والمساهمات", text: "• تحتفظ بملكية المحتوى الذي تقدمه، لكنك تمنح علماؤنا ترخيصاً غير حصري وعالمي لعرضه وتوزيعه.\n• يجب عليك التأكد من أن مساهماتك لا تنتهك أي حقوق طبع ونشر أو حقوق ملكية فكرية.\n• نحتفظ بالحق في مراجعة أو تعديل أو إزالة أي تقديم ينتهك إرشاداتنا." },
+        { title: "4. الملكية الفكرية", text: "جميع محتويات وتصميم ووظائف منصة علماؤنا (باستثناء المحتوى المقدم من المستخدم) مملوكة لعلماؤنا ومحمية بموجب قوانين حقوق النشر والملكية الفكرية." },
+        { title: "5. تحديد المسؤولية", text: "تُقدم منصة علماؤنا 'كما هي'. نحن لا نضمن أن المنصة ستكون متاحة دون انقطاع أو خالية من الأخطاء. نحن لسنا مسؤولين عن أي أخطاء تاريخية في المحتوى المقدم من المستخدمين." },
+        { title: "6. التغييرات على الشروط", text: "نحتفظ بالحق في تعديل هذه الشروط في أي وقت. يشكل الاستخدام المستمر للمنصة بعد التغييرات قبولاً للشروط الجديدة." },
+        { title: "7. الاتصال", text: "للأسئلة المتعلقة بهذه الشروط، يرجى الاتصال بنا على: legal@oulamauna.com" }
+      ],
+      backToTop: "العودة للأعلى"
     },
     FR: {
+      breadcrumb: { home: "ACCUEIL", current: "CONDITIONS D'UTILISATION" },
       title: "Conditions d'Utilisation",
       intro: "Bienvenue sur Oulamauna. En accédant ou en utilisant notre plateforme, vous acceptez d'être lié par ces Conditions d'Utilisation. Veuillez les lire attentivement.",
       sections: [
@@ -48,19 +53,12 @@ export default function Terms() {
         { title: "5. Limitation de Responsabilité", text: "Oulamauna est fourni 'tel quel'. Nous ne garantissons pas que la plateforme sera ininterrompue ou exempte d'erreurs. Nous ne sommes pas responsables des inexactitudes historiques dans le contenu soumis par les utilisateurs." },
         { title: "6. Modifications des Conditions", text: "Nous nous réservons le droit de modifier ces Conditions à tout moment. L'utilisation continue de la plateforme après les modifications constitue l'acceptation des nouvelles Conditions." },
         { title: "7. Contact", text: "Pour toute question concernant ces Conditions, veuillez nous contacter à: legal@oulamauna.com" }
-      ]
+      ],
+      backToTop: "Retour en haut"
     }
   };
 
-  const t = termsContent[lang as keyof typeof termsContent] || termsContent.EN;
-  
-  const breadcrumbs = {
-    AR: { home: "الرئيسية", current: "شروط الاستخدام" },
-    EN: { home: "HOME", current: "TERMS OF USE" },
-    FR: { home: "ACCUEIL", current: "CONDITIONS D'UTILISATION" }
-  };
-  const bc = breadcrumbs[lang as keyof typeof breadcrumbs] || breadcrumbs.EN;
-  const backToTopLabel = isRTL ? "العودة للأعلى" : lang === "FR" ? "Retour en haut" : "Back to Top";
+  const t = translations[lang] || translations.EN;
 
   return (
     <div dir={isRTL ? "rtl" : "ltr"} style={{ minHeight: "100vh", backgroundColor: "#fbf9f4", fontFamily: bodyFont }}>
@@ -74,9 +72,9 @@ export default function Terms() {
           fontFamily: monoFont, fontSize: "11px", fontWeight: 700, letterSpacing: "0.2em", color: "#C9A84C",
           textTransform: "uppercase", margin: "0 0 14px 0", display: "flex", alignItems: "center", justifyContent: "center", gap: "8px",
         }}>
-          <BreadcrumbHomeLink label={bc.home} />
+          <BreadcrumbHomeLink label={t.breadcrumb.home} />
           <span style={{ color: "#1e4d3a66" }}>›</span>
-          <span style={{ color: "#1e4d3a" }}>{bc.current}</span>
+          <span style={{ color: "#1e4d3a" }}>{t.breadcrumb.current}</span>
         </p>
         <h1 style={{
           fontFamily: headingFont, fontSize: "clamp(32px, 5vw, 48px)", fontWeight: 700, color: "#1e4d3a",
@@ -113,14 +111,13 @@ export default function Terms() {
 
         {/* Back to Top Button */}
         <div style={{ marginTop: "64px", textAlign: "center" }}>
-          <BackToTopButton label={backToTopLabel} />
+          <BackToTopButton label={t.backToTop} fontFamily={headingFont} />
         </div>
       </div>
     </div>
   );
 }
 
-// ── Breadcrumb Home Link ─────────────────────────────────────────────────
 const BreadcrumbHomeLink: React.FC<{ label: string }> = ({ label }) => {
   const [hovered, setHovered] = useState(false);
   return (
@@ -131,8 +128,7 @@ const BreadcrumbHomeLink: React.FC<{ label: string }> = ({ label }) => {
   );
 };
 
-// ── Back to Top Button with Scholar-style Invert Hover ───────────────────
-const BackToTopButton: React.FC<{ label: string }> = ({ label }) => {
+const BackToTopButton: React.FC<{ label: string; fontFamily: string }> = ({ label, fontFamily }) => {
   const [hovered, setHovered] = useState(false);
   return (
     <button
@@ -144,7 +140,7 @@ const BackToTopButton: React.FC<{ label: string }> = ({ label }) => {
         backgroundColor: hovered ? "#fbf9f4" : "#1e4d3a",
         color: hovered ? "#1e4d3a" : "#fff",
         border: `2px solid #1e4d3a`,
-        borderRadius: "8px", fontFamily: "'Hanken Grotesk', sans-serif", fontSize: "12px",
+        borderRadius: "8px", fontFamily: fontFamily, fontSize: "12px",
         fontWeight: 700, letterSpacing: "0.05em", cursor: "pointer",
         boxShadow: hovered ? "none" : "0 2px 10px rgba(30,77,58,0.18)",
         transition: "all 0.3s ease",

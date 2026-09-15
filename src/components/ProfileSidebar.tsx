@@ -1,6 +1,8 @@
+// src/components/ProfileSidebar.tsx
 import React, { useState } from "react";
 import { Link } from "react-router-dom";
 import { useLang } from "../context/LanguageContext";
+import { useAuth } from "../context/AuthContext";
 
 type Role = "user" | "contributor" | "admin";
 export type SidebarActive = "profile" | "dashboard" | "editProfile" | "settings";
@@ -72,6 +74,10 @@ function NavRow({
     fontWeight: active ? 700 : 500,
     transition: "background 0.15s, color 0.15s",
     marginTop: danger ? "12px" : 0,
+    cursor: "pointer",
+    border: "none",
+    width: "100%",
+    textAlign: "left",
   };
 
   if (to && to !== "#") {
@@ -84,16 +90,16 @@ function NavRow({
   }
 
   return (
-    <a
-      href="#"
-      onClick={(e) => { e.preventDefault(); onClick?.(); }}
+    <button
+      type="button"
+      onClick={onClick}
       onMouseEnter={() => setHov(true)}
       onMouseLeave={() => setHov(false)}
       style={commonStyle}
     >
       <Icon name={icon} size={17} />
       {label}
-    </a>
+    </button>
   );
 }
 
@@ -119,84 +125,169 @@ interface ProfileSidebarProps {
   active: SidebarActive;
   links?: string[];
   currentUserId?: string;
+  profileCompletion?: number;
 }
 
 export default function ProfileSidebar({ 
   role = "user", 
   active, 
   links, 
-  currentUserId 
+  currentUserId,
+  profileCompletion = 40 
 }: ProfileSidebarProps) {
   const { t } = useLang();
+  const { logout } = useAuth();
   const isUser = role === "user";
+  
+  // ✅ State for floating logout confirmation
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
 
-  // ✅ REMOVED "My Profile" from this array as requested
+  const handleLogoutClick = () => {
+    setShowLogoutConfirm(true);
+  };
+
+  const confirmLogout = () => {
+    setShowLogoutConfirm(false);
+    logout();
+  };
+
   const navItems: { key: SidebarActive; icon: string; label: string; to?: string }[] = [
-    { key: "dashboard", icon: "dashboard", label: t("editProfile.dashboard"), to: "/dashboard" },
-    { key: "editProfile", icon: "edit_square", label: t("editProfile.editProfile"), to: "/edit-profile" },
-    { key: "settings", icon: "settings", label: t("editProfile.settings"), to: "/settings" },
+    { key: "dashboard", icon: "dashboard", label: t("sidebar.dashboard"), to: "/dashboard" },
+    { key: "editProfile", icon: "edit_square", label: t("sidebar.editProfile"), to: "/edit-profile" },
+    { key: "settings", icon: "settings", label: t("sidebar.settings"), to: "/settings" },
   ];
 
   return (
-    <aside style={{ width: "216px", flexShrink: 0, display: "flex", flexDirection: "column", gap: "20px", height: "fit-content", alignSelf: "flex-start", position: "sticky", top: "16px" }}>
-      <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
-        {navItems.map(({ key, icon, label, to }) => (
-          <NavRow key={key} icon={icon} label={label} active={active === key} to={to} />
-        ))}
-        <NavRow icon="logout" label={t("editProfile.signOut")} danger onClick={() => console.log("Logout clicked")} />
-      </div>
+    <>
+      <aside style={{ width: "216px", flexShrink: 0, display: "flex", flexDirection: "column", gap: "20px", height: "fit-content", alignSelf: "flex-start", position: "sticky", top: "16px" }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+          {navItems.map(({ key, icon, label, to }) => (
+            <NavRow key={key} icon={icon} label={label} active={active === key} to={to} />
+          ))}
+          {/* ✅ Triggers the floating confirmation instead of logging out immediately */}
+          <NavRow icon="logout" label={t("sidebar.signOut")} danger onClick={handleLogoutClick} />
+        </div>
 
-      {/* ✅ ONLY show completion card on Edit Profile page */}
-      {isUser && active === "editProfile" && (
-        <HoverCard style={{ padding: "16px", backgroundColor: "#fff", borderRadius: "12px" }}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "6px", ...MONO, fontSize: "9px", letterSpacing: "0.1em", textTransform: "uppercase", color: "#707974" }}>
-            <span>{t("editProfile.profileCompletion")}</span>
-            <span style={{ fontWeight: 700, color: "#191c1b" }}>40%</span>
-          </div>
-          <div style={{ width: "100%", height: "6px", backgroundColor: "#f0f1ee", borderRadius: "999px", marginBottom: "10px", overflow: "hidden" }}>
-            <div style={{ width: "40%", height: "100%", backgroundColor: "#0b4335", borderRadius: "999px" }} />
-          </div>
-          <p style={{ fontSize: "11px", color: "#707974", margin: 0, lineHeight: 1.5 }}>{t("editProfile.completeHint")}</p>
-        </HoverCard>
-      )}
+        {isUser && active === "editProfile" && (
+          <HoverCard style={{ padding: "16px", backgroundColor: "#fff", borderRadius: "12px" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "6px", ...MONO, fontSize: "9px", letterSpacing: "0.1em", textTransform: "uppercase", color: "#707974" }}>
+              <span>{t("sidebar.profileCompletion")}</span>
+              <span style={{ fontWeight: 700, color: "#191c1b" }}>{profileCompletion}%</span>
+            </div>
+            <div style={{ width: "100%", height: "6px", backgroundColor: "#f0f1ee", borderRadius: "999px", marginBottom: "10px", overflow: "hidden" }}>
+              <div style={{ width: `${profileCompletion}%`, height: "100%", backgroundColor: "#0b4335", borderRadius: "999px" }} />
+            </div>
+            <p style={{ fontSize: "11px", color: "#707974", margin: 0, lineHeight: 1.5 }}>{t("sidebar.completeHint")}</p>
+          </HoverCard>
+        )}
 
-      {links && links.length > 0 && (
-        <HoverCard style={{ padding: "16px", backgroundColor: "#fff", borderRadius: "12px" }}>
-          <p style={{ ...MONO, fontSize: "9px", letterSpacing: "0.1em", textTransform: "uppercase", color: "#707974", margin: "0 0 12px" }}>
-            Links
-          </p>
-          <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-            {links.map((link, index) => (
-              <a
-                key={index}
-                href={link}
-                target="_blank"
-                rel="noopener noreferrer"
+        {links && links.length > 0 && (
+          <HoverCard style={{ padding: "16px", backgroundColor: "#fff", borderRadius: "12px" }}>
+            <p style={{ ...MONO, fontSize: "9px", letterSpacing: "0.1em", textTransform: "uppercase", color: "#707974", margin: "0 0 12px" }}>
+              {t("sidebar.links")}
+            </p>
+            <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+              {links.map((link, index) => (
+                <a
+                  key={index}
+                  href={link}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "8px",
+                    padding: "6px 8px",
+                    borderRadius: "6px",
+                    textDecoration: "none",
+                    color: "#0b4335",
+                    ...SANS,
+                    fontSize: "12px",
+                    transition: "background 0.15s",
+                  }}
+                  onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#f3f4f1")}
+                  onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "transparent")}
+                >
+                  <Icon name={getLinkIcon(link)} size={16} />
+                  <span style={{ flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                    {getLinkDisplay(link)}
+                  </span>
+                  <Icon name="open_in_new" size={14} style={{ color: "#707974" }} />
+                </a>
+              ))}
+            </div>
+          </HoverCard>
+        )}
+      </aside>
+
+      {/* ✅ Floating Logout Confirmation Modal */}
+      {showLogoutConfirm && (
+        <div 
+          style={{
+            position: "fixed",
+            top: 0, left: 0, right: 0, bottom: 0,
+            backgroundColor: "rgba(25, 28, 27, 0.4)",
+            backdropFilter: "blur(4px)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            zIndex: 9999,
+          }}
+          onClick={(e) => { if (e.target === e.currentTarget) setShowLogoutConfirm(false); }}
+        >
+          <HoverCard style={{ padding: "24px", backgroundColor: "#fff", borderRadius: "12px", width: "320px", maxWidth: "90vw" }}>
+            <p style={{ ...MONO, fontSize: "12px", color: "#191c1b", marginBottom: "24px", lineHeight: 1.6, textAlign: "center" }}>
+              {t("logout.confirmMessage")}
+            </p>
+            <div style={{ display: "flex", gap: "12px", justifyContent: "center" }}>
+              <button
+                type="button"
+                onClick={() => setShowLogoutConfirm(false)}
                 style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "8px",
-                  padding: "6px 8px",
-                  borderRadius: "6px",
-                  textDecoration: "none",
-                  color: "#0b4335",
-                  ...SANS,
-                  fontSize: "12px",
-                  transition: "background 0.15s",
+                  ...MONO,
+                  fontSize: "10px",
+                  letterSpacing: "0.08em",
+                  textTransform: "uppercase",
+                  padding: "9px 16px",
+                  borderRadius: "8px",
+                  border: "1.5px solid #d0d5d3",
+                  backgroundColor: "transparent",
+                  color: "#404945",
+                  cursor: "pointer",
+                  fontWeight: 600,
+                  transition: "all 0.15s",
                 }}
-                onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#f3f4f1")}
-                onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "transparent")}
+                onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = "#f3f4f1"; }}
+                onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = "transparent"; }}
               >
-                <Icon name={getLinkIcon(link)} size={16} />
-                <span style={{ flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                  {getLinkDisplay(link)}
-                </span>
-                <Icon name="open_in_new" size={14} style={{ color: "#707974" }} />
-              </a>
-            ))}
-          </div>
-        </HoverCard>
+                {t("logout.cancel")}
+              </button>
+              <button
+                type="button"
+                onClick={confirmLogout}
+                style={{
+                  ...MONO,
+                  fontSize: "10px",
+                  letterSpacing: "0.08em",
+                  textTransform: "uppercase",
+                  padding: "9px 16px",
+                  borderRadius: "8px",
+                  border: "none",
+                  backgroundColor: "#b3261e",
+                  color: "#fff",
+                  cursor: "pointer",
+                  fontWeight: 700,
+                  transition: "all 0.15s",
+                }}
+                onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = "#921f17"; }}
+                onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = "#b3261e"; }}
+              >
+                {t("logout.confirm")}
+              </button>
+            </div>
+          </HoverCard>
+        </div>
       )}
-    </aside>
+    </>
   );
 }

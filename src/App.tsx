@@ -52,6 +52,11 @@ import InvalidToken from "./pages/errors/InvalidToken";
 // Admin pages
 import AdminProfilePage from "./pages/admin/AdminProfilePage";
 import AdminDashboard from "./pages/admin/Admindashboard";
+import AllScholarsAdmin from "./pages/admin/Allscholarsadmin";
+import AdminScholarDetail from "./pages/admin/AdminScholarDetail";
+import UserManagement from "./pages/admin/Usermanagement";
+import AdminDiscussions from "./pages/admin/AdminDiscussions";
+import AdminCategories from "./pages/admin/AdminCategories";
 import NewScholarsQueue from "./pages/admin/NewScholarsQueue";
 import ScholarReview from "./pages/admin/ScholarReview";
 import PendingEditsQueue from "./pages/admin/PendingEditsQueue";
@@ -61,12 +66,13 @@ import WorksPendingQueue from "./pages/admin/WorksPendingQueue";
 import DisciplineManagement from "./pages/admin/DisciplineManagement"; 
 import RegionManagement from "./pages/admin/RegionManagement";
 // import AdminScholars from "./pages/admin/AdminScholars"; // add as you build them
-
+import ScrollToTop from "./components/ScrollToTop";
 function App() {
    const testLoggedInUserId = "21";
   return (
     
     <Router>
+      <ScrollToTop />
       <LanguageProvider>
         <AuthProvider>
           <Routes>
@@ -123,6 +129,11 @@ function App() {
               <Route element={<AdminLayout />}>
               <Route path="/admin/profile" element={<AdminProfilePage />} />
                 <Route path="/admin/dashboard" element={<AdminDashboard />} />
+                <Route path="/admin/scholars" element={<AllScholarsAdmin />} />
+                <Route path="/admin/users" element={<UserManagement />} />
+                <Route path="/admin/discussions" element={<AdminDiscussions />} />
+                <Route path="/admin/discussions/categories" element={<AdminCategories />} /> {/* ✅ ADDED: Admin Discussions page */}
+                <Route path="/admin/scholars/:id/:lang" element={<AdminScholarDetail />} />
                 <Route path="/admin/pending/scholars" element={<NewScholarsQueue />} />
                 <Route path="/admin/pending/scholars/:id" element={<ScholarReview />} />
                 <Route path="/admin/pending/edits" element={<PendingEditsQueue />} />

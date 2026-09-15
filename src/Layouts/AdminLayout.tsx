@@ -1,9 +1,8 @@
-// src/components/admin/AdminLayout.tsx
-import { Outlet } from "react-router-dom";
-import Sidebar from "../components/admin/AdminSidebar";
+import { useState } from "react";
+import { Outlet, useLocation } from "react-router-dom";
+import Sidebar from "../components/admin/AdminSidebar"; // ✅ Fixed import path
 import AdminNavbar from "../components/admin/AdminNavbar";
-import { useLocation } from "react-router-dom";
-import { useLang } from "../context/LanguageContext";
+import { useLang } from "../context/LanguageContext"; // ✅ Adjust path if needed
 
 const PAGE_KEYS: Record<string, string> = {
   "/admin":                       "navbar.dashboard",
@@ -31,6 +30,9 @@ export default function AdminLayout() {
   const { lang } = useLang();
   const isRTL = lang === "AR";
 
+  // ✅ 1. ADD STATE TO TRACK SIDEBAR COLLAPSE
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+
   const titleKey = PAGE_KEYS[pathname] ?? "navbar.dashboard";
 
   return (
@@ -40,24 +42,31 @@ export default function AdminLayout() {
         display: "flex",
         height: "100vh",
         overflow: "hidden",
-       
       }}
     >
-      <Sidebar />
+      {/* ✅ 2. PASS PROPS TO SIDEBAR */}
+      <Sidebar 
+        collapsed={sidebarCollapsed} 
+        onToggle={() => setSidebarCollapsed(!sidebarCollapsed)} 
+      />
+      
       <div
         style={{
-          marginLeft: isRTL ? 0 : 248,
-          marginRight: isRTL ? 248 : 0,
+          // ✅ 3. DYNAMIC MARGIN BASED ON COLLAPSED STATE
+          marginLeft: isRTL ? 0 : (sidebarCollapsed ? 72 : 248),
+          marginRight: isRTL ? (sidebarCollapsed ? 72 : 248) : 0,
           flex: 1,
           display: "flex",
           flexDirection: "column",
           height: "100vh",
           overflow: "hidden",
+          // ✅ 4. SMOOTH ANIMATION WHEN TOGGLING
+          transition: "margin-left 0.3s ease, margin-right 0.3s ease", 
         }}
       >
         <AdminNavbar pageTitleKey={titleKey} />
         <main style={{ flex: 1, overflowY: "auto", padding: "32px" }}>
-          <Outlet />  {/* ← renders the matched child route */}
+          <Outlet />
         </main>
       </div>
     </div>

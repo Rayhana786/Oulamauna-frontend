@@ -1,42 +1,23 @@
-#root {
-  max-width: 1280px;
-  margin: 0 auto;
-  padding: 2rem;
-  text-align: center;
-}
+/* =========================================
+   Rich Text Viewer Styling (Matches Editor)
+   ========================================= */
+.rich-text-viewer p { margin: 0 0 12px 0; line-height: 1.7; }
+.rich-text-viewer h2 { font-size: 1.4em; font-weight: 700; margin: 20px 0 10px 0; color: #0b4335; border-bottom: 2px solid #e5d5a8; padding-bottom: 4px; }
+.rich-text-viewer h3 { font-size: 1.2em; font-weight: 600; margin: 16px 0 8px 0; color: #1a5c42; }
+.rich-text-viewer ul, .rich-text-viewer ol { padding-left: 24px; margin: 0 0 12px 0; line-height: 1.7; }
+.rich-text-viewer blockquote { border-left: 4px solid #C9A84C; padding-left: 16px; margin: 16px 0; color: #555; font-style: italic; background: #fafbf8; padding: 12px 16px; border-radius: 0 6px 6px 0; }
+.rich-text-viewer img { max-width: 100%; height: auto; border-radius: 6px; margin: 12px 0; border: 1px solid #e5d5a8; }
+.rich-text-viewer a.custom-link { color: #0b4335; text-decoration: underline; text-underline-offset: 3px; }
+.rich-text-viewer a.internal-link { color: #C9A84C; font-weight: 600; text-decoration: underline; text-underline-offset: 3px; background: rgba(201, 168, 76, 0.1); padding: 0 4px; border-radius: 4px; transition: background 0.2s; }
+.rich-text-viewer a.internal-link:hover { background: rgba(201, 168, 76, 0.2); }
+.rich-text-viewer mark { background-color: #fef08a; color: inherit; border-radius: 2px; padding: 0 2px; }
 
-.logo {
-  height: 6em;
-  padding: 1.5em;
-  will-change: filter;
-  transition: filter 300ms;
-}
-.logo:hover {
-  filter: drop-shadow(0 0 2em #646cffaa);
-}
-.logo.react:hover {
-  filter: drop-shadow(0 0 2em #61dafbaa);
-}
-
-@keyframes logo-spin {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
-}
-
-@media (prefers-reduced-motion: no-preference) {
-  a:nth-of-type(2) .logo {
-    animation: logo-spin infinite 20s linear;
-  }
-}
-
-.card {
-  padding: 2em;
-}
-
-.read-the-docs {
-  color: #888;
-}
+/* RTL Adjustments for Viewer */
+[dir="rtl"] .rich-text-viewer blockquote { border-left: none; border-right: 4px solid #C9A84C; padding-left: 0; padding-right: 16px; }
+[dir="rtl"] .rich-text-viewer ul, [dir="rtl"] .rich-text-viewer ol { padding-left: 0; padding-right: 24px; }
+/* Rich Text Viewer Styling */
+.rich-text-viewer p { margin: 0 0 12px 0; line-height: 1.7; }
+.rich-text-viewer h2 { font-size: 1.4em; font-weight: 700; margin: 20px 0 10px 0; color: #0b4335; border-bottom: 2px solid #e5d5a8; padding-bottom: 4px; }
+.rich-text-viewer blockquote { border-left: 4px solid #C9A84C; padding-left: 16px; margin: 16px 0; color: #555; font-style: italic; background: #fafbf8; padding: 12px 16px; }
+.rich-text-viewer a.internal-link { color: #C9A84C; font-weight: 600; text-decoration: underline; background: rgba(201, 168, 76, 0.1); padding: 0 4px; border-radius: 4px; }
+/* Add more styles as needed */

@@ -152,8 +152,10 @@ export default function NewScholarsQueue() {
   });
   
   // ✅ Modal States
-  const [stripTarget, setStripTarget] = useState<ScholarSubmission | null>(null);
+  const [restrictTarget, setRestrictTarget] = useState<ScholarSubmission | null>(null);
+  const [confirmAction, setConfirmAction] = useState<{ type: 'revoke' | 'ban', scholar: ScholarSubmission } | null>(null);
   const [approveTarget, setApproveTarget] = useState<ScholarSubmission | null>(null);
+  const [approveReason, setApproveReason] = useState(""); // ✅ ADDED
   const [rejectTarget, setRejectTarget] = useState<ScholarSubmission | null>(null);
   const [rejectReason, setRejectReason] = useState("");
 
@@ -206,12 +208,14 @@ export default function NewScholarsQueue() {
     navigate(`/admin/pending/scholars/${s.id}?lang=${s.language}`);
   };
 
-  // ✅ Updated Handlers with Modals
+  // ✅ Updated Handlers
   const handleApprove = async (id: string) => {
     try {
-      await adminApi.scholars.approve(Number(id));
+      // ✅ Frontend now sends the typed reason (or defaults to "Approved")
+      await adminApi.scholars.approve(Number(id), { reason: approveReason || "Approved" });
       setRows((prev) => prev.filter((r) => r.id !== id));
       setApproveTarget(null);
+      setApproveReason(""); // ✅ Clear state after success
     } catch (error) {
       console.error("Failed to approve:", error);
       alert("Failed to approve scholar. Please try again.");
@@ -234,14 +238,43 @@ export default function NewScholarsQueue() {
     }
   };
 
-  const confirmStrip = () => {
-    if (!stripTarget) return;
-    setRows((prev) => prev.map((row) =>
-      row.id === stripTarget.id
-        ? { ...row, submittedBy: "System (stripped)", contributorId: "system" }
-        : row
-    ));
-    setStripTarget(null);
+  // ✅ New Combined Handler: Restrict User + Auto-Reject Scholar
+  const executeRestrictionAndReject = async () => {
+    if (!confirmAction) return;
+    try {
+      const { type, scholar } = confirmAction;
+      
+      // Extract numeric user ID (e.g., "user_123" -> 123)
+      const userIdStr = scholar.contributorId.replace('user_', '');
+      const userId = parseInt(userIdStr, 10);
+      const scholarId = Number(scholar.id);
+
+      if (isNaN(userId)) {
+        alert("Cannot restrict system-generated submissions.");
+        setConfirmAction(null);
+        setRestrictTarget(null);
+        return;
+      }
+
+      // 1. Restrict the User
+      if (type === 'revoke') {
+        await adminApi.users.toggleContribute(userId);
+      } else {
+        await adminApi.users.ban(userId);
+      }
+
+      // 2. Automatically Reject the Scholar Submission
+      const defaultReason = type === 'ban' ? "Contributor banned" : "Contribution access revoked";
+      await adminApi.scholars.reject(scholarId, defaultReason);
+
+      // 3. Remove from UI and close modals
+      setRows((prev) => prev.filter((row) => row.id !== scholar.id));
+      setConfirmAction(null);
+      setRestrictTarget(null);
+    } catch (err) {
+      console.error("Action failed:", err);
+      alert("Failed to process action. Please try again.");
+    }
   };
 
   const clearFilters = () => {
@@ -410,21 +443,22 @@ export default function NewScholarsQueue() {
                               <Icon name="visibility" size={18} />
                             </button>
                             
-                            {/* ✅ UPDATED: Opens Approve Modal */}
                             <button onClick={(e) => { e.stopPropagation(); setApproveTarget(s); }} title="Approve"
                               style={{ width: 32, height: 32, display: "flex", alignItems: "center", justifyContent: "center", backgroundColor: colors.forestGreen, border: `1px solid ${colors.forestGreen}`, borderRadius: 6, color: colors.creamLight, cursor: "pointer" }}>
                               <Icon name="check" size={18} filled />
                             </button>
                             
-                            {/* ✅ UPDATED: Opens Reject Modal */}
                             <button onClick={(e) => { e.stopPropagation(); setRejectTarget(s); }} title="Reject"
                               style={{ width: 32, height: 32, display: "flex", alignItems: "center", justifyContent: "center", backgroundColor: "transparent", border: `1px solid ${colors.red}`, borderRadius: 6, color: colors.red, cursor: "pointer" }}>
                               <Icon name="close" size={18} />
                             </button>
                             
-                            <button onClick={(e) => { e.stopPropagation(); setStripTarget(s); }} title="Strip"
-                              style={{ width: 32, height: 32, display: "flex", alignItems: "center", justifyContent: "center", backgroundColor: "transparent", border: `1px solid ${colors.forestGreen}`, borderRadius: 6, color: colors.forestGreen, cursor: "pointer" }}>
-                              <Icon name="person_remove" size={18} />
+                            {/* ✅ UPDATED: Restrict Button (Amber) */}
+                            <button onClick={(e) => { e.stopPropagation(); setRestrictTarget(s); }} title="Restrict User & Reject"
+                              style={{ width: 32, height: 32, display: "flex", alignItems: "center", justifyContent: "center", backgroundColor: "transparent", border: `1px solid ${colors.amber}`, borderRadius: 6, color: colors.amber, cursor: "pointer" }}
+                              onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = colors.amber; e.currentTarget.style.color = colors.creamLight; }}
+                              onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = "transparent"; e.currentTarget.style.color = colors.amber; }}>
+                              <Icon name="shield_person" size={18} />
                             </button>
                           </div>
                         </td>
@@ -454,29 +488,102 @@ export default function NewScholarsQueue() {
           </div>
         </section>
 
-        {/* ── Strip Modal ── */}
-        {stripTarget && (
-          <div style={{ position: "fixed", inset: 0, backgroundColor: "rgba(11, 67, 53, 0.5)", zIndex: 100, display: "flex", alignItems: "center", justifyContent: "center", backdropFilter: "blur(4px)" }} onClick={() => setStripTarget(null)}>
-            <div style={{ ...cardStyle, backgroundColor: colors.creamLight, width: 440, maxWidth: "90vw", padding: 32, boxShadow: "0 20px 60px rgba(0,0,0,0.18)" }} onClick={(e) => e.stopPropagation()}>
-              <div style={{ width: 56, height: 56, borderRadius: "50%", backgroundColor: colors.red, color: colors.creamLight, display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 20, border: `1px solid ${colors.red}` }}>
-                <Icon name="person_remove" size={28} filled />
+        {/* ── Step 1: Choose Action Modal ── */}
+        {restrictTarget && !confirmAction && (
+          <div style={{ position: "fixed", inset: 0, backgroundColor: "rgba(11, 67, 53, 0.6)", zIndex: 100, display: "flex", alignItems: "center", justifyContent: "center", backdropFilter: "blur(4px)", padding: 20 }} onClick={() => setRestrictTarget(null)}>
+            <div style={{ ...cardStyle, backgroundColor: colors.creamLight, width: 520, maxWidth: "90vw", padding: 32, boxShadow: "0 20px 60px rgba(0,0,0,0.25)" }} onClick={(e) => e.stopPropagation()}>
+              
+              <div style={{ display: "flex", alignItems: "center", gap: 16, marginBottom: 24 }}>
+                <Avatar name={restrictTarget.submittedBy} size={56} />
+                <div>
+                  <h2 style={{ fontFamily: fonts.headline, fontSize: 20, fontWeight: 700, color: colors.forestGreen, margin: 0 }}>Restrict User</h2>
+                  <p style={{ fontFamily: fonts.body, fontSize: 13, color: colors.forestGreen, opacity: 0.7, margin: "4px 0 0" }}>{restrictTarget.submittedBy} submitted "{restrictTarget.name}"</p>
+                </div>
               </div>
-              <h2 style={{ fontFamily: fonts.headline, fontSize: 20, fontWeight: 700, color: colors.forestGreen, marginBottom: 12 }}>Strip Contributor</h2>
-              <p style={{ fontFamily: fonts.body, fontSize: 14, color: colors.forestGreen, lineHeight: 1.6, marginBottom: 28, opacity: 0.8 }}>
-                Are you sure you want to strip <b>{stripTarget.submittedBy}</b> of this contribution?
-                <br /><b style={{ color: colors.red }}>This action cannot be undone.</b>
+
+              <p style={{ fontFamily: fonts.body, fontSize: 14, color: colors.forestGreen, lineHeight: 1.6, marginBottom: 24 }}>
+                Choose an action. This will automatically <b>reject</b> this scholar submission as well.
               </p>
-              <div style={{ display: "flex", gap: 12, justifyContent: "flex-end" }}>
-                <button onClick={() => setStripTarget(null)} style={{ padding: "10px 24px", borderRadius: 8, cursor: "pointer", border: `1px solid ${colors.forestGreen}`, backgroundColor: colors.creamLight, fontFamily: fonts.body, fontSize: 13, fontWeight: 600, color: colors.forestGreen }}>Cancel</button>
-                <button onClick={confirmStrip} style={{ padding: "10px 24px", borderRadius: 8, cursor: "pointer", border: `1px solid ${colors.red}`, backgroundColor: colors.red, fontFamily: fonts.body, fontSize: 13, fontWeight: 700, color: colors.creamLight }}>Confirm</button>
+
+              <div style={{ display: "flex", flexDirection: "column", gap: 12, marginBottom: 24 }}>
+                {/* Option 1: Revoke */}
+                <button 
+                  onClick={() => setConfirmAction({ type: 'revoke', scholar: restrictTarget })}
+                  style={{ display: "flex", alignItems: "flex-start", gap: 16, padding: 16, borderRadius: 8, border: `1px solid ${colors.amber}`, backgroundColor: "rgba(184, 134, 11, 0.05)", cursor: "pointer", textAlign: "left", transition: "background 0.2s" }}
+                  onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = "rgba(184, 134, 11, 0.1)"; }}
+                  onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = "rgba(184, 134, 11, 0.05)"; }}
+                >
+                  <div style={{ width: 32, height: 32, borderRadius: "50%", backgroundColor: colors.amber, color: colors.creamLight, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                    <Icon name="person_off" size={18} />
+                  </div>
+                  <div>
+                    <p style={{ fontFamily: fonts.headline, fontSize: 14, fontWeight: 700, color: colors.forestGreen, margin: "0 0 4px" }}>Revoke Contribution Access</p>
+                    <p style={{ fontFamily: fonts.body, fontSize: 12, color: colors.forestGreen, opacity: 0.7, margin: 0, lineHeight: 1.5 }}>They can still log in, but cannot submit new content. (Recommended for low-quality submissions)</p>
+                  </div>
+                </button>
+
+                {/* Option 2: Ban */}
+                <button 
+                  onClick={() => setConfirmAction({ type: 'ban', scholar: restrictTarget })}
+                  style={{ display: "flex", alignItems: "flex-start", gap: 16, padding: 16, borderRadius: 8, border: `1px solid ${colors.red}`, backgroundColor: "rgba(139, 44, 44, 0.05)", cursor: "pointer", textAlign: "left", transition: "background 0.2s" }}
+                  onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = "rgba(139, 44, 44, 0.1)"; }}
+                  onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = "rgba(139, 44, 44, 0.05)"; }}
+                >
+                  <div style={{ width: 32, height: 32, borderRadius: "50%", backgroundColor: colors.red, color: colors.creamLight, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                    <Icon name="block" size={18} />
+                  </div>
+                  <div>
+                    <p style={{ fontFamily: fonts.headline, fontSize: 14, fontWeight: 700, color: colors.forestGreen, margin: "0 0 4px" }}>Ban Account Completely</p>
+                    <p style={{ fontFamily: fonts.body, fontSize: 12, color: colors.forestGreen, opacity: 0.7, margin: 0, lineHeight: 1.5 }}>They will be completely locked out of the platform. (Use for spam, abuse, or severe violations)</p>
+                  </div>
+                </button>
               </div>
+
+              <div style={{ display: "flex", justifyContent: "flex-end" }}>
+                <button onClick={() => setRestrictTarget(null)} style={{ padding: "10px 24px", borderRadius: 8, cursor: "pointer", border: `1px solid ${colors.forestGreen}`, backgroundColor: colors.creamLight, fontFamily: fonts.body, fontSize: 13, fontWeight: 600, color: colors.forestGreen }}>
+                  Cancel
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ── Step 2: Final Confirmation Modal ── */}
+        {confirmAction && (
+          <div style={{ position: "fixed", inset: 0, backgroundColor: "rgba(11, 67, 53, 0.6)", zIndex: 101, display: "flex", alignItems: "center", justifyContent: "center", backdropFilter: "blur(4px)", padding: 20 }} onClick={() => setConfirmAction(null)}>
+            <div style={{ ...cardStyle, backgroundColor: colors.creamLight, width: 440, maxWidth: "90vw", padding: 32, boxShadow: "0 20px 60px rgba(0,0,0,0.25)" }} onClick={(e) => e.stopPropagation()}>
+              
+              <div style={{ width: 56, height: 56, borderRadius: "50%", backgroundColor: confirmAction.type === 'ban' ? colors.red : colors.amber, color: colors.creamLight, display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 20, border: `1px solid ${confirmAction.type === 'ban' ? colors.red : colors.amber}` }}>
+                <Icon name={confirmAction.type === 'ban' ? "block" : "person_off"} size={28} filled />
+              </div>
+              
+              <h2 style={{ fontFamily: fonts.headline, fontSize: 20, fontWeight: 700, color: colors.forestGreen, marginBottom: 12 }}>
+                Confirm {confirmAction.type === 'ban' ? 'Ban' : 'Revocation'}
+              </h2>
+              
+              <p style={{ fontFamily: fonts.body, fontSize: 14, color: colors.forestGreen, lineHeight: 1.6, marginBottom: 24, opacity: 0.8 }}>
+                This will <b>{confirmAction.type === 'ban' ? 'BAN' : 'REVOKE CONTRIBUTION ACCESS FOR'} {confirmAction.scholar.submittedBy}</b> 
+                <br/>and automatically <b>REJECT</b> the scholar "{confirmAction.scholar.name}".
+                <br/><br/>
+                <b style={{ color: colors.red }}>This action cannot be undone from this screen.</b>
+              </p>
+              
+              <div style={{ display: "flex", gap: 12, justifyContent: "flex-end" }}>
+                <button onClick={() => setConfirmAction(null)} style={{ padding: "10px 24px", borderRadius: 8, cursor: "pointer", border: `1px solid ${colors.forestGreen}`, backgroundColor: colors.creamLight, fontFamily: fonts.body, fontSize: 13, fontWeight: 600, color: colors.forestGreen }}>
+                  Go Back
+                </button>
+                <button onClick={executeRestrictionAndReject} style={{ padding: "10px 24px", borderRadius: 8, cursor: "pointer", border: "none", backgroundColor: confirmAction.type === 'ban' ? colors.red : colors.amber, color: colors.creamLight, fontFamily: fonts.body, fontSize: 13, fontWeight: 700 }}>
+                  Confirm & Reject
+                </button>
+              </div>
+
             </div>
           </div>
         )}
 
         {/* ── Approve Confirmation Modal ── */}
         {approveTarget && (
-          <div style={{ position: "fixed", inset: 0, backgroundColor: "rgba(11, 67, 53, 0.5)", zIndex: 100, display: "flex", alignItems: "center", justifyContent: "center", backdropFilter: "blur(4px)" }} onClick={() => setApproveTarget(null)}>
+          <div style={{ position: "fixed", inset: 0, backgroundColor: "rgba(11, 67, 53, 0.5)", zIndex: 100, display: "flex", alignItems: "center", justifyContent: "center", backdropFilter: "blur(4px)" }} onClick={() => { setApproveTarget(null); setApproveReason(""); }}>
             <div style={{ ...cardStyle, backgroundColor: colors.creamLight, width: 500, maxWidth: "90vw", padding: 32, boxShadow: "0 20px 60px rgba(0,0,0,0.18)" }} onClick={(e) => e.stopPropagation()}>
               <div style={{ width: 56, height: 56, borderRadius: "50%", backgroundColor: colors.forestGreen, color: colors.creamLight, display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 20, border: `1px solid ${colors.forestGreen}` }}>
                 <Icon name="check_circle" size={28} filled />
@@ -491,12 +598,19 @@ export default function NewScholarsQueue() {
                 <p style={{ margin: 0, fontFamily: fonts.body, fontSize: 13, color: colors.forestGreen }}><strong>Discipline:</strong> {approveTarget.discipline}</p>
               </div>
               
-              <p style={{ fontFamily: fonts.body, fontSize: 14, color: colors.forestGreen, marginBottom: 24, lineHeight: 1.6 }}>
-                This will publish the scholar to the portal. This action cannot be undone.
-              </p>
+              {/* ✅ ADDED: Approval Notes Field */}
+              <div style={{ marginBottom: 24 }}>
+                <label style={{ fontFamily: fonts.label, fontSize: 11, letterSpacing: "0.06em", fontWeight: 600, color: colors.forestGreen, display: "block", marginBottom: 6 }}>APPROVAL NOTES (Optional)</label>
+                <textarea 
+                  value={approveReason} 
+                  onChange={(e) => setApproveReason(e.target.value)}
+                  placeholder="Add any notes about this approval..."
+                  style={{ width: "100%", padding: 12, borderRadius: 8, border: `1px solid ${colors.forestGreen}`, fontFamily: fonts.body, fontSize: 13, color: colors.forestGreen, backgroundColor: colors.creamLight, outline: "none", resize: "vertical", minHeight: 80 }}
+                />
+              </div>
               
               <div style={{ display: "flex", gap: 12, justifyContent: "flex-end" }}>
-                <button onClick={() => setApproveTarget(null)} style={{ padding: "10px 24px", borderRadius: 8, cursor: "pointer", border: `1px solid ${colors.forestGreen}`, backgroundColor: colors.creamLight, fontFamily: fonts.body, fontSize: 13, fontWeight: 600, color: colors.forestGreen }}>
+                <button onClick={() => { setApproveTarget(null); setApproveReason(""); }} style={{ padding: "10px 24px", borderRadius: 8, cursor: "pointer", border: `1px solid ${colors.forestGreen}`, backgroundColor: colors.creamLight, fontFamily: fonts.body, fontSize: 13, fontWeight: 600, color: colors.forestGreen }}>
                   Cancel
                 </button>
                 <button onClick={() => handleApprove(approveTarget.id)} style={{ padding: "10px 24px", borderRadius: 8, cursor: "pointer", border: "none", backgroundColor: colors.forestGreen, color: colors.creamLight, fontFamily: fonts.body, fontSize: 13, fontWeight: 700 }}>
@@ -507,7 +621,7 @@ export default function NewScholarsQueue() {
           </div>
         )}
 
-                {/* ── Reject Confirmation Modal ── */}
+        {/* ── Reject Confirmation Modal ── */}
         {rejectTarget && (
           <div style={{ position: "fixed", inset: 0, backgroundColor: "rgba(11, 67, 53, 0.5)", zIndex: 100, display: "flex", alignItems: "center", justifyContent: "center", backdropFilter: "blur(4px)" }} onClick={() => { setRejectTarget(null); setRejectReason(""); }}>
             <div style={{ ...cardStyle, backgroundColor: colors.creamLight, width: 500, maxWidth: "90vw", padding: 32, boxShadow: "0 20px 60px rgba(0,0,0,0.18)" }} onClick={(e) => e.stopPropagation()}>
@@ -524,9 +638,15 @@ export default function NewScholarsQueue() {
                 <p style={{ margin: 0, fontFamily: fonts.body, fontSize: 13, color: colors.forestGreen }}><strong>Discipline:</strong> {rejectTarget.discipline}</p>
               </div>
               
-              <p style={{ fontFamily: fonts.body, fontSize: 14, color: colors.forestGreen, marginBottom: 24, lineHeight: 1.6 }}>
-                Are you sure you want to reject this scholar? This action cannot be undone.
-              </p>
+              <div style={{ marginBottom: 24 }}>
+                <label style={{ fontFamily: fonts.label, fontSize: 11, letterSpacing: "0.06em", fontWeight: 600, color: colors.forestGreen, display: "block", marginBottom: 6 }}>REJECTION REASON *</label>
+                <textarea 
+                  value={rejectReason} 
+                  onChange={(e) => setRejectReason(e.target.value)}
+                  placeholder="Please explain why this submission is being rejected..."
+                  style={{ width: "100%", padding: 12, borderRadius: 8, border: `1px solid ${colors.forestGreen}`, fontFamily: fonts.body, fontSize: 13, color: colors.forestGreen, backgroundColor: colors.creamLight, outline: "none", resize: "vertical", minHeight: 80 }}
+                />
+              </div>
               
               <div style={{ display: "flex", gap: 12, justifyContent: "flex-end" }}>
                 <button onClick={() => { setRejectTarget(null); setRejectReason(""); }} style={{ padding: "10px 24px", borderRadius: 8, cursor: "pointer", border: `1px solid ${colors.forestGreen}`, backgroundColor: colors.creamLight, fontFamily: fonts.body, fontSize: 13, fontWeight: 600, color: colors.forestGreen }}>

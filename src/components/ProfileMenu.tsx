@@ -1,12 +1,11 @@
+// src/components/ProfileMenu.tsx
 import React, { useRef, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { LayoutDashboard, Edit, Settings, LogOut } from "lucide-react";
 import { useLang } from "../context/LanguageContext";
-type Language = "EN" | "AR" | "FR";
+import { useAuth } from "../context/AuthContext"; // ✅ Imported useAuth
 
 interface ProfileMenuProps {
-  lang: Language;
-  logout: () => void;
   onClose: () => void;
   isOpen: boolean;
   onToggle: () => void;
@@ -15,18 +14,7 @@ interface ProfileMenuProps {
   userEmail?: string;
 }
 
-const content: Record<
-  Language,
-  { dashboard: string; editProfile: string; settings: string; logout: string }
-> = {
-  EN: { dashboard: "Dashboard", editProfile: "Edit Profile", settings: "Settings", logout: "Sign out" },
-  AR: { dashboard: "لوحة التحكم", editProfile: "تعديل الملف", settings: "الإعدادات", logout: "تسجيل الخروج" },
-  FR: { dashboard: "Tableau de bord", editProfile: "Modifier le profil", settings: "Paramètres", logout: "Déconnexion" },
-};
-
 const ProfileMenu: React.FC<ProfileMenuProps> = ({
-  lang,
-  logout,
   onClose,
   isOpen,
   onToggle,
@@ -34,7 +22,8 @@ const ProfileMenu: React.FC<ProfileMenuProps> = ({
   userName = "User Name",
   userEmail = "user@oulamauna.org",
 }) => {
-  const t = content[lang];
+  const { lang, t } = useLang();
+  const { logout } = useAuth(); // ✅ Get the real logout function
   const isRTL = lang === "AR";
   const wrapperRef = useRef<HTMLDivElement>(null);
 
@@ -56,9 +45,9 @@ const ProfileMenu: React.FC<ProfileMenuProps> = ({
   }, [onClose]);
 
   const menuItems = [
-    { to: "/dashboard",    icon: LayoutDashboard, label: t.dashboard   },
-    { to: "/edit-profile", icon: Edit,            label: t.editProfile },
-    { to: "/settings",     icon: Settings,        label: t.settings    },
+    { to: "/dashboard",    icon: LayoutDashboard, label: t("profileMenu.dashboard") },
+    { to: "/edit-profile", icon: Edit,            label: t("profileMenu.editProfile") },
+    { to: "/settings",     icon: Settings,        label: t("profileMenu.settings") },
   ];
 
   const Avatar = ({ size = 36 }: { size?: number }) => (
@@ -87,12 +76,11 @@ const ProfileMenu: React.FC<ProfileMenuProps> = ({
 
   return (
     <div className="relative" ref={wrapperRef} dir={isRTL ? "rtl" : "ltr"}>
-
       {/* ── TRIGGER ── */}
       <button
         onClick={onToggle}
         aria-expanded={isOpen}
-        aria-label="Profile menu"
+        aria-label={t("profileMenu.ariaLabel")}
         className="flex items-center gap-2 focus:outline-none group"
       >
         <div
@@ -130,51 +118,34 @@ const ProfileMenu: React.FC<ProfileMenuProps> = ({
               boxShadow: "0 12px 40px rgba(40, 91, 75, 0.5)",
             }}
           >
-            {/* Ultra-thin top accent */}
-            <div className="h-px w-full" style={{ 
-              background: "var(--color-gold-rich)",
-              opacity: 0.6 
-            }} />
+            <div className="h-px w-full" style={{ background: "var(--color-gold-rich)", opacity: 0.6 }} />
 
             {/* ── Header ─ */}
             <div 
               className="flex items-center gap-3 px-5 py-4"
               style={{ borderBottom: `1px solid color-mix(in srgb, var(--color-gold-light) 15%, transparent)` }}
             >
-              <div
-                className="rounded-full p-[3px] flex-shrink-0"
-                style={{ border: `1.5px solid color-mix(in srgb, var(--color-gold-rich) 50%, transparent)` }}
-              >
+              <div className="rounded-full p-[3px] flex-shrink-0" style={{ border: `1.5px solid color-mix(in srgb, var(--color-gold-rich) 50%, transparent)` }}>
                 <Avatar size={36} />
               </div>
               <div className="min-w-0">
-                <p
-                  className="text-[12px] font-semibold truncate"
-                  style={{ color: "var(--color-gold-beige)" }}
-                >
+                <p className="text-[12px] font-semibold truncate" style={{ color: "var(--color-gold-beige)" }}>
                   {userName}
                 </p>
-                <p
-                  className="text-[10px] mt-0.5 truncate"
-                  style={{ color: "var(--color-jade-medium)" }}
-                >
+                <p className="text-[10px] mt-0.5 truncate" style={{ color: "var(--color-jade-medium)" }}>
                   {userEmail}
                 </p>
               </div>
             </div>
 
-            {/* ── Menu Items ── */}
+            {/* ── Menu Items ─ */}
             <div className="py-1">
               {menuItems.map((item) => (
                 <Link
                   key={item.to}
                   to={item.to}
                   onClick={onClose}
-                  className={`
-                    flex items-center gap-3 px-5 py-2.5 w-full
-                    transition-all duration-150
-                    ${isRTL ? "text-[13px]" : "text-[11.5px]"}
-                  `}
+                  className={`flex items-center gap-3 px-5 py-2.5 w-full transition-all duration-150 ${isRTL ? "text-[13px]" : "text-[11.5px]"}`}
                   style={{ color: "var(--color-gold-light)" }}
                   onMouseEnter={e => {
                     const el = e.currentTarget as HTMLElement;
@@ -195,21 +166,14 @@ const ProfileMenu: React.FC<ProfileMenuProps> = ({
               ))}
             </div>
 
-            {/* ── Divider ── */}
-            <div
-              className="mx-5 my-1 h-px"
-              style={{ background: "color-mix(in srgb, var(--color-gold-light) 15%, transparent)" }}
-            />
+            <div className="mx-5 my-1 h-px" style={{ background: "color-mix(in srgb, var(--color-gold-light) 15%, transparent)" }} />
 
             {/* ── Logout ─ */}
             <div className="p-1">
               <button
+                // ✅ Calls the real logout function, then closes the menu
                 onClick={() => { logout(); onClose(); }}
-                className={`
-                  flex items-center gap-3 px-5 py-2.5 w-full rounded-lg
-                  transition-all duration-150
-                  ${isRTL ? "text-[13px]" : "text-[11.5px]"}
-                `}
+                className={`flex items-center gap-3 px-5 py-2.5 w-full rounded-lg transition-all duration-150 ${isRTL ? "text-[13px]" : "text-[11.5px]"}`}
                 style={{ color: "var(--color-gold-light)" }}
                 onMouseEnter={e => {
                   const el = e.currentTarget as HTMLElement;
@@ -225,7 +189,7 @@ const ProfileMenu: React.FC<ProfileMenuProps> = ({
                 }}
               >
                 <LogOut size={15} strokeWidth={1.5} />
-                {t.logout}
+                {t("profileMenu.logout")}
               </button>
             </div>
           </div>

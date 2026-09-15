@@ -8,9 +8,14 @@ export interface User {
   id: number;
   username: string;
   email: string;
-  role: string;
-  allowed_to_contribute: boolean;
+  name?: string | null;
+  bio?: string | null;
+  profile_picture?: string | null;
+  contributorBadge?: boolean;
+  role?: string;
   is_banned: boolean;
+  created_at: string;
+  allowed_to_contribute: boolean;
 }
 
 export interface ScholarVersion {
@@ -21,7 +26,6 @@ export interface ScholarVersion {
   version_type: 'creation' | 'edition';
   canonical_name: string;
   
-  // ✅ ADDED: Missing fields from your backend JSON response
   biography?: string | null;
   century_gregorian_start?: number | null;
   century_gregorian_end?: number | null;
@@ -44,12 +48,10 @@ export interface ScholarVersion {
   media?: any[];
   img_versions?: any[];
   
-  // ✅ MOVED TO ROOT: Matches backend response exactly
   scholar_disciplines?: Array<{
     disciplines?: { name: string };
   }>;
   
-  // ✅ ADDED: So TypeScript knows about relationships
   scholar_relationships_as_source?: any[];
 }
 
@@ -58,7 +60,7 @@ export interface DashboardStats {
   overdue: number;
   new_today: number;
   this_week: number;
-  avg_review_time?: string; // ✅ ADD THIS LINE
+  avg_review_time?: string;
 }
 
 // Standard API Response Wrapper from your backend
@@ -73,8 +75,6 @@ export interface ApiResponse<T = any> {
 // 2. AXIOS INSTANCE & INTERCEPTORS
 // ==========================================
 
-// Adjust the baseURL based on your environment (Vite, Next.js, CRA)
-// ✅ NEW CODE
 const BASE_URL = (import.meta as any).env?.VITE_API_URL || 'http://localhost:5444';
 const API_BASE_URL = `${BASE_URL}/api/admin`;
 const api: AxiosInstance = axios.create({
@@ -88,7 +88,6 @@ const api: AxiosInstance = axios.create({
 // Request Interceptor: Attach JWT Token
 api.interceptors.request.use(
   (config) => {
-    // Replace with your actual token retrieval logic (localStorage, cookies, Zustand, etc.)
     const token = localStorage.getItem('token'); 
     if (token && config.headers) {
       config.headers.Authorization = `Bearer ${token}`;
@@ -104,14 +103,14 @@ api.interceptors.response.use(
   (error: AxiosError) => {
     if (error.response?.status === 401) {
       localStorage.removeItem('token');
-      window.location.href = '/login'; // Redirect to login if token is invalid/expired
+      window.location.href = '/login';
     }
     return Promise.reject(error);
   }
 );
 
 // ==========================================
-// 3. ADMIN API ENDPOINTS
+// 3. ADMIN API ENDPOINTS (Updated with `reason` support)
 // ==========================================
 
 export const adminApi = {
@@ -123,6 +122,8 @@ export const adminApi = {
     unban: (id: number) => api.patch<ApiResponse>(`/users/${id}/unban`),
     toggleContribute: (id: number) => 
       api.patch<ApiResponse<{ allowed_to_contribute: boolean }>>(`/users/${id}/contribute`),
+    getContributions: (id: number) => api.get<ApiResponse<any[]>>(`/users/${id}/contributions`),
+    getForumPosts: (id: number) => api.get<ApiResponse<any[]>>(`/users/${id}/posts`),
   },
 
   // 🎓 Scholars Management
@@ -131,28 +132,41 @@ export const adminApi = {
       api.get<ApiResponse<ScholarVersion[]>>('/scholars/pending/created'),
     getPendingEdited: () => 
       api.get<ApiResponse<{ proposed: ScholarVersion; current: ScholarVersion | null }[]>>('/scholars/pending/edited'),
+    
+    // ✅ UPDATED: Added `reason` to payload so backend doesn't crash
     approve: (id: number, payload?: { 
+      reason?: string;
       reject_images?: number[]; 
       reject_works?: number[]; 
       reject_references?: number[]; 
       reject_media?: number[] 
     }) => 
       api.put<ApiResponse<ScholarVersion>>(`/scholars/${id}/approve`, payload || {}),
+    
+    // ✅ UPDATED: Sends `reason` in body
     reject: (id: number, reason: string = '') => 
       api.put<ApiResponse<ScholarVersion>>(`/scholars/${id}/reject`, { reason }),
+      
     getVersions: (id: number, lang?: string) => 
       api.get<ApiResponse<ScholarVersion[]>>(`/scholars/${id}/versions`, { 
         params: lang ? { lang } : undefined 
       }),
     getDashboardStats: () => 
       api.get<ApiResponse<DashboardStats>>('/scholars/states'),
+    getAllSummary: () =>
+      api.get<ApiResponse<any[]>>('/scholars/all'),
+    getVersionDetail: (scholarId: number, lang: string) =>
+      api.get<ApiResponse<ScholarVersion>>(`/scholars/${scholarId}/version-detail`, { params: { lang } }),
+    getDashboardData: () => api.get<ApiResponse<any>>('/dashboard/data'),
   },
 
   // 🖼️ Media Management
   media: {
     getPending: () => api.get<ApiResponse<any[]>>('/media/pending'),
     approve: (id: number) => api.put<ApiResponse>(`/media/${id}/approve`),
-    reject: (id: number) => api.put<ApiResponse>(`/media/${id}/reject`),
+    
+    // ✅ UPDATED: Sends `reason` in body for rejection notification
+    reject: (id: number, reason: string = '') => api.put<ApiResponse>(`/media/${id}/reject`, { reason }),
     delete: (id: number) => api.delete<ApiResponse>(`/media/${id}`),
   },
 
@@ -160,21 +174,25 @@ export const adminApi = {
   references: {
     getPending: () => api.get<ApiResponse<any[]>>('/reference/pending'),
     approve: (id: number) => api.put<ApiResponse>(`/reference/${id}/approve`),
-    reject: (id: number) => api.put<ApiResponse>(`/reference/${id}/reject`),
+    
+    // ✅ UPDATED: Sends `reason` in body
+    reject: (id: number, reason: string = '') => api.put<ApiResponse>(`/reference/${id}/reject`, { reason }),
   },
 
   // 📝 Works Management
   works: {
     getPending: () => api.get<ApiResponse<any[]>>('/work/pending'),
     approve: (id: number) => api.put<ApiResponse>(`/work/${id}/approve`),
-    reject: (id: number) => api.put<ApiResponse>(`/work/${id}/reject`),
+    
+    // ✅ UPDATED: Sends `reason` in body for rejection notification
+    reject: (id: number, reason: string = '') => api.put<ApiResponse>(`/work/${id}/reject`, { reason }),
   },
 
   // 🖼️ Scholar Images Management
   scholarImages: {
     getPending: () => api.get<ApiResponse<any[]>>('/img/pending'),
     approve: (id: number) => api.put<ApiResponse>(`/img/${id}/approve`),
-    reject: (id: number) => api.put<ApiResponse>(`/img/${id}/reject`),
+    reject: (id: number, reason: string = '') => api.put<ApiResponse>(`/img/${id}/reject`, { reason }),
   },
 
   // 📐 Discipline Management
@@ -187,6 +205,23 @@ export const adminApi = {
   region: {
     update: (id: number, data: any) => api.put<ApiResponse>(`/region/${id}`, data),
     delete: (id: number) => api.delete<ApiResponse>(`/region/${id}`),
+  },
+  forum: {
+    getAdminPosts: (params?: any) => api.get<ApiResponse<any>>('/posts', { params }),
+    getPostDetails: (id: number) => api.get<ApiResponse<any>>(`/posts/${id}`),
+    hidePost: (id: number) => api.put<ApiResponse<any>>(`/posts/${id}/hide`),
+    restorePost: (id: number) => api.put<ApiResponse<any>>(`/posts/${id}/restore`),           // ✅ new
+    deletePostPermanently: (id: number) => api.delete<ApiResponse<any>>(`/posts/${id}`),
+
+    hideComment: (id: number) => api.put<ApiResponse<any>>(`/comments/${id}/hide`),            // ✅ new
+    restoreComment: (id: number) => api.put<ApiResponse<any>>(`/comments/${id}/restore`),      // ✅ new
+    deleteCommentPermanently: (id: number) => api.delete<ApiResponse<any>>(`/comments/${id}`), // ✅ new
+
+    getCategories: () => api.get<ApiResponse<any>>('/categories'),
+    createCategory: (data: any) => api.post<ApiResponse<any>>('/categories', data),
+    updateCategory: (id: number, data: any) => api.put<ApiResponse<any>>(`/categories/${id}`, data),
+    deleteCategory: (id: number) => api.delete<ApiResponse<any>>(`/categories/${id}`),
+    reorderCategories: (categoryIds: number[]) => api.put<ApiResponse<any>>('/categories/reorder', { categoryIds }),
   },
 };
 

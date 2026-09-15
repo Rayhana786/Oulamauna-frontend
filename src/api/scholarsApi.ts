@@ -203,8 +203,22 @@ export interface EditScholarResponse {
 // ─────────────────────────────────────────────
 
 export const scholarsApi = {
-  list: (lang: string): Promise<ApiListResponse> =>
-    request(`?lang=${encodeURIComponent(lang)}`),
+    // ✅ UPDATED: Now accepts optional filters (minYear, maxYear, century, discipline)
+  list: (lang: string, filters?: { 
+    minYear?: string | number; 
+    maxYear?: string | number; 
+    century?: string | number; 
+    discipline?: string | number 
+  }): Promise<ApiListResponse> => {
+    const params = new URLSearchParams({ lang });
+    
+    if (filters?.minYear) params.append('minYear', String(filters.minYear));
+    if (filters?.maxYear) params.append('maxYear', String(filters.maxYear));
+    if (filters?.century) params.append('century', String(filters.century));
+    if (filters?.discipline) params.append('discipline', String(filters.discipline));
+    
+    return request(`?${params.toString()}`);
+  },
 
   getById: (id: number, lang?: string): Promise<any> =>
     request(`/${id}${lang ? `?lang=${encodeURIComponent(lang)}` : ""}`),

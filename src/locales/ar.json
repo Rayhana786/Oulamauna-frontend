@@ -1,39 +1,591 @@
-{
-  "sidebar": {
-    "brandName": "علماؤنا",
-    "role": "مدير البوابة",
-    "signOut": "تسجيل الخروج",
-    "section": {
-      "archives": "الأرشيف والمخطوطات",
-      "engagement": "التفاعل",
-      "administration": "الإدارة"
+{ 
+"contact": {
+  "breadcrumb": "الرئيسية › تواصل معنا",
+  "title": "تواصل معنا",
+  "description": "هل لديك أسئلة أو اقتراحات أو ترغب في المساهمة؟ يسعدنا التواصل معك.",
+  "info": {
+    "emailLabel": "البريد الإلكتروني",
+    "emailValue": "contact@oulamauna.org",
+    "locationLabel": "الموقع",
+    "locationValue": "الجزائر",
+    "phoneLabel": "الهاتف",
+    "phoneValue": "+213 (0) 000 000 000"
+  },
+  "directContact": "التواصل المباشر",
+  "formTitle": "أرسل رسالة",
+  "labels": {
+    "name": "الاسم",
+    "email": "البريد الإلكتروني",
+    "message": "الرسالة",
+    "btn": "إرسال الرسالة"
+  },
+  "placeholders": {
+    "name": "الاسم الكامل",
+    "email": "example@mail.com",
+    "message": "كيف يمكننا مساعدتك؟"
+  },
+  "errors": {
+    "nameEmpty": "الرجاء إدخال اسمك.",
+    "emailEmpty": "الرجاء إدخال عنوان بريدك الإلكتروني.",
+    "emailInvalid": "الرجاء إدخال عنوان بريد صحيح.",
+    "messageEmpty": "الرجاء كتابة رسالتك.",
+    "messageShort": "يجب أن تحتوي الرسالة على 10 أحرف على الأقل."
+  },
+  "sentTitle": "تم إرسال رسالتك!",
+  "sentSubtitle": "شكراً للتواصل معنا. سنرد عليك في أقرب وقت ممكن.",
+  "sentBack": "إرسال رسالة أخرى"
+},
+"about": {
+  "breadcrumb": "الرئيسية › من نحن",
+  "title": "من نحن",
+  "heroDescription": "موسوعة تعاونية مجانية مخصصة لعلماء ومفكري التراث الفكري الإسلامي.",
+  "introLeft": "أُنشئت منصة علماؤنا بهدف واضح: حفظ سِيَر وأعمال العلماء الذين شكّلوا الفكر الإسلامي، وجعل هذه المعرفة سهلة الوصول والقراءة والنقل.",
+  "introRight": "بفضل سنوات من العناية وراء كل مدخل، يدفع مساهمينا احترامٌ للعلم وحبٌ للتراث الذي يوثقونه.",
+  "whatLabel": "ماذا نفعل؟",
+  "whatBody": "نجمع السِيَر والمخطوطات والمراجع الأكاديمية في أرشيف واحد متعدد اللغات.",
+  "archiveLabel": "أرشيفنا",
+  "archiveP1": "يجمع كل مدخل سيرة العالم وأعماله البارزة ومخطوطاته المتاحة في مكان واحد، بالعربية والإنجليزية والفرنسية.",
+  "archiveP2": "للحفاظ على موثوقية المداخل، نطلب من المساهمين الاستشهاد بمصادرهم، ويمر كل إسهام بمراجعة قبل نشره.",
+  "accessLabel": "الانفتاح",
+  "accessBody": "في علماؤنا، الانفتاح هو جوهر عملنا. نؤمن بأن التراث العلمي يجب أن يكون سهل المنال وسهل الفهم.",
+  "accessSub": "لهذا فإن كل مدخل متاح للقراءة مجاناً بثلاث لغات، فلا تحدّ لغة واحدة من يستطيع التعلّم منه.",
+  "teamLabel": "مساهمونا",
+  "teamBody": "مساهمونا ليسوا مجرد من يضيف أسماء — بل باحثون وقراء يكنّون احتراماً عميقاً للتراث الذي يوثقونه. عنايتهم بالمصادر والدقة هي ما يحافظ على موثوقية الأرشيف.",
+  "exploreLink": "تصفح العلماء",
+  "ctaLabel": "تواصل معنا",
+  "ctaTitle": "هل لديك تصحيح، أو اقتراح لإضافة عالم، أو سؤال حول الأرشيف؟ يسعدنا أن نسمع منك.",
+  "ctaButton": "راسلنا"
+},
+"notifications": {
+  "title": "الإشعارات",
+  "all": "الكل",
+  "unread": "غير المقروء",
+  "markAllRead": "تحديد الكل كمقروء",
+  "noNotifications": "لا توجد إشعارات",
+  "caughtUp": "لقد قرأت كل شيء!",
+  "willNotify": "سنخطرك عند حدوث شيء.",
+  "new": "جديد",
+  "week": "هذا الأسبوع",
+  "earlier": "سابقاً",
+  "loadMore": "عرض الإشعارات السابقة",
+  "readMore": "عرض المزيد",
+  "readLess": "عرض أقل",
+  "time": {
+    "justNow": "الآن",
+    "minsAgo": "د",
+    "hoursAgo": "س",
+    "daysAgo": "ي"
+  }
+},
+ "forum": {
+    "pageTitle": "النقاشات",
+    "searchPlaceholder": "ابحث بالعنوان أو المحتوى أو المؤلف...",
+    "newPostButton": "ابدأ نقاشاً جديداً",
+    "allDiscussions": "جميع النقاشات",
+    "categoriesLabel": "الأقسام",
+    "sortRecent": "الأحدث أولاً",
+    "sortPopular": "الأكثر تفاعلاً",
+    "sortUnanswered": "بدون ردود",
+    "loadMore": "عرض المزيد",
+    "noResults": "لا توجد نقاشات مطابقة.",
+    "composerTitle": "ابدأ نقاشاً",
+    "composerCategoryLabel": "القسم",
+    "composerCategoryPlaceholder": "اختر قسماً",
+    "composerTitleLabel": "العنوان",
+    "composerTitlePlaceholder": "ما هو سؤالك أو موضوعك؟",
+    "composerContentLabel": "المحتوى",
+    "composerContentPlaceholder": "شارك التفاصيل أو السياق أو المصادر...",
+    "composerCancel": "إلغاء",
+    "composerPublish": "نشر",
+    "comments": "تعليقات",
+    "posts": "منشورات",
+    "report": "إبلاغ",
+    "reportPost": "الإبلاغ عن المنشور",
+    "confirmReport": "هل أنت متأكد من رغبتك في الإبلاغ عن هذا المنشور؟",
+    "reportReason": "سبب الإبلاغ (اختياري)",
+    "cancel": "إلغاء",
+    "submit": "إرسال",
+    "deletePost": "حذف",
+    "confirmDeletePost": "هل أنت متأكد من رغبتك في حذف هذا المنشور؟ لا يمكن التراجع عن هذا.",
+    "loadingDiscussions": "جاري تحميل النقاشات...",
+    "uncategorized": "غير مصنف",
+    "anonymous": "مجهول",
+    "failedToPublish": "فشل نشر المنشور.",
+    "reportSubmitted": "تم إرسال البلاغ بنجاح.",
+    "failedToReport": "فشل إرسال البلاغ.",
+    "failedToDelete": "فشل حذف المنشور."
+  },
+  "forumPost": {
+    "backToForum": "العودة إلى النقاشات",
+    "postedBy": "نشر بواسطة",
+    "onDate": "في",
+    "views": "مشاهدات",
+    "comments": "تعليقات",
+    "commentPlaceholder": "شارك أفكارك...",
+    "postComment": "نشر التعليق",
+    "noComments": "لا توجد تعليقات بعد. كن أول من يشارك أفكاره!",
+    "replyingTo": "الرد على",
+    "cancelReply": "إلغاء",
+    "reply": "رد",
+    "loading": "جاري تحميل المنشور...",
+    "report": "إبلاغ",
+    "reportPost": "الإبلاغ عن المنشور",
+    "reportComment": "الإبلاغ عن التعليق",
+    "confirmReport": "هل أنت متأكد من رغبتك في الإبلاغ عن هذا؟",
+    "reportReason": "سبب الإبلاغ (اختياري)",
+    "cancel": "إلغاء",
+    "submit": "إرسال",
+    "fullscreen": "ملء الشاشة",
+    "exitFullscreen": "خروج من ملء الشاشة",
+    "loadMoreComments": "عرض المزيد من التعليقات",
+    "viewReplies": "عرض الردود",
+    "hideReplies": "إخفاء الردود",
+    "sortNewest": "الأحدث أولاً",
+    "sortOldest": "الأقدم أولاً",
+    "deletePost": "حذف المنشور",
+    "deleteComment": "حذف",
+    "confirmDeletePost": "هل أنت متأكد من رغبتك في حذف هذا المنشور؟ لا يمكن التراجع عن هذا.",
+    "confirmDeleteComment": "هل أنت متأكد من رغبتك في حذف هذا التعليق؟",
+    "deletedComment": "[تم حذف هذا التعليق]",
+    "uncategorized": "غير مصنف",
+    "unknownUser": "مستخدم غير معروف",
+    "postNotFound": "لم يتم العثور على المنشور.",
+    "failedToPostComment": "فشل نشر التعليق. يرجى المحاولة مرة أخرى.",
+    "reportSubmitted": "تم إرسال البلاغ بنجاح.",
+    "failedToReport": "فشل إرسال البلاغ.",
+    "failedToDeletePost": "فشل حذف المنشور.",
+    "failedToDeleteComment": "فشل حذف التعليق.",
+    "time": {
+      "justNow": "الآن",
+      "minsAgo": "د",
+      "hoursAgo": "س",
+      "daysAgo": "ي"
+    }
+  },
+  "errors": {
+    "server": {
+      "title": "إِنَّ مَعَ الْعُسْرِ يُسْرًا",
+      "desc": "نحن نقوم بعملية صيانة سريعة للمكتبة حالياً. يرجى المحاولة مرة أخرى بعد قليل.",
+      "button": "تحديث الصفحة"
     },
-    "dashboard": "لوحة التحكم",
+    "notFound": {
+      "title": "404",
+      "subtitle": "الصفحة غير موجودة",
+      "desc": "المعرفة التي تبحث عنها ليست في هذا القسم من المكتبة.",
+      "button": "العودة للرئيسية"
+    },
+    "invalidToken": {
+      "title": "انتهت صلاحية الرابط",
+      "desc": "رابط التحقق هذا لم يعد صالحاً. ربما انتهت صلاحيته أو تم استخدامه بالفعل.",
+      "login": "تسجيل الدخول مرة أخرى",
+      "help": "تحتاج مساعدة؟"
+    },
+    "forbidden": {
+      "title": "دخول مقيد",
+      "desc": "ليس لديك الصلاحيات اللازمة لعرض هذه الصفحة.",
+      "button": "العودة للرئيسية"
+    }
+  },
+
+  "login": {
+    "title": "مرحباً بعودتك",
+    "subtitle": "أدخل بياناتك للوصول إلى حسابك",
+    "emailLabel": "البريد الإلكتروني",
+    "emailPlaceholder": "أدخل بريدك الإلكتروني",
+    "passwordLabel": "كلمة المرور",
+    "passwordPlaceholder": "أدخل كلمة المرور",
+    "forgot": "نسيت كلمة المرور؟",
+    "button": "تسجيل الدخول",
+    "loading": "جاري تسجيل الدخول...",
+    "google": "تسجيل الدخول عبر Google",
+    "noAccount": "ليس لديك حساب؟",
+    "join": "إنشاء حساب",
+    "or": "أو",
+    "errEmailEmpty": "البريد الإلكتروني مطلوب",
+    "errEmailInvalid": "عنوان بريد غير صالح",
+    "errPasswordEmpty": "كلمة المرور مطلوبة",
+    "errInvalidAuth": "البريد الإلكتروني أو كلمة المرور غير صحيحة",
+    "errServer": "فشل الاتصال بالخادم",
+    "imageTitle": "الحفاظ على التراث العلمي الإسلامي",
+    "imageSubtitle": "اكتشف قروناً من المعرفة من كبار العلماء.",
+    "badge1": "مصادر موثقة",
+    "badge2": "+500 عالم"
+  },
+  "register": {
+    "title": "إنشاء حساب",
+    "subtitle": "ابدأ رحلتك مع علماؤنا اليوم",
+    "usernameLabel": "الاسم الكامل",
+    "usernamePlaceholder": "أدخل اسمك الكامل",
+    "emailLabel": "البريد الإلكتروني",
+    "emailPlaceholder": "أدخل بريدك الإلكتروني",
+    "passwordLabel": "كلمة المرور",
+    "passwordPlaceholder": "أنشئ كلمة مرور",
+    "confirmLabel": "تأكيد كلمة المرور",
+    "confirmPlaceholder": "أكد كلمة المرور",
+    "button": "إنشاء حساب",
+    "google": "التسجيل عبر Google",
+    "haveAccount": "لديك حساب بالفعل؟",
+    "signIn": "تسجيل الدخول",
+    "or": "أو",
+    "loading": "جاري إنشاء الحساب...",
+    "errors": {
+      "usernameEmpty": "الاسم الكامل مطلوب",
+      "emailEmpty": "البريد الإلكتروني مطلوب",
+      "emailInvalid": "عنوان بريد غير صالح",
+      "passwordEmpty": "كلمة المرور مطلوبة",
+      "passwordWeak": "كلمة المرور يجب أن تكون 8 أحرف على الأقل مع حرف كبير ورقم ورمز",
+      "confirmEmpty": "يرجى تأكيد كلمة المرور",
+      "confirmMatch": "كلمتا المرور لا تتطابقان",
+      "server": "حدث خطأ ما. يرجى المحاولة مرة أخرى."
+    },
+    "imageTitle": "انضم إلى مجتمعنا",
+    "imageSubtitle": "كن مساهماً وساعد في الحفاظ على التراث العلمي الإسلامي.",
+    "badge1": "انضم لأكثر من 1000 عالم",
+    "badge2": "آمن وموثق"
+  },
+  
+  "forgotPassword": {
+    "back": "العودة لتسجيل الدخول ", "title": "نسيت كلمة المرور؟", "subtitle": "أدخل بريدك الإلكتروني وسنرسل لك رابطاً لإعادة تعيين كلمة المرور.",
+    "emailLabel": "عنوان البريد الإلكتروني", "emailPlaceholder": "scholar@oulamauna.org", "button": "إرسال رابط الإعادة", "sending": "جاري الإرسال...",
+    "errEmpty": "الرجاء إدخال عنوان بريدك الإلكتروني.", "errInvalid": "الرجاء إدخال عنوان بريد إلكتروني صحيح.", "errServer": "فشل الاتصال بالخادم. يرجى المحاولة لاحقاً.",
+    "sentTitle": "تحقق من بريدك الوارد", "sentSubtitle": "أرسلنا رابط إعادة التعيين إلى", "sentNote": "لم تستلمه؟ تحقق من البريد العشوائي أو", "sentRetry": "جرّب بريداً آخر", "sentBack": "العودة لتسجيل الدخول"
+  },
+  "resetPassword": {
+    "back": "العودة لتسجيل الدخول ", "title": "إعادة تعيين كلمة المرور", "subtitle": "اختر كلمة مرور جديدة لحسابك.",
+    "passwordLabel": "كلمة المرور الجديدة", "passwordPlaceholder": "أدخل كلمة مرور جديدة",
+    "confirmLabel": "تأكيد كلمة المرور", "confirmPlaceholder": "أعد إدخال كلمة المرور",
+    "button": "تعيين كلمة المرور", "sending": "جاري التعيين...",
+    "errPasswordEmpty": "الرجاء إدخال كلمة مرور جديدة.", "errPasswordWeak": "يرجى استيفاء جميع متطلبات كلمة المرور.",
+    "errConfirmEmpty": "الرجاء تأكيد كلمة المرور.", "errConfirmMatch": "كلمتا المرور غير متطابقتين.", "errServer": "فشل إعادة تعيين كلمة المرور.",
+    "doneTitle": "تم تحديث كلمة المرور", "doneSubtitle": "تمت إعادة تعيين كلمة المرور بنجاح. يمكنك الآن تسجيل الدخول.", "doneButton": "تسجيل الدخول",
+    "invalidToken": "رابط إعادة التعيين غير صالح أو منتهي الصلاحية.", "invalidBack": "طلب رابط جديد",
+    "checks": { "length": "8 أحرف على الأقل", "upper": "حرف كبير واحد", "number": "رقم واحد", "symbol": "رمز واحد", "add": "أضف:", "allGood": "كلمة مرور قوية!" }
+  },
+  "verifyEmail": {
+    "category": "أمان الحساب", "loadingTitle": "جاري التحقق من بريدك...", "loadingSubtitle": "يرجى الانتظار بينما نقوم بتفعيل حسابك",
+    "successTitle": "تم تأكيد البريد!", "successSubtitle": "حسابك الآن مفعل. سيتم توجيهك لتسجيل الدخول قريباً.",
+    "successRedirect": "جاري التوجيه لتسجيل الدخول", "successBack": "تسجيل الدخول الآن", "successHome": "أو الصفحة الرئيسية", "counting": "خلال",
+    "resendPlaceholder": "أدخل بريدك الإلكتروني", "resendButton": "إرسال رابط جديد", "resendSent": "تم الإرسال! تحقق من بريدك.",
+    "resendErrorEmpty": "يرجى إدخال بريدك الإلكتروني.", "resendErrorFailed": "فشل الإرسال. حاول مجدداً.",
+    "errors": {
+      "no_token": { "title": "رابط مفقود", "subtitle": "لم يتم العثور على رمز التحقق. أدخل بريدك للحصول على رابط جديد.", "backHome": "العودة للرئيسية" },
+      "invalid_token": { "title": "رابط غير صالح", "subtitle": "هذا الرابط مستخدم أو غير معروف.", "backHome": "العودة للرئيسية", "register": "أو إنشاء حساب جديد" },
+      "expired_token": { "title": "انتهت صلاحية الرابط", "subtitle": "انتهت صلاحية الرابط. أدخل بريدك لاستلام رابط جديد.", "backHome": "العودة للرئيسية" },
+      "network": { "title": "خطأ في الاتصال", "subtitle": "تعذر الوصول إلى الخادم. يرجى التحقق من اتصالك.", "tryAgain": "حاول مجدداً", "backHome": "العودة للرئيسية" },
+      "server": { "title": "خطأ في الخادم", "subtitle": "حدث خطأ من جانبنا. يرجى المحاولة لاحقاً.", "tryAgain": "حاول مجدداً", "backHome": "العودة للرئيسية" },
+      "unknown": { "title": "فشل التأكيد", "subtitle": "حدث خطأ غير متوقع. يرجى المحاولة مرة أخرى.", "backHome": "العودة للرئيسية" }
+    }
+  },
+  "verifyEmailPending": {
+    "category": "أمان الحساب", "title": "تأكيد البريد الإلكتروني", "subtitle": "تم إرسال رابط تأكيد إلى بريدك الإلكتروني.",
+    "alreadyVerifiedTitle": "تم التأكيد مسبقاً", "alreadyVerifiedSub": "بريدك الإلكتروني مؤكد بالفعل. كل شيء جاهز.",
+    "alreadyVerifiedBack": "العودة للصفحة السابقة", "alreadyVerifiedHome": "أو الصفحة الرئيسية",
+    "cta": "افتح GMAIL", "resend": "إعادة إرسال", "resentSuccess": "تم الإرسال", "backToLogin": "العودة",
+    "checking": "جاري التحقق...", "errorMessage": "حدث خطأ ما. يرجى المحاولة مرة أخرى."
+  },
+
+   "dashboard": {
+  "title": "لوحة التحكم",
+  "welcome": "مرحباً",
+  "welcomeUser": "مرحباً بك في لوحة التحكم",
+  "roleLabel": "الدور",
+  "roleAdmin": "مسؤول",
+  "roleContributor": "مساهم",
+  "tabs": {
+    "overview": "نظرة عامة",
+    "submissions": "تقديماتي",
+    "media": "الوسائط",
+    "works": "الأعمال والمراجع",
+    "notifications": "الإشعارات"
+  },
+  "stats": {
     "scholars": "العلماء",
-    "allScholars": "جميع العلماء",
-    "addScholar": "إضافة عالم جديد",
-    "reviewDesk": "مكتب المراجعة",
-    "newScholars": "العلماء الجدد",
-    "pendingEdits": "التعديلات المعلّقة",
-    "mediaVerification": "التحقق من الوسائط",
-    "worksVerification": "التحقق من الأعمال",
-    "activeReview": "قيد المراجعة",
-    "archive": "الأرشيف",
-    "changesRequested": "طُلبت تغييرات",
+    "versions": "الإصدارات",
+    "media": "الوسائط",
+    "works": "الأعمال"
+  },
+  "overview": {
+    "recentActivity": "النشاط الأخير"
+  },
+  "activity": {
+    "newScholar": "تم تقديم عالم جديد",
+    "editProposed": "تم اقتراح تعديل"
+  },
+  "empty": {
+    "recent": "لا يوجد نشاط حديث",
+    "submissions": "لم يتم العثور على تقديمات",
+    "media": "لم يتم رفع وسائط بعد",
+    "works": "لم تتم إضافة أعمال بعد",
+    "notifications": "لا توجد إشعارات بعد"
+  },
+  "loading": {
+    "submissions": "جاري تحميل التقديمات...",
+    "media": "جاري تحميل الوسائط...",
+    "works": "جاري تحميل الأعمال..."
+  },
+  "filter": {
+    "all": "الكل",
+    "draft": "مسودة",
+    "pending": "قيد المراجعة",
+    "approved": "مقبول",
     "rejected": "مرفوض",
-    "disciplines": "التخصصات",
-    "communityHub": "مركز المجتمع",
-    "allPosts": "جميع المنشورات",
-    "reported": "المُبلَّغ عنها",
-    "userManagement": "إدارة المستخدمين",
-    "contributors": "المساهمون",
-    "bannedUsers": "المستخدمون المحظورون",
-    "reports": "التقارير",
+    "superseded": "تم الاستبدال"
+  },
+  "status": {
+    "draft": "مسودة",
+    "pending": "قيد المراجعة",
+    "approved": "مقبول",
+    "rejected": "مرفوض",
+    "superseded": "تم الاستبدال"
+  },
+  "table": {
+    "type": "النوع",
+    "scholar": "العالم",
+    "language": "اللغة",
+    "version": "الإصدار",
+    "date": "التاريخ",
+    "status": "الحالة",
+    "actions": "الإجراءات",
+    "file": "الملف",
+    "title": "العنوان"
+  },
+  "actions": {
+    "view": "عرض",
+    "edit": "تعديل",
+    "delete": "حذف",
+    "continue": "متابعة",
+    "newScholar": "عالم جديد ",
+    "viewFile": "عرض الملف",
+    "download": "تحميل",
+    "openLink": "فتح الرابط",
+    "viewOnScholarPage": "عرض في صفحة العالم"
+  },
+  "confirm": {
+    "deleteDraft": "هل أنت متأكد من حذف هذه المسودة نهائياً؟",
+    "deleteRejected": "هل أنت متأكد من حذف هذا الرفض نهائياً؟"
+  },
+  "success": {
+    "draftDeleted": "تم حذف المسودة بنجاح!",
+    "rejectedDeleted": "تم حذف الرفض بنجاح!"
+  },
+  "error": {
+    "deleteDraft": "فشل حذف المسودة. يرجى المحاولة مرة أخرى.",
+    "deleteRejected": "فشل الحذف. يرجى المحاولة مرة أخرى."
+  },
+  "cta": {
+    "title": "هل أنت مستعد للمساهمة؟",
+    "desc": "ابدأ بإضافة العلماء والأعمال والوسائط إلى المنصة.",
+    "button": "تقديم جديد"
+  },
+  "media": {
+    "tempNote": "إدارة الوسائط قادمة قريباً."
+  },
+  "scholarInfo": {
+    "region": "المنطقة",
+    "dates": "التواريخ",
+    "alsoKnownAs": "معروف أيضاً بـ"
+  },
+  "banner": {
+    "pendingDesc": "يقوم أحد المسؤولين حالياً بمراجعة هذا التقديم.",
+    "supersededDesc": "تم استبدال هذا الإصدار بإصدار أحدث معتمد.",
+    "draftDesc": "لم يتم تقديم هذا العنصر للمراجعة بعد.",
+    "pendingItemDesc": "يقوم أحد المسؤولين حالياً بمراجعة هذا العنصر.",
+    "approvedDesc": "هذا العنصر منشور على صفحة العالم.",
+    "rejectedDesc": "لم تتم الموافقة على هذا العنصر.",
+    "supersededItemDesc": "تم استبدال هذا العنصر بإصدار أحدث."
+  },
+  "biography": "السيرة الذاتية",
+  "loadingDetails": "جاري تحميل التفاصيل...",
+  "errorLoadData": "فشل تحميل البيانات.",
+  "untitledSubmission": "تقديم بدون عنوان",
+  "newScholarSubmission": "تقديم عالم جديد",
+  "editProposal": "اقتراح تعديل",
+  "submitted": "تم التقديم في",
+  "noFileAttached": "لا يوجد ملف مرفق.",
+  "pagination": {
+    "previous": "السابق",
+    "next": "التالي"
+  },
+  "kind": {
+    "new": "جديد",
+    "edit": "تعديل"
+  },
+  "unknownScholar": "عالم غير معروف",
+  "unknown": "غير معروف",
+  "untitled": "بدون عنوان"
+},
+ "editProfile": {
+    "loading": "جاري تحميل الملف الشخصي...",
+    "title": "تعديل الملف الشخصي",
+    "success": "تم تحديث الملف الشخصي بنجاح!",
+    "error": {
+      "load": "فشل تحميل بيانات الملف الشخصي.",
+      "update": "فشل تحديث الملف الشخصي.",
+      "general": "حدث خطأ أثناء الحفظ."
+    },
+    "newImageSelected": "تم اختيار صورة جديدة",
+    "changePicture": "تغيير صورة الملف الشخصي",
+    "roleAdmin": "مسؤول",
+    "roleUser": "مستخدم",
+    "roleContributor": "مساهم",
+    "statusBrowsing": "يتصفح",
+    "statusContributing": "يساهم",
+    "newImageReady": "صورة جديدة جاهزة للحفظ",
+    "personalInfo": "المعلومات الشخصية",
+    "displayName": "اسم العرض",
+    "username": "اسم المستخدم",
+    "email": "البريد الإلكتروني",
+    "bio": "نبذة تعريفية",
+    "links": "روابط",
+    "linksHint": "أضف روابط وسائل التواصل الاجتماعي أو موقعك الشخصي.",
+    "linkPlaceholder": "https://...",
+    "addLink": "إضافة رابط",
+    "cancel": "إلغاء",
+    "saving": "جاري الحفظ...",
+    "saveProfile": "حفظ الملف الشخصي"
+  },
+  "settings": {
+    "loading": "جاري تحميل الإعدادات...",
+    "errorLoad": "فشل تحميل الإعدادات.",
+    "errorUpdate": "فشل تحديث الإعدادات. يرجى المحاولة مرة أخرى.",
+    "errorDeactivate": "فشل تعطيل الحساب.",
+    "errorDelete": "فشل حذف الحساب.",
+    "saved": "تم الحفظ",
+    "processing": "جاري المعالجة...",
+    "cancel": "إلغاء",
+    "title": "إعدادات الحساب",
+    "desc": "إدارة تفضيلاتك وخصوصيتك وحالة حسابك.",
+    "language": "اللغة",
+    "preferredLanguage": "اللغة المفضلة",
     "notifications": "الإشعارات",
+    "enableNotifications": "تفعيل الإشعارات",
+    "notificationsDesc": "تلقي إشعارات عامة حول حسابك ومساهماتك.",
+    "privacy": "الخصوصية",
+    "profileVisibility": "ظهور الملف الشخصي",
+    "visibilityPublic": "عام",
+    "visibilityRegistered": "للمستخدمين المسجلين فقط",
+    "visibilityPrivate": "خاص",
+    "showEmail": "إظهار البريد الإلكتروني",
+    "showEmailDesc": "عرض عنوان بريدك الإلكتروني على ملفك الشخصي العام.",
+    "showContributions": "إظهار المساهمات",
+    "showContributionsDesc": "عرض سجل مساهماتك على ملفك الشخصي العام.",
+    "accountManagement": "إدارة الحساب",
+    "deactivateAccount": "تعطيل الحساب",
+    "deactivateAccountDesc": "تعطيل حسابك مؤقتاً. يمكنك إعادة تفعيله بتسجيل الدخول مرة أخرى.",
+    "deactivate": "تعطيل",
+    "deactivateConfirmMessage": "هل أنت متأكد من تعطيل حسابك؟ سيتم الحفاظ على بياناتك، ويمكنك إعادة تفعيله في أي وقت بتسجيل الدخول مرة أخرى.",
+    "deleteAccount": "حذف الحساب",
+    "deleteAccountDesc": "إخفاء هوية حسابك بشكل دائم. لا يمكن التراجع عن هذا الإجراء.",
+    "deleteAccountWarning": "هذا الإجراء لا رجعة فيه. سيتم إخفاء هوية حسابك، وسيتم حذف كلمة المرور الخاصة بك، ولن تتمكن من تسجيل الدخول مرة أخرى. ستظل مساهماتك السابقة مرئية تحت اسم مستخدم مجهول.",
+    "typeDeleteToConfirm": "اكتب DELETE للتأكيد:",
+    "deleteAccountConfirm": "حذف الحساب"
+  },
+  "logout": {
+    "confirmMessage": "هل أنت متأكد من أنك تريد تسجيل الخروج؟ قد تفقد أي تغييرات غير محفوظة.",
+    "cancel": "إلغاء",
+    "confirm": "تسجيل الخروج"
+  },
+ "footer": {
+    "tagline": "مكرس للحفاظ على التراث العلمي الإسلامي",
+    "quickLinks": "روابط سريعة",
+    "about": "من نحن",
+    "scholars": "العلماء",
+    "works": "الأعمال والمخطوطات",
+    "disciplines": "التخصصات",
+    "resources": "الموارد",
+    "forum": "المنتدى",
+    "faq": "الأسئلة الشائعة",
+    "privacy": "سياسة الخصوصية",
+    "contact": "اتصل بنا",
+    "address": "الجزائر العاصمة، الجزائر",
+    "email": "contact@oulamauna.com",
+    "phone": "+213 (0) XX XX XX XX",
+    "copyright": "© 2026 علماؤنا. جميع الحقوق محفوظة.",
+    "terms": "شروط الاستخدام",
+    "privacyLink": "الخصوصية"
+  },
+    "hero": {
+    "tagline": "مرحباً بكم في علماؤنا",
+    "title": "اكتشف العلماء الذين شكّلوا الفكر الإسلامي",
+    "subtitle": "استكشف قروناً من المعرفة، من العصر الكلاسيكي إلى العصر الحديث. سير موثقة وأعمال أصلية وأرشيف مخطوطات — كل ذلك في مكان واحد.",
+    "exploreButton": "ابدأ الاستكشاف"
+  },
+   
+    "sidebar": {
+    "dashboard": "لوحة التحكم",
+    "editProfile": "تعديل الملف الشخصي",
     "settings": "الإعدادات",
-    "translation": "الترجمة",
-    "regions": "المناطق",
-    "backups": "النسخ الاحتياطية"
+    "signOut": "تسجيل الخروج",
+    "profileCompletion": "اكتمال الملف الشخصي",
+    "completeHint": "أضف المزيد من التفاصيل لزيادة ظهورك.",
+    "links": "الروابط"
+  },
+  "profileMenu": {
+    "dashboard": "لوحة التحكم",
+    "editProfile": "تعديل الملف الشخصي",
+    "settings": "الإعدادات",
+    "logout": "تسجيل الخروج",
+    "ariaLabel": "قائمة الملف الشخصي"
+  },
+    "profile": {
+    "loading": "جاري تحميل الملف الشخصي...",
+    "roleUser": "مستخدم",
+    "roleAdmin": "مسؤول",
+    "roleContributor": "مساهم",
+    "joined": "انضم في",
+    "stats": {
+      "contributions": "المساهمات",
+      "forumPosts": "مشاركات المنتدى",
+      "contribs": "مساهمات",
+      "forum": "المنتدى"
+    },
+    "activityTitle": "النشاط",
+    "activity": {
+      "recentContributions": "أحدث المساهمات",
+      "hiddenContributions": "قام هذا المستخدم بإخفاء مساهماته.",
+      "noContributions": "لا توجد مساهمات بعد.",
+      "forumActivity": "نشاط المنتدى",
+      "noForumActivity": "لا يوجد نشاط في المنتدى بعد."
+    },
+    "contributionTag": {
+      "annotation": "تعليق",
+      "translation": "ترجمة",
+      "media": "وسائط",
+      "research": "بحث"
+    },
+    "contribution": {
+      "untitled": "بدون عنوان",
+      "mediaUpload": "رفع وسائط",
+      "newEdition": "إصدار جديد",
+      "work": "عمل",
+      "submission": "تقديم",
+      "newScholarEntry": "إدخال عالم جديد"
+    },
+    "forum": {
+      "general": "عام"
+    },
+    "reply": "رد",
+    "replies": "ردود",
+    "status": {
+      "deleted": "تم حذف هذا الحساب",
+      "banned": "تم تعليق هذا الحساب",
+      "deactivated": "هذا الحساب معطل",
+      "private": "هذا الملف الشخصي خاص",
+      "registeredOnly": "سجل الدخول لعرض هذا الملف الشخصي"
+    },
+    "loginRequired": {
+      "title": "تحتاج إلى تسجيل الدخول",
+      "desc": "سجل الدخول لرؤية وإدارة ملفك الشخصي.",
+      "button": "تسجيل الدخول"
+    },
+    "error": {
+      "notFound": {
+        "title": "الملف الشخصي غير موجود",
+        "desc": "لا يوجد ملف شخصي لهذا المعرف."
+      },
+      "general": "خطأ في تحميل الملف الشخصي",
+      "generalDesc": "يرجى المحاولة مرة أخرى لاحقاً."
+    }
   },
   "navbar": {
     "dashboard": "لوحة التحكم",
@@ -57,108 +609,7 @@
       "reportedSub": "مستخدم أبلغ عن ترجمة"
     }
   },
-  "dashboard": {
-    "header": {
-      "eyebrow": "علماؤنا · الإدارة",
-      "title": "نظرة إدارية شاملة",
-      "subtitle": "مراجعة المقدَّمات ومراقبة صحة المنصة وإدارة الأرشيف العلمي."
-    },
-    "stat": {
-      "scholars": "العلماء المسجّلون",
-      "scholarsSub": "+12 أُضيفوا هذا الشهر",
-      "works": "الأعمال المؤرشفة",
-      "worksSub": "98% سلامة البيانات",
-      "pending": "قيد المراجعة",
-      "pendingSub": "12 عنصراً ذا أولوية عالية",
-      "contributors": "المساهمون",
-      "contributorsSub": "حسابات أكاديمية نشطة"
-    },
-    "chart": {
-      "eyebrow": "نشاط المخطوطات",
-      "title": "المقدَّمات عبر الزمن",
-      "hijri": "هجري",
-      "gregorian": "ميلادي"
-    },
-    "month": {
-      "muharram": "محرم",
-      "safar": "صفر",
-      "rabiI": "ربيع الأول",
-      "rabiII": "ربيع الثاني",
-      "jumadaI": "جمادى الأولى",
-      "jumadaII": "جمادى الثانية",
-      "rajab": "رجب"
-    },
-    "review": {
-      "eyebrow": "قائمة المراجعة",
-      "reports": "المحتوى المُبلَّغ عنه",
-      "blogFlag": "منشورات المدوّنة المُعلَّمة",
-      "notifs": "الإشعارات",
-      "viewAll": "عرض جميع المعلّق"
-    },
-    "cat": {
-      "eyebrow": "التخصصات",
-      "title": "العلماء حسب التخصص",
-      "fiqh": "الفقه الإسلامي",
-      "hadith": "علوم الحديث",
-      "tafsir": "التفسير القرآني",
-      "usul": "أصول الفقه",
-      "tasawwuf": "التصوف",
-      "nahw": "النحو العربي"
-    },
-    "century": {
-      "eyebrow": "الجدول الزمني",
-      "title": "العلماء حسب القرن الهجري",
-      "label": "القرون الهجرية (I – X)",
-      "scholars": "علماء"
-    },
-    "region": {
-      "eyebrow": "المناطق",
-      "maghreb": "المغرب",
-      "mashriq": "المشرق",
-      "andalus": "الأندلس",
-      "other": "أخرى"
-    },
-    "activity": {
-      "eyebrow": "النشاط الأخير",
-      "viewAll": "عرض الكل",
-      "duplicateBio": "ملف مكرر",
-      "duplicateBioSub": "الموضوع: ابن تيمية",
-      "newTranslation": "مسودة ترجمة جديدة",
-      "newTranslationSub": "العمل: المقدمة",
-      "newContributor": "طلب مساهم جديد",
-      "newContributorSub": "المستخدم: dr_fatima_a",
-      "contentReported": "محتوى مُبلَّغ عنه",
-      "contentReportedSub": "منشور مُعلَّم من مستخدمَين",
-      "time2m": "منذ دقيقتين",
-      "time3h": "منذ 3 ساعات",
-      "time8h": "منذ 8 ساعات",
-      "timeYesterday": "أمس"
-    },
-    "badge": {
-      "urgent": "أولوية عالية",
-      "pending": "قيد المراجعة",
-      "requestAccess": "طلب وصول",
-      "review": "يحتاج مراجعة"
-    },
-    "quick": {
-      "eyebrow": "إجراءات سريعة",
-      "addScholar": "إضافة عالم",
-      "reviewPending": "مراجعة المعلّق",
-      "moderateForum": "إدارة المنتدى",
-      "manageUsers": "إدارة المستخدمين",
-      "viewReports": "عرض التقارير",
-      "systemSettings": "إعدادات النظام"
-    },
-    "health": {
-      "eyebrow": "صحة المنصة",
-      "backup": "النسخ الاحتياطي: سليم",
-      "search": "البحث: سليم",
-      "media": "الوسائط: سليمة",
-      "email": "البريد: خطأ",
-      "lastBackup": "آخر نسخة احتياطية",
-      "lastBackupValue": "اليوم، 03:00 ص"
-    }
-  },
+
   "scholars": {
     "newScholars": {
       "title": "العلماء الجدد",
@@ -942,188 +1393,6 @@
     "saveDraft": "حفظ كمسودة",
     "next": "التالي",
     "submit": "تقديم للمراجعة"
-  }
-},
-"editProfile": {
-  "myProfile": "ملفي الشخصي",
-  "dashboard": "لوحة التحكم",
-  "editProfile": "تعديل الملف الشخصي",
-  "settings": "الإعدادات",
-  "signOut": "تسجيل الخروج",
-  "personalInfo": "المعلومات الشخصية",
-  "displayName": "الاسم المعروض",
-  "username": "اسم المستخدم (مطلوب)",
-  "fullName": "الاسم الكامل",
-  "email": "البريد الإلكتروني (مطلوب)",
-  "bio": "نبذة",
-  "country": "البلد",
-  "links": "الروابط",
-  "linksHint": "أضف روابط لفيسبوك، إنستغرام، أو أي صفحة أخرى.",
-  "linkPlaceholder": "https://facebook.com/yourname",
-  "addLink": "إضافة رابط",
-  "cancel": "إلغاء",
-  "saveChanges": "حفظ التغييرات",
-  "saved": "تم الحفظ!",
-  "discard": "تجاهل التغييرات",
-  "saveProfile": "حفظ الملف الشخصي",
-  "profileUpdated": "تم تحديث الملف الشخصي!",
-  "profileCompletion": "اكتمال الملف الشخصي",
-  "completeHint": "أكمل ملفك الشخصي لفتح المزيد من الميزات.",
-  "becomeContributor": "كن مساهمًا",
-  "upgradeHint": "قدّم صفحة عالم جديدة لترقية حالتك.",
-  "upgradeNow": "الترقية الآن",
-  "contributing": "المساهمة في صفحات العلماء",
-  "browsing": "تصفح الأرشيف",
-  "user": "مستخدم",
-  "contributor": "مساهم"
-},
-"dashboard": {
-  "welcome": "مرحباً",
-  "roleLabel": "الدور",
-  "roleContributor": "مساهم",
-  "welcomeUser": "مرحباً بك في مساحة عملك في علماؤنا.",
-  "tabs": {
-    "overview": "نظرة عامة",
-    "notifications": "الإشعارات",
-    "watchlist": "قائمة المتابعة",
-    "submissions": "مساهماتي",
-    "media": "الوسائط",
-    "works": "المؤلفات والمراجع"
-  },
-  "stats": {
-    "scholars": "العلماء المرسلون",
-    "versions": "النسخ المرسلة",
-    "media": "الوسائط المرسلة",
-    "works": "المؤلفات/المراجع المرسلة"
-  },
-  "overview": {
-    "profileTitle": "ملفي الشخصي",
-    "profileDesc": "عرض وتعديل تفاصيل ملفك الشخصي.",
-    "watchlistTitle": "قائمة متابعتي",
-    "watchlistDesc": "العلماء الذين تتابعهم.",
-    "notificationsTitle": "أحدث الإشعارات",
-    "notificationsDesc": "لا جديد حالياً.",
-    "recentActivity": "النشاط الأخير"
-  },
-  "cta": {
-    "title": "ساهم في علماؤنا",
-    "desc": "ساعد في الحفاظ على موسوعتنا العلمية وتوسيعها.",
-    "button": "أضف عالماً"
-  },
-  "table": {
-    "type": "النوع",
-    "scholar": "العالم",
-    "language": "اللغة",
-    "version": "الإصدار",
-    "date": "التاريخ",
-    "status": "الحالة",
-    "actions": "الإجراءات",
-    "file": "الملف",
-    "title": "العنوان"
-  },
-  "status": {
-    "draft": "مسودة",
-    "pending": "قيد المراجعة",
-    "approved": "موافق عليه",
-    "rejected": "مرفوض"
-  },
-  "kind": {
-    "new": "عالم جديد",
-    "edit": "تعديل"
-  },
-  "filter": {
-    "all": "الكل"
-  },
-  "actions": {
-    "newScholar": "عالم جديد",
-    "editExisting": "تعديل موجود",
-    "continue": "متابعة",
-    "delete": "حذف",
-    "view": "عرض",
-    "history": "السجل",
-    "resubmit": "تعديل وإعادة الإرسال"
-  },
-  "media": {
-    "addButton": "إضافة وسائط",
-    "tempNote": "بيانات مؤقتة — واجهة الوسائط الخلفية غير متوفرة بعد."
-  },
-  "works": {
-    "addButton": "إضافة مؤلَّف / مرجع"
-  },
-  "empty": {
-    "submissions": "لا توجد مساهمات بعد. ابدأ بإضافة عالم جديد أو تعديل عالم موجود.",
-    "media": "لا توجد وسائط بعد.",
-    "works": "لا توجد مؤلفات أو مراجع بعد.",
-    "notifications": "لا إشعارات جديدة.",
-    "watchlist": "أنت لا تتابع أي عالم بعد."
-  }
-},
-"settings": {
-  "title": "الإعدادات",
-  "subtitle": "إدارة حسابك وتفضيلاتك في علماؤنا.",
-  "common": { "cancel": "إلغاء", "save": "حفظ", "saving": "جارٍ الحفظ…" },
-  "language": {
-    "title": "اللغة والواجهة",
-    "language": "اللغة"
-  },
-  "notif": {
-    "title": "تفضيلات الإشعارات",
-    "email": "إشعارات البريد الإلكتروني",
-    "emailDesc": "تلقي الإشعارات عبر البريد الإلكتروني.",
-    "commentReply": "إشعارات التعليقات والردود",
-    "commentReplyDesc": "عندما يتفاعل أحد مع تعليقاتك.",
-    "discussion": "إشعارات النقاشات",
-    "discussionDesc": "النشاط المتعلق بنقاشاتك.",
-    "system": "إشعارات النظام",
-    "systemDesc": "إعلانات المنصة المهمة.",
-    "contributorTitle": "إشعارات المساهم",
-    "contribApproved": "تمت الموافقة على المساهمة",
-    "contribRejected": "تم رفض المساهمة",
-    "contribChanges": "المساهمة تحتاج تعديلات",
-    "contribTranslation": "تمت مراجعة الترجمة",
-    "contribStatus": "تغيّرت حالة المساهمة"
-  },
-  "privacy": {
-    "title": "الخصوصية",
-    "visibility": "ظهور الملف الشخصي",
-    "visibilityPublic": "عام",
-    "visibilityRegistered": "المستخدمون المسجلون فقط",
-    "showEmail": "إظهار بريدي الإلكتروني في ملفي العام",
-    "showEmailDesc": "مغلق افتراضياً.",
-    "showActivity": "إظهار نشاطي في ملفي الشخصي",
-    "showContributions": "إظهار مساهماتي في ملفي الشخصي",
-    "showContributionsDesc": "يتحكم فقط في الظهور العام — يمكن للمسؤولين دائماً رؤية سجل مساهماتك.",
-    "adminNote": "يحتفظ المسؤولون بإمكانية الاطلاع الكامل على سجلات المساهمات بغض النظر عن هذه الإعدادات، لأغراض التتبع التحريري."
-  },
-  "security": {
-    "title": "الأمان",
-    "password": "كلمة المرور",
-    "changePassword": "تغيير كلمة المرور",
-    "pwCurrent": "كلمة المرور الحالية",
-    "pwNew": "كلمة المرور الجديدة",
-    "pwConfirm": "تأكيد كلمة المرور الجديدة",
-    "pwErrorCurrent": "أدخل كلمة مرورك الحالية.",
-    "pwErrorLength": "يجب أن تتكون كلمة المرور الجديدة من 8 أحرف على الأقل.",
-    "pwErrorMatch": "كلمة المرور الجديدة والتأكيد غير متطابقين.",
-    "pwSuccess": "تم تحديث كلمة المرور بنجاح.",
-    "emailVerification": "توثيق البريد الإلكتروني",
-    "verified": "موثّق",
-    "notVerified": "غير موثّق",
-    "resend": "إعادة إرسال رسالة التوثيق",
-    "resendSent": "تم الإرسال!"
-  },
-  "account": {
-    "title": "الحساب",
-    "deactivate": "إيقاف الحساب مؤقتاً",
-    "deactivateDesc": "تعطيل حسابك مؤقتاً. يمكنك إعادة تفعيله لاحقاً.",
-    "deactivateTitle": "هل تريد إيقاف حسابك مؤقتاً؟",
-    "deactivateWarning": "سيتم إخفاء ملفك الشخصي ومساهماتك حتى تعاود تسجيل الدخول لإعادة التفعيل.",
-    "deactivateConfirm": "إيقاف مؤقت",
-    "deleteTitle": "حذف الحساب",
-    "deleteDesc": "حذف حسابك وبياناته نهائياً.",
-    "deleteWarning": "قد يكون هذا الإجراء نهائياً ولا يمكن التراجع عنه. سيتم إزالة جميع بياناتك الشخصية وفق سياسة البيانات لدينا.",
-    "deleteTypeConfirm": "اكتب DELETE للتأكيد",
-    "deleteConfirm": "حذف حسابي"
   }
 }
 

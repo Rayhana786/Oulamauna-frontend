@@ -111,7 +111,7 @@ interface MediaChange {
 
 interface ReferenceChange {
   id: string;
-  referenceId: number; // Actual DB ID for backend rejection
+  referenceId: number;
   type: "added" | "modified";
   original?: { id: string; title: string; citation: string; url: string | null };
   proposed: { id: string; title: string; citation: string; url: string | null };
@@ -130,6 +130,7 @@ interface ScholarEdit {
   scholarId: string;
   scholarName: string;
   editor: string;
+  editorId: number | null; // ✅ ADDED: For Ban/Restrict
   editorAvatar: string;
   editDate: string;
   editType: string;
@@ -143,7 +144,7 @@ interface ScholarEdit {
   editorNote: string;
   currentImage?: string;
   proposedImage?: string;
-  proposedImageId?: number; // Actual DB ID for backend rejection
+  proposedImageId?: number;
 }
 
 /* ------------------------------------------------------------------ */
@@ -201,8 +202,7 @@ const transformBackendToEdit = (item: any): ScholarEdit => {
     changedFields.push({ id: "century", fieldName: "century", fieldLabel: "Century", originalValue: currentCentury || "Unknown", proposedValue: proposedCentury || "Unknown", status: "pending" });
   }
 
-  // Get the approved image - prioritize the cached image_url on scholar_versions
-const currentImg = current.image_url || current.img_versions?.find((img: any) => img.status === "approved")?.image_url;
+  const currentImg = current.image_url || current.img_versions?.find((img: any) => img.status === "approved")?.image_url;
   const proposedImg = proposed.img_versions?.[0]?.image_url || proposed.image_url;
   const proposedImgId = proposed.img_versions?.[0]?.img_version_id;
   
@@ -275,6 +275,7 @@ const currentImg = current.image_url || current.img_versions?.find((img: any) =>
     scholarId: proposed.scholar_id.toString(),
     scholarName: proposed.canonical_name || current.canonical_name || "Unknown",
     editor: proposed.users?.username || "Unknown",
+    editorId: proposed.created_by || null, // ✅ ADDED
     editorAvatar: (proposed.users?.username || "U").substring(0, 2).toUpperCase(),
     editDate: new Date(proposed.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }),
     editType: "edition",
@@ -301,12 +302,16 @@ export default function PendingEditReview() {
   const { lang } = useLang();
   const isRTL = lang === "AR";
 
-  const [mode, setMode] = useState<"approve" | "reject" | "strip" | null>(null);
-  const [note, setNote] = useState("");
+  const [mode, setMode] = useState<"approve" | "reject" | null>(null); // ✅ Removed "strip", using Restrict modal instead
+  const [note, setNote] = useState(""); // Used for reject reason
+  const [approveReason, setApproveReason] = useState(""); // ✅ ADDED
   const [edit, setEdit] = useState<ScholarEdit | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  // We only need state for Image and Reference rejections now
+  // ✅ NEW: Restrict User Modal States
+  const [showRestrictModal, setShowRestrictModal] = useState(false);
+  const [confirmAction, setConfirmAction] = useState<{ type: 'revoke' | 'ban' } | null>(null);
+
   const [rejectingFieldId, setRejectingFieldId] = useState<string | null>(null);
   const [fieldRejectReason, setFieldRejectReason] = useState("");
 
@@ -333,29 +338,22 @@ export default function PendingEditReview() {
     return <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", backgroundColor: colors.creamLight, color: colors.forestGreen }}><Icon name="hourglass_empty" size={32} /></div>;
   }
 
-  // Handlers for Image (stored in changedFields)
   const acceptField = (fieldId: string) => setEdit((prev) => prev ? { ...prev, changedFields: prev.changedFields.map((f) => f.id === fieldId ? { ...f, status: "accepted", rejectReason: undefined } : f) } : null);
   const rejectField = (fieldId: string, reason?: string) => { setEdit((prev) => prev ? { ...prev, changedFields: prev.changedFields.map((f) => f.id === fieldId ? { ...f, status: "rejected", rejectReason: reason } : f) } : null); setRejectingFieldId(null); setFieldRejectReason(""); };
 
-  // Handlers for References
   const acceptReference = (refId: string) => setEdit((prev) => prev ? { ...prev, referenceChanges: prev.referenceChanges.map((r) => r.id === refId ? { ...r, status: "accepted" } : r) } : null);
   const rejectReference = (refId: string) => setEdit((prev) => prev ? { ...prev, referenceChanges: prev.referenceChanges.map((r) => r.id === refId ? { ...r, status: "rejected" } : r) } : null);
 
+  // ✅ UPDATED: Handle Confirm (Approve/Reject)
   const handleConfirm = async () => {
     if (!edit) return;
     try {
       if (mode === "approve") {
-        const payload: any = {};
+        const payload: any = { reason: approveReason || "Approved" }; // ✅ Send internal notes
 
-        // 1. Collect Rejected References
-        const rejectedRefs = edit.referenceChanges
-          .filter(r => r.status === "rejected")
-          .map(r => r.referenceId);
-        if (rejectedRefs.length > 0) {
-          payload.reject_references = rejectedRefs;
-        }
+        const rejectedRefs = edit.referenceChanges.filter(r => r.status === "rejected").map(r => r.referenceId);
+        if (rejectedRefs.length > 0) payload.reject_references = rejectedRefs;
 
-        // 2. Check Rejected Image
         const imageField = edit.changedFields.find(f => f.fieldName === "image");
         if (imageField && imageField.status === "rejected" && edit.proposedImageId) {
           payload.reject_images = [edit.proposedImageId];
@@ -363,12 +361,48 @@ export default function PendingEditReview() {
 
         await adminApi.scholars.approve(Number(edit.id), payload);
       } else if (mode === "reject") {
+        if (!note.trim()) {
+          alert("Please provide a rejection reason");
+          return;
+        }
         await adminApi.scholars.reject(Number(edit.id), note);
       }
       navigate("/admin/pending/edits");
     } catch (error) {
       console.error("Failed to process edit:", error);
       alert("Action failed. Please try again.");
+    }
+  };
+
+  // ✅ NEW: Restrict User + Auto-Reject Handler
+  const executeRestrictionAndReject = async () => {
+    if (!confirmAction || !edit) return;
+    try {
+      const userId = edit.editorId;
+      const scholarId = Number(edit.id);
+
+      if (!userId) {
+        alert("Cannot restrict system-generated submissions.");
+        setConfirmAction(null);
+        setShowRestrictModal(false);
+        return;
+      }
+
+      if (confirmAction.type === 'revoke') {
+        await adminApi.users.toggleContribute(userId);
+      } else {
+        await adminApi.users.ban(userId);
+      }
+
+      const defaultReason = confirmAction.type === 'ban' ? "Contributor banned" : "Contribution access revoked";
+      await adminApi.scholars.reject(scholarId, defaultReason);
+
+      navigate("/admin/pending/edits");
+      setConfirmAction(null);
+      setShowRestrictModal(false);
+    } catch (err) {
+      console.error("Action failed:", err);
+      alert("Failed to process action. Please try again.");
     }
   };
 
@@ -433,7 +467,8 @@ export default function PendingEditReview() {
               </div>
             </div>
             <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-              <ActionButton icon="person_remove" color={colors.forestGreen} hoverBg={colors.forestGreen} hoverColor={colors.creamLight} onClick={() => setMode(mode === "strip" ? null : "strip")} title="Strip" />
+              {/* ✅ UPDATED: Restrict User Button */}
+              <ActionButton icon="shield_person" color={colors.amber} hoverBg={colors.amber} hoverColor={colors.creamLight} onClick={() => setShowRestrictModal(true)} title="Restrict User" />
               <ActionButton icon="cancel" color={colors.red} hoverBg={colors.red} hoverColor={colors.creamLight} onClick={() => setMode(mode === "reject" ? null : "reject")} title="Reject All" />
               <ActionButton icon="check_circle" color={colors.forestGreen} hoverBg={colors.forestGreen} hoverColor={colors.creamLight} onClick={() => setMode(mode === "approve" ? null : "approve")} title="Approve Accepted" filled />
             </div>
@@ -442,8 +477,6 @@ export default function PendingEditReview() {
 
         {/* ── SIDE-BY-SIDE IMAGES ONLY ── */}
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 24, marginBottom: 24 }}>
-          
-          {/* LEFT COLUMN - CURRENT VERSION */}
           <div style={{ ...cardStyle, padding: 20 }}>
             <h2 style={{ fontFamily: fonts.headline, fontSize: 16, fontWeight: 700, color: colors.forestGreen, margin: "0 0 16px", display: "flex", alignItems: "center", gap: 8 }}>
               <Icon name="history" size={18} /> {translations.currentVersion}
@@ -457,7 +490,6 @@ export default function PendingEditReview() {
             </div>
           </div>
 
-          {/* RIGHT COLUMN - PROPOSED VERSION (WITH ACTION BUTTONS) */}
           <div style={{ ...cardStyle, padding: 20, border: `2px solid ${colors.forestGreen}` }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
               <h2 style={{ fontFamily: fonts.headline, fontSize: 16, fontWeight: 700, color: colors.forestGreen, margin: 0, display: "flex", alignItems: "center", gap: 8 }}>
@@ -493,9 +525,7 @@ export default function PendingEditReview() {
                 <Icon name="edit_note" size={18} filled /> Changed Fields ({edit.changedFields.length})
               </h2>
               {edit.changedFields.map((field) => {
-                // Skip Image here as it's handled at the top
                 if (field.fieldName === "image") return null;
-
                 return (
                   <div key={field.id} style={{ ...cardStyle, marginBottom: 16, border: `1px solid ${colors.creamDark}` }}>
                     <div style={{ padding: "10px 14px", backgroundColor: colors.creamMid, borderBottom: `1px solid ${colors.creamDark}` }}>
@@ -704,26 +734,123 @@ export default function PendingEditReview() {
 
         </div>
 
+        {/* ── Step 1: Choose Restrict Action Modal ── */}
+        {showRestrictModal && !confirmAction && (
+          <div style={{ position: "fixed", inset: 0, backgroundColor: "rgba(11, 67, 53, 0.6)", zIndex: 100, display: "flex", alignItems: "center", justifyContent: "center", backdropFilter: "blur(4px)", padding: 20 }} onClick={() => setShowRestrictModal(false)}>
+            <div style={{ ...cardStyle, backgroundColor: colors.creamLight, width: 520, maxWidth: "90vw", padding: 32, boxShadow: "0 20px 60px rgba(0,0,0,0.25)" }} onClick={(e) => e.stopPropagation()}>
+              <div style={{ display: "flex", alignItems: "center", gap: 16, marginBottom: 24 }}>
+                <div style={{ width: 56, height: 56, borderRadius: "50%", backgroundColor: colors.creamMid, border: `2px solid ${colors.forestGreen}`, display: "flex", alignItems: "center", justifyContent: "center", fontFamily: fonts.headline, fontWeight: 700, fontSize: 16, color: colors.forestGreen, flexShrink: 0 }}>
+                  {edit.editorAvatar}
+                </div>
+                <div>
+                  <h2 style={{ fontFamily: fonts.headline, fontSize: 20, fontWeight: 700, color: colors.forestGreen, margin: 0 }}>Restrict User</h2>
+                  <p style={{ fontFamily: fonts.body, fontSize: 13, color: colors.forestGreen, opacity: 0.7, margin: "4px 0 0" }}>{edit.editor} edited "{edit.scholarName}"</p>
+                </div>
+              </div>
+
+              <p style={{ fontFamily: fonts.body, fontSize: 14, color: colors.forestGreen, lineHeight: 1.6, marginBottom: 24 }}>
+                Choose an action. This will automatically <b>reject</b> this edit submission as well.
+              </p>
+
+              <div style={{ display: "flex", flexDirection: "column", gap: 12, marginBottom: 24 }}>
+                <button onClick={() => setConfirmAction({ type: 'revoke' })} style={{ display: "flex", alignItems: "flex-start", gap: 16, padding: 16, borderRadius: 8, border: `1px solid ${colors.amber}`, backgroundColor: "rgba(184, 134, 11, 0.05)", cursor: "pointer", textAlign: "left", transition: "background 0.2s" }} onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = "rgba(184, 134, 11, 0.1)"; }} onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = "rgba(184, 134, 11, 0.05)"; }}>
+                  <div style={{ width: 32, height: 32, borderRadius: "50%", backgroundColor: colors.amber, color: colors.creamLight, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}><Icon name="person_off" size={18} /></div>
+                  <div>
+                    <p style={{ fontFamily: fonts.headline, fontSize: 14, fontWeight: 700, color: colors.forestGreen, margin: "0 0 4px" }}>Revoke Contribution Access</p>
+                    <p style={{ fontFamily: fonts.body, fontSize: 12, color: colors.forestGreen, opacity: 0.7, margin: 0, lineHeight: 1.5 }}>They can still log in, but cannot submit new edits. (Recommended for low-quality edits)</p>
+                  </div>
+                </button>
+
+                <button onClick={() => setConfirmAction({ type: 'ban' })} style={{ display: "flex", alignItems: "flex-start", gap: 16, padding: 16, borderRadius: 8, border: `1px solid ${colors.red}`, backgroundColor: "rgba(139, 44, 44, 0.05)", cursor: "pointer", textAlign: "left", transition: "background 0.2s" }} onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = "rgba(139, 44, 44, 0.1)"; }} onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = "rgba(139, 44, 44, 0.05)"; }}>
+                  <div style={{ width: 32, height: 32, borderRadius: "50%", backgroundColor: colors.red, color: colors.creamLight, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}><Icon name="block" size={18} /></div>
+                  <div>
+                    <p style={{ fontFamily: fonts.headline, fontSize: 14, fontWeight: 700, color: colors.forestGreen, margin: "0 0 4px" }}>Ban Account Completely</p>
+                    <p style={{ fontFamily: fonts.body, fontSize: 12, color: colors.forestGreen, opacity: 0.7, margin: 0, lineHeight: 1.5 }}>They will be completely locked out of the platform. (Use for spam, abuse, or severe violations)</p>
+                  </div>
+                </button>
+              </div>
+
+              <div style={{ display: "flex", justifyContent: "flex-end" }}>
+                <button onClick={() => setShowRestrictModal(false)} style={{ padding: "10px 24px", borderRadius: 8, cursor: "pointer", border: `1px solid ${colors.forestGreen}`, backgroundColor: colors.creamLight, fontFamily: fonts.body, fontSize: 13, fontWeight: 600, color: colors.forestGreen }}>Cancel</button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ── Step 2: Final Confirmation Modal ── */}
+        {confirmAction && (
+          <div style={{ position: "fixed", inset: 0, backgroundColor: "rgba(11, 67, 53, 0.6)", zIndex: 101, display: "flex", alignItems: "center", justifyContent: "center", backdropFilter: "blur(4px)", padding: 20 }} onClick={() => setConfirmAction(null)}>
+            <div style={{ ...cardStyle, backgroundColor: colors.creamLight, width: 440, maxWidth: "90vw", padding: 32, boxShadow: "0 20px 60px rgba(0,0,0,0.25)" }} onClick={(e) => e.stopPropagation()}>
+              <div style={{ width: 56, height: 56, borderRadius: "50%", backgroundColor: confirmAction.type === 'ban' ? colors.red : colors.amber, color: colors.creamLight, display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 20, border: `1px solid ${confirmAction.type === 'ban' ? colors.red : colors.amber}` }}>
+                <Icon name={confirmAction.type === 'ban' ? "block" : "person_off"} size={28} filled />
+              </div>
+              <h2 style={{ fontFamily: fonts.headline, fontSize: 20, fontWeight: 700, color: colors.forestGreen, marginBottom: 12 }}>Confirm {confirmAction.type === 'ban' ? 'Ban' : 'Revocation'}</h2>
+              <p style={{ fontFamily: fonts.body, fontSize: 14, color: colors.forestGreen, lineHeight: 1.6, marginBottom: 24, opacity: 0.8 }}>
+                This will <b>{confirmAction.type === 'ban' ? 'BAN' : 'REVOKE CONTRIBUTION ACCESS FOR'} {edit.editor}</b> <br/>and automatically <b>REJECT</b> the edit for "{edit.scholarName}".<br/><br/><b style={{ color: colors.red }}>This action cannot be undone from this screen.</b>
+              </p>
+              <div style={{ display: "flex", gap: 12, justifyContent: "flex-end" }}>
+                <button onClick={() => setConfirmAction(null)} style={{ padding: "10px 24px", borderRadius: 8, cursor: "pointer", border: `1px solid ${colors.forestGreen}`, backgroundColor: colors.creamLight, fontFamily: fonts.body, fontSize: 13, fontWeight: 600, color: colors.forestGreen }}>Go Back</button>
+                <button onClick={executeRestrictionAndReject} style={{ padding: "10px 24px", borderRadius: 8, cursor: "pointer", border: "none", backgroundColor: confirmAction.type === 'ban' ? colors.red : colors.amber, color: colors.creamLight, fontFamily: fonts.body, fontSize: 13, fontWeight: 700 }}>Confirm & Reject</button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ── Main Action Modal (Approve / Reject) ── */}
         {mode && (
-          <div style={{ position: "fixed", inset: 0, backgroundColor: "rgba(11, 67, 53, 0.5)", zIndex: 100, display: "flex", alignItems: "center", justifyContent: "center", backdropFilter: "blur(4px)" }} onClick={() => { setMode(null); setNote(""); }}>
-            <div style={{ ...cardStyle, backgroundColor: colors.creamLight, width: 440, maxWidth: "90vw", padding: 32, boxShadow: "0 20px 60px rgba(0,0,0,0.18)" }} onClick={(e) => e.stopPropagation()}>
+          <div style={{ position: "fixed", inset: 0, backgroundColor: "rgba(11, 67, 53, 0.5)", zIndex: 100, display: "flex", alignItems: "center", justifyContent: "center", backdropFilter: "blur(4px)" }} onClick={() => { setMode(null); setNote(""); setApproveReason(""); }}>
+            <div style={{ ...cardStyle, backgroundColor: colors.creamLight, width: 500, maxWidth: "90vw", padding: 32, boxShadow: "0 20px 60px rgba(0,0,0,0.18)" }} onClick={(e) => e.stopPropagation()}>
               <div style={{ width: 56, height: 56, borderRadius: "50%", backgroundColor: mode === "approve" ? colors.forestGreen : colors.red, color: colors.creamLight, display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 20, border: `1px solid ${mode === "approve" ? colors.forestGreen : colors.red}` }}>
-                <Icon name={mode === "approve" ? "check_circle" : mode === "reject" ? "cancel" : "person_remove"} size={28} filled />
+                <Icon name={mode === "approve" ? "check_circle" : "cancel"} size={28} filled />
               </div>
               <h2 style={{ fontFamily: fonts.headline, fontSize: 20, fontWeight: 700, color: colors.forestGreen, marginBottom: 12 }}>
-                {mode === "approve" ? "Approve Accepted Changes" : mode === "reject" ? "Reject All Changes" : "Strip Editor"}
+                {mode === "approve" ? "Approve Accepted Changes" : "Reject All Changes"}
               </h2>
-              <p style={{ fontFamily: fonts.body, fontSize: 14, color: colors.forestGreen, lineHeight: 1.6, marginBottom: 28, opacity: 0.8 }}>
-                {mode === "approve" ? `Are you sure you want to approve this edit? Any rejected images or references will be excluded.` : mode === "reject" ? "Are you sure you want to reject all changes? The editor will be notified." : `Are you sure you want to strip ${edit.editor} of this edit?`}
+              <p style={{ fontFamily: fonts.body, fontSize: 14, color: colors.forestGreen, lineHeight: 1.6, marginBottom: 24, opacity: 0.8 }}>
+                {mode === "approve" ? `Are you sure you want to approve this edit? Any rejected images or references will be excluded.` : "Are you sure you want to reject all changes? The editor will be notified."}
                 {mode === "reject" && <><br /><b style={{ color: colors.red }}>This action cannot be undone.</b></>}
               </p>
-              {mode === "reject" && (
-                <textarea value={note} onChange={(e) => setNote(e.target.value)} placeholder="Enter rejection reason (optional)..." style={{ width: "100%", minHeight: 80, padding: 10, border: `1px solid ${colors.creamDark}`, borderRadius: 7, fontFamily: fonts.body, fontSize: 13, color: colors.forestGreen, resize: "vertical", outline: "none", boxSizing: "border-box", marginBottom: 18 }} />
+              
+              {/* ✅ ADDED: Approval Notes Field */}
+              {mode === "approve" && (
+                <div style={{ marginBottom: 24 }}>
+                  <label style={{ fontFamily: fonts.label, fontSize: 11, letterSpacing: "0.06em", fontWeight: 600, color: colors.forestGreen, display: "block", marginBottom: 6 }}>APPROVAL NOTES (Optional)</label>
+                  <textarea 
+                    value={approveReason} 
+                    onChange={(e) => setApproveReason(e.target.value)}
+                    placeholder="Add any notes about this approval..."
+                    style={{ width: "100%", padding: 12, borderRadius: 8, border: `1px solid ${colors.forestGreen}`, fontFamily: fonts.body, fontSize: 13, color: colors.forestGreen, backgroundColor: colors.creamLight, outline: "none", resize: "vertical", minHeight: 80, boxSizing: "border-box" }}
+                  />
+                </div>
               )}
+
+              {/* ✅ UPDATED: Mandatory Rejection Reason */}
+              {mode === "reject" && (
+                <div style={{ marginBottom: 24 }}>
+                  <label style={{ fontFamily: fonts.label, fontSize: 11, letterSpacing: "0.06em", fontWeight: 600, color: colors.forestGreen, display: "block", marginBottom: 6 }}>REJECTION REASON *</label>
+                  <textarea 
+                    value={note} 
+                    onChange={(e) => setNote(e.target.value)}
+                    placeholder="Please provide a reason for rejection..."
+                    style={{ width: "100%", padding: 12, borderRadius: 8, border: `1px solid ${note.trim() ? colors.forestGreen : colors.creamDark}`, fontFamily: fonts.body, fontSize: 13, color: colors.forestGreen, backgroundColor: colors.creamLight, outline: "none", resize: "vertical", minHeight: 80, boxSizing: "border-box" }}
+                  />
+                </div>
+              )}
+
               <div style={{ display: "flex", gap: 12, justifyContent: "flex-end" }}>
-                <button onClick={() => { setMode(null); setNote(""); }} style={{ padding: "10px 24px", borderRadius: 8, cursor: "pointer", border: `1px solid ${colors.forestGreen}`, backgroundColor: colors.creamLight, fontFamily: fonts.body, fontSize: 13, fontWeight: 600, color: colors.forestGreen }}>Cancel</button>
-                <button onClick={handleConfirm} style={{ padding: "10px 24px", borderRadius: 8, cursor: "pointer", border: `1px solid ${mode === "approve" ? colors.forestGreen : colors.red}`, backgroundColor: mode === "approve" ? colors.forestGreen : colors.red, fontFamily: fonts.body, fontSize: 13, fontWeight: 700, color: colors.creamLight }}>
-                  {mode === "approve" ? "Confirm Approve" : mode === "reject" ? "Confirm Reject" : "Confirm Strip"}
+                <button onClick={() => { setMode(null); setNote(""); setApproveReason(""); }} style={{ padding: "10px 24px", borderRadius: 8, cursor: "pointer", border: `1px solid ${colors.forestGreen}`, backgroundColor: colors.creamLight, fontFamily: fonts.body, fontSize: 13, fontWeight: 600, color: colors.forestGreen }}>Cancel</button>
+                <button 
+                  onClick={handleConfirm} 
+                  disabled={mode === "reject" && !note.trim()}
+                  style={{ 
+                    padding: "10px 24px", borderRadius: 8, cursor: (mode === "reject" && !note.trim()) ? "not-allowed" : "pointer", 
+                    border: `1px solid ${mode === "approve" ? colors.forestGreen : colors.red}`, 
+                    backgroundColor: (mode === "reject" && !note.trim()) ? colors.creamDark : (mode === "approve" ? colors.forestGreen : colors.red), 
+                    fontFamily: fonts.body, fontSize: 13, fontWeight: 700, color: colors.creamLight,
+                    opacity: (mode === "reject" && !note.trim()) ? 0.6 : 1
+                  }}
+                >
+                  {mode === "approve" ? "Confirm Approve" : "Confirm Reject"}
                 </button>
               </div>
             </div>

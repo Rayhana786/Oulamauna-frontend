@@ -3,6 +3,9 @@ import { useParams, useNavigate, useSearchParams } from "react-router-dom";
 import { useLang } from "../../context/LanguageContext";
 import { scholarsApi } from "../../api/scholarsApi";
 
+import DOMPurify from "dompurify";
+import RichTextEditor from "../../components/RichTextEditor";
+
 /* ─────────────────────────────────────────────
    TYPES
 ───────────────────────────────────────────── */
@@ -106,8 +109,35 @@ const WORK_FORMATS = [
 
 const MEDIA_FILE_TYPES = ["pdf", "audio", "video"];
 
+// Sanitizer config: safe subset of tags/attrs for a biography field.
+// Reused wherever biography HTML is sent to the server or rendered back.
+// (No explicit DOMPurify.Config annotation — that namespace isn't exported
+// consistently across @types/dompurify versions, so we just let TS infer it.)
+//
+// "style" is allowed here ONLY so the alignment buttons (which TipTap writes
+// as inline `style="text-align:…"` on <p>/<h2>) survive sanitization.
+// DOMPurify still sanitizes the *value* of the style attribute itself —
+// it strips url(), expression(), javascript:, etc. — so this does not
+// reopen an XSS hole; it just stops stripping a property our own editor
+// produces. If you later add a WYSIWYG feature that lets users set style
+// freely (not just via toolbar buttons), re-review this.
+const SANITIZE_CONFIG = {
+  ALLOWED_TAGS: [
+    "p", "h1", "h2", "h3", "blockquote", "ul", "ol", "li",
+    "strong", "em", "u", "s", "sup", "hr", // ✅ Added s, sup, hr
+    "span", "mark", "a", "br",
+  ],
+  ALLOWED_ATTR: [
+    "href", "target", "rel", "style", "class", "dir", "data-color",
+  ],
+};
+
+function sanitizeBiography(html: string): string {
+  return DOMPurify.sanitize(html, SANITIZE_CONFIG);
+}
+
 function emptyPerson(): PersonEntry { return { scholar_id: null, scholar_name: "" }; }
-function emptyWork(): WorkEntry { return { title: "", type: "BOOK", year: "", desc: "", accessMode: "none", file: null, url: "" }; }
+function emptyWork(): WorkEntry { return { title: "", year: "", type: "BOOK", desc: "", accessMode: "none", file: null, url: "" }; }
 function emptyMedia(): MediaEntry { return { title: "", type: "pdf", year: "", desc: "", accessMode: "upload", file: null, url: "" }; }
 function emptyRef(): RefEntry { return { title: "", citation: "", url: "" }; }
 
@@ -498,46 +528,6 @@ function FooterSubmitButton({ onClick, disabled, submitting, label, submittingLa
   );
 }
 
-const RichTextEditor = ({ value, onChange, placeholder }: { value: string; onChange: (val: string) => void; placeholder: string }) => {
-  const editorRef = useRef<HTMLDivElement>(null);
-  const [activeCmds, setActiveCmds] = useState<Record<string, boolean>>({});
-  useEffect(() => { if (editorRef.current && editorRef.current.innerHTML !== value) { editorRef.current.innerHTML = value; } }, []);
-  const updateActiveState = () => {
-    if (!editorRef.current || !document.contains(editorRef.current)) return;
-    const cmds = ['bold', 'italic', 'underline', 'insertUnorderedList', 'insertOrderedList'];
-    const newState: Record<string, boolean> = {};
-    cmds.forEach(cmd => { try { newState[cmd] = document.queryCommandState(cmd); } catch (e) {} });
-    try { const block = document.queryCommandValue('formatBlock').toLowerCase(); newState['h2'] = block.includes('h2') || block.includes('heading'); newState['blockquote'] = block.includes('blockquote'); } catch (e) {}
-    setActiveCmds(newState);
-  };
-  const exec = (command: string, val: string | undefined = undefined) => {
-    editorRef.current?.focus();
-    document.execCommand(command, false, val);
-    updateActiveState();
-    if (editorRef.current) onChange(editorRef.current.innerHTML);
-  };
-  const handleInput = () => { if (editorRef.current) { onChange(editorRef.current.innerHTML); } updateActiveState(); };
-  const btnStyle = (isActive: boolean): React.CSSProperties => ({ background: isActive ? GREEN_LIGHT : "transparent", border: "none", cursor: "pointer", padding: "8px 12px", borderRadius: "6px", color: isActive ? GREEN : "#404945", display: "flex", alignItems: "center", justifyContent: "center", transition: "all 0.15s", fontWeight: isActive ? 700 : 400 });
-  return (
-    <div style={{ border: `1.5px solid ${BORDER}`, borderRadius: "10px", overflow: "hidden", background: "#fff" }}>
-      <div style={{ display: "flex", gap: "2px", padding: "8px 12px", background: "#f3f4f1", borderBottom: `1px solid ${BORDER}`, flexWrap: "wrap" }}>
-        <button title="Bold" style={btnStyle(activeCmds['bold'])} onMouseDown={e => { e.preventDefault(); exec('bold'); }}><Icon name="format_bold" size={18} /></button>
-        <button title="Italic" style={btnStyle(activeCmds['italic'])} onMouseDown={e => { e.preventDefault(); exec('italic'); }}><Icon name="format_italic" size={18} /></button>
-        <div style={{ width: "1px", background: BORDER, margin: "0 6px" }} />
-        <button title="Heading" style={btnStyle(activeCmds['h2'])} onMouseDown={e => { e.preventDefault(); exec('formatBlock', 'h2'); }}><span style={{ fontFamily: SERIF, fontSize: "16px", fontWeight: 700 }}>T</span></button>
-        <button title="Quote" style={btnStyle(activeCmds['blockquote'])} onMouseDown={e => { e.preventDefault(); exec('formatBlock', 'blockquote'); }}><span style={{ fontFamily: SERIF, fontSize: "16px", fontWeight: 700, lineHeight: 1 }}>&ldquo;</span></button>
-        <button title="List" style={btnStyle(activeCmds['insertUnorderedList'])} onMouseDown={e => { e.preventDefault(); exec('insertUnorderedList'); }}><Icon name="format_list_bulleted" size={18} /></button>
-        <div style={{ width: "1px", background: BORDER, margin: "0 6px" }} />
-        <button title="Link" style={btnStyle(false)} onMouseDown={e => { e.preventDefault(); const url = prompt("Enter URL:"); if (url) exec('createLink', url); }}><Icon name="link" size={18} /></button>
-        <button title="Image" style={btnStyle(false)} onMouseDown={e => { e.preventDefault(); const url = prompt("Enter Image URL:"); if (url) exec('insertImage', url); }}><Icon name="image" size={18} /></button>
-      </div>
-      <div ref={editorRef} contentEditable suppressContentEditableWarning onInput={handleInput} onKeyUp={updateActiveState} onMouseUp={updateActiveState} onFocus={updateActiveState} data-placeholder={placeholder}
-        style={{ minHeight: "450px", padding: "18px", fontFamily: SANS, fontSize: "15px", lineHeight: "1.8", color: "#191c1b", outline: "none", whiteSpace: "pre-wrap", wordBreak: "break-word" }} />
-      <style>{`[contenteditable]:empty:before { content: attr(data-placeholder); color: ${MUTED}; pointer-events: none; display: block; } [contenteditable] blockquote { border-left: 3px solid ${GREEN}; margin: 12px 0; padding-left: 18px; color: #404945; font-style: italic; } [contenteditable] h2 { font-family: ${SERIF}; font-size: 22px; color: ${GREEN}; margin: 18px 0 10px 0; } [contenteditable] ul { padding-left: 24px; margin: 10px 0; } [contenteditable] a { color: ${GREEN}; text-decoration: underline; }`}</style>
-    </div>
-  );
-};
-
 /* ─────────────────────────────────────────────
    REVIEW HELPERS
 ───────────────────────────────────────────── */
@@ -848,7 +838,9 @@ const handleDateChange = (field: keyof FormState, value: string) => {
     const payload: any = {
       draft_version_id: draftVersionId, canonical_name: form.canonical_name || null, region_id: form.region_id,
       century_hijri_start: form.century_hijri_start, century_hijri_end: form.century_hijri_end, century_gregorian_start: form.century_gregorian_start, century_gregorian_end: form.century_gregorian_end,
-      biography: form.biography || null, language_id: selectedLang?.language_id || null, aliases: form.aliases, discipline_ids: form.discipline_ids,
+      // ✅ sanitized before it ever leaves the browser
+      biography: form.biography ? sanitizeBiography(form.biography) : null,
+      language_id: selectedLang?.language_id || null, aliases: form.aliases, discipline_ids: form.discipline_ids,
       dates: [form.birth_date_gregorian ? { date_type: "birth", calendar: "gregorian", year: parseInt(form.birth_date_gregorian), raw_text: form.birth_date_gregorian, is_approximate: false } : null,
               form.birth_date_hijri ? { date_type: "birth", calendar: "hijri", year: parseInt(form.birth_date_hijri), raw_text: form.birth_date_hijri, is_approximate: false } : null,
               form.death_date_gregorian ? { date_type: "death", calendar: "gregorian", year: parseInt(form.death_date_gregorian), raw_text: form.death_date_gregorian, is_approximate: false } : null,
@@ -1026,7 +1018,9 @@ const handleDateChange = (field: keyof FormState, value: string) => {
       const relationships = [...form.teachers.filter(t => t.scholar_id !== null).map(t => ({ related_version_id: t.scholar_id, relation_type: "teacher" })), ...form.students.filter(s => s.scholar_id !== null).map(s => ({ related_version_id: s.scholar_id, relation_type: "student" }))];
       const payload: any = {
         canonical_name: form.canonical_name, region_id: form.region_id, century_hijri_start: form.century_hijri_start, century_hijri_end: form.century_hijri_end, century_gregorian_start: form.century_gregorian_start, century_gregorian_end: form.century_gregorian_end,
-        biography: form.biography, language_id: selectedLang?.language_id, aliases: form.aliases, discipline_ids: form.discipline_ids,
+        // ✅ sanitized here too — this is the payload that actually gets persisted to scholar_versions.biography
+        biography: sanitizeBiography(form.biography),
+        language_id: selectedLang?.language_id, aliases: form.aliases, discipline_ids: form.discipline_ids,
         dates: [form.birth_date_gregorian ? { date_type: "birth", calendar: "gregorian", year: parseInt(form.birth_date_gregorian), raw_text: form.birth_date_gregorian, is_approximate: false } : null, form.birth_date_hijri ? { date_type: "birth", calendar: "hijri", year: parseInt(form.birth_date_hijri), raw_text: form.birth_date_hijri, is_approximate: false } : null, form.death_date_gregorian ? { date_type: "death", calendar: "gregorian", year: parseInt(form.death_date_gregorian), raw_text: form.death_date_gregorian, is_approximate: false } : null, form.death_date_hijri ? { date_type: "death", calendar: "hijri", year: parseInt(form.death_date_hijri), raw_text: form.death_date_hijri, is_approximate: false } : null].filter(Boolean),
         references: form.refs.map(r => ({ title: r.title, citation: r.citation, url: r.url || null })),
         works: form.works.map(w => ({ title: w.title, year: w.year ? parseInt(w.year) : null, format: w.type, description: w.desc || null, media_url: w.accessMode === "link" ? w.url : null, source_type: w.accessMode === "upload" ? "upload" : w.accessMode === "none" ? "none" : "external", file_ref: w.accessMode === "upload" ? `work_file_${form.works.indexOf(w)}` : null })),
@@ -1338,7 +1332,7 @@ const handleDateChange = (field: keyof FormState, value: string) => {
               <label style={labelStyle}>{t("submitScholar.step3.biography")} <span style={{ color: DANGER }}>*</span></label>
               <span style={{ fontFamily: MONO, fontSize: "10px", color: MUTED }}>Rich Text Editor</span>
             </div>
-            <RichTextEditor value={form.biography} onChange={(html) => upd("biography", html)} placeholder="Write biography here... Select text and click buttons to format." />
+            <RichTextEditor value={form.biography} onChange={(html) => upd("biography", html)} placeholder="Write biography here... Select text and click buttons to format." lang={lang.toLowerCase()} />
             {showValidationErrors && <FieldError msg={errors.biography} />}
             <p style={{ fontFamily: MONO, fontSize: "10px", color: MUTED, marginTop: "10px", fontStyle: "italic" }}>Tip: Click a button to toggle formatting on. Click it again to turn it off.</p>
           </div>
@@ -1491,7 +1485,8 @@ const handleDateChange = (field: keyof FormState, value: string) => {
             {form.quote && <ReviewField label={t("submitScholar.step3.quote")} value={form.quote} />}
             <div style={{ marginTop: "16px" }}>
               <div style={{ ...sectionLabelStyle, marginBottom: "10px" }}>{t("submitScholar.step3.biography")}</div>
-              <div style={{ padding: "16px", background: "#fff", borderRadius: "8px", border: `1px solid ${BORDER}`, fontSize: "14px", lineHeight: "1.7" }} dangerouslySetInnerHTML={{ __html: form.biography || "—" }} />
+              {/* ✅ sanitized right before it's rendered via dangerouslySetInnerHTML */}
+              <div style={{ padding: "16px", background: "#fff", borderRadius: "8px", border: `1px solid ${BORDER}`, fontSize: "14px", lineHeight: "1.7" }} dangerouslySetInnerHTML={{ __html: form.biography ? sanitizeBiography(form.biography) : "—" }} />
             </div>
           </ReviewSection>
 

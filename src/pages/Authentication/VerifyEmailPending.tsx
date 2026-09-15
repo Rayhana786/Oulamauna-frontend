@@ -1,245 +1,188 @@
 import React, { useState, useEffect } from "react";
 import { Link, useSearchParams, useNavigate } from "react-router-dom";
-import { Mail, RefreshCw, LogIn, ExternalLink, Check, BadgeCheck, ArrowLeft, AlertCircle } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
-// @ts-ignore
-import libraryImg from "../../assets/library-1.jpg";
 import { useLang } from "../../context/LanguageContext";
-type Language = "EN" | "AR" | "FR";
+import logo from "../../assets/logo.png";
+// --- Design System ---
+const colors = { creamLight: "#fcfaf5", creamMid: "#f6efdc", forestGreen: "#0b4335", amber: "#b8860b", red: "#8b2c2c" };
+const GREEN = colors.forestGreen; const GOLD = colors.amber; const BG = colors.creamLight; const CARD_BG = colors.creamLight; const BORDER = colors.creamMid; const MUTED = "rgba(11, 67, 53, 0.6)"; const RED = colors.red;
+const MONO: React.CSSProperties = { fontFamily: "'JetBrains Mono', monospace" };
+const SERIF: React.CSSProperties = { fontFamily: "'Hanken Grotesk', sans-serif" };
+const SANS: React.CSSProperties = { fontFamily: "'Inter', sans-serif" };
+
+function useIsMobile() {
+  const [isMobile, setIsMobile] = useState(() => window.innerWidth < 768);
+  useEffect(() => {
+    const handler = () => setIsMobile(window.innerWidth < 768);
+    window.addEventListener("resize", handler);
+    return () => window.removeEventListener("resize", handler);
+  }, []);
+  return isMobile;
+}
+
+function Icon({ name, size = 18, style }: { name: string; size?: number; style?: React.CSSProperties }) {
+  return <span className="material-symbols-outlined" style={{ fontSize: `${size}px`, lineHeight: 1, userSelect: "none", ...style }}>{name}</span>;
+}
+
+function HoverCard({ children, style }: { children: React.ReactNode; style?: React.CSSProperties }) {
+  const [hov, setHov] = useState(false);
+  return (
+    <div onMouseEnter={() => setHov(true)} onMouseLeave={() => setHov(false)}
+      style={{ border: `1px solid rgba(11, 67, 53, 0.1)`, boxShadow: hov ? "0px 6px 24px rgba(11, 67, 53, 0.12)" : "0px 4px 20px rgba(11, 67, 53, 0.08)", transform: hov ? "translateY(-2px)" : "translateY(0)", transition: "all 0.3s ease", backgroundColor: CARD_BG, borderRadius: "12px", ...style }}>
+      {children}
+    </div>
+  );
+}
+
+function HoverBtn({ children, onClick, type = "button", variant = "outline", disabled = false, style }: any) {
+  const [hov, setHov] = useState(false);
+  let bg = "transparent", color = GREEN, border = `2px solid ${GREEN}`;
+  if (variant === "primary") { bg = GREEN; color = BG; if (hov && !disabled) { bg = BG; color = GREEN; } }
+  else { if (hov && !disabled) { bg = GREEN; color = BG; } }
+  return (
+    <button type={type} onClick={onClick} disabled={disabled} onMouseEnter={() => setHov(true)} onMouseLeave={() => setHov(false)}
+      style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", gap: "6px", padding: "12px 24px", border, borderRadius: "8px", backgroundColor: bg, color, fontSize: "11px", fontWeight: 600, letterSpacing: "0.05em", cursor: disabled ? "not-allowed" : "pointer", opacity: disabled ? 0.6 : 1, transition: "all 0.3s", fontFamily: "'Hanken Grotesk', sans-serif", width: "100%", ...style }}>
+      {children}
+    </button>
+  );
+}
 
 const VerifyEmailPending: React.FC = () => {
-  const { lang } = useLang();
+  const { lang, t } = useLang();
   const { user, checkUserStatus } = useAuth();
   const navigate = useNavigate();
-  const [visible, setVisible] = useState(false);
   const [searchParams] = useSearchParams();
+  const isMobile = useIsMobile();
+  const isRTL = lang === "AR";
+
   const [loading, setLoading] = useState(false);
   const [resent, setResent] = useState(false);
   const [checking, setChecking] = useState(true);
   const [isVerified, setIsVerified] = useState(false);
-  const [error, setError] = useState<string | null>(null); // New error state
+  const [error, setError] = useState<string | null>(null);
 
   const email = (searchParams.get("email") || user?.email || "").toLowerCase();
 
-  const content: Record<Language, any> = {
-    EN: {
-      category: "ACCOUNT SECURITY",
-      title: "Verify your email",
-      subtitle: "A confirmation link has been sent to your inbox.",
-      alreadyVerifiedTitle: "Email Already Verified",
-      alreadyVerifiedSub: "Your email is already confirmed. You're all set.",
-      alreadyVerifiedBack: "Go back",
-      alreadyVerifiedHome: "or go Home",
-      cta: "OPEN GMAIL",
-      resend: "RESEND LINK",
-      resentSuccess: "SENT",
-      backToLogin: "BACK TO LOGIN",
-      checking: "Checking your status...",
-      errorMessage: "Something went wrong. Please try again.",
-    },
-    AR: {
-      category: "أمان الحساب",
-      title: "تأكيد البريد الإلكتروني",
-      subtitle: "تم إرسال رابط تأكيد إلى بريدك الإلكتروني.",
-      alreadyVerifiedTitle: "تم التأكيد مسبقاً",
-      alreadyVerifiedSub: "بريدك الإلكتروني مؤكد بالفعل. كل شيء جاهز.",
-      alreadyVerifiedBack: "العودة للصفحة السابقة",
-      alreadyVerifiedHome: "أو الصفحة الرئيسية",
-      cta: "افتح GMAIL",
-      resend: "إعادة إرسال",
-      resentSuccess: "تم الإرسال",
-      backToLogin: "العودة",
-      checking: "جاري التحقق...",
-      errorMessage: "حدث خطأ ما. يرجى المحاولة مرة أخرى.",
-    },
-    FR: {
-      category: "SÉCURITÉ DU COMPTE",
-      title: "Vérifiez votre e-mail",
-      subtitle: "Un lien de confirmation a été envoyé à votre boîte.",
-      alreadyVerifiedTitle: "E-mail déjà vérifié",
-      alreadyVerifiedSub: "Votre e-mail est déjà confirmé. Vous êtes prêt.",
-      alreadyVerifiedBack: "Retour",
-      alreadyVerifiedHome: "ou aller à l'accueil",
-      cta: "OUVRIR GMAIL",
-      resend: "RENVOYER",
-      resentSuccess: "ENVOYÉ",
-      backToLogin: "RETOUR",
-      checking: "Vérification en cours...",
-      errorMessage: "Une erreur est survenue. Veuillez réessayer.",
-    },
-  };
-
-  const t = content[lang] || content.EN;
-
   useEffect(() => {
-    setVisible(true);
-    const initialCheck = async () => {
-      setChecking(true);
-      await checkUserStatus();
-      setChecking(false);
-    };
+    const initialCheck = async () => { setChecking(true); await checkUserStatus(); setChecking(false); };
     initialCheck();
   }, []);
 
   useEffect(() => {
-    const pollInterval = setInterval(async () => {
-      await checkUserStatus();
-    }, 3000);
-
-    const handleStorageChange = (e: StorageEvent) => {
-      if (e.key === "auth_event") {
-        checkUserStatus();
-      }
-    };
-
+    const pollInterval = setInterval(async () => { await checkUserStatus(); }, 3000);
+    const handleStorageChange = (e: StorageEvent) => { if (e.key === "auth_event") checkUserStatus(); };
     window.addEventListener("storage", handleStorageChange);
-
-    return () => {
-      clearInterval(pollInterval);
-      window.removeEventListener("storage", handleStorageChange);
-    };
+    return () => { clearInterval(pollInterval); window.removeEventListener("storage", handleStorageChange); };
   }, []);
 
-  useEffect(() => {
-    if (user && (user as any).isVerified) {
-      setIsVerified(true);
-    }
-  }, [user]);
+  useEffect(() => { if (user && (user as any).isVerified) setIsVerified(true); }, [user]);
 
   const handleResend = async () => {
     if (loading || resent) return;
-    setLoading(true);
-    setError(null); // Clear previous errors
+    setLoading(true); setError(null);
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/auth/resend-verification`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email }),
-      });
-      
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/auth/resend-verification`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ email }) });
       const data = await response.json();
-
-      if (response.ok) {
-        setResent(true);
-      } else {
-        if (response.status === 400 && (data.message === "Email is already verified" || data.message === "User is already verified")) {
-          setIsVerified(true);
-        } else {
-          setError(data.message || t.errorMessage);
-        }
+      if (response.ok) setResent(true);
+      else {
+        if (response.status === 400 && (data.message === "Email is already verified" || data.message === "User is already verified")) setIsVerified(true);
+        else setError(data.message || t("verifyEmailPending.errorMessage"));
       }
-    } catch (error) {
-      console.error("Resend failed:", error);
-      setError(t.errorMessage);
-    } finally {
-      setLoading(false);
-    }
+    } catch { setError(t("verifyEmailPending.errorMessage")); } finally { setLoading(false); }
   };
 
   return (
-    <div className="relative h-screen w-full flex flex-col items-center bg-[#FDFCFB] overflow-hidden font-sans">
-      <div className="relative w-full h-[35vh] overflow-hidden flex flex-col items-center justify-center pt-6">
-        <img src={libraryImg} alt="" className="absolute inset-0 w-full h-full object-cover" />
-        <div className="absolute inset-0 bg-[#285B4B]/85 mix-blend-multiply" />
-        <h1 className="relative z-10 text-white text-lg font-serif tracking-[0.4em] uppercase">OULAMAUNA</h1>
-      </div>
+    <div dir={isRTL ? "rtl" : "ltr"} style={{ ...SANS, backgroundColor: BG, minHeight: "100vh", color: GREEN, display: "flex", alignItems: "center", justifyContent: "center", padding: isMobile ? "24px 16px" : "40px" }}>
+      <style>{`@import url('https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;700&display=swap');@import url('https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=swap');.material-symbols-outlined{font-variation-settings:'FILL' 0,'wght' 400,'GRAD' 0,'opsz' 24;font-family:'Material Symbols Outlined';display:inline-block;vertical-align:middle;}`}</style>
+      
+      <div style={{ width: "100%", maxWidth: "440px", display: "flex", flexDirection: "column", gap: "24px" }}>
+        <div style={{ textAlign: "center", marginBottom: "8px" }}>
+  <img
+    src={logo}
+    alt="OULAMAUNA"
+    style={{
+      width: "56px",
+      height: "56px",
+      objectFit: "contain",
+      margin: "0 auto 12px",
+      display: "block",
+    }}
+  />
 
-      <div
-        className={`relative z-20 -mt-12 w-full max-w-[360px] mx-4 p-6 bg-white rounded shadow-xl border border-gray-50 flex flex-col items-center text-center transition-all duration-700 ${
-          visible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-2"
-        }`}
-        dir={lang === "AR" ? "rtl" : "ltr"}
-      >
-        <span className="text-[#B59A5B] text-[8px] font-bold tracking-[0.2em] uppercase block mb-4">
-          {t.category}
-        </span>
+  <p
+    style={{
+      ...MONO,
+      fontSize: isRTL ? "17px" : "11px",
+      letterSpacing: isRTL ? "0" : "0.3em",
+      color: GREEN,
+      fontWeight: 700,
+      margin: 0,
+      textTransform: isRTL ? "none" : "uppercase",
+      direction: isRTL ? "rtl" : "ltr",
+    }}
+  >
+    {isRTL ? "علماؤنا" : "OULAMAUNA"}
+  </p>
+</div>
 
-        {checking ? (
-          <div className="flex flex-col items-center py-4 gap-3">
-            <RefreshCw className="w-5 h-5 text-[#B59A5B] animate-spin" />
-            <p className="text-[#7D8471] text-[11px]">{t.checking}</p>
-          </div>
-        ) : isVerified ? (
-          <div className="flex flex-col items-center animate-in fade-in zoom-in duration-500">
-            <div className="mb-4 w-12 h-12 bg-[#F4F7F6] rounded-full flex items-center justify-center text-green-600 shadow-inner">
-              <BadgeCheck className="w-6 h-6 stroke-[1.5px]" />
-            </div>
-            <h2 className="text-[#285B4B] text-xl font-serif mb-2">{t.alreadyVerifiedTitle}</h2>
-            <p className="text-[#7D8471] text-[11px] leading-relaxed mb-2">{t.alreadyVerifiedSub}</p>
-            {email && (
-              <p className="text-[#285B4B] font-bold text-[10px] tracking-wider break-all mb-4">{email}</p>
-            )}
-            <div className="flex flex-col items-center space-y-3 w-full border-t border-gray-50 pt-4">
-              <button
-                onClick={() => (window.history.length > 1 ? window.history.back() : navigate("/"))}
-                className="flex items-center gap-2 text-[9px] text-[#285B4B] hover:text-[#B59A5B] font-bold uppercase tracking-widest transition-colors"
-              >
-                <ArrowLeft className="w-3 h-3" />
-                <span>{t.alreadyVerifiedBack}</span>
-              </button>
-              <Link
-                to="/"
-                className="text-[8px] text-[#B8B09A] hover:text-[#285B4B] uppercase tracking-widest font-medium transition-colors"
-              >
-                {t.alreadyVerifiedHome}
-              </Link>
-            </div>
-          </div>
-        ) : (
-          <>
-            <div className="mb-4 w-10 h-10 bg-[#F4F7F6] rounded flex items-center justify-center text-[#285B4B]">
-              <Mail className="w-4 h-4 stroke-[1.5px]" />
-            </div>
-            <h2 className="text-[#285B4B] text-xl font-serif mb-2">{t.title}</h2>
-            <div className="mb-6">
-              <p className="text-[#7D8471] text-[11px] leading-relaxed mb-2">{t.subtitle}</p>
-              {email && (
-                <p className="text-[#285B4B] font-bold text-[10px] tracking-wider break-all">{email}</p>
-              )}
-            </div>
+        <HoverCard style={{ padding: isMobile ? "24px 20px" : "32px 28px", textAlign: "center" }}>
+          <span style={{ ...MONO, fontSize: "9px", color: GOLD, fontWeight: 700, letterSpacing: "0.2em", textTransform: "uppercase", display: "block", marginBottom: "16px" }}>{t("verifyEmailPending.category")}</span>
 
-            {/* ERROR MESSAGE DISPLAY */}
-            {error && (
-              <div className="mb-4 flex items-center gap-2 text-red-600 bg-red-50 p-2 rounded w-full justify-center animate-in fade-in slide-in-from-top-1">
-                <AlertCircle className="w-3 h-3" />
-                <span className="text-[10px] font-medium">{error}</span>
+          {checking ? (
+            <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "12px", padding: "16px 0" }}>
+              <Icon name="autorenew" size={24} style={{ color: GOLD, animation: "spin 1s linear infinite" }} />
+              <style>{`@keyframes spin { 100% { transform: rotate(360deg); } }`}</style>
+              <p style={{ fontSize: "12px", color: MUTED }}>{t("verifyEmailPending.checking")}</p>
+            </div>
+          ) : isVerified ? (
+            <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
+              <div style={{ width: "56px", height: "56px", borderRadius: "50%", backgroundColor: "rgba(11, 67, 53, 0.08)", display: "flex", alignItems: "center", justifyContent: "center", marginBottom: "16px" }}>
+                <Icon name="verified" size={32} style={{ color: GREEN }} />
               </div>
-            )}
-
-            <button
-              onClick={() => window.open("https://mail.google.com/mail/u/0/#search/OULAMAUNA", "_blank")}
-              className="w-full max-w-[200px] bg-[#1f4539] hover:bg-[#C9A84C] text-white py-3 rounded-sm text-[9px] font-bold tracking-[0.2em] transition-all flex items-center justify-center gap-2 mb-4"
-            >
-              <span>{t.cta}</span>
-              <ExternalLink className="w-3 h-3 opacity-60" />
-            </button>
-            <div className="flex flex-col items-center space-y-3 w-full border-t border-gray-50 pt-4">
-              <button
-                onClick={handleResend}
-                disabled={loading || resent}
-                className={`flex items-center gap-2 text-[8px] font-bold uppercase tracking-widest transition-colors ${
-                  resent ? "text-[#285B4B]" : "text-[#B59A5B] hover:text-[#285B4B]"
-                }`}
-              >
-                {loading ? (
-                  <RefreshCw className="w-3 h-3 animate-spin" />
-                ) : resent ? (
-                  <Check className="w-3 h-3" />
-                ) : (
-                  <RefreshCw className="w-3 h-3" />
-                )}
-                <span>{loading ? "..." : resent ? t.resentSuccess : t.resend}</span>
-              </button>
-              <Link
-                to="/login"
-                className="flex items-center gap-2 text-[8px] text-[#B8B09A] hover:text-[#285B4B] uppercase tracking-widest font-medium transition-colors"
-              >
-                <LogIn className="w-3 h-3" />
-                <span>{t.backToLogin}</span>
-              </Link>
+              <h2 style={{ ...SERIF, fontSize: "22px", color: GREEN, margin: "0 0 8px" }}>{t("verifyEmailPending.alreadyVerifiedTitle")}</h2>
+              <p style={{ fontSize: "13px", color: MUTED, margin: "0 0 8px", lineHeight: 1.5 }}>{t("verifyEmailPending.alreadyVerifiedSub")}</p>
+              {email && <p style={{ fontSize: "12px", color: GREEN, fontWeight: 600, margin: "0 0 20px", wordBreak: "break-all" }}>{email}</p>}
+              <div style={{ display: "flex", flexDirection: "column", gap: "12px", width: "100%", borderTop: `1px solid ${BORDER}`, paddingTop: "16px" }}>
+                <HoverBtn variant="outline" onClick={() => (window.history.length > 1 ? window.history.back() : navigate("/"))} style={{ width: "100%" }}>
+                  <Icon name={isRTL ? "arrow_forward" : "arrow_back"} size={14} /> {t("verifyEmailPending.alreadyVerifiedBack")}
+                </HoverBtn>
+                <Link to="/" style={{ fontSize: "11px", color: MUTED, textDecoration: "none" }}>{t("verifyEmailPending.alreadyVerifiedHome")}</Link>
+              </div>
             </div>
-          </>
-        )}
+          ) : (
+            <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
+              <div style={{ width: "48px", height: "48px", borderRadius: "8px", backgroundColor: "rgba(11, 67, 53, 0.05)", display: "flex", alignItems: "center", justifyContent: "center", marginBottom: "16px" }}>
+                <Icon name="mail" size={24} style={{ color: GREEN }} />
+              </div>
+              <h2 style={{ ...SERIF, fontSize: "22px", color: GREEN, margin: "0 0 8px" }}>{t("verifyEmailPending.title")}</h2>
+              <div style={{ marginBottom: "20px", width: "100%" }}>
+                <p style={{ fontSize: "13px", color: MUTED, margin: "0 0 8px", lineHeight: 1.5 }}>{t("verifyEmailPending.subtitle")}</p>
+                {email && <p style={{ fontSize: "12px", color: GREEN, fontWeight: 600, margin: 0, wordBreak: "break-all" }}>{email}</p>}
+              </div>
+
+              {error && (
+                <div style={{ display: "flex", alignItems: "center", gap: "8px", color: RED, backgroundColor: "rgba(139, 44, 44, 0.05)", padding: "10px", borderRadius: "8px", width: "100%", justifyContent: "center", marginBottom: "16px" }}>
+                  <Icon name="error" size={14} />
+                  <span style={{ fontSize: "12px", fontWeight: 600 }}>{error}</span>
+                </div>
+              )}
+
+              <HoverBtn variant="primary" onClick={() => window.open("https://mail.google.com/mail/u/0/#search/OULAMAUNA", "_blank")} style={{ marginBottom: "16px" }}>
+                {t("verifyEmailPending.cta")} <Icon name="open_in_new" size={14} />
+              </HoverBtn>
+
+              <div style={{ display: "flex", flexDirection: "column", gap: "12px", width: "100%", borderTop: `1px solid ${BORDER}`, paddingTop: "16px" }}>
+                <button onClick={handleResend} disabled={loading || resent} style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "6px", background: "none", border: "none", fontSize: "11px", fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: resent ? GREEN : GOLD, cursor: "pointer", fontFamily: "'Hanken Grotesk', sans-serif" }}>
+                  {loading ? <Icon name="autorenew" size={14} style={{ animation: "spin 1s linear infinite" }} /> : resent ? <Icon name="check" size={14} /> : <Icon name="refresh" size={14} />}
+                  <span>{loading ? "..." : resent ? t("verifyEmailPending.resentSuccess") : t("verifyEmailPending.resend")}</span>
+                </button>
+                <Link to="/login" style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "6px", fontSize: "11px", color: MUTED, textDecoration: "none", letterSpacing: "0.1em", textTransform: "uppercase", fontWeight: 600 }}>
+                  <Icon name="login" size={14} /> {t("verifyEmailPending.backToLogin")}
+                </Link>
+              </div>
+            </div>
+          )}
+        </HoverCard>
       </div>
     </div>
   );

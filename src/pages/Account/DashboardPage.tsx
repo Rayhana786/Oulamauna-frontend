@@ -39,7 +39,7 @@ const MONO: React.CSSProperties = { fontFamily: "'JetBrains Mono', monospace" };
 const SERIF: React.CSSProperties = { fontFamily: "'Hanken Grotesk', sans-serif" };
 const SANS: React.CSSProperties = { fontFamily: "'Inter', sans-serif" };
 
-function Icon({ name, size = 18 }: { name: string; size?: number }) {
+function Icon({ name, size = 18, style }: { name: string; size?: number; style?: React.CSSProperties }) {
   return (
     <span className="material-symbols-outlined" style={{ fontSize: `${size}px`, lineHeight: 1, userSelect: "none" }}>
       {name}

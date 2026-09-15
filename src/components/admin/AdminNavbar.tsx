@@ -1,5 +1,6 @@
-import React from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { Link } from "react-router-dom";
+import { createPortal } from "react-dom"; // ✅ ADDED: Renders outside parent stacking contexts
 import { useLang } from "../../context/LanguageContext";
 
 /* ------------------------------------------------------------------ */
@@ -8,7 +9,7 @@ import { useLang } from "../../context/LanguageContext";
 const colors = {
   creamLight: "#fcfaf5",
   forestGreen: "#0b4335",
-  red: "#b3261e", // ✅ Added red for the notification badge
+  red: "#b3261e", 
 };
 
 const fonts = {
@@ -33,14 +34,40 @@ const Icon: React.FC<{ name: string; size?: number }> = ({ name, size = 16 }) =>
 /* ------------------------------------------------------------------ */
 type AdminNavbarProps = {
   pageTitleKey: string;
-  /** Extra page-specific button(s) shown to the right of "View Public Site",
-   *  e.g. an "Export" button on a report page. Optional. */
   actions?: React.ReactNode;
 };
 
 const AdminNavbar: React.FC<AdminNavbarProps> = ({ pageTitleKey, actions }) => {
-  const { t, lang } = useLang();
+  const { t, lang, setLang, dbLanguages, isLoading } = useLang();
   const isRTL = lang === "AR";
+
+  const [isLangOpen, setIsLangOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+  
+  // ✅ Track exact screen position for the portal dropdown
+  const [dropdownPosition, setDropdownPosition] = useState<{ top: number; left?: number; right?: number }>({ top: 0 });
+
+  useEffect(() => {
+    if (isLangOpen && dropdownRef.current) {
+      const rect = dropdownRef.current.getBoundingClientRect();
+      setDropdownPosition({
+        top: rect.bottom + 8,
+        left: rect.left,
+        right: window.innerWidth - rect.right,
+      });
+    }
+  }, [isLangOpen]);
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setIsLangOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   return (
     <header
@@ -73,11 +100,102 @@ const AdminNavbar: React.FC<AdminNavbarProps> = ({ pageTitleKey, actions }) => {
       </h1>
 
       <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-       
-
         {actions}
 
-        {/* ✅ NEW: Notification Bell */}
+                {/* ✅ Language Switcher - Simple Circle Button */}
+        <div style={{ position: "relative" }} ref={dropdownRef}>
+          <button
+            onClick={() => setIsLangOpen(!isLangOpen)}
+            style={{
+              background: "none",
+              border: "none",
+              cursor: "pointer",
+              color: colors.forestGreen,
+              padding: 8,
+              borderRadius: "50%",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              transition: "background 0.2s",
+            }}
+            onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "rgba(11, 67, 53, 0.08)")}
+            onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "transparent")}
+            title="Change Language"
+          >
+            <Icon name="language" size={22} />
+          </button>
+
+          {/* ✅ PORTAL: Renders directly to document.body to bypass ALL parent z-index/overflow issues */}
+          {isLangOpen &&
+            createPortal(
+              <div
+                style={{
+                  position: "fixed",
+                  top: dropdownPosition.top,
+                  ...(isRTL ? { left: dropdownPosition.left } : { right: dropdownPosition.right }),
+                  backgroundColor: colors.creamLight, // ✅ 100% SOLID COLOR
+                  border: `1px solid ${colors.forestGreen}`,
+                  borderRadius: 8,
+                  boxShadow: "0 4px 12px rgba(11, 67, 53, 0.15)",
+                  zIndex: 99999, // ✅ EXTREMELY HIGH Z-INDEX
+                  overflow: "hidden",
+                  minWidth: 140,
+                  opacity: 1, // ✅ FORCE OPAQUE
+                }}
+              >
+                {isLoading ? (
+                  <div style={{ padding: "8px 12px", fontSize: 12, color: colors.forestGreen, backgroundColor: colors.creamLight }}>
+                    {isRTL ? "جاري التحميل..." : "Loading..."}
+                  </div>
+                ) : dbLanguages.length === 0 ? (
+                  <div style={{ padding: "8px 12px", fontSize: 12, color: colors.forestGreen, backgroundColor: colors.creamLight }}>
+                    {isRTL ? "لا توجد لغات" : "No languages"}
+                  </div>
+                ) : (
+                  dbLanguages.map((dbLang) => {
+                    const isActive = lang.toLowerCase() === dbLang.code.toLowerCase();
+                    return (
+                      <button
+                        key={dbLang.language_id}
+                        onClick={() => {
+                          setLang(dbLang.code);
+                          setIsLangOpen(false);
+                        }}
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          width: "100%",
+                          padding: "10px 16px",
+                          border: "none",
+                          backgroundColor: isActive ? "rgba(11, 67, 53, 0.15)" : colors.creamLight, // ✅ SOLID BACKGROUND
+                          color: colors.forestGreen,
+                          fontFamily: fonts.body,
+                          fontSize: 14,
+                          fontWeight: isActive ? 600 : 400,
+                          cursor: "pointer",
+                          transition: "background 0.15s",
+                          gap: 8,
+                          flexDirection: isRTL ? "row-reverse" : "row",
+                        }}
+                        onMouseEnter={(e) => {
+                          if (!isActive) e.currentTarget.style.backgroundColor = "rgba(11, 67, 53, 0.08)";
+                        }}
+                        onMouseLeave={(e) => {
+                          if (!isActive) e.currentTarget.style.backgroundColor = colors.creamLight;
+                        }}
+                      >
+                        {isActive && <Icon name="check" size={16} />}
+                        <span>{dbLang.name}</span>
+                      </button>
+                    );
+                  })
+                )}
+              </div>,
+              document.body // ✅ This is the magic: renders outside the header/chart hierarchy
+            )}
+        </div>
+
+        {/* ✅ Notification Bell */}
         <button
           style={{
             background: "none",
@@ -97,7 +215,6 @@ const AdminNavbar: React.FC<AdminNavbarProps> = ({ pageTitleKey, actions }) => {
           title="Notifications"
         >
           <Icon name="notifications" size={22} />
-          {/* Unread Badge Dot */}
           <span
             style={{
               position: "absolute",

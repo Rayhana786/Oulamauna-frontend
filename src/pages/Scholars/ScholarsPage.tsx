@@ -496,7 +496,7 @@ const ScholarsPage: React.FC = () => {
   const [search, setSearch] = useState(searchParams.get("q") || "");
   const [selectedRegions, setSelectedRegions] = useState<string[]>([]);
   const [selectedDisciplines, setSelectedDisciplines] = useState<string[]>([]);
- const [sort, setSort] = useState(t.sortOptions[0]);
+  const [sort, setSort] = useState(t.sortOptions[0]);
   const [sortOpen, setSortOpen] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
 
@@ -504,18 +504,34 @@ const ScholarsPage: React.FC = () => {
   const [availableRegions, setAvailableRegions] = useState<string[]>([]);
   const [availableDisciplines, setAvailableDisciplines] = useState<string[]>([]);
 
+  // ✅ 1. Extract ALL filters from the URL at the VERY TOP
+  const minYear = searchParams.get("minYear") || undefined;
+  const maxYear = searchParams.get("maxYear") || undefined;
+  const urlDiscipline = searchParams.get("discipline") || undefined;
+
   const isSearchingOrFiltering =
     search.trim() !== "" ||
     selectedRegions.length > 0 ||
-       selectedDisciplines.length > 0;
+    selectedDisciplines.length > 0 ||
+    !!urlDiscipline;
 
+  // ✅ 2. Sync the UI checkbox with the URL discipline
+  useEffect(() => {
+    if (urlDiscipline) {
+      setSelectedDisciplines([urlDiscipline]);
+    } else {
+      setSelectedDisciplines([]);
+    }
+  }, [urlDiscipline]);
+
+  // ✅ 3. Updated useEffect to pass ALL filters to the API
   useEffect(() => {
     let cancelled = false;
     setLoading(true);
     setError(null);
 
     scholarsApi
-      .list(LANG_CODE_BY_UI[lang])
+      .list(LANG_CODE_BY_UI[lang], { minYear, maxYear, discipline: urlDiscipline })
       .then((res) => {
         if (cancelled) return;
         const mapped = res.data
@@ -532,7 +548,7 @@ const ScholarsPage: React.FC = () => {
       });
 
     return () => { cancelled = true; };
-  }, [lang]);
+  }, [lang, minYear, maxYear, urlDiscipline]);
 
    // ✅ NEW: Fetch Regions and Disciplines from backend
   // Now passes the current language, and re-runs when language changes

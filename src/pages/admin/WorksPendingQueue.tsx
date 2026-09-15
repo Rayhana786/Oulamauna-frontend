@@ -129,8 +129,13 @@ export default function WorksPendingQueue() {
   const [reviewTarget, setReviewTarget] = useState<PendingWork | null>(null);
   const [approvalError, setApprovalError] = useState("");
   const [approveTarget, setApproveTarget] = useState<PendingWork | null>(null);
+  const [approveReason, setApproveReason] = useState("");
   const [rejectTarget, setRejectTarget] = useState<PendingWork | null>(null);
-  const [stripTarget, setStripTarget] = useState<PendingWork | null>(null);
+  const [rejectReason, setRejectReason] = useState("");
+
+  // ✅ Two-step Restrict flow (replaces the old single-step Strip modal)
+  const [restrictTarget, setRestrictTarget] = useState<PendingWork | null>(null);
+  const [confirmAction, setConfirmAction] = useState<{ type: 'revoke' | 'ban', work: PendingWork } | null>(null);
 
   const stats = getStats(rows);
 
@@ -222,14 +227,15 @@ export default function WorksPendingQueue() {
   };
   const closeReview = () => { setReviewTarget(null); setApprovalError(""); };
 
-  // ✅ Approve now goes through a confirmation modal instead of running instantly
+  // ✅ Approve now sends the optional notes as `reason`
   const confirmApprove = async () => {
     if (!approveTarget) return;
     try {
-      await adminApi.works.approve(Number(approveTarget.id));
+      await adminApi.works.approve(Number(approveTarget.id), approveReason || "Approved");
       setRows(prev => prev.filter(w => w.id !== approveTarget.id));
       if (reviewTarget?.id === approveTarget.id) closeReview();
       setApproveTarget(null);
+      setApproveReason("");
     } catch (err) {
       console.error("Approve failed:", err);
       alert(t("worksQueue.errors.approve") || "Failed to approve work.");
@@ -237,24 +243,57 @@ export default function WorksPendingQueue() {
     }
   };
 
-  // ✅ Reject no longer requires a written reason — just a confirmation
+  // ✅ Reject now requires a written reason
   const confirmReject = async () => {
     if (!rejectTarget) return;
+    if (!rejectReason.trim()) {
+      alert("Please provide a rejection reason");
+      return;
+    }
     try {
-      await adminApi.works.reject(Number(rejectTarget.id));
+      await adminApi.works.reject(Number(rejectTarget.id), rejectReason);
       setRows(prev => prev.filter(w => w.id !== rejectTarget.id));
       setRejectTarget(null);
+      setRejectReason("");
     } catch (err) {
       console.error("Reject failed:", err);
       alert(t("worksQueue.errors.reject") || "Failed to reject work.");
     }
   };
 
-  const confirmStrip = () => {
-    if (!stripTarget) return;
-    setRows((prev) => prev.map((row) => row.id === stripTarget.id ? { ...row, submittedBy: "System (stripped)", contributorId: "system", stripped: true } : row));
-    console.log(`Stripped contributor from work "${stripTarget.title}"`);
-    setStripTarget(null);
+  // ✅ Same pattern as NewScholarsQueue / MediaPendingQueue: restrict the user + auto-reject the work
+  const executeRestrictionAndReject = async () => {
+    if (!confirmAction) return;
+    try {
+      const { type, work } = confirmAction;
+      const userId = parseInt(work.contributorId, 10);
+
+      if (isNaN(userId)) {
+        alert("Cannot restrict system-generated submissions.");
+        setConfirmAction(null);
+        setRestrictTarget(null);
+        return;
+      }
+
+      // 1. Restrict the user
+      if (type === 'revoke') {
+        await adminApi.users.toggleContribute(userId);
+      } else {
+        await adminApi.users.ban(userId);
+      }
+
+      // 2. Auto-reject the work submission
+      const defaultReason = type === 'ban' ? "Contributor banned" : "Contribution access revoked";
+      await adminApi.works.reject(Number(work.id), defaultReason);
+
+      // 3. Remove from UI and close modals
+      setRows((prev) => prev.filter((row) => row.id !== work.id));
+      setConfirmAction(null);
+      setRestrictTarget(null);
+    } catch (err) {
+      console.error("Action failed:", err);
+      alert("Failed to process action. Please try again.");
+    }
   };
 
   // ✅ Handlers for the Modal File Actions (mirrors Media queue behavior)
@@ -306,14 +345,12 @@ export default function WorksPendingQueue() {
     { icon: "schedule", label: t("worksQueue.stats.avgTime") || "Avg Time", value: stats.avgTime, color: colors.forestGreen, filled: false },
   ];
 
-  // ✅ appearance:none so the native <select> arrow doesn't double up with the custom Icon
   const selectStyle: React.CSSProperties = { border: "none", outline: "none", background: "transparent", fontFamily: fonts.body, fontSize: 13, color: colors.forestGreen, cursor: "pointer", minWidth: 140, appearance: "none", WebkitAppearance: "none", MozAppearance: "none" };
 
   const actionBtnBase: React.CSSProperties = { width: 32, height: 32, display: "flex", alignItems: "center", justifyContent: "center", borderRadius: 6, cursor: "pointer", transition: "all 0.15s", border: `1px solid ${colors.forestGreen}` };
   const viewBtnStyle: React.CSSProperties = { ...actionBtnBase, backgroundColor: "transparent", color: colors.forestGreen };
   const approveBtnStyle: React.CSSProperties = { ...actionBtnBase, backgroundColor: colors.forestGreen, color: colors.creamLight };
   const rejectBtnStyle: React.CSSProperties = { ...actionBtnBase, backgroundColor: "transparent", color: colors.red, borderColor: colors.red };
-  const stripBtnStyle: React.CSSProperties = { ...actionBtnBase, backgroundColor: "transparent", color: colors.forestGreen };
 
   return (
     <div dir={isRTL ? "rtl" : "ltr"} style={{ fontFamily: fonts.body, color: colors.forestGreen, backgroundColor: colors.creamLight, minHeight: "100vh", padding: 24 }}>
@@ -470,14 +507,17 @@ export default function WorksPendingQueue() {
                             <button onClick={() => openReview(w)} title="View Details" style={viewBtnStyle} onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = colors.creamMid; }} onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = "transparent"; }}>
                               <Icon name="visibility" size={18} />
                             </button>
-                            <button onClick={() => setApproveTarget(w)} title="Approve" style={approveBtnStyle} onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = "#285b4b"; }} onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = colors.forestGreen; }}>
+                            <button onClick={() => { setApproveTarget(w); setApproveReason(""); }} title="Approve" style={approveBtnStyle} onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = "#285b4b"; }} onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = colors.forestGreen; }}>
                               <Icon name="check" size={18} filled />
                             </button>
-                            <button onClick={() => setRejectTarget(w)} title="Reject" style={rejectBtnStyle} onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = colors.red; e.currentTarget.style.color = colors.creamLight; }} onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = "transparent"; e.currentTarget.style.color = colors.red; }}>
+                            <button onClick={() => { setRejectTarget(w); setRejectReason(""); }} title="Reject" style={rejectBtnStyle} onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = colors.red; e.currentTarget.style.color = colors.creamLight; }} onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = "transparent"; e.currentTarget.style.color = colors.red; }}>
                               <Icon name="close" size={18} />
                             </button>
-                            <button onClick={() => !w.stripped && setStripTarget(w)} title={w.stripped ? "Already stripped" : "Strip"} disabled={w.stripped} style={{...stripBtnStyle, opacity: w.stripped ? 0.4 : 1, cursor: w.stripped ? "not-allowed" : "pointer"}} onMouseEnter={(e) => { if(!w.stripped) e.currentTarget.style.backgroundColor = colors.creamMid; }} onMouseLeave={(e) => { if(!w.stripped) e.currentTarget.style.backgroundColor = "transparent"; }}>
-                              <Icon name={w.stripped ? "check_circle" : "person_remove"} size={18} />
+                            <button onClick={() => setRestrictTarget(w)} title="Restrict User & Reject"
+                              style={{ width: 32, height: 32, display: "flex", alignItems: "center", justifyContent: "center", backgroundColor: "transparent", border: `1px solid ${colors.amber}`, borderRadius: 6, color: colors.amber, cursor: "pointer" }}
+                              onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = colors.amber; e.currentTarget.style.color = colors.creamLight; }}
+                              onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = "transparent"; e.currentTarget.style.color = colors.amber; }}>
+                              <Icon name="shield_person" size={18} />
                             </button>
                           </div>
                         </td>
@@ -490,7 +530,7 @@ export default function WorksPendingQueue() {
           </div>
         </section>
 
-        {/* ── Review Modal — details + file actions only (checklist/notes removed) ── */}
+        {/* ── Review Modal — details + file actions only ── */}
         {reviewTarget && (
           <div style={{ position: "fixed", inset: 0, backgroundColor: "rgba(11, 67, 53, 0.6)", zIndex: 100, display: "flex", alignItems: "center", justifyContent: "center", backdropFilter: "blur(4px)", padding: 20 }} onClick={closeReview}>
             <div style={{ ...cardStyle, backgroundColor: colors.creamLight, width: "95vw", maxWidth: 560, maxHeight: "85vh", display: "flex", flexDirection: "column", overflow: "hidden", boxShadow: "0 20px 60px rgba(0,0,0,0.2)" }} onClick={(e) => e.stopPropagation()}>
@@ -524,7 +564,6 @@ export default function WorksPendingQueue() {
                     ))}
                   </div>
 
-                  {/* ✅ File Actions — upload now gets real VIEW FILE / DOWNLOAD buttons, same as Media */}
                   <div style={{ paddingBottom: 16, borderBottom: `1px solid ${colors.creamDark}` }}>
                     <h4 style={{ fontFamily: fonts.label, fontSize: 11, fontWeight: 700, letterSpacing: "0.06em", textTransform: "uppercase", color: colors.forestGreen, margin: "0 0 12px", opacity: 0.8 }}>File Actions</h4>
                     {reviewTarget.accessType === "upload" ? (
@@ -551,13 +590,12 @@ export default function WorksPendingQueue() {
                     </div>
                   )}
 
-                  {/* ✅ Delete button removed — Reject / Approve are the only actions here now */}
                   <div style={{ display: "flex", gap: 10, alignItems: "center", marginTop: "auto", paddingTop: 16, borderTop: `1px solid ${colors.creamDark}` }}>
-                    <button onClick={() => { setRejectTarget(reviewTarget); closeReview(); }} style={{ padding: "10px 20px", borderRadius: 8, cursor: "pointer", border: `1px solid ${colors.forestGreen}`, backgroundColor: "transparent", color: colors.forestGreen, fontFamily: fonts.body, fontSize: 13, fontWeight: 600, display: "flex", alignItems: "center", gap: 6 }}>
+                    <button onClick={() => { setRejectTarget(reviewTarget); setRejectReason(""); closeReview(); }} style={{ padding: "10px 20px", borderRadius: 8, cursor: "pointer", border: `1px solid ${colors.forestGreen}`, backgroundColor: "transparent", color: colors.forestGreen, fontFamily: fonts.body, fontSize: 13, fontWeight: 600, display: "flex", alignItems: "center", gap: 6 }}>
                       <Icon name="cancel" size={16} /> {t("worksQueue.actions.reject") || "Reject"}
                     </button>
                     <div style={{ flex: 1 }} />
-                    <button onClick={() => { setApproveTarget(reviewTarget); closeReview(); }} style={{ padding: "10px 24px", borderRadius: 8, cursor: "pointer", border: "none", backgroundColor: colors.forestGreen, color: colors.creamLight, fontFamily: fonts.body, fontSize: 13, fontWeight: 700, display: "flex", alignItems: "center", gap: 6 }}>
+                    <button onClick={() => { setApproveTarget(reviewTarget); setApproveReason(""); closeReview(); }} style={{ padding: "10px 24px", borderRadius: 8, cursor: "pointer", border: "none", backgroundColor: colors.forestGreen, color: colors.creamLight, fontFamily: fonts.body, fontSize: 13, fontWeight: 700, display: "flex", alignItems: "center", gap: 6 }}>
                       <Icon name="check_circle" size={16} filled /> {t("worksQueue.actions.approve") || "Approve"}
                     </button>
                   </div>
@@ -569,54 +607,127 @@ export default function WorksPendingQueue() {
 
         {/* ── Approve Confirmation Modal ── */}
         {approveTarget && (
-          <div style={{ position: "fixed", inset: 0, backgroundColor: "rgba(11, 67, 53, 0.5)", zIndex: 100, display: "flex", alignItems: "center", justifyContent: "center", backdropFilter: "blur(4px)" }} onClick={() => setApproveTarget(null)}>
+          <div style={{ position: "fixed", inset: 0, backgroundColor: "rgba(11, 67, 53, 0.5)", zIndex: 100, display: "flex", alignItems: "center", justifyContent: "center", backdropFilter: "blur(4px)" }} onClick={() => { setApproveTarget(null); setApproveReason(""); }}>
             <div style={{ ...cardStyle, backgroundColor: colors.creamLight, width: 440, maxWidth: "90vw", padding: 32, boxShadow: "0 20px 60px rgba(0,0,0,0.18)" }} onClick={(e) => e.stopPropagation()}>
               <div style={{ width: 56, height: 56, borderRadius: "50%", backgroundColor: colors.forestGreen, color: colors.creamLight, display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 20, border: `1px solid ${colors.forestGreen}` }}><Icon name="check_circle" size={28} filled /></div>
               <h2 style={{ fontFamily: fonts.headline, fontSize: 20, fontWeight: 700, color: colors.forestGreen, marginBottom: 12 }}>{t("worksQueue.modal.approveTitle") || "Approve Submission"}</h2>
-              <p style={{ fontFamily: fonts.body, fontSize: 14, color: colors.forestGreen, lineHeight: 1.6, marginBottom: 24, opacity: 0.8 }}>Are you sure you want to approve "{approveTarget.title}"?</p>
+              <p style={{ fontFamily: fonts.body, fontSize: 14, color: colors.forestGreen, lineHeight: 1.6, marginBottom: 16, opacity: 0.8 }}>Are you sure you want to approve "{approveTarget.title}"?</p>
+              <div style={{ marginBottom: 24 }}>
+                <label style={{ fontFamily: fonts.label, fontSize: 11, letterSpacing: "0.06em", fontWeight: 600, color: colors.forestGreen, display: "block", marginBottom: 6 }}>APPROVAL NOTES (Optional)</label>
+                <textarea value={approveReason} onChange={(e) => setApproveReason(e.target.value)} placeholder="Add any notes about this approval..." style={{ width: "100%", padding: 12, borderRadius: 8, border: `1px solid ${colors.forestGreen}`, fontFamily: fonts.body, fontSize: 13, color: colors.forestGreen, backgroundColor: colors.creamLight, outline: "none", resize: "vertical", minHeight: 80 }} />
+              </div>
               <div style={{ display: "flex", gap: 12, justifyContent: "flex-end" }}>
-                <button onClick={() => setApproveTarget(null)} style={{ padding: "10px 24px", borderRadius: 8, cursor: "pointer", border: `1px solid ${colors.forestGreen}`, backgroundColor: colors.creamLight, fontFamily: fonts.body, fontSize: 13, fontWeight: 600, color: colors.forestGreen }}>{t("worksQueue.modal.cancel") || "Cancel"}</button>
+                <button onClick={() => { setApproveTarget(null); setApproveReason(""); }} style={{ padding: "10px 24px", borderRadius: 8, cursor: "pointer", border: `1px solid ${colors.forestGreen}`, backgroundColor: colors.creamLight, fontFamily: fonts.body, fontSize: 13, fontWeight: 600, color: colors.forestGreen }}>{t("worksQueue.modal.cancel") || "Cancel"}</button>
                 <button onClick={confirmApprove} style={{ padding: "10px 24px", borderRadius: 8, cursor: "pointer", border: "none", backgroundColor: colors.forestGreen, color: colors.creamLight, fontFamily: fonts.body, fontSize: 13, fontWeight: 700 }}>Confirm Approve</button>
               </div>
             </div>
           </div>
         )}
 
-        {/* ── Reject Confirmation Modal — no written reason needed ── */}
+        {/* ── Reject Confirmation Modal — now requires a reason ── */}
         {rejectTarget && (
-          <div style={{ position: "fixed", inset: 0, backgroundColor: "rgba(11, 67, 53, 0.5)", zIndex: 100, display: "flex", alignItems: "center", justifyContent: "center", backdropFilter: "blur(4px)" }} onClick={() => setRejectTarget(null)}>
+          <div style={{ position: "fixed", inset: 0, backgroundColor: "rgba(11, 67, 53, 0.5)", zIndex: 100, display: "flex", alignItems: "center", justifyContent: "center", backdropFilter: "blur(4px)" }} onClick={() => { setRejectTarget(null); setRejectReason(""); }}>
             <div style={{ ...cardStyle, backgroundColor: colors.creamLight, width: 440, maxWidth: "90vw", padding: 32, boxShadow: "0 20px 60px rgba(0,0,0,0.18)" }} onClick={(e) => e.stopPropagation()}>
               <div style={{ width: 56, height: 56, borderRadius: "50%", backgroundColor: colors.red, color: colors.creamLight, display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 20, border: `1px solid ${colors.red}` }}>
                 <Icon name="cancel" size={28} filled />
               </div>
               <h2 style={{ fontFamily: fonts.headline, fontSize: 20, fontWeight: 700, color: colors.forestGreen, marginBottom: 12 }}>{t("worksQueue.modal.rejectTitle") || "Reject Submission"}</h2>
-              <p style={{ fontFamily: fonts.body, fontSize: 14, color: colors.forestGreen, lineHeight: 1.6, marginBottom: 24, opacity: 0.8 }}>
+              <p style={{ fontFamily: fonts.body, fontSize: 14, color: colors.forestGreen, lineHeight: 1.6, marginBottom: 16, opacity: 0.8 }}>
                 Are you sure you want to reject "{rejectTarget.title}"?
               </p>
+              <div style={{ marginBottom: 24 }}>
+                <label style={{ fontFamily: fonts.label, fontSize: 11, letterSpacing: "0.06em", fontWeight: 600, color: colors.forestGreen, display: "block", marginBottom: 6 }}>REJECTION REASON *</label>
+                <textarea value={rejectReason} onChange={(e) => setRejectReason(e.target.value)} placeholder="Please explain why this submission is being rejected..." style={{ width: "100%", padding: 12, borderRadius: 8, border: `1px solid ${colors.forestGreen}`, fontFamily: fonts.body, fontSize: 13, color: colors.forestGreen, backgroundColor: colors.creamLight, outline: "none", resize: "vertical", minHeight: 80 }} />
+              </div>
               <div style={{ display: "flex", gap: 12, justifyContent: "flex-end" }}>
-                <button onClick={() => setRejectTarget(null)} style={{ padding: "10px 24px", borderRadius: 8, cursor: "pointer", border: `1px solid ${colors.forestGreen}`, backgroundColor: colors.creamLight, fontFamily: fonts.body, fontSize: 13, fontWeight: 600, color: colors.forestGreen }}>{t("worksQueue.modal.cancel") || "Cancel"}</button>
+                <button onClick={() => { setRejectTarget(null); setRejectReason(""); }} style={{ padding: "10px 24px", borderRadius: 8, cursor: "pointer", border: `1px solid ${colors.forestGreen}`, backgroundColor: colors.creamLight, fontFamily: fonts.body, fontSize: 13, fontWeight: 600, color: colors.forestGreen }}>{t("worksQueue.modal.cancel") || "Cancel"}</button>
                 <button onClick={confirmReject} style={{ padding: "10px 24px", borderRadius: 8, cursor: "pointer", border: "none", backgroundColor: colors.red, color: colors.creamLight, fontFamily: fonts.body, fontSize: 13, fontWeight: 700 }}>{t("worksQueue.modal.confirm") || "Confirm Reject"}</button>
               </div>
             </div>
           </div>
         )}
 
-        {/* ── Strip Modal ── */}
-        {stripTarget && (
-          <div style={{ position: "fixed", inset: 0, backgroundColor: "rgba(11, 67, 53, 0.5)", zIndex: 100, display: "flex", alignItems: "center", justifyContent: "center", backdropFilter: "blur(4px)" }} onClick={() => setStripTarget(null)}>
-            <div style={{ ...cardStyle, backgroundColor: colors.creamLight, width: 440, maxWidth: "90vw", padding: 32, boxShadow: "0 20px 60px rgba(0,0,0,0.18)" }} onClick={(e) => e.stopPropagation()}>
-              <div style={{ width: 56, height: 56, borderRadius: "50%", backgroundColor: colors.red, color: colors.creamLight, display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 20, border: `1px solid ${colors.red}` }}>
-                <Icon name="person_remove" size={28} filled />
+        {/* ── Step 1: Choose Action Modal ── */}
+        {restrictTarget && !confirmAction && (
+          <div style={{ position: "fixed", inset: 0, backgroundColor: "rgba(11, 67, 53, 0.6)", zIndex: 100, display: "flex", alignItems: "center", justifyContent: "center", backdropFilter: "blur(4px)", padding: 20 }} onClick={() => setRestrictTarget(null)}>
+            <div style={{ ...cardStyle, backgroundColor: colors.creamLight, width: 520, maxWidth: "90vw", padding: 32, boxShadow: "0 20px 60px rgba(0,0,0,0.25)" }} onClick={(e) => e.stopPropagation()}>
+
+              <div style={{ display: "flex", alignItems: "center", gap: 16, marginBottom: 24 }}>
+                <Avatar name={restrictTarget.submittedBy} size={56} />
+                <div>
+                  <h2 style={{ fontFamily: fonts.headline, fontSize: 20, fontWeight: 700, color: colors.forestGreen, margin: 0 }}>Restrict User</h2>
+                  <p style={{ fontFamily: fonts.body, fontSize: 13, color: colors.forestGreen, opacity: 0.7, margin: "4px 0 0" }}>{restrictTarget.submittedBy} submitted "{restrictTarget.title}"</p>
+                </div>
               </div>
-              <h2 style={{ fontFamily: fonts.headline, fontSize: 20, fontWeight: 700, color: colors.forestGreen, marginBottom: 12 }}>{t("worksQueue.strip.title") || "Strip Contributor"}</h2>
-              <p style={{ fontFamily: fonts.body, fontSize: 14, color: colors.forestGreen, lineHeight: 1.6, marginBottom: 28, opacity: 0.8 }}>
-                <span dangerouslySetInnerHTML={{ __html: (t("worksQueue.strip.body") || `Strip ${stripTarget.submittedBy} from "${stripTarget.title}"?`).replace("{name}", stripTarget.submittedBy).replace("{title}", stripTarget.title) }} />
-                <br /><br />
-                <b style={{ color: colors.red }}>{t("worksQueue.strip.warning") || "This action cannot be undone."}</b>
+
+              <p style={{ fontFamily: fonts.body, fontSize: 14, color: colors.forestGreen, lineHeight: 1.6, marginBottom: 24 }}>
+                Choose an action. This will automatically <b>reject</b> this work submission as well.
               </p>
+
+              <div style={{ display: "flex", flexDirection: "column", gap: 12, marginBottom: 24 }}>
+                <button onClick={() => setConfirmAction({ type: 'revoke', work: restrictTarget })}
+                  style={{ display: "flex", alignItems: "flex-start", gap: 16, padding: 16, borderRadius: 8, border: `1px solid ${colors.amber}`, backgroundColor: "rgba(184, 134, 11, 0.05)", cursor: "pointer", textAlign: "left", transition: "background 0.2s" }}
+                  onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = "rgba(184, 134, 11, 0.1)"; }}
+                  onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = "rgba(184, 134, 11, 0.05)"; }}>
+                  <div style={{ width: 32, height: 32, borderRadius: "50%", backgroundColor: colors.amber, color: colors.creamLight, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                    <Icon name="person_off" size={18} />
+                  </div>
+                  <div>
+                    <p style={{ fontFamily: fonts.headline, fontSize: 14, fontWeight: 700, color: colors.forestGreen, margin: "0 0 4px" }}>Revoke Contribution Access</p>
+                    <p style={{ fontFamily: fonts.body, fontSize: 12, color: colors.forestGreen, opacity: 0.7, margin: 0, lineHeight: 1.5 }}>They can still log in, but cannot submit new content. (Recommended for low-quality submissions)</p>
+                  </div>
+                </button>
+
+                <button onClick={() => setConfirmAction({ type: 'ban', work: restrictTarget })}
+                  style={{ display: "flex", alignItems: "flex-start", gap: 16, padding: 16, borderRadius: 8, border: `1px solid ${colors.red}`, backgroundColor: "rgba(139, 44, 44, 0.05)", cursor: "pointer", textAlign: "left", transition: "background 0.2s" }}
+                  onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = "rgba(139, 44, 44, 0.1)"; }}
+                  onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = "rgba(139, 44, 44, 0.05)"; }}>
+                  <div style={{ width: 32, height: 32, borderRadius: "50%", backgroundColor: colors.red, color: colors.creamLight, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                    <Icon name="block" size={18} />
+                  </div>
+                  <div>
+                    <p style={{ fontFamily: fonts.headline, fontSize: 14, fontWeight: 700, color: colors.forestGreen, margin: "0 0 4px" }}>Ban Account Completely</p>
+                    <p style={{ fontFamily: fonts.body, fontSize: 12, color: colors.forestGreen, opacity: 0.7, margin: 0, lineHeight: 1.5 }}>They will be completely locked out of the platform. (Use for spam, abuse, or severe violations)</p>
+                  </div>
+                </button>
+              </div>
+
+              <div style={{ display: "flex", justifyContent: "flex-end" }}>
+                <button onClick={() => setRestrictTarget(null)} style={{ padding: "10px 24px", borderRadius: 8, cursor: "pointer", border: `1px solid ${colors.forestGreen}`, backgroundColor: colors.creamLight, fontFamily: fonts.body, fontSize: 13, fontWeight: 600, color: colors.forestGreen }}>
+                  Cancel
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ── Step 2: Final Confirmation Modal ── */}
+        {confirmAction && (
+          <div style={{ position: "fixed", inset: 0, backgroundColor: "rgba(11, 67, 53, 0.6)", zIndex: 101, display: "flex", alignItems: "center", justifyContent: "center", backdropFilter: "blur(4px)", padding: 20 }} onClick={() => setConfirmAction(null)}>
+            <div style={{ ...cardStyle, backgroundColor: colors.creamLight, width: 440, maxWidth: "90vw", padding: 32, boxShadow: "0 20px 60px rgba(0,0,0,0.25)" }} onClick={(e) => e.stopPropagation()}>
+
+              <div style={{ width: 56, height: 56, borderRadius: "50%", backgroundColor: confirmAction.type === 'ban' ? colors.red : colors.amber, color: colors.creamLight, display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 20, border: `1px solid ${confirmAction.type === 'ban' ? colors.red : colors.amber}` }}>
+                <Icon name={confirmAction.type === 'ban' ? "block" : "person_off"} size={28} filled />
+              </div>
+
+              <h2 style={{ fontFamily: fonts.headline, fontSize: 20, fontWeight: 700, color: colors.forestGreen, marginBottom: 12 }}>
+                Confirm {confirmAction.type === 'ban' ? 'Ban' : 'Revocation'}
+              </h2>
+
+              <p style={{ fontFamily: fonts.body, fontSize: 14, color: colors.forestGreen, lineHeight: 1.6, marginBottom: 24, opacity: 0.8 }}>
+                This will <b>{confirmAction.type === 'ban' ? 'BAN' : 'REVOKE CONTRIBUTION ACCESS FOR'} {confirmAction.work.submittedBy}</b>
+                <br/>and automatically <b>REJECT</b> the work "{confirmAction.work.title}".
+                <br/><br/>
+                <b style={{ color: colors.red }}>This action cannot be undone from this screen.</b>
+              </p>
+
               <div style={{ display: "flex", gap: 12, justifyContent: "flex-end" }}>
-                <button onClick={() => setStripTarget(null)} style={{ padding: "10px 24px", borderRadius: 8, cursor: "pointer", border: `1px solid ${colors.forestGreen}`, backgroundColor: colors.creamLight, fontFamily: fonts.body, fontSize: 13, fontWeight: 600, color: colors.forestGreen }}>{t("worksQueue.strip.cancel") || "Cancel"}</button>
-                <button onClick={confirmStrip} style={{ padding: "10px 24px", borderRadius: 8, cursor: "pointer", border: "none", backgroundColor: colors.red, color: colors.creamLight, fontFamily: fonts.body, fontSize: 13, fontWeight: 700 }}>{t("worksQueue.strip.confirm") || "Confirm"}</button>
+                <button onClick={() => setConfirmAction(null)} style={{ padding: "10px 24px", borderRadius: 8, cursor: "pointer", border: `1px solid ${colors.forestGreen}`, backgroundColor: colors.creamLight, fontFamily: fonts.body, fontSize: 13, fontWeight: 600, color: colors.forestGreen }}>
+                  Go Back
+                </button>
+                <button onClick={executeRestrictionAndReject} style={{ padding: "10px 24px", borderRadius: 8, cursor: "pointer", border: "none", backgroundColor: confirmAction.type === 'ban' ? colors.red : colors.amber, color: colors.creamLight, fontFamily: fonts.body, fontSize: 13, fontWeight: 700 }}>
+                  Confirm & Reject
+                </button>
               </div>
             </div>
           </div>

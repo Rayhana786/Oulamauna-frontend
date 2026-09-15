@@ -1,3 +1,4 @@
+// src/pages/EditProfilePage.tsx
 import React, { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { useLang } from "../../context/LanguageContext";
@@ -13,7 +14,6 @@ interface LinkRow {
 }
 let idCounter = 1;
 
-// ─ FORUM.TSX / DASHBOARD.TSX COLOR PALETTE ─
 const colors = {
   creamLight: "#fcfaf5",
   creamMid: "#f6efdc",
@@ -45,41 +45,27 @@ function useIsMobile() {
   return isMobile;
 }
 
-function Icon({ name, size = 18 }: { name: string; size?: number }) {
+function Icon({ name, size = 18, style }: { name: string; size?: number; style?: React.CSSProperties }) {
   return (
-    <span className="material-symbols-outlined" style={{ fontSize: `${size}px`, lineHeight: 1, userSelect: "none" }}>
+    <span className="material-symbols-outlined" style={{ fontSize: `${size}px`, lineHeight: 1, userSelect: "none", ...style }}>
       {name}
     </span>
   );
 }
 
 function HoverBtn({
-  children,
-  onClick,
-  type = "button",
-  variant = "outline",
-  danger = false,
-  disabled = false,
-  style,
+  children, onClick, type = "button", variant = "outline", danger = false, disabled = false, style,
 }: {
-  children: React.ReactNode;
-  onClick?: () => void;
-  type?: "button" | "submit";
-  variant?: "outline" | "primary";
-  danger?: boolean;
-  disabled?: boolean;
-  style?: React.CSSProperties;
+  children: React.ReactNode; onClick?: () => void; type?: "button" | "submit"; variant?: "outline" | "primary"; danger?: boolean; disabled?: boolean; style?: React.CSSProperties;
 }) {
   const [hov, setHov] = useState(false);
   const baseColor = danger ? RED : GREEN;
-  
   let bg = "transparent";
   let color = baseColor;
   let border = `2px solid ${baseColor}`;
 
   if (variant === "primary") {
-    bg = baseColor;
-    color = BG;
+    bg = baseColor; color = BG;
     if (hov && !disabled) { bg = BG; color = baseColor; }
   } else {
     if (hov && !disabled) { bg = baseColor; color = BG; }
@@ -87,18 +73,14 @@ function HoverBtn({
 
   return (
     <button
-      type={type}
-      onClick={onClick}
-      disabled={disabled}
-      onMouseEnter={() => setHov(true)}
-      onMouseLeave={() => setHov(false)}
+      type={type} onClick={onClick} disabled={disabled}
+      onMouseEnter={() => setHov(true)} onMouseLeave={() => setHov(false)}
       style={{ 
         display: "inline-flex", alignItems: "center", justifyContent: "center", gap: "6px", 
         padding: "8px 16px", border, borderRadius: "8px", backgroundColor: bg, color,
         fontSize: "12px", fontWeight: 600, letterSpacing: "0.03em", 
         cursor: disabled ? "not-allowed" : "pointer", opacity: disabled ? 0.6 : 1,
-        transition: "all 0.3s", fontFamily: "'Hanken Grotesk', sans-serif",
-        ...style 
+        transition: "all 0.3s", fontFamily: "'Hanken Grotesk', sans-serif", ...style 
       }}
     >
       {children}
@@ -110,8 +92,7 @@ function HoverCard({ children, style }: { children: React.ReactNode; style?: Rea
   const [hov, setHov] = useState(false);
   return (
     <div
-      onMouseEnter={() => setHov(true)}
-      onMouseLeave={() => setHov(false)}
+      onMouseEnter={() => setHov(true)} onMouseLeave={() => setHov(false)}
       style={{
         border: `1px solid rgba(11, 67, 53, 0.1)`,
         boxShadow: hov ? "0px 6px 24px rgba(11, 67, 53, 0.12)" : "0px 4px 20px rgba(11, 67, 53, 0.08)",
@@ -127,68 +108,35 @@ function HoverCard({ children, style }: { children: React.ReactNode; style?: Rea
   );
 }
 
-function LinkRowItem({
-  link,
-  onChange,
-  onRemove,
-  placeholder,
-}: {
-  link: LinkRow;
-  onChange: (url: string) => void;
-  onRemove: () => void;
-  placeholder: string;
-}) {
+function LinkRowItem({ link, onChange, onRemove, placeholder }: { link: LinkRow; onChange: (url: string) => void; onRemove: () => void; placeholder: string }) {
   const [rowHov, setRowHov] = useState(false);
   const [removeHov, setRemoveHov] = useState(false);
   return (
     <div
-      onMouseEnter={() => setRowHov(true)}
-      onMouseLeave={() => setRowHov(false)}
+      onMouseEnter={() => setRowHov(true)} onMouseLeave={() => setRowHov(false)}
       style={{
-        display: "flex",
-        alignItems: "center",
-        gap: "10px",
+        display: "flex", alignItems: "center", gap: "10px",
         backgroundColor: "rgba(11, 67, 53, 0.04)",
         border: `1.5px solid ${rowHov ? GREEN : BORDER}`,
-        borderRadius: "8px",
-        padding: "10px 12px",
-        transition: "all 0.15s",
+        borderRadius: "8px", padding: "10px 12px", transition: "all 0.15s",
       }}
     >
       <Icon name="link" size={16} />
       <input
-        type="url"
-        value={link.url}
-        onChange={(e) => onChange(e.target.value)}
+        type="url" value={link.url} onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
         style={{
-          flex: 1,
-          minWidth: 0,
-          background: "transparent",
-          border: "none",
-          padding: 0,
-          fontSize: "13px",
-          ...SANS,
-          color: GREEN,
-          outline: "none",
+          flex: 1, minWidth: 0, background: "transparent", border: "none", padding: 0,
+          fontSize: "13px", ...SANS, color: GREEN, outline: "none",
         }}
       />
       <button
-        type="button"
-        onClick={onRemove}
-        onMouseEnter={() => setRemoveHov(true)}
-        onMouseLeave={() => setRemoveHov(false)}
+        type="button" onClick={onRemove}
+        onMouseEnter={() => setRemoveHov(true)} onMouseLeave={() => setRemoveHov(false)}
         style={{
-          border: "none",
-          background: "none",
-          color: removeHov ? RED : MUTED,
-          cursor: "pointer",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          transition: "all 0.15s",
-          padding: "2px",
-          flexShrink: 0,
+          border: "none", background: "none", color: removeHov ? RED : MUTED,
+          cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center",
+          transition: "all 0.15s", padding: "2px", flexShrink: 0,
         }}
       >
         <Icon name="close" size={16} />
@@ -197,20 +145,9 @@ function LinkRowItem({
   );
 }
 
-function Field({
-  label,
-  value,
-  onChange,
-  type = "text",
-  required = false,
-  readOnly = false,
-}: {
-  label: string;
-  value: string;
-  onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
-  type?: string;
-  required?: boolean;
-  readOnly?: boolean;
+function Field({ label, value, onChange, type = "text", required = false, readOnly = false }: {
+  label: string; value: string; onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  type?: string; required?: boolean; readOnly?: boolean;
 }) {
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
@@ -218,24 +155,13 @@ function Field({
         {label}
       </label>
       <input
-        type={type}
-        value={value}
-        onChange={onChange}
-        required={required}
-        readOnly={readOnly}
+        type={type} value={value} onChange={onChange} required={required} readOnly={readOnly}
         className="op-input"
         style={{
           backgroundColor: readOnly ? "rgba(11, 67, 53, 0.02)" : "rgba(11, 67, 53, 0.04)",
-          border: `1.5px solid ${BORDER}`,
-          padding: "10px 14px",
-          borderRadius: "8px",
-          fontSize: "13px",
-          color: readOnly ? MUTED : GREEN,
-          ...SANS,
-          outline: "none",
-          transition: "all 0.15s",
-          width: "100%",
-          boxSizing: "border-box",
+          border: `1.5px solid ${BORDER}`, padding: "10px 14px", borderRadius: "8px",
+          fontSize: "13px", color: readOnly ? MUTED : GREEN, ...SANS, outline: "none",
+          transition: "all 0.15s", width: "100%", boxSizing: "border-box",
           cursor: readOnly ? "default" : "text",
         }}
       />
@@ -243,9 +169,7 @@ function Field({
   );
 }
 
-interface EditProfilePageProps {
-  role?: Role;
-}
+interface EditProfilePageProps { role?: Role; }
 
 export default function EditProfilePage({ role = "user" }: EditProfilePageProps) {
   const { lang, t } = useLang();
@@ -254,7 +178,6 @@ export default function EditProfilePage({ role = "user" }: EditProfilePageProps)
   const isMobile = useIsMobile();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // ✅ REAL DATA STATE
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [successMsg, setSuccessMsg] = useState("");
@@ -266,12 +189,11 @@ export default function EditProfilePage({ role = "user" }: EditProfilePageProps)
   const [bioText, setBioText] = useState("");
   const [links, setLinks] = useState<LinkRow[]>([]);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  const [profilePicture, setProfilePicture] = useState<string>(""); // ✅ ADDED: Store existing profile picture
+  const [profilePicture, setProfilePicture] = useState<string>("");
 
   const isRTL = lang === "AR";
   const isUser = role === "user";
 
-   // ✅ FETCH PROFILE DATA ON MOUNT
   useEffect(() => {
     const fetchProfile = async () => {
       try {
@@ -284,17 +206,13 @@ export default function EditProfilePage({ role = "user" }: EditProfilePageProps)
           setBioText(data.bio || "");
           setProfilePicture(data.profile_picture || ""); 
           
-          // ✅ UPDATED: Parse links safely whether it's an Array or an Object
           let parsedLinks: string[] = [];
           if (data.links) {
             if (typeof data.links === "string") {
               try { 
                 const parsed = JSON.parse(data.links);
-                if (Array.isArray(parsed)) {
-                  parsedLinks = parsed;
-                } else if (typeof parsed === 'object' && parsed !== null) {
-                  parsedLinks = Object.values(parsed); // Extract URLs from the object
-                }
+                if (Array.isArray(parsed)) parsedLinks = parsed;
+                else if (typeof parsed === 'object' && parsed !== null) parsedLinks = Object.values(parsed);
               } catch { parsedLinks = []; }
             } else if (Array.isArray(data.links)) {
               parsedLinks = data.links;
@@ -303,36 +221,31 @@ export default function EditProfilePage({ role = "user" }: EditProfilePageProps)
             }
           }
           
-          // Map to LinkRow format
           const initialLinks = parsedLinks.length > 0 
             ? parsedLinks.map((url) => ({ id: idCounter++, url }))
-            : [{ id: idCounter++, url: "" }]; // Start with one empty row
+            : [{ id: idCounter++, url: "" }];
             
           setLinks(initialLinks);
         }
       } catch (err) {
         console.error("Failed to fetch profile for editing:", err);
-        setErrorMsg("Failed to load profile data.");
+        setErrorMsg(t("editProfile.error.load"));
       } finally {
         setIsLoading(false);
       }
     };
-
     fetchProfile();
-  }, []);
+  }, [t]);
+
   const addLink = () => setLinks((prev) => [...prev, { id: idCounter++, url: "" }]);
   const removeLink = (id: number) => setLinks((prev) => prev.filter((l) => l.id !== id));
   const updateLink = (id: number, url: string) => setLinks((prev) => prev.map((l) => (l.id === id ? { ...l, url } : l)));
 
   const handleAvatarClick = () => fileInputRef.current?.click();
-
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      setSelectedFile(e.target.files[0]);
-    }
+    if (e.target.files && e.target.files[0]) setSelectedFile(e.target.files[0]);
   };
 
-   // ✅ REAL SAVE HANDLER
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSaving(true);
@@ -344,34 +257,26 @@ export default function EditProfilePage({ role = "user" }: EditProfilePageProps)
       if (name) formData.append("name", name);
       if (bioText) formData.append("bio", bioText);
       
-      // ✅ FIX: Backend expects an OBJECT {}, not an ARRAY []
       const validUrls = links.map(l => l.url).filter(url => url.trim() !== "");
-      
       const linksObject: Record<string, string> = {};
-      validUrls.forEach((url, index) => {
-        linksObject[`link_${index + 1}`] = url; // Creates: { "link_1": "https://..." }
-      });
+      validUrls.forEach((url, index) => { linksObject[`link_${index + 1}`] = url; });
 
-      // Send as a JSON stringified OBJECT
       formData.append("links", JSON.stringify(linksObject));
 
-      // ✅ Attach file if one was selected
-      if (selectedFile) {
-        formData.append("profile_picture", selectedFile);
-      }
+      if (selectedFile) formData.append("profile_picture", selectedFile);
 
       const response = await userApi.profile.updateMyProfile(formData);
       
       if (response.data.success) {
-        setSuccessMsg(t("editProfile.profileUpdated") || "Profile Updated Successfully!");
-        setSelectedFile(null); // Clear file after successful upload
+        setSuccessMsg(t("editProfile.success"));
+        setSelectedFile(null);
         setTimeout(() => setSuccessMsg(""), 3000);
       } else {
-        setErrorMsg(response.data.message || "Failed to update profile.");
+        setErrorMsg(response.data.message || t("editProfile.error.update"));
       }
     } catch (err: any) {
       console.error("Save error:", err);
-      setErrorMsg(err.response?.data?.message || "An error occurred while saving.");
+      setErrorMsg(err.response?.data?.message || t("editProfile.error.general"));
     } finally {
       setIsSaving(false);
     }
@@ -380,40 +285,26 @@ export default function EditProfilePage({ role = "user" }: EditProfilePageProps)
   if (isLoading) {
     return (
       <div dir={isRTL ? "rtl" : "ltr"} style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", ...SANS, color: GREEN }}>
-        Loading profile...
+        {t("editProfile.loading")}
       </div>
     );
   }
 
   const bodyCardStyle: React.CSSProperties = {
-    backgroundColor: CARD_BG,
-    borderRadius: "12px",
-    padding: isMobile ? "18px" : "24px 28px",
+    backgroundColor: CARD_BG, borderRadius: "12px", padding: isMobile ? "18px" : "24px 28px",
   };
 
   return (
-    <div
-      dir={isRTL ? "rtl" : "ltr"}
-      style={{
-        ...SANS,
-        backgroundColor: BG,
-        backgroundImage: "radial-gradient(circle at 50% 0%, rgba(184, 134, 11, 0.06) 0%, transparent 60%)",
-        minHeight: "100vh",
-        color: GREEN,
-      }}
-    >
+    <div dir={isRTL ? "rtl" : "ltr"} style={{ ...SANS, backgroundColor: BG, backgroundImage: "radial-gradient(circle at 50% 0%, rgba(184, 134, 11, 0.06) 0%, transparent 60%)", minHeight: "100vh", color: GREEN }}>
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;700&display=swap');
         @import url('https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=swap');
         .material-symbols-outlined { font-variation-settings: 'FILL' 0,'wght' 400,'GRAD' 0,'opsz' 24; font-family: 'Material Symbols Outlined'; display: inline-block; vertical-align: middle; }
         .op-input:focus { border-color: ${GREEN} !important; box-shadow: inset 0 0 0 1px rgba(11,67,53,0.12); background-color: ${BG} !important; }
         .op-field-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
-        @media (max-width: 768px) {
-          .op-field-grid { grid-template-columns: 1fr; }
-        }
+        @media (max-width: 768px) { .op-field-grid { grid-template-columns: 1fr; } }
       `}</style>
 
-      {/* Success/Error Toast Messages */}
       {successMsg && (
         <div style={{ position: "fixed", top: "20px", right: "20px", backgroundColor: GREEN, color: BG, padding: "12px 20px", borderRadius: "8px", boxShadow: "0 4px 12px rgba(0,0,0,0.15)", zIndex: 1000, ...SANS, fontSize: "14px", fontWeight: 600 }}>
           <Icon name="check_circle" size={16} /> {successMsg}
@@ -425,59 +316,38 @@ export default function EditProfilePage({ role = "user" }: EditProfilePageProps)
         </div>
       )}
 
-      <div style={{
-        maxWidth: "1100px", margin: "0 auto",
-        padding: isMobile ? "32px 16px 48px" : "64px 32px 80px",
-        display: "flex", flexDirection: isMobile ? "column" : "row",
-        gap: isMobile ? "14px" : "32px"
-      }}>
+      <div style={{ maxWidth: "1100px", margin: "0 auto", padding: isMobile ? "32px 16px 48px" : "64px 32px 80px", display: "flex", flexDirection: isMobile ? "column" : "row", gap: isMobile ? "14px" : "32px" }}>
         {!isMobile && <ProfileSidebar role={role} active="editProfile" />}
 
         <div style={{ flex: 1, maxWidth: isMobile ? "100%" : "640px", display: "flex", flexDirection: "column", gap: isMobile ? "14px" : "20px" }}>
           {isMobile && (
-            <p style={{ ...MONO, fontSize: "10px", textTransform: "uppercase", letterSpacing: "0.08em", opacity: 0.7, margin: 0 }}>EDIT PROFILE</p>
+            <p style={{ ...MONO, fontSize: "10px", textTransform: "uppercase", letterSpacing: "0.08em", opacity: 0.7, margin: 0 }}>{t("editProfile.title")}</p>
           )}
 
           <HoverCard style={bodyCardStyle}>
             <div style={{ display: "flex", alignItems: "center", gap: isMobile ? "12px" : "16px" }}>
               <div style={{ position: "relative", flexShrink: 0 }}>
-                <div style={{
-                  width: isMobile ? "56px" : "64px", height: isMobile ? "56px" : "64px", borderRadius: "50%",
-                  backgroundColor: GREEN, display: "flex", alignItems: "center", justifyContent: "center",
-                  color: BG, ...SERIF, fontSize: isMobile ? "24px" : "28px", fontWeight: 700, border: `1.5px solid ${BORDER}`,
-                  overflow: "hidden"
-                }}>
+                <div style={{ width: isMobile ? "56px" : "64px", height: isMobile ? "56px" : "64px", borderRadius: "50%", backgroundColor: GREEN, display: "flex", alignItems: "center", justifyContent: "center", color: BG, ...SERIF, fontSize: isMobile ? "24px" : "28px", fontWeight: 700, border: `1.5px solid ${BORDER}`, overflow: "hidden" }}>
                   {selectedFile ? (
-                    // ✅ Show NEW image preview
                     <img src={URL.createObjectURL(selectedFile)} alt="Preview" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
                   ) : profilePicture ? (
-                    // ✅ Show EXISTING image from database
                     <img src={profilePicture} alt="Avatar" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
                   ) : (
-                    // Fallback to first letter
                     name ? name[0].toUpperCase() : (username ? username[0].toUpperCase() : "?")
                   )}
                 </div>
                 
-                {/* ✅ Hidden File Input for Avatar Upload */}
-                <input 
-                  type="file" 
-                  ref={fileInputRef} 
-                  style={{ display: "none" }} 
-                  accept="image/*" 
-                  onChange={handleFileChange} 
-                />
+                <input type="file" ref={fileInputRef} style={{ display: "none" }} accept="image/*" onChange={handleFileChange} />
                 
                 <button
-                  type="button"
-                  onClick={handleAvatarClick}
+                  type="button" onClick={handleAvatarClick}
                   style={{
                     position: "absolute", bottom: 0, right: isRTL ? "auto" : 0, left: isRTL ? 0 : "auto",
                     backgroundColor: selectedFile ? GOLD : GREEN, color: BG, borderRadius: "50%", padding: "4px", border: `2px solid ${BG}`,
                     display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer",
                     transition: "all 0.15s", transform: "scale(1)",
                   }}
-                  title={selectedFile ? "New image selected" : "Change profile picture"}
+                  title={selectedFile ? t("editProfile.newImageSelected") : t("editProfile.changePicture")}
                 >
                   <Icon name={selectedFile ? "check" : "edit"} size={12} />
                 </button>
@@ -486,11 +356,11 @@ export default function EditProfilePage({ role = "user" }: EditProfilePageProps)
                 <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "2px", flexWrap: "wrap" }}>
                   <h1 style={{ ...SERIF, fontSize: isMobile ? "18px" : "22px", fontWeight: 700, color: GREEN, margin: 0 }}>{name || username}</h1>
                   <span style={{ ...MONO, fontSize: "10px", padding: "4px 10px", borderRadius: "6px", fontWeight: 700, letterSpacing: "0.05em", textTransform: "uppercase", color: isUser ? GREEN : BG, backgroundColor: isUser ? "rgba(11, 67, 53, 0.08)" : GREEN, border: isUser ? `1px solid rgba(11, 67, 53, 0.2)` : "none", whiteSpace: "nowrap" }}>
-                    {role === "admin" ? "Admin" : (isUser ? (t("editProfile.user") || "User") : (t("editProfile.contributor") || "Contributor"))}
+                    {role === "admin" ? t("editProfile.roleAdmin") : (isUser ? t("editProfile.roleUser") : t("editProfile.roleContributor"))}
                   </span>
                 </div>
-                <p style={{ fontSize: "13px", color: MUTED, margin: 0 }}>{username ? `@${username}` : (isUser ? (t("editProfile.browsing") || "Browsing") : (t("editProfile.contributing") || "Contributing"))}</p>
-                {selectedFile && <p style={{ fontSize: "11px", color: GOLD, margin: "4px 0 0", fontWeight: 600 }}>New image ready to save</p>}
+                <p style={{ fontSize: "13px", color: MUTED, margin: 0 }}>{username ? `@${username}` : (isUser ? t("editProfile.statusBrowsing") : t("editProfile.statusContributing"))}</p>
+                {selectedFile && <p style={{ fontSize: "11px", color: GOLD, margin: "4px 0 0", fontWeight: 600 }}>{t("editProfile.newImageReady")}</p>}
               </div>
             </div>
           </HoverCard>
@@ -499,27 +369,22 @@ export default function EditProfilePage({ role = "user" }: EditProfilePageProps)
             <HoverCard style={bodyCardStyle}>
               <div style={{ display: "flex", alignItems: "center", gap: "8px", color: GREEN, marginBottom: "18px" }}>
                 <Icon name="person" size={18} />
-                <h2 style={{ ...SERIF, fontSize: isMobile ? "16px" : "18px", fontWeight: 700, margin: 0 }}>{t("editProfile.personalInfo") || "Personal Information"}</h2>
+                <h2 style={{ ...SERIF, fontSize: isMobile ? "16px" : "18px", fontWeight: 700, margin: 0 }}>{t("editProfile.personalInfo")}</h2>
               </div>
               <div className="op-field-grid">
-                {/* ✅ Editable Fields */}
-                <Field label={t("editProfile.displayName") || "Display Name"} value={name} onChange={(e) => setName(e.target.value)} />
-                
-                {/* ✅ Read-only Fields (Backend doesn't update these in this endpoint) */}
-                <Field label={t("editProfile.username") || "Username"} value={username} onChange={() => {}} readOnly />
-                <Field label={t("editProfile.email") || "Email"} value={email} onChange={() => {}} type="email" readOnly />
+                <Field label={t("editProfile.displayName")} value={name} onChange={(e) => setName(e.target.value)} />
+                <Field label={t("editProfile.username")} value={username} onChange={() => {}} readOnly />
+                <Field label={t("editProfile.email")} value={email} onChange={() => {}} type="email" readOnly />
                 
                 <div style={{ gridColumn: "1 / -1", display: "flex", flexDirection: "column", gap: "6px" }}>
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                    <label style={{ ...MONO, fontSize: "10px", color: MUTED, letterSpacing: "0.12em", textTransform: "uppercase" }}>{t("editProfile.bio") || "Bio"}</label>
+                    <label style={{ ...MONO, fontSize: "10px", color: MUTED, letterSpacing: "0.12em", textTransform: "uppercase" }}>{t("editProfile.bio")}</label>
                     <span style={{ ...MONO, fontSize: "10px", color: bioText.length > 500 ? RED : MUTED }}>
                       {bioText.length}/500
                     </span>
                   </div>
                   <textarea
-                    rows={3}
-                    value={bioText}
-                    onChange={(e) => setBioText(e.target.value)}
+                    rows={3} value={bioText} onChange={(e) => setBioText(e.target.value)}
                     className="op-input"
                     style={{ backgroundColor: "rgba(11, 67, 53, 0.04)", border: `1.5px solid ${BORDER}`, padding: "10px 14px", borderRadius: "8px", fontSize: "13px", resize: "none", ...SANS, color: GREEN, height: "72px", outline: "none", transition: "all 0.15s", width: "100%", boxSizing: "border-box" }}
                   />
@@ -530,40 +395,31 @@ export default function EditProfilePage({ role = "user" }: EditProfilePageProps)
             <HoverCard style={bodyCardStyle}>
               <div style={{ display: "flex", alignItems: "center", gap: "8px", color: GREEN, marginBottom: "6px" }}>
                 <Icon name="link" size={18} />
-                <h2 style={{ ...SERIF, fontSize: isMobile ? "16px" : "18px", fontWeight: 700, margin: 0 }}>{t("editProfile.links") || "Links"}</h2>
+                <h2 style={{ ...SERIF, fontSize: isMobile ? "16px" : "18px", fontWeight: 700, margin: 0 }}>{t("editProfile.links")}</h2>
               </div>
-              <p style={{ ...MONO, fontSize: "10px", color: MUTED, letterSpacing: "0.06em", marginBottom: "18px" }}>{t("editProfile.linksHint") || "Add your social media or personal website links."}</p>
+              <p style={{ ...MONO, fontSize: "10px", color: MUTED, letterSpacing: "0.06em", marginBottom: "18px" }}>{t("editProfile.linksHint")}</p>
 
               <div style={{ display: "flex", flexDirection: "column", gap: "10px", marginBottom: "18px" }}>
                 {links.map((link) => (
                   <LinkRowItem
-                    key={link.id}
-                    link={link}
-                    onChange={(url) => updateLink(link.id, url)}
-                    onRemove={() => removeLink(link.id)}
-                    placeholder={t("editProfile.linkPlaceholder") || "https://..."}
+                    key={link.id} link={link} onChange={(url) => updateLink(link.id, url)}
+                    onRemove={() => removeLink(link.id)} placeholder={t("editProfile.linkPlaceholder")}
                   />
                 ))}
               </div>
 
               <HoverBtn onClick={addLink} variant="outline" style={isMobile ? { width: "100%" } : undefined} type="button">
-                <Icon name="add_circle" size={14} /> {t("editProfile.addLink") || "Add Link"}
+                <Icon name="add_circle" size={14} /> {t("editProfile.addLink")}
               </HoverBtn>
             </HoverCard>
 
-            <HoverCard style={{
-              ...bodyCardStyle,
-              display: "flex",
-              flexDirection: isMobile ? "column" : "row",
-              justifyContent: isMobile ? "stretch" : "flex-end",
-              gap: "10px"
-            }}>
+            <HoverCard style={{ ...bodyCardStyle, display: "flex", flexDirection: isMobile ? "column" : "row", justifyContent: isMobile ? "stretch" : "flex-end", gap: "10px" }}>
               <HoverBtn type="button" variant="outline" onClick={() => navigate("/profile")} style={isMobile ? { width: "100%" } : undefined}>
-                {t("editProfile.cancel") || "Cancel"}
+                {t("editProfile.cancel")}
               </HoverBtn>
               <HoverBtn type="submit" variant="primary" disabled={isSaving} style={isMobile ? { width: "100%" } : undefined}>
                 <Icon name={isSaving ? "hourglass_empty" : "save"} size={14} />
-                {isSaving ? (t("editProfile.saving") || "Saving...") : (t("editProfile.saveProfile") || "Save Profile")}
+                {isSaving ? t("editProfile.saving") : t("editProfile.saveProfile")}
               </HoverBtn>
             </HoverCard>
           </form>
