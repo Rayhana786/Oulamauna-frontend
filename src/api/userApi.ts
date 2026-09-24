@@ -121,6 +121,9 @@ export const userApi = {
           'Content-Type': 'multipart/form-data',
         },
       }),
+      updatePassword: (data: { currentPassword: string; newPassword: string; confirmNewPassword: string }) =>
+      api.put<ApiResponse<any>>('/profile/update-password', data),
+
 
     // NEW: activity feeds for the profile page
     getContributions: (id: number) =>

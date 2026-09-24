@@ -99,16 +99,12 @@ async function request(
 // Types
 // ─────────────────────────────────────────────
 
-export interface ApiDisciplineTranslation {
-  language_id: number;
-  name: string;
-}
-
 export interface ApiDiscipline {
   discipline_id: number;
-  name: string;
-  language_id?: number;
-  discipline_translations?: ApiDisciplineTranslation[];
+  name: string; // Fallback name
+  image_url?: string | null;
+  translations: Record<string, string>; // e.g., { "en": "History", "ar": "تاريخ", "es": "Historia" }
+  created_at?: string;
 }
 
 export interface ApiScholarDiscipline {
@@ -132,8 +128,9 @@ export interface ApiScholarDate {
 
 export interface ApiRegion {
   region_id: number;
-  name: string;
-  language_id: number;
+  name: string; // Fallback name
+  translations: Record<string, string>; // e.g., { "en": "North Africa", "ar": "شمال أفريقيا", "es": "África del Norte" }
+  created_at?: string;
 }
 
 export interface ApiScholarVersion {
@@ -152,10 +149,7 @@ export interface ApiScholarVersion {
   regions?: ApiRegion | null;
   scholar_dates?: ApiScholarDate[];
   media?: { media_id: number; title: string; description: string | null; media_url: string; status: string }[];
-  
-  // ✅ FIX 2: Added these because your backend now includes them inside the version
-  scholar_disciplines?: ApiScholarDiscipline[];
-  comments?: { comment_id: number; content: string; created_at: string; users: { id: number; username: string } }[];
+  scholar_disciplines?: ApiScholarDiscipline[]; // <-- This is the last line now
 }
 
 export interface ApiScholar {
@@ -280,23 +274,31 @@ export const scholarsApi = {
   addRelationship: (payload: { version_id: number; related_version_id: number; relation_type: string }): Promise<any> =>
     request("/relationships", { method: "POST", body: JSON.stringify(payload) }),  
 
-  searchByName: (q: string, lang: string): Promise<any> =>
-    request(`/name?q=${encodeURIComponent(q)}&lang=${encodeURIComponent(lang)}`),
-
+  searchByName: (q: string, lang?: string): Promise<any> => {
+    const params = new URLSearchParams({ q });
+    if (lang) {
+      params.append('lang', lang);
+    }
+    return request(`/name?${params.toString()}`);
+  },
+  searchScholars: (params: { q?: string; regions?: string[]; disciplines?: string[]; lang?: string }): Promise<any> => {
+    const searchParams = new URLSearchParams();
+    if (params.q) searchParams.append("q", params.q);
+    if (params.regions && params.regions.length > 0) searchParams.append("regions", params.regions.join(","));
+    if (params.disciplines && params.disciplines.length > 0) searchParams.append("disciplines", params.disciplines.join(","));
+    if (params.lang) searchParams.append("lang", params.lang);
+    return request(`/search?${searchParams.toString()}`);
+  },
+  
   getLanguages: (): Promise<any> => request("/languages", {}, false),
 
-  getDisciplines: (lang: string): Promise<any> =>
-    request(`/discipline?lang=${encodeURIComponent(lang)}`, {}, false),
+  getDisciplines: (): Promise<any> =>
+    request(`/discipline`, {}, false),
 
-  getRegions: (lang: string): Promise<any> =>
-    request(`/region?lang=${encodeURIComponent(lang)}`, {}, false),
+  getRegions: (): Promise<any> =>
+    request(`/region`, {}, false),
 
-  // ✅ ADDED: Post a new comment to a scholar
-  addComment: (scholarId: number, text: string): Promise<any> =>
-    request(`/${scholarId}/comments`, {
-      method: "POST",
-      body: JSON.stringify({ text }),
-    }),
+
     
   addMedia: (versionId: number, formData: FormData): Promise<any> =>
     requestForm(`/media`, formData, "POST", false), // ✅ Added false
@@ -330,7 +332,56 @@ export const scholarsApi = {
       body: JSON.stringify(workData),
     }, false), // ✅ Already had false, kept it
 
-      // View Media (increments view_count, no auth required)
+  // ======================================================
+  // Media: Update & Delete
+  // ======================================================
+  
+  // Update media metadata (title, year, description, or external URL only)
+  updateMedia: (mediaId: number, mediaData: {
+    title?: string;
+    year?: number | null;
+    description?: string;
+    media_url?: string;
+  }): Promise<any> =>
+    request(`/media/${mediaId}`, {
+      method: "PUT",
+      body: JSON.stringify(mediaData),
+    }, false),
+
+  // Delete media permanently
+  deleteMedia: (mediaId: number): Promise<any> =>
+    request(`/media/${mediaId}`, { 
+      method: "DELETE" 
+    }, false),
+
+  // ======================================================
+  // Works: Update & Delete
+  // ======================================================
+  
+  // Update work metadata (title, year, format, description, or URL)
+  updateWork: (workId: number, workData: {
+    title?: string;
+    year?: number | null;
+    format?: string;
+    description?: string;
+    media_url?: string;
+  }): Promise<any> =>
+    request(`/work/${workId}`, {
+      method: "PUT",
+      body: JSON.stringify(workData),
+    }, false),
+
+  // Delete work permanently
+  deleteWork: (workId: number): Promise<any> =>
+    request(`/work/${workId}`, { 
+      method: "DELETE" 
+    }, false),
+
+  // ======================================================
+  // Media Interactions
+  // ======================================================
+
+  // View Media (increments view_count, no auth required)
   viewMedia: (mediaId: number): Promise<any> =>
     request(`/media/view/${mediaId}`, { method: "POST" }, false),
 

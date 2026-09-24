@@ -2,7 +2,7 @@
 import React, { useState } from "react";
 import { Link, useSearchParams, useNavigate } from "react-router-dom";
 import { useLang } from "../../context/LanguageContext";
-import logo from "../../assets/logo.png";
+import logo from "../../assets/tlogo2.png";
 // --- Your Design System ---
 const colors = {
   creamLight: "#fcfaf5",

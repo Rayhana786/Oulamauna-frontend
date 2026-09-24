@@ -1,7 +1,7 @@
 // src/components/Footer.tsx
 import { Link } from "react-router-dom";
 import { useLang } from "../context/LanguageContext";
-import logoImg from "../assets/logo.png";
+import logoImg from "../assets/tlogo2.png";
 
 export default function Footer() {
   const { lang, t } = useLang();

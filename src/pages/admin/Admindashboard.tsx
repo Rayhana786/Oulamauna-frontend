@@ -1,45 +1,184 @@
-import React, { useState, useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { adminApi } from "../../api/adminApi";
-import { 
-  LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Area, AreaChart, 
-  PieChart, Pie, Cell, BarChart, Bar, Legend 
+import { useLang } from "../../context/LanguageContext";
+import {
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+  Area,
+  AreaChart,
+  PieChart,
+  Pie,
+  Cell,
+  BarChart,
+  Bar,
 } from "recharts";
 
-/* ------------------------------------------------------------------ */
-/*  Design Tokens & Helpers                                            */
-/* ------------------------------------------------------------------ */
-const colors = {
-  creamLight: "#fcfaf5", creamMid: "#f6efdc", creamDark: "#e5d5a8",
-  forestGreen: "#0b4335", amber: "#b8860b", red: "#8b2c2c", blue: "#4a7fcb",
+const ACCENT_CYCLE = [
+  "#1e4d3a",
+  "#C9A84C",
+  "#3d6b96",
+  "#c1622d",
+  "#2f7d74",
+  "#7a5c8e",
+  "#a8425a",
+];
+
+const ACTIVITY_PAGE_SIZE = 6;
+
+type LangKey = "English" | "Arabic" | "French" | "en" | "ar" | "fr";
+
+type DashboardSummary = {
+  totalScholars?: number;
+  totalSubmissions?: number;
+  totalPending?: number;
+  activeContributors?: number;
+  totalMedia?: number;
+  totalUsers?: number;
+  openReports?: number;
+  totalForumPosts?: number;
+  hiddenForumPosts?: number;
+  totalDisciplines?: number;
 };
-const fonts = { headline: "'Hanken Grotesk', sans-serif", body: "'Inter', sans-serif", label: "'JetBrains Mono', monospace" };
-const cardStyle: React.CSSProperties = { backgroundColor: colors.creamLight, borderRadius: 12, boxShadow: "0px 4px 20px rgba(11, 67, 53, 0.08)", border: `1px solid ${colors.forestGreen}` };
 
-const Icon: React.FC<{ name: string; size?: number; filled?: boolean }> = ({ name, size = 20, filled = false }) => (
-  <span className="material-symbols-outlined" style={{ fontSize: size, lineHeight: 1, fontVariationSettings: `'FILL' ${filled ? 1 : 0}, 'wght' 400, 'GRAD' 0, 'opsz' 24` }}>{name}</span>
-);
+type QueueBreakdown = {
+  scholars?: number;
+  edits?: number;
+  media?: number;
+  works?: number;
+  images?: number;
+};
 
-const DonutChart: React.FC<{ percentage: number; color: string; size?: number }> = ({ percentage, color, size = 80 }) => {
-  const radius = 30; const circumference = 2 * Math.PI * radius;
-  const strokeDashoffset = circumference - (percentage / 100) * circumference;
+type QueueStats = {
+  total_pending?: number;
+  overdue?: number;
+  new_today?: number;
+  this_week?: number;
+  avg_review_time?: number | string;
+};
+
+type ActivityItem = {
+  type?: string;
+  text?: string;
+  user?: string;
+  date?: string;
+};
+
+type Contributor = {
+  name?: string;
+  count?: number;
+};
+
+type LanguageItem = {
+  name?: string;
+  value?: number;
+};
+
+type DisciplineItem = {
+  name?: string;
+  count?: number;
+};
+
+type DailyContribution = {
+  date?: string;
+  contributions?: number;
+};
+
+type DashboardData = {
+  summary: DashboardSummary;
+  queueBreakdown?: QueueBreakdown;
+  dailyContributions?: DailyContribution[];
+  activityFeed?: ActivityItem[];
+  topContributors?: Contributor[];
+  languageDistribution?: LanguageItem[];
+  topDisciplines?: DisciplineItem[];
+  urgentMetrics?: {
+    pendingReports: number;
+    highStrikeUsers: number;
+  };
+  forumGrowth?: { name: string; posts: number }[];
+  reportsGrowth?: { name: string; reports: number }[];
+};
+
+
+
+const getMonthTranslation = (t: (key: string) => string, monthString: string): string => {
+  const monthMap: Record<string, string> = {
+    'jan': t('months.jan'), 'feb': t('months.feb'), 'mar': t('months.mar'),
+    'apr': t('months.apr'), 'may': t('months.may'), 'jun': t('months.jun'),
+    'jul': t('months.jul'), 'aug': t('months.aug'), 'sep': t('months.sep'),
+    'oct': t('months.oct'), 'nov': t('months.nov'), 'dec': t('months.dec'),
+    'Jan': t('months.jan'), 'Feb': t('months.feb'), 'Mar': t('months.mar'),
+    'Apr': t('months.apr'), 'May': t('months.may'), 'Jun': t('months.jun'),
+    'Jul': t('months.jul'), 'Aug': t('months.aug'), 'Sep': t('months.sep'),
+    'Oct': t('months.oct'), 'Nov': t('months.nov'), 'Dec': t('months.dec'),
+  };
+  
+  // Handle case where backend sends "months.sep 16"
+  if (monthString.startsWith('months.')) {
+    const parts = monthString.split(' ');
+    const translatedMonth = t(parts[0]);
+    return parts.length > 1 ? `${translatedMonth} ${parts[1]}` : translatedMonth;
+  }
+  
+  // Handle normal case like "Sep 16"
+  const monthPart = monthString.split(' ')[0];
+  const translatedMonth = monthMap[monthPart];
+  if (translatedMonth && translatedMonth !== monthPart) {
+    const parts = monthString.split(' ');
+    return parts.length > 1 ? `${translatedMonth} ${parts[1]}` : translatedMonth;
+  }
+  return monthString;
+};
+
+const renderDisciplineTick = ({ x, y, payload }: { x?: number; y?: number; payload?: { value?: string } }) => {
+  const label = String(payload?.value ?? "");
+  const truncated = label.length > 16 ? `${label.slice(0, 16)}…` : label;
   return (
-    <svg width={size} height={size} viewBox="0 0 80 80" style={{ transform: "rotate(-90deg)" }}>
-      <circle cx="40" cy="40" r={radius} stroke={colors.creamDark} strokeWidth="8" fill="none" />
-      <circle cx="40" cy="40" r={radius} stroke={color} strokeWidth="8" fill="none" strokeDasharray={circumference} strokeDashoffset={strokeDashoffset} strokeLinecap="round" style={{ transition: "stroke-dashoffset 1s ease" }} />
-    </svg>
+    <g transform={`translate(${x ?? 0},${y ?? 0})`}>
+      <title>{label}</title>
+      <text x={-6} y={0} dy={4} textAnchor="end" fontFamily="'Inter', sans-serif" fontSize={11} fill="#1e4d3a">
+        {truncated}
+      </text>
+    </g>
   );
 };
 
-/* ------------------------------------------------------------------ */
-/*  Main Dashboard Component                                           */
-/* ------------------------------------------------------------------ */
-const ACTIVITY_PAGE_SIZE = 6;
+const ChartTooltipStyle = {
+  backgroundColor: "#fbf9f4",
+  border: "1px solid rgba(30,77,58,0.18)",
+  borderRadius: "10px",
+  boxShadow: "0 8px 24px rgba(30,77,58,0.10)",
+  fontFamily: "'Inter', sans-serif",
+  fontSize: "12px",
+  color: "#1e4d3a",
+  padding: "10px 12px",
+};
 
 export default function AdminDashboard() {
+  const { lang, t, dbLanguages } = useLang(); // ✅ Added dbLanguages here
   const navigate = useNavigate();
-  const [data, setData] = useState<any>(null);
-  const [queueStats, setQueueStats] = useState<any>(null);
+  const isRTL = lang === "AR";
+
+    // ✅ 100% DYNAMIC: Placed INSIDE the component so it can access dbLanguages
+  const getLanguageName = (backendNameOrCode: string): string => {
+    const found = dbLanguages.find(
+      (l) => l.code.toLowerCase() === backendNameOrCode.toLowerCase() || 
+             l.name.toLowerCase() === backendNameOrCode.toLowerCase()
+    );
+    
+    if (found) {
+      return found.name; 
+    }
+    return backendNameOrCode || t('languages.unknown');
+  };
+
+  const [graphView, setGraphView] = useState<'30days' | 'yearly' | 'all'>('30days');
+  const [data, setData] = useState<DashboardData | null>(null);
+  const [queueStats, setQueueStats] = useState<QueueStats | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [activityPage, setActivityPage] = useState(0);
 
@@ -47,347 +186,499 @@ export default function AdminDashboard() {
     const fetchData = async () => {
       try {
         const [dashboardRes, queueRes] = await Promise.all([
-          adminApi.scholars.getDashboardData(),
+          adminApi.scholars.getDashboardData({ graphView }),
           adminApi.scholars.getDashboardStats(),
         ]);
-        if (dashboardRes.data?.success) setData(dashboardRes.data.data);
-        if (queueRes.data?.success) setQueueStats(queueRes.data.data);
-      } catch (error) { console.error("Dashboard fetch failed:", error); }
-      finally { setIsLoading(false); }
+        if (dashboardRes.data?.success) setData(dashboardRes.data.data as DashboardData);
+        if (queueRes.data?.success) setQueueStats(queueRes.data.data as QueueStats);
+      } catch (error) {
+        console.error("Dashboard fetch failed:", error);
+      } finally {
+        setIsLoading(false);
+      }
     };
     fetchData();
-  }, []);
+  }, [graphView]);
 
-  if (isLoading || !data) return <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center" }}><Icon name="hourglass_empty" size={40} /></div>;
+  if (isLoading || !data) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-[#fbf9f4]">
+        <span className="material-symbols-outlined text-[40px] text-[#1e4d3a]/40 animate-pulse" style={{ fontVariationSettings: "'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24" }}>
+          hourglass_empty
+        </span>
+      </div>
+    );
+  }
 
-  const { 
-    summary, queueBreakdown, dailyContributions, activityFeed, topContributors, 
-    languageDistribution = [], urgentReviews = [], 
-    approvalVsRejection = [], pendingAgeData = [], topDisciplines = [] 
+  const {
+    summary, queueBreakdown, dailyContributions = [], activityFeed = [],
+    topContributors = [], languageDistribution = [], topDisciplines = [],
+    urgentMetrics, forumGrowth,
   } = data;
-  
-  const approvalRate = summary.totalScholars > 0 ? Math.round((summary.totalScholars / (summary.totalScholars + summary.totalPending)) * 100) : 0;
+
+  // ✅ DYNAMIC TRANSLATION MAPPING FOR CHARTS
+  const translatedChartData = dailyContributions.map(item => ({
+    ...item,
+    date: getMonthTranslation(t, item.date || '')
+  }));
+
+  const translatedForumGrowth = (forumGrowth || []).map(item => ({
+    ...item,
+    name: getMonthTranslation(t, item.name || '')
+  }));
+
+  const approvalRate = (summary.totalScholars ?? 0) > 0
+    ? Math.round(((summary.totalScholars ?? 0) / ((summary.totalScholars ?? 0) + (summary.totalPending ?? 0))) * 100)
+    : 0;
 
   const queueTypes = [
-    { name: "Scholars", value: queueBreakdown?.scholars || 0, color: colors.forestGreen },
-    { name: "Edits", value: queueBreakdown?.edits || 0, color: colors.blue },
-    { name: "Media", value: queueBreakdown?.media || 0, color: colors.amber },
-    { name: "Works", value: queueBreakdown?.works || 0, color: colors.red },
+    { name: t("adminDashboard.stats.scholars"), value: queueBreakdown?.scholars ?? 0, color: "#1e4d3a" },
+    { name: t("adminDashboard.stats.edits"), value: queueBreakdown?.edits ?? 0, color: "#e96d5c" },
+    { name: t("adminDashboard.stats.media"), value: queueBreakdown?.media ?? 0, color: "#4f9184" },
+    { name: t("adminDashboard.stats.works"), value: queueBreakdown?.works ?? 0, color: "#C9A84C" },
   ];
-  const totalQueue = queueTypes.reduce((sum, t) => sum + t.value, 0);
 
-  const hasOverdue = queueStats?.overdue > 0;
-  const queueMetrics = queueStats ? [
-    { label: "Pending", value: queueStats.total_pending, icon: "inventory_2", color: colors.forestGreen },
-    { label: "Overdue", value: queueStats.overdue, icon: "warning", color: hasOverdue ? colors.red : colors.forestGreen },
-    { label: "New Today", value: queueStats.new_today, icon: "fiber_new", color: colors.blue },
-    { label: "This Week", value: queueStats.this_week, icon: "task_alt", color: colors.amber },
-    { label: "Avg. Review Time", value: queueStats.avg_review_time, icon: "schedule", color: colors.forestGreen, isText: true },
-  ] : [];
-
-  const LANG_LABELS: Record<string, string> = { English: "English", Arabic: "Arabic", French: "French" };
-  const LANG_COLORS = [colors.forestGreen, colors.amber, colors.blue, colors.red, "#7A9E7E"];
-  
+  const totalQueue = queueTypes.reduce((sum, item) => sum + item.value, 0);
   const languageBreakdown = languageDistribution;
-  const totalLangCount = languageBreakdown.reduce((sum: number, l: any) => sum + (l.value || 0), 0);
+  const totalLangCount = languageBreakdown.reduce((sum, item) => sum + (item.value ?? 0), 0);
 
   const totalActivityPages = Math.max(1, Math.ceil(activityFeed.length / ACTIVITY_PAGE_SIZE));
   const currentPage = Math.min(activityPage, totalActivityPages - 1);
   const pagedActivity = activityFeed.slice(currentPage * ACTIVITY_PAGE_SIZE, currentPage * ACTIVITY_PAGE_SIZE + ACTIVITY_PAGE_SIZE);
 
+  const metricCards = [
+    { label: t("adminDashboard.metrics.scholars"), value: summary.totalScholars ?? 0, note: t("adminDashboard.metrics.allTime"), icon: "menu_book", color: "#1e4d3a" },
+    { label: t("adminDashboard.metrics.pending"), value: summary.totalPending ?? 0, note: t("adminDashboard.metrics.requiresAttention"), icon: "schedule", color: "#3d6b96", alert: true },
+    { label: t("adminDashboard.metrics.activeUsers"), value: summary.activeContributors ?? 0, note: t("adminDashboard.metrics.canContribute"), icon: "person", color: "#7a5c8e" },
+    { label: t("adminDashboard.metrics.reports"), value: summary.openReports ?? 0, note: t("adminDashboard.metrics.moderationQueue"), icon: "flag", color: "#e96d5c" },
+    { label: t("adminDashboard.metrics.forumPosts"), value: summary.totalForumPosts ?? 0, note: t("adminDashboard.metrics.totalPosts"), icon: "forum", color: "#C9A84C" },
+  ];
+
   return (
-    <div style={{ padding: 24, maxWidth: 1600, margin: "0 auto", fontFamily: fonts.body, color: colors.forestGreen }}>
+    <div className="oulamauna-dashboard min-h-screen text-[#1e4d3a] antialiased font-['Inter']" dir={isRTL ? "rtl" : "ltr"}>
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&family=Source+Serif+4:wght@400;500;600;700&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap');
+
+        .oulamauna-dashboard {
+          background: radial-gradient(circle at 8% 10%, rgba(201,168,76,0.055), transparent 24%), radial-gradient(circle at 92% 16%, rgba(79,145,132,0.06), transparent 25%), #fbf9f4;
+        }
+        .oulamauna-dashboard * { box-sizing: border-box; }
+        .oulamauna-dashboard .serif-title { font-family: 'Source Serif 4', Georgia, serif; letter-spacing: -0.025em; }
+        .oulamauna-dashboard .mono-label { font-family: 'JetBrains Mono', monospace; letter-spacing: 0.06em; }
+        
+        /* ✅ ORIGINAL CARD HOVER STYLE (Only shadow changes, NO background change) */
+        .oulamauna-dashboard .dashboard-card {
+          background: rgba(251,249,244,0.96);
+          border: 1px solid rgba(30,77,58,0.10);
+          border-radius: 10px;
+          box-shadow: 0 5px 18px rgba(30,77,58,0.055);
+          transition: box-shadow 180ms ease, transform 180ms ease;
+        }
+        .oulamauna-dashboard .dashboard-card:hover {
+          box-shadow: 0 9px 26px rgba(30,77,58,0.08);
+        }
+        
+        .oulamauna-dashboard .metric-card {
+          background: radial-gradient(circle at 90% 8%, rgba(255,255,255,0.85), transparent 32%), #fbf9f4;
+        }
+        .oulamauna-dashboard .metric-number { font-family: 'Source Serif 4', Georgia, serif; letter-spacing: -0.035em; }
+        .oulamauna-dashboard ::selection { background: #C9A84C; color: #1e4d3a; }
+      `}</style>
+
+      <main className="max-w-[1450px] mx-auto px-3 md:px-5 xl:px-7 py-6 md:py-8">
+        {/* HEADER */}
+        <header className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
+          <div>
+            <div className="mono-label text-[9px] uppercase font-bold text-[#C9A84C] mb-1">{t("adminDashboard.title")}</div>
+            <h1 className="serif-title text-[27px] md:text-[32px] leading-tight font-semibold text-[#082f27]">{t("adminDashboard.welcomeUser")}</h1>
+          </div>
+
+          {/* ✅ SPECIFIC BUTTON HOVER: Green default, White bg + Green text on hover, pointer cursor */}
+          <button
+            type="button"
+            onClick={() => navigate("/admin/pending/scholars")}
+            className="inline-flex items-center justify-center gap-2 rounded-[8px] bg-[#1e4d3a] text-white border-2 border-[#1e4d3a] px-5 py-3 text-[10px] font-bold uppercase tracking-[0.06em] hover:bg-white hover:text-[#1e4d3a] transition-all duration-300 cursor-pointer"
+          >
+            <span className="material-symbols-outlined text-[17px]" style={{ fontVariationSettings: "'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24" }}>
+              pending_actions
+            </span>
+            {t("reviewQueue.title")} ({summary.totalPending ?? 0})
+          </button>
+        </header>
+
       
-      {/* ── HEADER ── */}
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 24 }}>
+
+{/* TOP METRICS */}
+<section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 md:gap-4 mb-6">
+  {metricCards.map((card) => (
+    <div
+      key={card.label}
+      className="dashboard-card metric-card relative overflow-hidden p-3 md:p-5"
+      style={{ borderLeft: isRTL ? 'none' : `4px solid ${card.color}`, borderRight: isRTL ? `4px solid ${card.color}` : 'none' }}
+    >
+      <div className="flex items-center gap-2 md:gap-3">
+        <div className="w-9 h-9 md:w-11 md:h-11 rounded-full flex items-center justify-center shrink-0" style={{ backgroundColor: `${card.color}16`, border: `1px solid ${card.color}32` }}>
+          <span className="material-symbols-outlined text-[18px] md:text-[22px]" style={{ color: card.color, fontVariationSettings: "'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24" }}>{card.icon}</span>
+        </div>
+        <span className="mono-label text-[8px] md:text-[9px] uppercase font-semibold text-[#1e4d3a]/70 leading-[1.35]">{card.label}</span>
+      </div>
+      <div className="flex items-end justify-between gap-2 md:gap-3 mt-3 md:mt-4">
         <div>
-          <h1 style={{ fontFamily: fonts.headline, fontSize: 28, fontWeight: 700, margin: 0 }}>Dashboard Overview</h1>
-          <p style={{ fontFamily: fonts.body, fontSize: 14, color: colors.forestGreen, opacity: 0.7, margin: "4px 0 0" }}>Welcome back, Admin. Here is how Oulamauna is progressing today.</p>
+          <div className="metric-number text-[24px] md:text-[28px] font-semibold leading-none text-[#082f27]">{card.value.toLocaleString()}</div>
+          <div className="mt-1 md:mt-2 text-[9px] md:text-[10px] text-[#66837d]">{card.note}</div>
         </div>
-        <button onClick={() => navigate("/admin/pending/scholars")} style={{ display: "flex", alignItems: "center", gap: 8, padding: "10px 20px", backgroundColor: colors.forestGreen, color: colors.creamLight, border: "none", borderRadius: 8, fontFamily: fonts.body, fontSize: 13, fontWeight: 600, cursor: "pointer" }}>
-          <Icon name="pending_actions" size={18} /> Review Queue ({summary.totalPending})
-        </button>
+        {card.alert && (
+          <div className="text-[9px] md:text-[10px] font-semibold whitespace-nowrap text-[#e96d5c]">
+            <span className="text-[13px] md:text-[15px] mr-1">!</span>
+          </div>
+        )}
       </div>
+    </div>
+  ))}
+</section>
 
-      {/* ── ROW 1: TOP DONUT CARDS ── */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 20, marginBottom: 20 }}>
-        {[
-          { label: "Scholars Published", value: summary.totalScholars, pending: queueBreakdown.scholars + queueBreakdown.edits, color: colors.forestGreen, icon: "school" },
-          { label: "Works & Media", value: "Pending", pending: queueBreakdown.media + queueBreakdown.works, color: colors.amber, icon: "folder_open", isPending: true },
-          { label: "Active Contributors", value: summary.activeContributors, pending: summary.totalUsers - summary.activeContributors, color: colors.blue, icon: "how_to_reg" }
-        ].map((card, i) => {
-          const percentage = card.isPending ? 60 : Math.min(Math.round((card.value / (card.value + card.pending || 1)) * 100), 100);
-          return (
-            <div key={i} style={{ ...cardStyle, padding: 24, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+        {/* MAIN CHARTS */}
+        <section className="grid grid-cols-1 lg:grid-cols-[1.6fr_1fr] gap-5 mb-6">
+          {/* Activity Chart */}
+          <div className="dashboard-card p-5 md:p-6">
+            <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4 mb-4">
               <div>
-                <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
-                  <div style={{ width: 32, height: 32, borderRadius: 8, backgroundColor: `${card.color}15`, color: card.color, display: "flex", alignItems: "center", justifyContent: "center" }}><Icon name={card.icon} size={18} filled /></div>
-                  <span style={{ fontFamily: fonts.label, fontSize: 12, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em", color: colors.forestGreen, opacity: 0.8 }}>{card.label}</span>
+                <div className="flex items-center gap-2.5">
+                  <span className="material-symbols-outlined text-[20px]">monitoring</span>
+                  <h2 className="serif-title text-[21px] font-semibold">
+                    {graphView === 'yearly' ? t("adminDashboard.charts.monthly") : graphView === 'all' ? t("adminDashboard.charts.yearly") : t("adminDashboard.charts.daily")}
+                  </h2>
                 </div>
-                <p style={{ fontFamily: fonts.headline, fontSize: 32, fontWeight: 700, margin: 0, color: card.color }}>{card.isPending ? card.pending : card.value.toLocaleString()}</p>
-                <p style={{ fontFamily: fonts.body, fontSize: 12, margin: "4px 0 0", opacity: 0.7 }}>{card.isPending ? "Awaiting review" : `${percentage}% Approval Rate`}</p>
+                <p className="text-[11px] text-[#1e4d3a]/55 mt-1">
+                  {graphView === 'yearly' ? t("adminDashboard.charts.thisYearDesc") : graphView === 'all' ? t("adminDashboard.charts.allTimeDesc") : t("adminDashboard.charts.last30DaysDesc")}
+                </p>
               </div>
-              <div style={{ position: "relative", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                <DonutChart percentage={percentage} color={card.color} size={90} />
-                <span style={{ position: "absolute", fontFamily: fonts.headline, fontSize: 16, fontWeight: 700, color: card.color }}>{percentage}%</span>
+
+              {/* Graph View Toggle */}
+              <div className="flex items-center gap-1 bg-[#1e4d3a]/[0.05] border border-[#1e4d3a]/10 rounded-full p-1 shrink-0">
+                {(['30days', 'yearly', 'all'] as const).map((view) => (
+                  <button
+                    key={view}
+                    onClick={() => setGraphView(view)}
+                    className={`px-3 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-wide transition-all duration-300 cursor-pointer ${
+                      graphView === view 
+                        ? 'bg-[#1e4d3a] text-white border-2 border-[#1e4d3a] shadow-md' 
+                        : 'bg-white text-[#1e4d3a] border-2 border-[#1e4d3a]/30 hover:bg-[#1e4d3a]/5'
+                    }`}
+                  >
+                    {t(`adminDashboard.charts.toggle.${view}`)}
+                  </button>
+                ))}
               </div>
             </div>
-          );
-        })}
-      </div>
 
-      {/* ── QUEUE BREAKDOWN ── */}
-      <div style={{ ...cardStyle, padding: "18px 24px", marginBottom: 24, display: "flex", alignItems: "center", gap: 24 }}>
-        <div style={{ minWidth: 150 }}>
-          <h3 style={{ fontFamily: fonts.headline, fontSize: 15, fontWeight: 700, margin: 0 }}>Queue Breakdown</h3>
-          <p style={{ fontFamily: fonts.body, fontSize: 11.5, opacity: 0.65, margin: "3px 0 0" }}>By content type</p>
-        </div>
-        <div style={{ position: "relative", width: 76, height: 76, flexShrink: 0 }}>
-          <ResponsiveContainer width="100%" height="100%">
-            <PieChart>
-              <Pie data={queueTypes} dataKey="value" nameKey="name" innerRadius={24} outerRadius={38} paddingAngle={totalQueue ? 3 : 0} strokeWidth={0}>
-                {queueTypes.map((t, i) => <Cell key={i} fill={t.color} />)}
-              </Pie>
-            </PieChart>
-          </ResponsiveContainer>
-          <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", flexDirection: "column" }}>
-            <span style={{ fontFamily: fonts.headline, fontSize: 16, fontWeight: 700, lineHeight: 1 }}>{totalQueue}</span>
+            <ResponsiveContainer width="100%" height={270}>
+              <AreaChart data={translatedChartData} margin={{ top: 8, right: 10, left: -8, bottom: 0 }}>
+                <defs>
+                  <linearGradient id="adminActivityFill" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#1e4d3a" stopOpacity={0.20} />
+                    <stop offset="95%" stopColor="#1e4d3a" stopOpacity={0} />
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="2 3" stroke="rgba(30,77,58,0.10)" vertical={false} />
+                <XAxis dataKey="date" tick={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 9, fill: "#1e4d3a99" }} axisLine={false} tickLine={false} dy={8} />
+                <YAxis tick={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 9, fill: "#1e4d3a99" }} axisLine={false} tickLine={false} dx={-5} />
+                <Tooltip contentStyle={ChartTooltipStyle} cursor={{ fill: "rgba(30,77,58,0.035)" }} />
+                <Area type="monotone" dataKey="contributions" stroke="#1e4d3a" strokeWidth={2.3} fill="url(#adminActivityFill)" fillOpacity={1} dot={{ r: 2.5, fill: "#1e4d3a", strokeWidth: 0 }} activeDot={{ r: 5, fill: "#C9A84C", stroke: "#fff", strokeWidth: 2 }} />
+              </AreaChart>
+            </ResponsiveContainer>
           </div>
-        </div>
-        <div style={{ display: "flex", gap: 22, flexWrap: "wrap", flex: 1 }}>
-          {queueTypes.map((t, i) => (
-            <div key={i} style={{ display: "flex", alignItems: "center", gap: 7 }}>
-              <span style={{ width: 8, height: 8, borderRadius: "50%", backgroundColor: t.color, flexShrink: 0 }} />
-              <span style={{ fontFamily: fonts.body, fontSize: 12.5, opacity: 0.8 }}>{t.name}</span>
-              <span style={{ fontFamily: fonts.label, fontSize: 12.5, fontWeight: 700 }}>{t.value}</span>
-            </div>
-          ))}
-        </div>
-      </div>
 
-      {/* ── ROW 2: MAIN CHARTS ── */}
-      <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr", gap: 20, marginBottom: 24 }}>
-        <div style={{ ...cardStyle, padding: 24 }}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
-            <h3 style={{ fontFamily: fonts.headline, fontSize: 18, fontWeight: 700, margin: 0 }}>Daily Contribution Velocity</h3>
-            <span style={{ fontFamily: fonts.label, fontSize: 11, padding: "4px 10px", borderRadius: 9999, backgroundColor: colors.creamMid, border: `1px solid ${colors.forestGreen}` }}>Last 30 Days</span>
-          </div>
-          <ResponsiveContainer width="100%" height={300}>
-            <AreaChart data={dailyContributions}>
-              <defs>
-                <linearGradient id="colorContrib" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor={colors.forestGreen} stopOpacity={0.3}/>
-                  <stop offset="95%" stopColor={colors.forestGreen} stopOpacity={0}/>
-                </linearGradient>
-              </defs>
-              <CartesianGrid strokeDasharray="3 3" stroke={colors.creamDark} vertical={false} />
-              <XAxis dataKey="date" tick={{ fontFamily: fonts.label, fontSize: 10, fill: colors.forestGreen }} axisLine={false} tickLine={false} />
-              <YAxis tick={{ fontFamily: fonts.label, fontSize: 10, fill: colors.forestGreen }} axisLine={false} tickLine={false} />
-              <Tooltip contentStyle={{ backgroundColor: colors.creamLight, border: `1px solid ${colors.forestGreen}`, borderRadius: 8, fontFamily: fonts.body }} />
-              <Area type="monotone" dataKey="contributions" stroke={colors.forestGreen} strokeWidth={3} fillOpacity={1} fill="url(#colorContrib)" />
-            </AreaChart>
-          </ResponsiveContainer>
-        </div>
-
-        <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
-          <div style={{ ...cardStyle, padding: 24, flex: 1 }}>
-            <h3 style={{ fontFamily: fonts.headline, fontSize: 16, fontWeight: 700, margin: "0 0 16px" }}>Platform Health</h3>
-            <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+          {/* Review Queue Pie Chart */}
+          <div className="dashboard-card p-5 md:p-6">
+            <div className="flex items-center justify-between gap-3 mb-3">
               <div>
-                <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6 }}><span style={{ fontSize: 13 }}>Total Users</span><span style={{ fontFamily: fonts.label, fontSize: 12, fontWeight: 700 }}>{summary.totalUsers}</span></div>
-                <div style={{ width: "100%", height: 6, backgroundColor: colors.creamDark, borderRadius: 3 }}><div style={{ width: "100%", height: "100%", backgroundColor: colors.forestGreen, borderRadius: 3 }} /></div>
-              </div>
-              <div>
-                <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6 }}><span style={{ fontSize: 13 }}>Approval Rate</span><span style={{ fontFamily: fonts.label, fontSize: 12, fontWeight: 700 }}>{approvalRate}%</span></div>
-                <div style={{ width: "100%", height: 6, backgroundColor: colors.creamDark, borderRadius: 3 }}><div style={{ width: `${approvalRate}%`, height: "100%", backgroundColor: colors.amber, borderRadius: 3 }} /></div>
-              </div>
-              <div>
-                <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6 }}><span style={{ fontSize: 13 }}>Open Reports</span><span style={{ fontFamily: fonts.label, fontSize: 12, fontWeight: 700, color: colors.red }}>{summary.openReports}</span></div>
-                <div style={{ width: "100%", height: 6, backgroundColor: colors.creamDark, borderRadius: 3 }}><div style={{ width: `${Math.min(summary.openReports * 10, 100)}%`, height: "100%", backgroundColor: colors.red, borderRadius: 3 }} /></div>
+                <div className="flex items-center gap-2.5">
+                  <span className="material-symbols-outlined text-[20px]">bar_chart</span>
+                  <h2 className="serif-title text-[21px] font-semibold">{t("adminDashboard.charts.queue")}</h2>
+                </div>
+                <p className="text-[11px] text-[#1e4d3a]/55 mt-1">{t("adminDashboard.charts.currentQueue")}</p>
               </div>
             </div>
-          </div>
 
-          <div style={{ ...cardStyle, padding: 24, flex: 1 }}>
-            <h3 style={{ fontFamily: fonts.headline, fontSize: 16, fontWeight: 700, margin: "0 0 16px", display: "flex", alignItems: "center", gap: 8 }}><Icon name="emoji_events" size={18} style={{ color: colors.amber }} filled /> Top Contributors</h3>
-            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-              {topContributors.map((user: any, i: number) => (
-                <div key={i} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "8px 12px", backgroundColor: colors.creamMid, borderRadius: 8 }}>
-                  <span style={{ fontSize: 13, fontWeight: 600 }}>#{i+1} {user.name}</span>
-                  <span style={{ fontFamily: fonts.label, fontSize: 11, fontWeight: 700, color: colors.forestGreen }}>{user.count}</span>
+            <div className="relative h-[180px]">
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie data={queueTypes} dataKey="value" nameKey="name" innerRadius={51} outerRadius={73} paddingAngle={totalQueue ? 3 : 0} strokeWidth={0}>
+                    {queueTypes.map((item) => <Cell key={item.name} fill={item.color} className="transition-all duration-300 hover:opacity-80" />)}
+                  </Pie>
+                  <Tooltip contentStyle={ChartTooltipStyle} />
+                </PieChart>
+              </ResponsiveContainer>
+              <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                <div className="text-center">
+                  <div className="metric-number text-[25px] font-semibold">{totalQueue.toLocaleString()}</div>
+                  <div className="mono-label text-[7px] uppercase text-[#1e4d3a]/45">{t("adminDashboard.charts.total")}</div>
+                </div>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-x-5 gap-y-3 mt-2">
+              {queueTypes.map((item) => (
+                <div key={item.name} className="flex items-center gap-2 group cursor-default">
+                  <span className="w-2.5 h-2.5 rounded-full shrink-0 group-hover:scale-125 transition-transform" style={{ backgroundColor: item.color }} />
+                  <span className="text-[10px] text-[#1e4d3a]/70 truncate group-hover:text-[#1e4d3a] transition-colors">{item.name}</span>
+                  <span className="ml-auto font-['JetBrains_Mono'] text-[10px] font-semibold">{item.value}</span>
                 </div>
               ))}
             </div>
           </div>
-        </div>
-      </div>
+        </section>
 
-{/* ── ROW 3 & 4 COMBINED: SMART LAYOUT ── */}
-<div style={{ display: "grid", gridTemplateColumns: "1.5fr 1fr", gap: 20, marginBottom: 24 }}>
-  
-  {/* LEFT COLUMN */}
-  <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
-    
-    {/* Top Disciplines Chart */}
-    <div style={{ ...cardStyle, padding: 24 }}>
-      <h3 style={{ fontFamily: fonts.headline, fontSize: 15, fontWeight: 700, margin: "0 0 16px", display: "flex", alignItems: "center", gap: 8 }}>
-        <Icon name="category" size={18} style={{ color: colors.blue }} /> Top Disciplines
-      </h3>
-      {topDisciplines.length === 0 ? (
-        <p style={{ fontSize: 12, opacity: 0.6, textAlign: "center", padding: 20 }}>No disciplines yet.</p>
-      ) : (
-        <ResponsiveContainer width="100%" height={200}>
-          <BarChart layout="vertical" data={topDisciplines} margin={{ left: 10, right: 10, top: 10, bottom: 10 }}>
-            <CartesianGrid strokeDasharray="3 3" stroke={colors.creamDark} horizontal={false} />
-            <XAxis type="number" tick={{ fontFamily: fonts.label, fontSize: 10, fill: colors.forestGreen }} axisLine={false} tickLine={false} allowDecimals={false} />
-            <YAxis type="category" dataKey="name" tick={{ fontFamily: fonts.body, fontSize: 11, fill: colors.forestGreen }} axisLine={false} tickLine={false} width={90} />
-            <Tooltip cursor={{ fill: colors.creamMid }} contentStyle={{ backgroundColor: colors.creamLight, border: `1px solid ${colors.creamDark}`, borderRadius: 6, fontSize: 12 }} />
-            <Bar dataKey="count" fill={colors.blue} radius={[0, 4, 4, 0]} barSize={20} />
+       {/* SECOND ROW - NOW 3 COLUMNS */}
+<section className="grid grid-cols-1 lg:grid-cols-[1fr_1fr_1fr] gap-5 mb-6">
+  {/* Top Disciplines */}
+  <div className="dashboard-card p-5 md:p-6">
+    <div className="flex items-center gap-2.5 mb-4">
+      <span className="material-symbols-outlined text-[20px]">category</span>
+      <div>
+        <h2 className="serif-title text-[21px] font-semibold">{t("adminDashboard.charts.topDisciplines")}</h2>
+        <p className="text-[11px] text-[#1e4d3a]/55 mt-0.5">{t("adminDashboard.charts.rankedByVolume")}</p>
+      </div>
+    </div>
+
+    {topDisciplines.length === 0 ? (
+      <p className="text-[12px] text-[#1e4d3a]/55 text-center py-8">{t("adminDashboard.empty.data")}</p>
+    ) : (
+      <div dir="ltr">
+        <ResponsiveContainer width="100%" height={230}>
+          <BarChart layout="vertical" data={topDisciplines} margin={{ left: 8, right: 12, top: 5, bottom: 5 }}>
+            <CartesianGrid strokeDasharray="2 3" stroke="rgba(30,77,58,0.10)" horizontal={false} />
+            <XAxis type="number" tick={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 9, fill: "#1e4d3a99" }} axisLine={false} tickLine={false} allowDecimals={false} />
+            <YAxis type="category" dataKey="name" tick={renderDisciplineTick} axisLine={false} tickLine={false} width={125} interval={0} />
+            <Tooltip cursor={{ fill: "rgba(30,77,58,0.035)" }} contentStyle={ChartTooltipStyle} />
+            <Bar dataKey="count" radius={[0, 5, 5, 0]} barSize={17} activeBar={{ fill: '#C9A84C' }}>
+              {topDisciplines.map((item, index) => (
+                <Cell key={`${item.name ?? "discipline"}-${index}`} fill={ACCENT_CYCLE[index % ACCENT_CYCLE.length]} className="hover:opacity-80 transition-opacity" />
+              ))}
+            </Bar>
           </BarChart>
         </ResponsiveContainer>
-      )}
-    </div>
-
-        {/* Latest Platform Events - COMPACT & CLEAN LINES */}
-    <div style={{ ...cardStyle, padding: 24 }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
-        <h3 style={{ fontFamily: fonts.headline, fontSize: 15, fontWeight: 700, margin: 0, display: "flex", alignItems: "center", gap: 8 }}>
-          <Icon name="history" size={18} filled /> Latest Platform Events
-        </h3>
-        <span style={{ fontFamily: fonts.label, fontSize: 11, opacity: 0.55 }}>{activityFeed.length} total</span>
       </div>
-
-      <div style={{ display: "flex", flexDirection: "column" }}>
-        {pagedActivity.slice(0, 3).map((event: any, i: number) => (
-          <div 
-            key={i} 
-            style={{ 
-              display: "flex", 
-              gap: 12, 
-              padding: "12px 0", 
-              borderBottom: i < 2 ? `1px solid ${colors.creamDark}` : "none" 
-            }}
-          >
-            <div style={{ width: 32, height: 32, borderRadius: "50%", backgroundColor: event.type === 'scholar' ? colors.forestGreen : event.type === 'user' ? colors.blue : colors.amber, color: colors.creamLight, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-              <Icon name={event.type === 'scholar' ? 'school' : event.type === 'user' ? 'person' : 'folder_open'} size={16} />
-            </div>
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <p style={{ fontFamily: fonts.body, fontSize: 12, fontWeight: 600, margin: "0 0 2px", lineHeight: 1.3, color: colors.forestGreen }}>{event.text}</p>
-              <p style={{ fontFamily: fonts.label, fontSize: 9, color: colors.forestGreen, opacity: 0.7, margin: 0 }}>by {event.user} • {new Date(event.date).toLocaleDateString()}</p>
-            </div>
-          </div>
-        ))}
-      </div>
-    </div>
+    )}
   </div>
 
-  {/* RIGHT COLUMN */}
-  <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
-    
-    {/* Quality Control (Donut) */}
-    <div style={{ ...cardStyle, padding: 24 }}>
-      <h3 style={{ fontFamily: fonts.headline, fontSize: 15, fontWeight: 700, margin: "0 0 16px", display: "flex", alignItems: "center", gap: 8 }}>
-        <Icon name="pie_chart" size={18} style={{ color: colors.forestGreen }} /> Quality Control
-      </h3>
-      {approvalVsRejection.length === 0 ? (
-        <p style={{ fontSize: 12, opacity: 0.6, textAlign: "center", padding: 20 }}>No decisions yet.</p>
-      ) : (
-        <ResponsiveContainer width="100%" height={200}>
-          <PieChart>
-            <Pie data={approvalVsRejection} cx="50%" cy="50%" innerRadius={45} outerRadius={70} paddingAngle={4} dataKey="value">
-              {approvalVsRejection.map((entry, index) => (
-                <Cell key={`cell-${index}`} fill={entry.name === "Approved" ? colors.forestGreen : colors.red} />
-              ))}
-            </Pie>
-            <Tooltip contentStyle={{ backgroundColor: colors.creamLight, border: `1px solid ${colors.creamDark}`, borderRadius: 6, fontSize: 12 }} />
-            <Legend verticalAlign="bottom" height={30} iconSize={8} wrapperStyle={{ fontSize: 11, fontFamily: fonts.label }} />
-          </PieChart>
-        </ResponsiveContainer>
-      )}
+  {/* Moderation & Progress */}
+  <div className="dashboard-card p-5 md:p-6">
+    <div className="flex items-center gap-2.5 mb-5">
+      <span className="material-symbols-outlined text-[20px] text-[#e96d5c]">shield</span>
+      <div>
+        <h2 className="serif-title text-[21px] font-semibold">{t("adminDashboard.moderation.title")}</h2>
+        <p className="text-[11px] text-[#1e4d3a]/55 mt-0.5">{t("adminDashboard.moderation.subtitle")}</p>
+      </div>
     </div>
 
-    {/* Queue Aging (Histogram) */}
-    <div style={{ ...cardStyle, padding: 24, flex: 1 }}>
-      <h3 style={{ fontFamily: fonts.headline, fontSize: 15, fontWeight: 700, margin: "0 0 16px", display: "flex", alignItems: "center", gap: 8 }}>
-        <Icon name="hourglass_bottom" size={18} style={{ color: colors.amber }} /> Queue Aging
-      </h3>
-      <ResponsiveContainer width="100%" height={200}>
-        <BarChart data={pendingAgeData}>
-          <CartesianGrid strokeDasharray="3 3" stroke={colors.creamDark} vertical={false} />
-          <XAxis dataKey="name" tick={{ fontFamily: fonts.label, fontSize: 9, fill: colors.forestGreen }} axisLine={false} tickLine={false} />
-          <YAxis tick={{ fontFamily: fonts.label, fontSize: 10, fill: colors.forestGreen }} axisLine={false} tickLine={false} allowDecimals={false} />
-          <Tooltip cursor={{ fill: colors.creamMid }} contentStyle={{ backgroundColor: colors.creamLight, border: `1px solid ${colors.creamDark}`, borderRadius: 6, fontSize: 12 }} />
-          <Bar dataKey="value" radius={[4, 4, 0, 0]}>
-            {pendingAgeData.map((entry, index) => (
-              <Cell key={`cell-${index}`} fill={index === 0 ? colors.forestGreen : index === 1 ? colors.amber : index === 2 ? colors.blue : colors.red} />
-            ))}
-          </Bar>
+    <div className="grid grid-cols-2 gap-3 mb-6">
+      <div className="p-3 rounded-lg bg-[#e96d5c]/[0.08] border border-[#e96d5c]/20">
+        <div className="flex items-center gap-2 mb-1">
+          <span className="material-symbols-outlined text-[16px] text-[#e96d5c]">flag</span>
+          <span className="text-[10px] uppercase font-bold text-[#e96d5c] mono-label">{t("adminDashboard.moderation.urgentReports")}</span>
+        </div>
+        <div className="metric-number text-[24px] font-semibold text-[#082f27]">{urgentMetrics?.pendingReports ?? 0}</div>
+      </div>
+
+      <div className="p-3 rounded-lg bg-[#7a5c8e]/[0.08] border border-[#7a5c8e]/20">
+        <div className="flex items-center gap-2 mb-1">
+          <span className="material-symbols-outlined text-[16px] text-[#7a5c8e]">gavel</span>
+          <span className="text-[10px] uppercase font-bold text-[#7a5c8e] mono-label">{t("adminDashboard.moderation.highStrike")}</span>
+        </div>
+        <div className="metric-number text-[24px] font-semibold text-[#082f27]">{urgentMetrics?.highStrikeUsers ?? 0}</div>
+      </div>
+    </div>
+
+    <div className="border-t border-[#1e4d3a]/10 pt-4">
+      <p className="text-[10px] uppercase font-semibold text-[#1e4d3a]/60 mono-label mb-3">{t("adminDashboard.moderation.sixMonthTrend")}</p>
+      
+      <ResponsiveContainer width="100%" height={160}>
+        <BarChart data={translatedForumGrowth.length > 0 ? translatedForumGrowth : [{ name: t('common.noData'), posts: 0 }]} margin={{ top: 5, right: 5, left: -10, bottom: 0 }}>
+          <CartesianGrid strokeDasharray="2 3" stroke="rgba(30,77,58,0.10)" vertical={false} />
+          <XAxis dataKey="name" tick={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 9, fill: "#1e4d3a99" }} axisLine={false} tickLine={false} dy={5} />
+          <YAxis tick={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 9, fill: "#1e4d3a99" }} axisLine={false} tickLine={false} dx={-5} />
+          <Tooltip contentStyle={ChartTooltipStyle} cursor={{ fill: "rgba(30,77,58,0.035)" }} />
+          <Bar dataKey="posts" fill="#C9A84C" radius={[4, 4, 0, 0]} barSize={20} activeBar={{ fill: '#1e4d3a' }} />
         </BarChart>
       </ResponsiveContainer>
+      
+      <div className="flex items-center justify-center gap-4 mt-3">
+        <div className="flex items-center gap-1.5">
+          <span className="w-2 h-2 rounded-full bg-[#C9A84C]" />
+          <span className="text-[9px] text-[#1e4d3a]/60 font-semibold">{t("adminDashboard.moderation.legend.forum")}</span>
+        </div>
+        <div className="flex items-center gap-1.5">
+          <span className="w-2 h-2 rounded-full bg-[#e96d5c]" />
+          <span className="text-[9px] text-[#1e4d3a]/60 font-semibold">{t("adminDashboard.moderation.legend.reports")}</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  {/* ✅ NEW: Performance Overview (Platform Health) */}
+  <div className="dashboard-card p-5 md:p-6">
+    <div className="flex items-center gap-2.5 mb-5">
+      <span className="material-symbols-outlined text-[20px]">target</span>
+      <div>
+        <h2 className="serif-title text-[21px] font-semibold">{t("adminDashboard.performance.title")}</h2>
+        <p className="text-[11px] text-[#1e4d3a]/55 mt-0.5">{t("adminDashboard.performance.subtitle")}</p>
+      </div>
     </div>
 
-  </div>
-</div>
-      {/* ── ROW 5: REVIEW QUEUE METRICS ── */}
-      {queueStats && (
-        <div style={{ ...cardStyle, padding: "20px 28px", marginTop: 24, marginBottom: 24 }}>
-          <h3 style={{ fontFamily: fonts.headline, fontSize: 15, fontWeight: 700, margin: "0 0 18px" }}>Review Queue Metrics</h3>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)" }}>
-            {queueMetrics.map((m, i) => (
-              <div key={m.label} style={{ display: "flex", alignItems: "center", gap: 12, padding: "0 18px", borderLeft: i === 0 ? "none" : `1px solid ${colors.creamDark}` }}>
-                <div style={{ width: 36, height: 36, borderRadius: 9, backgroundColor: `${m.color}15`, color: m.color, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                  <Icon name={m.icon} size={18} />
-                </div>
-                <div>
-                  <p style={{ fontFamily: fonts.label, fontSize: 10, textTransform: "uppercase", letterSpacing: "0.04em", opacity: 0.6, margin: 0 }}>{m.label}</p>
-                  <p style={{ fontFamily: m.isText ? fonts.label : fonts.headline, fontSize: m.isText ? 15 : 22, fontWeight: 700, margin: "2px 0 0", color: m.color, lineHeight: 1 }}>{m.value}</p>
-                </div>
-              </div>
-            ))}
+    <div className="space-y-6">
+      {[
+        { label: t("adminDashboard.performance.totalUsers"), val: summary.totalUsers ?? 0, pct: 100, color: "#1e4d3a" },
+        { label: t("adminDashboard.performance.approvalRate"), val: `${approvalRate}%`, pct: approvalRate, color: "#C9A84C" },
+        { label: t("adminDashboard.performance.openReports"), val: summary.openReports ?? 0, pct: Math.min((summary.openReports ?? 0) * 10, 100), color: "#e96d5c" },
+        { label: t("adminDashboard.performance.hiddenPosts"), val: summary.hiddenForumPosts ?? 0, pct: Math.min(((summary.hiddenForumPosts ?? 0) / (summary.totalForumPosts ?? 1)) * 100, 100), color: "#7a5c8e" },
+      ].map((item) => (
+        <div key={item.label}>
+          <div className="flex justify-between items-center mb-2">
+            <span className="text-[11px] text-[#1e4d3a]/75">{item.label}</span>
+            <span className="font-['JetBrains_Mono'] text-[11px] font-semibold" style={{ color: item.color }}>
+              {item.val}
+            </span>
+          </div>
+
+          <div className="w-full h-2 bg-[#1e4d3a]/[0.08] rounded-full overflow-hidden">
+            <div
+              className="h-full rounded-full transition-all duration-700"
+              style={{ width: `${item.pct}%`, backgroundColor: item.color }}
+            />
           </div>
         </div>
-      )}
+      ))}
+    </div>
 
-      {/* ── ROW 6: CONTENT BY LANGUAGE + URGENT REVIEWS ── */}
-      <div style={{ display: "grid", gridTemplateColumns: "1.3fr 1fr", gap: 20, marginBottom: 24 }}>
-        <div style={{ ...cardStyle, padding: 24 }}>
-          <h3 style={{ fontFamily: fonts.headline, fontSize: 16, fontWeight: 700, margin: "0 0 4px", display: "flex", alignItems: "center", gap: 8 }}>
-            <Icon name="translate" size={18} filled /> Content by Language
-          </h3>
-          <p style={{ fontFamily: fonts.body, fontSize: 11.5, opacity: 0.6, margin: "0 0 18px" }}>Ranked by volume</p>
-          {languageBreakdown.length === 0 ? (
-            <p style={{ fontSize: 12.5, opacity: 0.6 }}>No language data yet.</p>
-          ) : (
-            <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-              {[...languageBreakdown]
-                .sort((a: any, b: any) => b.value - a.value)
-                .map((lang: any, i: number) => {
-                  const pct = totalLangCount ? Math.round((lang.value / totalLangCount) * 100) : 0;
-                  const isLeader = i === 0;
-                  const color = LANG_COLORS[i % LANG_COLORS.length];
+    <div className="mt-7 pt-4 border-t border-[#1e4d3a]/10 flex items-center justify-between">
+      <span className="mono-label text-[8px] uppercase text-[#1e4d3a]/45">{t("adminDashboard.performance.systemStatus")}</span>
+      <span className="inline-flex items-center gap-1.5 text-[10px] font-semibold text-[#2f7d74]">
+        <span className="w-1.5 h-1.5 rounded-full bg-[#2f7d74]" />
+        {t("adminDashboard.performance.operational")}
+      </span>
+    </div>
+  </div>
+</section>
+        {/* BOTTOM DATA */}
+        <section className="grid grid-cols-1 lg:grid-cols-[1.35fr_1fr_0.95fr] gap-5">
+          {/* Latest Events */}
+          <div className="dashboard-card p-5 md:p-6 min-h-[330px]">
+            <div className="flex items-center justify-between gap-3 mb-4">
+              <div className="flex items-center gap-2.5">
+                <span className="material-symbols-outlined text-[20px]">history</span>
+                <div>
+                  <h2 className="serif-title text-[20px] font-semibold">{t("adminDashboard.events.latest")}</h2>
+                  <p className="text-[10px] text-[#1e4d3a]/55 mt-0.5">{t("adminDashboard.events.recent")}</p>
+                </div>
+              </div>
+
+              {totalActivityPages > 1 && (
+                <div className="flex items-center gap-2">
+                  <button type="button" disabled={currentPage === 0} onClick={() => setActivityPage((page) => Math.max(0, page - 1))} className="w-7 h-7 rounded-full border border-[#1e4d3a]/10 text-[#1e4d3a]/55 disabled:opacity-30 hover:bg-[#1e4d3a]/10 hover:text-[#1e4d3a] transition-colors cursor-pointer">{isRTL ? '›' : '‹'}</button>
+                  <span className="font-['JetBrains_Mono'] text-[9px] text-[#1e4d3a]/55">{currentPage + 1}/{totalActivityPages}</span>
+                  <button type="button" disabled={currentPage === totalActivityPages - 1} onClick={() => setActivityPage((page) => Math.min(totalActivityPages - 1, page + 1))} className="w-7 h-7 rounded-full border border-[#1e4d3a]/10 text-[#1e4d3a]/55 disabled:opacity-30 hover:bg-[#1e4d3a]/10 hover:text-[#1e4d3a] transition-colors cursor-pointer">{isRTL ? '‹' : '›'}</button>
+                </div>
+              )}
+            </div>
+
+            <div className="divide-y divide-[#1e4d3a]/[0.08]">
+              {pagedActivity.slice(0, 5).length > 0 ? (
+                pagedActivity.slice(0, 5).map((event, index) => {
+                  const dateLocale = isRTL ? "ar-SA" : lang === "French" || lang === "fr" ? "fr-FR" : "en-US";
                   return (
-                    <div key={lang.name || i}>
-                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
-                        <span style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13, fontWeight: isLeader ? 700 : 600 }}>
-                          {isLeader && <Icon name="emoji_events" size={15} filled style={{ color: colors.amber } as any} />}
-                          {LANG_LABELS[lang.name] || lang.name}
-                        </span>
-                        <span style={{ fontFamily: fonts.label, fontSize: 12, fontWeight: 700, color: isLeader ? color : colors.forestGreen }}>
-                          {lang.value} <span style={{ opacity: 0.5, fontWeight: 500 }}>({pct}%)</span>
+                    <div key={`${event.date ?? "event"}-${index}`} className="flex items-center gap-3 py-3">
+                      <div className="w-8 h-8 rounded-full bg-[#1e4d3a]/[0.07] flex items-center justify-center shrink-0">
+                        <span className="material-symbols-outlined text-[16px] text-[#1e4d3a]">
+                          {event.type === "scholar" ? "school" : event.type === "user" ? "person" : event.type === "forum" ? "forum" : event.type === "report" ? "flag" : "folder_open"}
                         </span>
                       </div>
-                      <div style={{ width: "100%", height: isLeader ? 10 : 8, backgroundColor: colors.creamDark, borderRadius: 5 }}>
-                        <div style={{ width: `${pct}%`, height: "100%", backgroundColor: color, borderRadius: 5, transition: "width 0.6s ease" }} />
+                      <div className="flex-1 min-w-0">
+                        <p className="text-[11px] font-semibold truncate">{event.text}</p>
+                        <p className="text-[9px] text-[#1e4d3a]/50 mt-0.5">
+                          by {event.user} • {event.date ? new Date(event.date).toLocaleDateString(dateLocale) : "—"}
+                        </p>
+                      </div>
+                    </div>
+                  );
+                })
+              ) : (
+                <p className="text-[12px] text-[#1e4d3a]/55 text-center py-8">{t("adminDashboard.empty.recent")}</p>
+              )}
+            </div>
+          </div>
+
+          {/* Top Contributors */}
+          <div className="dashboard-card p-5 md:p-6 min-h-[330px]">
+            <div className="flex items-center gap-2.5 mb-4">
+              <span className="material-symbols-outlined text-[20px] text-[#C9A84C]" style={{ fontVariationSettings: "'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24" }}>emoji_events</span>
+              <div>
+                <h2 className="serif-title text-[20px] font-semibold">{t("adminDashboard.contributors.top")}</h2>
+                <p className="text-[10px] text-[#1e4d3a]/55 mt-0.5">{t("adminDashboard.contributors.mostActive")}</p>
+              </div>
+            </div>
+
+            <div className="divide-y divide-[#1e4d3a]/[0.08]">
+              {topContributors.length > 0 ? (
+                topContributors.slice(0, 5).map((user, index) => {
+                  const medalColors = ["#C9A84C", "#9AA5B1", "#B08D57", "#2f7d74", "#1e4d3a"];
+                  const rankColor = medalColors[index] ?? "#1e4d3a";
+                  return (
+                    <div key={`${user.name ?? "user"}-${index}`} className="flex items-center justify-between py-3">
+                      <div className="flex items-center gap-3 min-w-0">
+                        <span className="w-7 h-7 rounded-full flex items-center justify-center text-[#fbf9f4] font-['JetBrains_Mono'] text-[9px] font-bold shrink-0" style={{ backgroundColor: rankColor }}>{index + 1}</span>
+                        <span className="text-[11px] font-semibold truncate">{user.name ?? "—"}</span>
+                      </div>
+                      <span className="font-['JetBrains_Mono'] text-[10px] font-bold ml-3" style={{ color: rankColor }}>{user.count ?? 0}</span>
+                    </div>
+                  );
+                })
+              ) : (
+                <p className="text-[12px] text-[#1e4d3a]/55 text-center py-8">{t("adminDashboard.empty.data")}</p>
+              )}
+            </div>
+          </div>
+
+          {/* Languages */}
+          <div className="dashboard-card p-5 md:p-6 min-h-[330px]">
+            <div className="flex items-center gap-2.5 mb-4">
+              <span className="material-symbols-outlined text-[20px]">translate</span>
+              <div>
+                <h2 className="serif-title text-[20px] font-semibold">{t("adminDashboard.languages.title")}</h2>
+                <p className="text-[10px] text-[#1e4d3a]/55 mt-0.5">{t("adminDashboard.languages.distribution")}</p>
+              </div>
+            </div>
+
+            {languageBreakdown.length === 0 ? (
+              <p className="text-[12px] text-[#1e4d3a]/55 text-center py-8">{t("adminDashboard.empty.languages")}</p>
+            ) : (
+              <div className="space-y-5 pt-2">
+                {[...languageBreakdown].sort((a, b) => (b.value ?? 0) - (a.value ?? 0)).map((langItem, index) => {
+                  const pct = totalLangCount ? Math.round(((langItem.value ?? 0) / totalLangCount) * 100) : 0;
+                  const color = index === 0 ? "#1e4d3a" : ACCENT_CYCLE[index % ACCENT_CYCLE.length];
+                  const name = getLanguageName(langItem.name || '');
+
+                  return (
+                    <div key={`${langItem.name ?? "language"}-${index}`} className="group cursor-default">
+                      <div className="flex justify-between items-center mb-1.5 group-hover:translate-x-1 rtl:group-hover:-translate-x-1 transition-transform">
+                        <span className="text-[11px] font-semibold">{name}</span>
+                        <span className="font-['JetBrains_Mono'] text-[10px] font-bold" style={{ color }}>
+                          {langItem.value ?? 0} <span className="text-[#1e4d3a]/40 font-normal">({pct}%)</span>
+                        </span>
+                      </div>
+                      <div className="w-full h-2 bg-[#1e4d3a]/[0.08] rounded-full overflow-hidden">
+                        <div className="h-full rounded-full transition-all duration-700 group-hover:brightness-110" style={{ width: `${pct}%`, backgroundColor: color }} />
                       </div>
                     </div>
                   );
                 })}
-            </div>
-          )}
-        </div>
-
-      </div>
-
+              </div>
+            )}
+          </div>
+        </section>
+      </main>
     </div>
   );
 }

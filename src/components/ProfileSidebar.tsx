@@ -133,7 +133,7 @@ export default function ProfileSidebar({
   active, 
   links, 
   currentUserId,
-  profileCompletion = 40 
+  profileCompletion = 0,
 }: ProfileSidebarProps) {
   const { t } = useLang();
   const { logout } = useAuth();

@@ -5,11 +5,12 @@ import { scholarsApi } from "../../api/scholarsApi";
 
 import DOMPurify from "dompurify";
 import RichTextEditor from "../../components/RichTextEditor";
+import tlogo2 from "../../assets/tlogo2.png";
 
 /* ─────────────────────────────────────────────
    TYPES
 ───────────────────────────────────────────── */
-type Language = "EN" | "AR" | "FR";
+type Language = string;
 type AccessMode = "none" | "upload" | "link";
 
 interface PersonEntry {
@@ -39,7 +40,6 @@ interface MediaEntry {
 
 interface RefEntry { title: string; citation: string; url: string; }
 
-// ✅ NEW: fixes "Parameter 's' implicitly has an 'any' type"
 interface ScholarSearchResult {
   id: number;
   name: string;
@@ -77,14 +77,6 @@ interface FormState {
 /* ─────────────────────────────────────────────
    CONSTANTS & HELPERS
 ───────────────────────────────────────────── */
-const LANGUAGES = [
-  { language_id: 1, code: 'en', name: 'English' },
-  { language_id: 3, code: 'ar', name: 'Arabic' },
-  { language_id: 2, code: 'fr', name: 'French' },
-];
-
-const NATIVE_LANG_NAMES: Record<Language, string> = { EN: "English", AR: "العربية", FR: "Français" };
-
 const MONO = "'JetBrains Mono', monospace";
 const SERIF = "'Source Serif 4', 'Georgia', serif";
 const SANS = "'Inter', system-ui, sans-serif";
@@ -109,22 +101,10 @@ const WORK_FORMATS = [
 
 const MEDIA_FILE_TYPES = ["pdf", "audio", "video"];
 
-// Sanitizer config: safe subset of tags/attrs for a biography field.
-// Reused wherever biography HTML is sent to the server or rendered back.
-// (No explicit DOMPurify.Config annotation — that namespace isn't exported
-// consistently across @types/dompurify versions, so we just let TS infer it.)
-//
-// "style" is allowed here ONLY so the alignment buttons (which TipTap writes
-// as inline `style="text-align:…"` on <p>/<h2>) survive sanitization.
-// DOMPurify still sanitizes the *value* of the style attribute itself —
-// it strips url(), expression(), javascript:, etc. — so this does not
-// reopen an XSS hole; it just stops stripping a property our own editor
-// produces. If you later add a WYSIWYG feature that lets users set style
-// freely (not just via toolbar buttons), re-review this.
 const SANITIZE_CONFIG = {
   ALLOWED_TAGS: [
     "p", "h1", "h2", "h3", "blockquote", "ul", "ol", "li",
-    "strong", "em", "u", "s", "sup", "hr", // ✅ Added s, sup, hr
+    "strong", "em", "u", "s", "sup", "hr",
     "span", "mark", "a", "br",
   ],
   ALLOWED_ATTR: [
@@ -253,7 +233,7 @@ function ErrorBanner({ errors, title }: { errors: Record<string, string>; title:
   );
 }
 
-function ChipInput({ items, onAdd, onRemove, placeholder }: { items: string[]; onAdd: (v: string) => void; onRemove: (i: number) => void; placeholder?: string; }) {
+function ChipInput({ items, onAdd, onRemove, placeholder, t }: { items: string[]; onAdd: (v: string) => void; onRemove: (i: number) => void; placeholder?: string; t: (key: string) => string; }) {
   const [val, setVal] = useState("");
   const submit = () => { const v = val.trim(); if (v && !items.includes(v)) { onAdd(v); setVal(""); } };
   return (
@@ -270,7 +250,9 @@ function ChipInput({ items, onAdd, onRemove, placeholder }: { items: string[]; o
         <FocusInput type="text" value={val} onChange={e => setVal(e.target.value)} onKeyDown={e => e.key === "Enter" && (e.preventDefault(), submit())} placeholder={placeholder} />
         <button onClick={submit} style={{ padding: "12px 20px", border: `2px solid ${GREEN}`, borderRadius: "10px", background: "transparent", color: GREEN, fontFamily: HANKEN, fontSize: "11px", fontWeight: 700, letterSpacing: "0.05em", cursor: "pointer", whiteSpace: "nowrap", transition: "all 0.2s", flexShrink: 0 }}
           onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = GREEN; (e.currentTarget as HTMLButtonElement).style.color = "#fff"; }}
-          onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = "transparent"; (e.currentTarget as HTMLButtonElement).style.color = GREEN; }}>+ ADD</button>
+          onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = "transparent"; (e.currentTarget as HTMLButtonElement).style.color = GREEN; }}>
+          {t("submitScholar.buttons.add")}
+        </button>
       </div>
     </div>
   );
@@ -278,7 +260,6 @@ function ChipInput({ items, onAdd, onRemove, placeholder }: { items: string[]; o
 
 function PersonLinkSection({ person, onChange, t, lang, selectedScholarIds }: { person: PersonEntry; onChange: (p: PersonEntry) => void; t: (k: string) => string; lang: string; selectedScholarIds: number[]; }) {
   const [query, setQuery] = useState("");
-  // ✅ FIXED: typed state instead of any[]
   const [results, setResults] = useState<ScholarSearchResult[]>([]);
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -290,7 +271,6 @@ function PersonLinkSection({ person, onChange, t, lang, selectedScholarIds }: { 
     return () => document.removeEventListener("mousedown", handler);
   }, []);
 
-  // ✅ FIXED: explicit ScholarSearchResult[] typing removes the implicit-any on the filter callback
   const onInput = async (q: string) => {
     setQuery(q);
     if (q.length < 2) { setResults([]); setOpen(false); return; }
@@ -324,12 +304,20 @@ function PersonLinkSection({ person, onChange, t, lang, selectedScholarIds }: { 
     <div ref={ref} style={{ position: "relative" }}>
       <div style={{ position: "relative" }}>
         <span style={{ position: "absolute", left: "14px", top: "50%", transform: "translateY(-50%)", color: MUTED, display: "flex", alignItems: "center" }}><Icon name="search" size={18} /></span>
-        <FocusInput type="text" value={query} onChange={e => onInput(e.target.value)} placeholder={loading ? "Searching..." : "Search scholar by name..."} style={{ paddingLeft: "40px" }} />
+        <FocusInput 
+          type="text" 
+          value={query} 
+          onChange={e => onInput(e.target.value)} 
+          placeholder={loading ? t("submitScholar.placeholders.searching") : t("submitScholar.placeholders.searchScholar")} 
+          style={{ paddingLeft: "40px" }} 
+        />
       </div>
       {open && (
         <div style={{ position: "absolute", top: "calc(100% + 6px)", left: 0, right: 0, background: "#fff", border: `1.5px solid ${GREEN_BORDER}`, borderRadius: "10px", boxShadow: "0 8px 32px rgba(11,67,53,0.12)", zIndex: 100, maxHeight: "220px", overflowY: "auto", animation: "fade-in-up 0.15s ease-out" }}>
           {results.length === 0 ? (
-            <div style={{ padding: "14px 16px", fontSize: "13px", color: MUTED, fontStyle: "italic" }}>{loading ? "Searching..." : "No scholars found"}</div>
+            <div style={{ padding: "14px 16px", fontSize: "13px", color: MUTED, fontStyle: "italic" }}>
+              {loading ? t("submitScholar.placeholders.searching") : t("submitScholar.placeholders.noResults")}
+            </div>
           ) : results.map((s: ScholarSearchResult) => {
             const isAlreadySelected = selectedScholarIds.includes(s.id);
             return (
@@ -339,7 +327,7 @@ function PersonLinkSection({ person, onChange, t, lang, selectedScholarIds }: { 
                 onMouseLeave={e => { if (!isAlreadySelected) (e.currentTarget as HTMLDivElement).style.background = "transparent"; }}>
                 <div style={{ fontSize: "14px", fontWeight: 700, color: "#191c1b" }}>{s.name}</div>
                 <div style={{ fontFamily: MONO, fontSize: "11px", color: MUTED }}>{s.discipline} · b.{s.born}</div>
-                {isAlreadySelected && <div style={{ fontSize: "11px", color: DANGER, marginTop: "4px" }}>Already added</div>}
+                {isAlreadySelected && <div style={{ fontSize: "11px", color: DANGER, marginTop: "4px" }}>{t("submitScholar.errors.alreadyAdded")}</div>}
               </div>
             );
           })}
@@ -349,7 +337,8 @@ function PersonLinkSection({ person, onChange, t, lang, selectedScholarIds }: { 
   );
 }
 
-function UploadZone({ file, onFile, onRemove, accept, hint }: { file: File | null; onFile: (f: File) => void; onRemove: () => void; accept?: string; hint?: string; }) {
+// ✅ FIXED: Added `t` to props and translated the hardcoded strings
+function UploadZone({ file, onFile, onRemove, accept, hint, t }: { file: File | null; onFile: (f: File) => void; onRemove: () => void; accept?: string; hint?: string; t: (key: string) => string; }) {
   const ref = useRef<HTMLInputElement>(null);
   const [drag, setDrag] = useState(false);
   if (file) {
@@ -368,7 +357,9 @@ function UploadZone({ file, onFile, onRemove, accept, hint }: { file: File | nul
       <div onClick={() => ref.current?.click()} onDragOver={e => { e.preventDefault(); setDrag(true); }} onDragLeave={() => setDrag(false)} onDrop={e => { e.preventDefault(); setDrag(false); const f = e.dataTransfer.files?.[0]; if (f) onFile(f); }}
         style={{ border: `2px dashed ${drag ? GREEN : BORDER}`, borderRadius: "12px", padding: "28px", textAlign: "center", cursor: "pointer", background: drag ? GREEN_LIGHT : "#fafbf8", transition: "all 0.2s" }}>
         <Icon name="cloud_upload" size={32} />
-        <p style={{ fontSize: "14px", color: "#404945", margin: "10px 0 6px", fontWeight: 600 }}>Drop file here, or <span style={{ color: GREEN, textDecoration: "underline" }}>browse</span></p>
+        <p style={{ fontSize: "14px", color: "#404945", margin: "10px 0 6px", fontWeight: 600 }}>
+          {t("submitScholar.placeholders.dropFile")} <span style={{ color: GREEN, textDecoration: "underline" }}>{t("submitScholar.placeholders.browse")}</span>
+        </p>
         <p style={{ fontFamily: MONO, fontSize: "10px", color: "#c0c9c3", margin: 0 }}>{hint}</p>
       </div>
     </>
@@ -382,9 +373,9 @@ function AccessModeTabs({ mode, onChange, children, t }: { mode: AccessMode; onC
   return (
     <div>
       <div style={{ display: "flex", border: `1.5px solid ${BORDER}`, borderRadius: "10px", overflow: "hidden", marginBottom: "14px" }}>
-        <button style={tabStyle(mode === "none")} onClick={() => onChange("none")}><Icon name="block" size={14} /> {t("submitScholar.step4.none")}</button>
-        <button style={{ ...tabStyle(mode === "upload"), borderLeft: `1px solid ${BORDER}`, borderRight: `1px solid ${BORDER}` }} onClick={() => onChange("upload")}><Icon name="upload_file" size={14} /> {t("submitScholar.step4.upload")}</button>
-        <button style={tabStyle(mode === "link")} onClick={() => onChange("link")}><Icon name="link" size={14} /> {t("submitScholar.step4.link")}</button>
+        <button style={tabStyle(mode === "none")} onClick={() => onChange("none")}><Icon name="block" size={14} /> {t("submitScholar.step3.none")}</button>
+        <button style={{ ...tabStyle(mode === "upload"), borderLeft: `1px solid ${BORDER}`, borderRight: `1px solid ${BORDER}` }} onClick={() => onChange("upload")}><Icon name="upload_file" size={14} /> {t("submitScholar.step3.upload")}</button>
+        <button style={tabStyle(mode === "link")} onClick={() => onChange("link")}><Icon name="link" size={14} /> {t("submitScholar.step3.link")}</button>
       </div>
       {children}
     </div>
@@ -436,9 +427,6 @@ function Spinner({ size = 16, color = "#fff" }: { size?: number; color?: string 
   return <span style={{ width: size, height: size, border: `2px solid ${color}44`, borderTopColor: color, borderRadius: "50%", display: "inline-block", animation: "submit-spin 0.7s linear infinite" }} />;
 }
 
-/* ─────────────────────────────────────────────
-   FOOTER BUTTONS (with hover, like Home page)
-───────────────────────────────────────────── */
 function FooterBackButton({ onClick, label }: { onClick: () => void; label: string }) {
   const [hovered, setHovered] = useState(false);
   return (
@@ -528,13 +516,10 @@ function FooterSubmitButton({ onClick, disabled, submitting, label, submittingLa
   );
 }
 
-/* ─────────────────────────────────────────────
-   REVIEW HELPERS
-───────────────────────────────────────────── */
 function ReviewSection({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <div style={{ marginBottom: "28px", padding: "24px", background: "#f9faf7", border: `1.5px solid ${BORDER}`, borderRadius: "14px" }}>
-      <div style={{ fontFamily: MONO, fontSize: "11px", color: GREEN, letterSpacing: "0.12em", marginBottom: "20px", fontWeight: 700, textTransform: "uppercase" }}>{title}</div>
+    <div style={{ marginBottom: "32px", padding: "24px", background: "#fff", border: `1px solid ${BORDER}`, borderRadius: "12px", boxShadow: "0 2px 8px rgba(0,0,0,0.04)" }}>
+      <div style={{ fontFamily: MONO, fontSize: "11px", color: GREEN, letterSpacing: "0.1em", marginBottom: "20px", fontWeight: 700, textTransform: "uppercase", borderBottom: `1px solid ${GREEN_LIGHT}`, paddingBottom: "12px" }}>{title}</div>
       {children}
     </div>
   );
@@ -542,9 +527,20 @@ function ReviewSection({ title, children }: { title: string; children: React.Rea
 
 function ReviewField({ label, value }: { label: string; value: string }) {
   return (
-    <div>
-      <div style={{ fontFamily: MONO, fontSize: "10px", color: MUTED, marginBottom: "4px", fontWeight: 600, textTransform: "uppercase" }}>{label}</div>
-      <div style={{ fontSize: "14px", fontWeight: 600, color: value && value !== "—" ? "#191c1b" : "#c0c9c3", wordBreak: "break-word" }}>{value}</div>
+    <div style={{ marginBottom: "12px" }}>
+      <div style={{ fontFamily: MONO, fontSize: "10px", color: MUTED, marginBottom: "4px", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em" }}>{label}</div>
+      <div style={{ 
+        fontSize: "14px", 
+        fontWeight: 600, 
+        color: value && value !== "—" ? "#191c1b" : "#c0c9c3", 
+        wordBreak: "break-word",
+        padding: "10px 14px",
+        background: "#fafbf8",
+        borderRadius: "8px",
+        border: `1px solid ${BORDER}`
+      }}>
+        {value}
+      </div>
     </div>
   );
 }
@@ -553,7 +549,7 @@ function ReviewField({ label, value }: { label: string; value: string }) {
    MAIN COMPONENT
 ───────────────────────────────────────────── */
 const SubmitScholarPage: React.FC = () => {
-  const { t, setLang } = useLang();
+  const { t, setLang, dbLanguages } = useLang();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const urlDraftId = searchParams.get("draftId"); 
@@ -575,7 +571,7 @@ const SubmitScholarPage: React.FC = () => {
   ];
 
   const { scholarId, lang: routeLang } = useParams<{ scholarId?: string; lang?: string }>();
-  const validRouteLang: Language | null = routeLang && (["en", "ar", "fr"] as string[]).includes(routeLang.toLowerCase()) ? (routeLang.toUpperCase() as Language) : null;
+  const validRouteLang: Language | null = routeLang && dbLanguages.some(l => l.code.toLowerCase() === routeLang.toLowerCase()) ? routeLang.toUpperCase() : null;
 
   const initialPhase: "lang" | "form" | "success" = validRouteLang ? "form" : "lang";
   const [phase, setPhase] = useState<"lang" | "form" | "success">(initialPhase);
@@ -603,8 +599,8 @@ const SubmitScholarPage: React.FC = () => {
 
   const selectedScholarIds = [...form.teachers.map(t => t.scholar_id).filter((id): id is number => id !== null), ...form.students.map(s => s.scholar_id).filter((id): id is number => id !== null)];
 
-  const [disciplines, setDisciplines] = useState<{ discipline_id: number; name: string }[]>([]);
-  const [regions, setRegions] = useState<{ region_id: number; name: string }[]>([]);
+ const [disciplines, setDisciplines] = useState<{ discipline_id: number; name: string; translations?: Record<string, string> }[]>([]);
+const [regions, setRegions] = useState<{ region_id: number; name: string; translations?: Record<string, string> }[]>([]);
   const [isLoadingMeta, setIsLoadingMeta] = useState(true);
   const [metaError, setMetaError] = useState<string | null>(null);
   const portraitInputRef = useRef<HTMLInputElement>(null);
@@ -613,162 +609,124 @@ const SubmitScholarPage: React.FC = () => {
 
   const upd = <K extends keyof FormState>(key: K, val: FormState[K]) => setForm(f => ({ ...f, [key]: val }));
 
-const handleDateChange = (field: keyof FormState, value: string) => {
-  const cleaned = value.replace(/[^0-9\-]/g, '');
-  const currentGregorianYear = new Date().getFullYear();
-  const currentHijriYear = parseInt(new Intl.DateTimeFormat('en-US-u-ca-islamic-umalqura', { year: 'numeric' }).format(new Date()));
-  const MIN_YEAR = 1;
-  const MAX_YEAR = 9999;
-  
-  setForm(prevForm => {
-    const newFormValues = { ...prevForm, [field]: cleaned };
+  const handleDateChange = (field: keyof FormState, value: string) => {
+    const cleaned = value.replace(/[^0-9\-]/g, '');
+    const currentGregorianYear = new Date().getFullYear();
+    const currentHijriYear = parseInt(new Intl.DateTimeFormat('en-US-u-ca-islamic-umalqura', { year: 'numeric' }).format(new Date()));
+    const MIN_YEAR = 1;
+    const MAX_YEAR = 9999;
     
-    const birthG = newFormValues.birth_date_gregorian;
-    const deathG = newFormValues.death_date_gregorian;
-    const birthH = newFormValues.birth_date_hijri;
-    const deathH = newFormValues.death_date_hijri;
-    
-    const newErrors: Record<string, string> = {};
-    
-    if (birthG) {
-      const num = Number(birthG);
-      if (isNaN(num) || birthG.endsWith('-') || birthG === '-') {
-        newErrors.birth_date_gregorian = "Invalid year";
-      } else if (num < MIN_YEAR || num > MAX_YEAR) {
-        newErrors.birth_date_gregorian = "Invalid year";
-      } else if (num > currentGregorianYear) {
-        newErrors.birth_date_gregorian = "Year cannot be in the future";
+    setForm(prevForm => {
+      const newFormValues = { ...prevForm, [field]: cleaned };
+      const birthG = newFormValues.birth_date_gregorian;
+      const deathG = newFormValues.death_date_gregorian;
+      const birthH = newFormValues.birth_date_hijri;
+      const deathH = newFormValues.death_date_hijri;
+      const newErrors: Record<string, string> = {};
+      
+      if (birthG) {
+        const num = Number(birthG);
+        if (isNaN(num) || birthG.endsWith('-') || birthG === '-') newErrors.birth_date_gregorian = tt("submitScholar.errors.invalidYear", "Invalid year");
+        else if (num < MIN_YEAR || num > MAX_YEAR) newErrors.birth_date_gregorian = tt("submitScholar.errors.invalidYear", "Invalid year");
+        else if (num > currentGregorianYear) newErrors.birth_date_gregorian = tt("submitScholar.errors.yearInFuture", "Year cannot be in the future");
       }
-    }
-    
-    if (deathG) {
-      const num = Number(deathG);
-      if (isNaN(num) || deathG.endsWith('-') || deathG === '-') {
-        newErrors.death_date_gregorian = "Invalid year";
-      } else if (num < MIN_YEAR || num > MAX_YEAR) {
-        newErrors.death_date_gregorian = "Invalid year";
-      } else if (num > currentGregorianYear) {
-        newErrors.death_date_gregorian = "Year cannot be in the future";
+      if (deathG) {
+        const num = Number(deathG);
+        if (isNaN(num) || deathG.endsWith('-') || deathG === '-') newErrors.death_date_gregorian = tt("submitScholar.errors.invalidYear", "Invalid year");
+        else if (num < MIN_YEAR || num > MAX_YEAR) newErrors.death_date_gregorian = tt("submitScholar.errors.invalidYear", "Invalid year");
+        else if (num > currentGregorianYear) newErrors.death_date_gregorian = tt("submitScholar.errors.yearInFuture", "Year cannot be in the future");
       }
-    }
-    
-    if (birthG && deathG && !birthG.endsWith('-') && !deathG.endsWith('-') && birthG !== '-' && deathG !== '-') {
-      const numB = Number(birthG);
-      const numD = Number(deathG);
-      if (!isNaN(numB) && !isNaN(numD) && numB >= MIN_YEAR && numB <= MAX_YEAR && numD >= MIN_YEAR && numD <= MAX_YEAR) {
-        if (numD < numB) newErrors.death_date_gregorian = "Death date cannot be before birth date";
+      if (birthG && deathG && !birthG.endsWith('-') && !deathG.endsWith('-') && birthG !== '-' && deathG !== '-') {
+        const numB = Number(birthG);
+        const numD = Number(deathG);
+        if (!isNaN(numB) && !isNaN(numD) && numB >= MIN_YEAR && numB <= MAX_YEAR && numD >= MIN_YEAR && numD <= MAX_YEAR) {
+          if (numD < numB) newErrors.death_date_gregorian = tt("submitScholar.errors.deathBeforeBirth", "Death date cannot be before birth date");
+        }
       }
-    }
-
-    if (birthH) {
-      const num = Number(birthH);
-      if (isNaN(num) || birthH.endsWith('-') || birthH === '-') {
-        newErrors.birth_date_hijri = "Invalid year";
-      } else if (num < MIN_YEAR || num > MAX_YEAR) {
-        newErrors.birth_date_hijri = "Invalid year";
-      } else if (num > currentHijriYear) {
-        newErrors.birth_date_hijri = "Year cannot be in the future";
+      if (birthH) {
+        const num = Number(birthH);
+        if (isNaN(num) || birthH.endsWith('-') || birthH === '-') newErrors.birth_date_hijri = tt("submitScholar.errors.invalidYear", "Invalid year");
+        else if (num < MIN_YEAR || num > MAX_YEAR) newErrors.birth_date_hijri = tt("submitScholar.errors.invalidYear", "Invalid year");
+        else if (num > currentHijriYear) newErrors.birth_date_hijri = tt("submitScholar.errors.yearInFuture", "Year cannot be in the future");
       }
-    }
-    
-    if (deathH) {
-      const num = Number(deathH);
-      if (isNaN(num) || deathH.endsWith('-') || deathH === '-') {
-        newErrors.death_date_hijri = "Invalid year";
-      } else if (num < MIN_YEAR || num > MAX_YEAR) {
-        newErrors.death_date_hijri = "Invalid year";
-      } else if (num > currentHijriYear) {
-        newErrors.death_date_hijri = "Year cannot be in the future";
+      if (deathH) {
+        const num = Number(deathH);
+        if (isNaN(num) || deathH.endsWith('-') || deathH === '-') newErrors.death_date_hijri = tt("submitScholar.errors.invalidYear", "Invalid year");
+        else if (num < MIN_YEAR || num > MAX_YEAR) newErrors.death_date_hijri = tt("submitScholar.errors.invalidYear", "Invalid year");
+        else if (num > currentHijriYear) newErrors.death_date_hijri = tt("submitScholar.errors.yearInFuture", "Year cannot be in the future");
       }
-    }
-
-    if (birthH && deathH && !birthH.endsWith('-') && !deathH.endsWith('-') && birthH !== '-' && deathH !== '-') {
-      const numB = Number(birthH);
-      const numD = Number(deathH);
-      if (!isNaN(numB) && !isNaN(numD) && numB >= MIN_YEAR && numB <= MAX_YEAR && numD >= MIN_YEAR && numD <= MAX_YEAR) {
-        if (numD < numB) newErrors.death_date_hijri = "Death date cannot be before birth date";
+      if (birthH && deathH && !birthH.endsWith('-') && !deathH.endsWith('-') && birthH !== '-' && deathH !== '-') {
+        const numB = Number(birthH);
+        const numD = Number(deathH);
+        if (!isNaN(numB) && !isNaN(numD) && numB >= MIN_YEAR && numB <= MAX_YEAR && numD >= MIN_YEAR && numD <= MAX_YEAR) {
+          if (numD < numB) newErrors.death_date_hijri = tt("submitScholar.errors.deathBeforeBirth", "Death date cannot be before birth date");
+        }
       }
-    }
-    
-    setErrors(prev => {
-      const updated = { ...prev };
-      if (!newErrors.birth_date_gregorian) delete updated.birth_date_gregorian;
-      if (!newErrors.death_date_gregorian) delete updated.death_date_gregorian;
-      if (!newErrors.birth_date_hijri) delete updated.birth_date_hijri;
-      if (!newErrors.death_date_hijri) delete updated.death_date_hijri;
-      return { ...updated, ...newErrors };
+      
+      setErrors(prev => {
+        const updated = { ...prev };
+        if (!newErrors.birth_date_gregorian) delete updated.birth_date_gregorian;
+        if (!newErrors.death_date_gregorian) delete updated.death_date_gregorian;
+        if (!newErrors.birth_date_hijri) delete updated.birth_date_hijri;
+        if (!newErrors.death_date_hijri) delete updated.death_date_hijri;
+        return { ...updated, ...newErrors };
+      });
+      return newFormValues;
     });
-    
-    return newFormValues;
-  });
-};
+  };
 
- const handleCenturyChange = (field: keyof FormState, value: string) => {
-  const numValue = value === '' ? null : parseInt(value, 10);
-  const currentGregorianYear = new Date().getFullYear();
-  const currentHijriYear = parseInt(new Intl.DateTimeFormat('en-US-u-ca-islamic-umalqura', { year: 'numeric' }).format(new Date()));
-  
-  const currentGregorianCentury = Math.ceil(currentGregorianYear / 100);
-  const currentHijriCentury = Math.ceil(currentHijriYear / 100);
-  
-  const MAX_GREGORIAN_CENTURY = currentGregorianCentury;
-  const MAX_HIJRI_CENTURY = currentHijriCentury;
-  const MIN_CENTURY = 1;
-  
-  setForm(prevForm => {
-    const newFormValues = { ...prevForm, [field]: numValue };
+  const handleCenturyChange = (field: keyof FormState, value: string) => {
+    const numValue = value === '' ? null : parseInt(value, 10);
+    const currentGregorianYear = new Date().getFullYear();
+    const currentHijriYear = parseInt(new Intl.DateTimeFormat('en-US-u-ca-islamic-umalqura', { year: 'numeric' }).format(new Date()));
+    const currentGregorianCentury = Math.ceil(currentGregorianYear / 100);
+    const currentHijriCentury = Math.ceil(currentHijriYear / 100);
+    const MAX_GREGORIAN_CENTURY = currentGregorianCentury;
+    const MAX_HIJRI_CENTURY = currentHijriCentury;
+    const MIN_CENTURY = 1;
     
-    const gregStart = newFormValues.century_gregorian_start;
-    const gregEnd = newFormValues.century_gregorian_end;
-    const hijriStart = newFormValues.century_hijri_start;
-    const hijriEnd = newFormValues.century_hijri_end;
-    
-    const newErrors: Record<string, string> = {};
-    
-    if (gregStart !== null) {
-      if (isNaN(gregStart) || gregStart < MIN_CENTURY || gregStart > MAX_GREGORIAN_CENTURY) {
-        newErrors.century_gregorian_start = `Invalid century (must be 1-${MAX_GREGORIAN_CENTURY})`;
+    setForm(prevForm => {
+      const newFormValues = { ...prevForm, [field]: numValue };
+      const gregStart = newFormValues.century_gregorian_start;
+      const gregEnd = newFormValues.century_gregorian_end;
+      const hijriStart = newFormValues.century_hijri_start;
+      const hijriEnd = newFormValues.century_hijri_end;
+      const newErrors: Record<string, string> = {};
+      
+      if (gregStart !== null) {
+        if (isNaN(gregStart) || gregStart < MIN_CENTURY || gregStart > MAX_GREGORIAN_CENTURY) newErrors.century_gregorian_start = tt("submitScholar.errors.invalidCentury", `Invalid century (must be 1-${MAX_GREGORIAN_CENTURY})`);
       }
-    }
-    if (gregEnd !== null) {
-      if (isNaN(gregEnd) || gregEnd < MIN_CENTURY || gregEnd > MAX_GREGORIAN_CENTURY) {
-        newErrors.century_gregorian_end = `Invalid century (must be 1-${MAX_GREGORIAN_CENTURY})`;
+      if (gregEnd !== null) {
+        if (isNaN(gregEnd) || gregEnd < MIN_CENTURY || gregEnd > MAX_GREGORIAN_CENTURY) newErrors.century_gregorian_end = tt("submitScholar.errors.invalidCentury", `Invalid century (must be 1-${MAX_GREGORIAN_CENTURY})`);
       }
-    }
-    if (gregStart !== null && gregEnd !== null && !isNaN(gregStart) && !isNaN(gregEnd)) {
-      if (gregStart >= MIN_CENTURY && gregStart <= MAX_GREGORIAN_CENTURY && gregEnd >= MIN_CENTURY && gregEnd <= MAX_GREGORIAN_CENTURY) {
-        if (gregEnd < gregStart) newErrors.century_gregorian_end = "End century cannot be before start century";
+      if (gregStart !== null && gregEnd !== null && !isNaN(gregStart) && !isNaN(gregEnd)) {
+        if (gregStart >= MIN_CENTURY && gregStart <= MAX_GREGORIAN_CENTURY && gregEnd >= MIN_CENTURY && gregEnd <= MAX_GREGORIAN_CENTURY) {
+          if (gregEnd < gregStart) newErrors.century_gregorian_end = tt("submitScholar.errors.endCenturyBeforeStart", "End century cannot be before start century");
+        }
       }
-    }
-
-    if (hijriStart !== null) {
-      if (isNaN(hijriStart) || hijriStart < MIN_CENTURY || hijriStart > MAX_HIJRI_CENTURY) {
-        newErrors.century_hijri_start = `Invalid century (must be 1-${MAX_HIJRI_CENTURY})`;
+      if (hijriStart !== null) {
+        if (isNaN(hijriStart) || hijriStart < MIN_CENTURY || hijriStart > MAX_HIJRI_CENTURY) newErrors.century_hijri_start = tt("submitScholar.errors.invalidCentury", `Invalid century (must be 1-${MAX_HIJRI_CENTURY})`);
       }
-    }
-    if (hijriEnd !== null) {
-      if (isNaN(hijriEnd) || hijriEnd < MIN_CENTURY || hijriEnd > MAX_HIJRI_CENTURY) {
-        newErrors.century_hijri_end = `Invalid century (must be 1-${MAX_HIJRI_CENTURY})`;
+      if (hijriEnd !== null) {
+        if (isNaN(hijriEnd) || hijriEnd < MIN_CENTURY || hijriEnd > MAX_HIJRI_CENTURY) newErrors.century_hijri_end = tt("submitScholar.errors.invalidCentury", `Invalid century (must be 1-${MAX_HIJRI_CENTURY})`);
       }
-    }
-    if (hijriStart !== null && hijriEnd !== null && !isNaN(hijriStart) && !isNaN(hijriEnd)) {
-      if (hijriStart >= MIN_CENTURY && hijriStart <= MAX_HIJRI_CENTURY && hijriEnd >= MIN_CENTURY && hijriEnd <= MAX_HIJRI_CENTURY) {
-        if (hijriEnd < hijriStart) newErrors.century_hijri_end = "End century cannot be before start century";
+      if (hijriStart !== null && hijriEnd !== null && !isNaN(hijriStart) && !isNaN(hijriEnd)) {
+        if (hijriStart >= MIN_CENTURY && hijriStart <= MAX_HIJRI_CENTURY && hijriEnd >= MIN_CENTURY && hijriEnd <= MAX_HIJRI_CENTURY) {
+          if (hijriEnd < hijriStart) newErrors.century_hijri_end = tt("submitScholar.errors.endCenturyBeforeStart", "End century cannot be before start century");
+        }
       }
-    }
-    
-    setErrors(prev => {
-      const updated = { ...prev };
-      if (!newErrors.century_gregorian_start) delete updated.century_gregorian_start;
-      if (!newErrors.century_gregorian_end) delete updated.century_gregorian_end;
-      if (!newErrors.century_hijri_start) delete updated.century_hijri_start;
-      if (!newErrors.century_hijri_end) delete updated.century_hijri_end;
-      return { ...updated, ...newErrors };
+      
+      setErrors(prev => {
+        const updated = { ...prev };
+        if (!newErrors.century_gregorian_start) delete updated.century_gregorian_start;
+        if (!newErrors.century_gregorian_end) delete updated.century_gregorian_end;
+        if (!newErrors.century_hijri_start) delete updated.century_hijri_start;
+        if (!newErrors.century_hijri_end) delete updated.century_hijri_end;
+        return { ...updated, ...newErrors };
+      });
+      return newFormValues;
     });
-    
-    return newFormValues;
-  });
-};
+  };
 
   useEffect(() => {
     if (phase !== "form" || draftLoadAttempted.current) return;
@@ -798,7 +756,9 @@ const handleDateChange = (field: keyof FormState, value: string) => {
         setDraftVersionId(version.version_id);
         setDraftRestored(true);
         saveSession(scholarId, version.version_id, lang);
-        if (routeLang && (["en", "ar", "fr"] as string[]).includes(routeLang.toLowerCase())) setPickedLang(routeLang.toUpperCase() as Language);
+        if (routeLang && dbLanguages.some(l => l.code.toLowerCase() === routeLang.toLowerCase())) {
+  setPickedLang(routeLang.toUpperCase() as Language);
+}
       } catch (error) {
         setForm({ canonical_name: "", region_id: null, birth_date_gregorian: "", birth_date_hijri: "", death_date_gregorian: "", death_date_hijri: "", century_hijri_start: null, century_hijri_end: null, century_gregorian_start: null, century_gregorian_end: null, biography: "", aliases: [], discipline_ids: [], portraitUrl: null, portraitFile: null, pageTitle: "", summary: "", quote: "", teachers: [], students: [], works: [], media: [], refs: [], confirmed: false });
         setDraftVersionId(null); setDraftRestored(false);
@@ -833,12 +793,11 @@ const handleDateChange = (field: keyof FormState, value: string) => {
   }, [phase, urlDraftId, urlRejectedId, scholarId, navigate, routeLang, lang]);
 
   const buildDraftPayload = () => {
-    const selectedLang = LANGUAGES.find(l => l.code === lang.toLowerCase());
+    const selectedLang = dbLanguages.find(l => l.code.toLowerCase() === lang.toLowerCase());
     const relationships = [...form.teachers.filter(t => t.scholar_id !== null).map(t => ({ related_version_id: t.scholar_id, relation_type: "teacher" })), ...form.students.filter(s => s.scholar_id !== null).map(s => ({ related_version_id: s.scholar_id, relation_type: "student" }))];
     const payload: any = {
       draft_version_id: draftVersionId, canonical_name: form.canonical_name || null, region_id: form.region_id,
       century_hijri_start: form.century_hijri_start, century_hijri_end: form.century_hijri_end, century_gregorian_start: form.century_gregorian_start, century_gregorian_end: form.century_gregorian_end,
-      // ✅ sanitized before it ever leaves the browser
       biography: form.biography ? sanitizeBiography(form.biography) : null,
       language_id: selectedLang?.language_id || null, aliases: form.aliases, discipline_ids: form.discipline_ids,
       dates: [form.birth_date_gregorian ? { date_type: "birth", calendar: "gregorian", year: parseInt(form.birth_date_gregorian), raw_text: form.birth_date_gregorian, is_approximate: false } : null,
@@ -887,7 +846,7 @@ const handleDateChange = (field: keyof FormState, value: string) => {
       if (phase !== "form") return;
       setIsLoadingMeta(true); setMetaError(null);
       try {
-        const [discRes, regRes] = await Promise.all([scholarsApi.getDisciplines(lang.toLowerCase()), scholarsApi.getRegions(lang.toLowerCase())]);
+        const [discRes, regRes] = await Promise.all([scholarsApi.getDisciplines(), scholarsApi.getRegions()]);
         setDisciplines(discRes.data || discRes || []); setRegions(regRes.data || regRes || []);
         if (loadedMetaLangRef.current !== null && loadedMetaLangRef.current !== lang) { upd("region_id", null); upd("discipline_ids", []); }
         loadedMetaLangRef.current = lang;
@@ -899,92 +858,76 @@ const handleDateChange = (field: keyof FormState, value: string) => {
 
   const scrollTop = () => { setTimeout(() => topRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }), 50); };
 
- const validateStep = (stepIndex: number): Record<string, string> => {
-  const errs: Record<string, string> = {};
-  const currentGregorianYear = new Date().getFullYear();
-  const currentHijriYear = parseInt(new Intl.DateTimeFormat('en-US-u-ca-islamic-umalqura', { year: 'numeric' }).format(new Date()));
-  
-  const MIN_YEAR = 1;
-  const MAX_YEAR = 9999;
-  
-  const currentGregorianCentury = Math.ceil(currentGregorianYear / 100);
-  const currentHijriCentury = Math.ceil(currentHijriYear / 100);
-  
-  const MAX_GREGORIAN_CENTURY = currentGregorianCentury;
-  const MAX_HIJRI_CENTURY = currentHijriCentury;
-  const MIN_CENTURY = 1;
+  const validateStep = (stepIndex: number): Record<string, string> => {
+    const errs: Record<string, string> = {};
+    const currentGregorianYear = new Date().getFullYear();
+    const currentHijriYear = parseInt(new Intl.DateTimeFormat('en-US-u-ca-islamic-umalqura', { year: 'numeric' }).format(new Date()));
+    const MIN_YEAR = 1;
+    const MAX_YEAR = 9999;
+    const currentGregorianCentury = Math.ceil(currentGregorianYear / 100);
+    const currentHijriCentury = Math.ceil(currentHijriYear / 100);
+    const MAX_GREGORIAN_CENTURY = currentGregorianCentury;
+    const MAX_HIJRI_CENTURY = currentHijriCentury;
+    const MIN_CENTURY = 1;
 
-  switch (stepIndex) {
-    case 0:
-      if (!form.canonical_name.trim()) errs.canonical_name = tt("submitScholar.errors.canonicalName", "Canonical name is required.");
-      if (!form.region_id) errs.region_id = tt("submitScholar.errors.region", "Please select a region.");
-      if (form.discipline_ids.length === 0) errs.discipline_ids = tt("submitScholar.errors.disciplines", "Select at least one discipline.");
-      
-      const bG = Number(form.birth_date_gregorian);
-      const dG = Number(form.death_date_gregorian);
-      if (form.birth_date_gregorian && (isNaN(bG) || form.birth_date_gregorian.endsWith('-') || bG < MIN_YEAR || bG > MAX_YEAR)) {
-        errs.birth_date_gregorian = "Invalid year";
-      } else if (bG > currentGregorianYear) {
-        errs.birth_date_gregorian = "Year cannot be in the future";
-      }
-      if (form.death_date_gregorian && (isNaN(dG) || form.death_date_gregorian.endsWith('-') || dG < MIN_YEAR || dG > MAX_YEAR)) {
-        errs.death_date_gregorian = "Invalid year";
-      } else if (dG > currentGregorianYear) {
-        errs.death_date_gregorian = "Year cannot be in the future";
-      }
-      if (form.birth_date_gregorian && form.death_date_gregorian && !isNaN(bG) && !isNaN(dG) && !form.birth_date_gregorian.endsWith('-') && !form.death_date_gregorian.endsWith('-') && bG >= MIN_YEAR && bG <= MAX_YEAR && dG >= MIN_YEAR && dG <= MAX_YEAR) {
-        if (dG < bG) errs.death_date_gregorian = "Death date cannot be before birth date";
-      }
-
-      const bH = Number(form.birth_date_hijri);
-      const dH = Number(form.death_date_hijri);
-      
-      if (form.birth_date_hijri && (isNaN(bH) || form.birth_date_hijri.endsWith('-') || bH < MIN_YEAR || bH > MAX_YEAR)) {
-        errs.birth_date_hijri = "Invalid year";
-      } else if (bH > currentHijriYear) {
-        errs.birth_date_hijri = "Year cannot be in the future";
-      }
-      if (form.death_date_hijri && (isNaN(dH) || form.death_date_hijri.endsWith('-') || dH < MIN_YEAR || dH > MAX_YEAR)) {
-        errs.death_date_hijri = "Invalid year";
-      } else if (dH > currentHijriYear) {
-        errs.death_date_hijri = "Year cannot be in the future";
-      }
-      if (form.birth_date_hijri && form.death_date_hijri && !isNaN(bH) && !isNaN(dH) && !form.birth_date_hijri.endsWith('-') && !form.death_date_hijri.endsWith('-') && bH >= MIN_YEAR && bH <= MAX_YEAR && dH >= MIN_YEAR && dH <= MAX_YEAR) {
-        if (dH < bH) errs.death_date_hijri = "Death date cannot be before birth date";
-      }
-
-      if (form.century_gregorian_start !== null && (isNaN(form.century_gregorian_start) || form.century_gregorian_start < MIN_CENTURY || form.century_gregorian_start > MAX_GREGORIAN_CENTURY)) {
-        errs.century_gregorian_start = `Invalid century (must be 1-${MAX_GREGORIAN_CENTURY})`;
-      }
-      if (form.century_gregorian_end !== null && (isNaN(form.century_gregorian_end) || form.century_gregorian_end < MIN_CENTURY || form.century_gregorian_end > MAX_GREGORIAN_CENTURY)) {
-        errs.century_gregorian_end = `Invalid century (must be 1-${MAX_GREGORIAN_CENTURY})`;
-      }
-      if (form.century_gregorian_start !== null && form.century_gregorian_end !== null && !isNaN(form.century_gregorian_start) && !isNaN(form.century_gregorian_end) && form.century_gregorian_start >= MIN_CENTURY && form.century_gregorian_start <= MAX_GREGORIAN_CENTURY && form.century_gregorian_end >= MIN_CENTURY && form.century_gregorian_end <= MAX_GREGORIAN_CENTURY) {
-        if (form.century_gregorian_end < form.century_gregorian_start) {
-          errs.century_gregorian_end = "End century cannot be before start century";
+    switch (stepIndex) {
+      case 0:
+        if (!form.canonical_name.trim()) errs.canonical_name = tt("submitScholar.errors.canonicalName", "Canonical name is required.");
+        if (!form.region_id) errs.region_id = tt("submitScholar.errors.region", "Please select a region.");
+        if (form.discipline_ids.length === 0) errs.discipline_ids = tt("submitScholar.errors.disciplines", "Select at least one discipline.");
+        
+        const bG = Number(form.birth_date_gregorian);
+        const dG = Number(form.death_date_gregorian);
+        if (form.birth_date_gregorian && (isNaN(bG) || form.birth_date_gregorian.endsWith('-') || bG < MIN_YEAR || bG > MAX_YEAR)) errs.birth_date_gregorian = tt("submitScholar.errors.invalidYear", "Invalid year");
+        else if (bG > currentGregorianYear) errs.birth_date_gregorian = tt("submitScholar.errors.yearInFuture", "Year cannot be in the future");
+        
+        if (form.death_date_gregorian && (isNaN(dG) || form.death_date_gregorian.endsWith('-') || dG < MIN_YEAR || dG > MAX_YEAR)) errs.death_date_gregorian = tt("submitScholar.errors.invalidYear", "Invalid year");
+        else if (dG > currentGregorianYear) errs.death_date_gregorian = tt("submitScholar.errors.yearInFuture", "Year cannot be in the future");
+        
+        if (form.birth_date_gregorian && form.death_date_gregorian && !isNaN(bG) && !isNaN(dG) && !form.birth_date_gregorian.endsWith('-') && !form.death_date_gregorian.endsWith('-') && bG >= MIN_YEAR && bG <= MAX_YEAR && dG >= MIN_YEAR && dG <= MAX_YEAR) {
+          if (dG < bG) errs.death_date_gregorian = tt("submitScholar.errors.deathBeforeBirth", "Death date cannot be before birth date");
         }
-      }
-      
-      if (form.century_hijri_start !== null && (isNaN(form.century_hijri_start) || form.century_hijri_start < MIN_CENTURY || form.century_hijri_start > MAX_HIJRI_CENTURY)) {
-        errs.century_hijri_start = `Invalid century (must be 1-${MAX_HIJRI_CENTURY})`;
-      }
-      if (form.century_hijri_end !== null && (isNaN(form.century_hijri_end) || form.century_hijri_end < MIN_CENTURY || form.century_hijri_end > MAX_HIJRI_CENTURY)) {
-        errs.century_hijri_end = `Invalid century (must be 1-${MAX_HIJRI_CENTURY})`;
-      }
-      if (form.century_hijri_start !== null && form.century_hijri_end !== null && !isNaN(form.century_hijri_start) && !isNaN(form.century_hijri_end) && form.century_hijri_start >= MIN_CENTURY && form.century_hijri_start <= MAX_HIJRI_CENTURY && form.century_hijri_end >= MIN_CENTURY && form.century_hijri_end <= MAX_HIJRI_CENTURY) {
-        if (form.century_hijri_end < form.century_hijri_start) {
-          errs.century_hijri_end = "End century cannot be before start century";
+
+        const bH = Number(form.birth_date_hijri);
+        const dH = Number(form.death_date_hijri);
+        if (form.birth_date_hijri && (isNaN(bH) || form.birth_date_hijri.endsWith('-') || bH < MIN_YEAR || bH > MAX_YEAR)) errs.birth_date_hijri = tt("submitScholar.errors.invalidYear", "Invalid year");
+        else if (bH > currentHijriYear) errs.birth_date_hijri = tt("submitScholar.errors.yearInFuture", "Year cannot be in the future");
+        
+        if (form.death_date_hijri && (isNaN(dH) || form.death_date_hijri.endsWith('-') || dH < MIN_YEAR || dH > MAX_YEAR)) errs.death_date_hijri = tt("submitScholar.errors.invalidYear", "Invalid year");
+        else if (dH > currentHijriYear) errs.death_date_hijri = tt("submitScholar.errors.yearInFuture", "Year cannot be in the future");
+        
+        if (form.birth_date_hijri && form.death_date_hijri && !isNaN(bH) && !isNaN(dH) && !form.birth_date_hijri.endsWith('-') && !form.death_date_hijri.endsWith('-') && bH >= MIN_YEAR && bH <= MAX_YEAR && dH >= MIN_YEAR && dH <= MAX_YEAR) {
+          if (dH < bH) errs.death_date_hijri = tt("submitScholar.errors.deathBeforeBirth", "Death date cannot be before birth date");
         }
-      }
-      break;
-    case 2: if (!stripHtml(form.biography)) errs.biography = tt("submitScholar.errors.biography", "Biography is required."); break;
-    case 3: form.works.forEach((w, i) => { if (!w.title.trim()) errs[`work_${i}_title`] = t("submitScholar.errors.workTitle") || `Work ${i + 1}: title is required.`; if (!w.year.trim()) errs[`work_${i}_year`] = t("submitScholar.errors.workYear") || `Work ${i + 1}: year is required.`; }); break;
-    case 4: form.media.forEach((m, i) => { if (!m.title.trim()) errs[`media_${i}_title`] = t("submitScholar.errors.mediaTitle") || `Media ${i + 1}: title is required.`; }); break;
-    case 5: if (form.refs.length === 0) errs.refs = tt("submitScholar.errors.refsRequired", "Add at least one reference."); form.refs.forEach((r, i) => { if (!r.title.trim()) errs[`ref_${i}_title`] = t("submitScholar.errors.refTitle") || `Reference ${i + 1}: title is required.`; if (!r.citation.trim()) errs[`ref_${i}_citation`] = t("submitScholar.errors.refCitation") || `Reference ${i + 1}: citation is required.`; }); break;
-    case 6: if (form.refs.length === 0) errs.refs = tt("submitScholar.errors.refsRequired", "Add at least one reference."); if (!form.confirmed) errs.confirmed = tt("submitScholar.errors.confirm", "Please confirm before submitting."); break;
-  }
-  return errs;
-};
+
+        if (form.century_gregorian_start !== null && (isNaN(form.century_gregorian_start) || form.century_gregorian_start < MIN_CENTURY || form.century_gregorian_start > MAX_GREGORIAN_CENTURY)) {
+          errs.century_gregorian_start = tt("submitScholar.errors.invalidCentury", `Invalid century (must be 1-${MAX_GREGORIAN_CENTURY})`);
+        }
+        if (form.century_gregorian_end !== null && (isNaN(form.century_gregorian_end) || form.century_gregorian_end < MIN_CENTURY || form.century_gregorian_end > MAX_GREGORIAN_CENTURY)) {
+          errs.century_gregorian_end = tt("submitScholar.errors.invalidCentury", `Invalid century (must be 1-${MAX_GREGORIAN_CENTURY})`);
+        }
+        if (form.century_gregorian_start !== null && form.century_gregorian_end !== null && !isNaN(form.century_gregorian_start) && !isNaN(form.century_gregorian_end) && form.century_gregorian_start >= MIN_CENTURY && form.century_gregorian_start <= MAX_GREGORIAN_CENTURY && form.century_gregorian_end >= MIN_CENTURY && form.century_gregorian_end <= MAX_GREGORIAN_CENTURY) {
+          if (form.century_gregorian_end < form.century_gregorian_start) errs.century_gregorian_end = tt("submitScholar.errors.endCenturyBeforeStart", "End century cannot be before start century");
+        }
+        
+        if (form.century_hijri_start !== null && (isNaN(form.century_hijri_start) || form.century_hijri_start < MIN_CENTURY || form.century_hijri_start > MAX_HIJRI_CENTURY)) {
+          errs.century_hijri_start = tt("submitScholar.errors.invalidCentury", `Invalid century (must be 1-${MAX_HIJRI_CENTURY})`);
+        }
+        if (form.century_hijri_end !== null && (isNaN(form.century_hijri_end) || form.century_hijri_end < MIN_CENTURY || form.century_hijri_end > MAX_HIJRI_CENTURY)) {
+          errs.century_hijri_end = tt("submitScholar.errors.invalidCentury", `Invalid century (must be 1-${MAX_HIJRI_CENTURY})`);
+        }
+        if (form.century_hijri_start !== null && form.century_hijri_end !== null && !isNaN(form.century_hijri_start) && !isNaN(form.century_hijri_end) && form.century_hijri_start >= MIN_CENTURY && form.century_hijri_start <= MAX_HIJRI_CENTURY && form.century_hijri_end >= MIN_CENTURY && form.century_hijri_end <= MAX_HIJRI_CENTURY) {
+          if (form.century_hijri_end < form.century_hijri_start) errs.century_hijri_end = tt("submitScholar.errors.endCenturyBeforeStart", "End century cannot be before start century");
+        }
+        break;
+      case 2: if (!stripHtml(form.biography)) errs.biography = tt("submitScholar.errors.biography", "Biography is required."); break;
+      case 3: form.works.forEach((w, i) => { if (!w.title.trim()) errs[`work_${i}_title`] = tt("submitScholar.errors.workTitle", "Work title is required."); if (!w.year.trim()) errs[`work_${i}_year`] = tt("submitScholar.errors.workYear", "Work year is required."); }); break;
+      case 4: form.media.forEach((m, i) => { if (!m.title.trim()) errs[`media_${i}_title`] = tt("submitScholar.errors.mediaTitle", "Media title is required."); }); break;
+      case 5: if (form.refs.length === 0) errs.refs = tt("submitScholar.errors.refsRequired", "Add at least one reference."); form.refs.forEach((r, i) => { if (!r.title.trim()) errs[`ref_${i}_title`] = tt("submitScholar.errors.refTitle", "Reference title is required."); if (!r.citation.trim()) errs[`ref_${i}_citation`] = tt("submitScholar.errors.refCitation", "Reference citation is required."); }); break;
+      case 6: if (form.refs.length === 0) errs.refs = tt("submitScholar.errors.refsRequired", "Add at least one reference."); if (!form.confirmed) errs.confirmed = tt("submitScholar.errors.confirm", "Please confirm before submitting."); break;
+    }
+    return errs;
+  };
 
   const goNext = () => {
     const stepErrors = validateStep(step);
@@ -996,7 +939,7 @@ const handleDateChange = (field: keyof FormState, value: string) => {
   const goPrev = () => { setErrors({}); setShowValidationErrors(false); if (step > 0) { setStep(s => s - 1); scrollTop(); } };
   const jumpTo = (i: number) => { if (i !== step) { setErrors({}); setShowValidationErrors(false); setStep(i); scrollTop(); } };
 
-  const langLabel = NATIVE_LANG_NAMES[lang];
+  const langLabel = dbLanguages.find(l => l.code.toLowerCase() === lang.toLowerCase())?.name || lang;
   useEffect(() => { if (validRouteLang) setLang(validRouteLang); }, [validRouteLang, setLang]);
   useEffect(() => { if (!validRouteLang && pickedLang) setLang(pickedLang); }, [pickedLang, validRouteLang, setLang]);
 
@@ -1014,11 +957,10 @@ const handleDateChange = (field: keyof FormState, value: string) => {
 
     setErrors({}); setSubmitError(null); setIsSubmitting(true);
     try {
-      const selectedLang = LANGUAGES.find(l => l.code === lang.toLowerCase());
+      const selectedLang = dbLanguages.find(l => l.code.toLowerCase() === lang.toLowerCase());
       const relationships = [...form.teachers.filter(t => t.scholar_id !== null).map(t => ({ related_version_id: t.scholar_id, relation_type: "teacher" })), ...form.students.filter(s => s.scholar_id !== null).map(s => ({ related_version_id: s.scholar_id, relation_type: "student" }))];
       const payload: any = {
         canonical_name: form.canonical_name, region_id: form.region_id, century_hijri_start: form.century_hijri_start, century_hijri_end: form.century_hijri_end, century_gregorian_start: form.century_gregorian_start, century_gregorian_end: form.century_gregorian_end,
-        // ✅ sanitized here too — this is the payload that actually gets persisted to scholar_versions.biography
         biography: sanitizeBiography(form.biography),
         language_id: selectedLang?.language_id, aliases: form.aliases, discipline_ids: form.discipline_ids,
         dates: [form.birth_date_gregorian ? { date_type: "birth", calendar: "gregorian", year: parseInt(form.birth_date_gregorian), raw_text: form.birth_date_gregorian, is_approximate: false } : null, form.birth_date_hijri ? { date_type: "birth", calendar: "hijri", year: parseInt(form.birth_date_hijri), raw_text: form.birth_date_hijri, is_approximate: false } : null, form.death_date_gregorian ? { date_type: "death", calendar: "gregorian", year: parseInt(form.death_date_gregorian), raw_text: form.death_date_gregorian, is_approximate: false } : null, form.death_date_hijri ? { date_type: "death", calendar: "hijri", year: parseInt(form.death_date_hijri), raw_text: form.death_date_hijri, is_approximate: false } : null].filter(Boolean),
@@ -1028,6 +970,7 @@ const handleDateChange = (field: keyof FormState, value: string) => {
         relationships: relationships.length > 0 ? relationships : undefined,
       };
       if (scholarId) payload.scholar_id = parseInt(scholarId, 10);
+      if (draftVersionId) payload.draft_version_id = draftVersionId;
 
       const formData = new FormData();
       formData.append("data", JSON.stringify(payload));
@@ -1037,11 +980,13 @@ const handleDateChange = (field: keyof FormState, value: string) => {
 
       const response = await scholarsApi.create(formData);
       if (response.warnings && response.warnings.length > 0) {
-        alert(`⚠️ Scholar submitted, but issues occurred:\n\n${response.warnings.map((w: any) => `${w.type.toUpperCase()}: ${w.message}`).join("\n")}`);
+        alert(`⚠️ ${tt("submitScholar.errors.submitIssues", "Scholar submitted, but issues occurred:")}\n\n${response.warnings.map((w: any) => `${w.type.toUpperCase()}: ${w.message}`).join("\n")}`);
         return; 
       }
       setSuccessMessage(response.message || "Submission successful!");
-      clearDraft(scholarId, draftVersionId); setPhase("success");
+      clearDraft(scholarId, draftVersionId, lang);
+      setDraftVersionId(null);
+      setPhase("success");
     } catch (error: any) {
       console.error("Failed to submit scholar:", error);
       setSubmitError(extractErrorMessage(error, tt("submitScholar.errors.submitFailed", "Failed to submit. Please check your entries and try again.")));
@@ -1053,6 +998,19 @@ const handleDateChange = (field: keyof FormState, value: string) => {
   const startFreshDraft = () => {
     if (!window.confirm(tt("submitScholar.draft.confirmNew", "Start a new scholar? Any unsaved progress on this form will be lost (saved drafts are safe)."))) return;
     clearDraft(scholarId, draftVersionId, lang); clearDraft(undefined, null, lang); window.location.href = "/scholars/submit";
+  };
+  const handleLogoClick = () => {
+    // Check if there is unsaved progress (same logic as the refresh warning)
+    const hasUnsavedChanges = phase === "form" && (form.canonical_name.trim() !== "" || form.biography.trim() !== "");
+    
+    if (hasUnsavedChanges) {
+      const confirmed = window.confirm("Are you sure you want to leave? Any unsaved progress will be lost.");
+      if (confirmed) {
+        navigate("/");
+      }
+    } else {
+      navigate("/");
+    }
   };
 
   if (phase === "lang") {
@@ -1066,40 +1024,47 @@ const handleDateChange = (field: keyof FormState, value: string) => {
           <div style={{ background: "#fff", border: `1px solid rgba(192,201,195,0.4)`, borderRadius: "24px", padding: "48px", boxShadow: "0 8px 32px rgba(0,0,0,0.08)" }}>
             <label style={{ ...labelStyle, textAlign: "center", display: "block", marginBottom: "20px", fontSize: "11px" }}>{t("submitScholar.portal.selectLang")}</label>
             <p style={{ fontSize: "14px", color: MUTED, marginBottom: "28px", lineHeight: 1.5 }}>{t("submitScholar.portal.langDesc")}</p>
-            <div style={{ display: "flex", gap: "12px", justifyContent: "center", marginBottom: "36px" }}>
-              {(["EN", "AR", "FR"] as Language[]).map(l => (
-                <button 
-                  key={l} 
-                  onClick={() => { 
-                    setPickedLang(l); 
-                    setLang(l); 
-                    navigate(`/scholars/submit/${l.toLowerCase()}`); // ✅ Route changes IMMEDIATELY
-                  }}
-                  style={{ 
-                    padding: "14px 28px", 
-                    borderRadius: "12px", 
-                    border: `2px solid ${pickedLang === l ? GREEN : BORDER}`, 
-                    background: pickedLang === l ? GREEN : "transparent", 
-                    color: pickedLang === l ? "#fff" : MUTED, 
-                    fontFamily: HANKEN, 
-                    fontSize: "12px", 
-                    fontWeight: 700, 
-                    letterSpacing: "0.05em", 
-                    cursor: "pointer", 
-                    transition: "all 0.2s" 
-                  }}
-                >
-                  {l === "AR" ? "ARABIC" : l === "EN" ? "ENGLISH" : "FRANÇAIS"}
-                </button>
-              ))}
+            <div style={{ display: "flex", gap: "12px", justifyContent: "center", marginBottom: "36px", flexWrap: "wrap" }}>
+              {dbLanguages.map((dbLang) => {
+                const langCode = dbLang.code.toUpperCase();
+                return (
+                  <button 
+                    key={dbLang.language_id} 
+                    onClick={() => { 
+                      setPickedLang(langCode); 
+                      setLang(dbLang.code); 
+                    }}
+                    style={{ 
+                      padding: "14px 28px", 
+                      borderRadius: "12px", 
+                      border: `2px solid ${pickedLang === langCode ? GREEN : BORDER}`, 
+                      background: pickedLang === langCode ? GREEN : "transparent", 
+                      color: pickedLang === langCode ? "#fff" : MUTED, 
+                      fontFamily: HANKEN, 
+                      fontSize: "12px", 
+                      fontWeight: 700, 
+                      letterSpacing: "0.05em", 
+                      cursor: "pointer", 
+                      transition: "all 0.2s" 
+                    }}
+                  >
+                    {dbLang.name}
+                  </button>
+                );
+              })}
             </div>
 
             <button 
-              onClick={() => setPhase("form")} 
-              disabled={!pickedLang} // ✅ Prevents clicking until a language is chosen
+              onClick={() => {
+                if (pickedLang) {
+                  navigate(`/scholars/submit/${pickedLang.toLowerCase()}`);
+                  setPhase("form");
+                }
+              }}
+              disabled={!pickedLang}
               style={{ 
                 padding: "16px 40px", 
-                background: pickedLang ? GREEN : "#c0c9c3", // ✅ Gray when disabled, Green when active
+                background: pickedLang ? GREEN : "#c0c9c3", 
                 color: "#fff", 
                 border: "none", 
                 borderRadius: "12px", 
@@ -1108,14 +1073,27 @@ const handleDateChange = (field: keyof FormState, value: string) => {
                 fontWeight: 700, 
                 letterSpacing: "0.05em", 
                 cursor: pickedLang ? "pointer" : "not-allowed", 
-                transition: "all 0.2s", 
+                transition: "all 0.3s ease", 
                 display: "inline-flex", 
                 alignItems: "center", 
                 gap: "10px",
-                opacity: pickedLang ? 1 : 0.6
+                opacity: pickedLang ? 1 : 0.6,
+                boxShadow: pickedLang ? "0 4px 16px rgba(30,77,58,0.25)" : "none"
               }}
-              onMouseEnter={e => { if (pickedLang) (e.currentTarget as HTMLButtonElement).style.background = GREEN_DARK; }} 
-              onMouseLeave={e => { if (pickedLang) (e.currentTarget as HTMLButtonElement).style.background = GREEN; }}
+              onMouseEnter={e => { 
+                if (pickedLang) {
+                  (e.currentTarget as HTMLButtonElement).style.background = GREEN_DARK;
+                  (e.currentTarget as HTMLButtonElement).style.transform = "translateY(-2px)";
+                  (e.currentTarget as HTMLButtonElement).style.boxShadow = "0 8px 24px rgba(30,77,58,0.35)";
+                }
+              }} 
+              onMouseLeave={e => { 
+                if (pickedLang) {
+                  (e.currentTarget as HTMLButtonElement).style.background = GREEN;
+                  (e.currentTarget as HTMLButtonElement).style.transform = "translateY(0)";
+                  (e.currentTarget as HTMLButtonElement).style.boxShadow = "0 4px 16px rgba(30,77,58,0.25)";
+                }
+              }}
             >
               {t("submitScholar.portal.begin")} <Icon name="arrow_forward" size={18} />
             </button>
@@ -1148,13 +1126,13 @@ const handleDateChange = (field: keyof FormState, value: string) => {
             </div>
             <div style={{ display: "flex", flexWrap: "wrap", gap: "12px", justifyContent: "center", animation: "success-fade-up 0.5s 0.48s both" }}>
               <button onClick={() => navigate("/")} style={{ padding: "14px 30px", background: GREEN, color: "#fff", border: "none", borderRadius: "10px", fontFamily: HANKEN, fontSize: "11px", fontWeight: 700, letterSpacing: "0.05em", cursor: "pointer", display: "inline-flex", alignItems: "center", gap: "10px" }} onMouseEnter={e => (e.currentTarget as HTMLButtonElement).style.background = GREEN_DARK} onMouseLeave={e => (e.currentTarget as HTMLButtonElement).style.background = GREEN}>
-                <Icon name="home" size={16} /> {tt("submitScholar.success.goHome", "Back to Home")}
+                <Icon name="home" size={16} /> {t("submitScholar.success.goHome")}
               </button>
               <button onClick={() => navigate("/dashboard")} style={{ padding: "14px 30px", background: "transparent", color: GREEN, border: `2px solid ${GREEN}`, borderRadius: "10px", fontFamily: HANKEN, fontSize: "11px", fontWeight: 700, letterSpacing: "0.05em", cursor: "pointer", display: "inline-flex", alignItems: "center", gap: "10px" }} onMouseEnter={e => (e.currentTarget as HTMLButtonElement).style.background = GREEN_LIGHT} onMouseLeave={e => (e.currentTarget as HTMLButtonElement).style.background = "transparent"}>
-                <Icon name="dashboard" size={16} /> {tt("submitScholar.success.goDashboard", "View Dashboard")}
+                <Icon name="dashboard" size={16} /> {t("submitScholar.success.goDashboard")}
               </button>
               <button onClick={startNewSubmission} style={{ padding: "14px 24px", background: "transparent", color: MUTED, border: `2px solid ${BORDER}`, borderRadius: "10px", fontFamily: HANKEN, fontSize: "11px", fontWeight: 700, letterSpacing: "0.05em", cursor: "pointer", display: "inline-flex", alignItems: "center", gap: "10px" }} onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.borderColor = GREEN; (e.currentTarget as HTMLButtonElement).style.color = GREEN; }} onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.borderColor = BORDER; (e.currentTarget as HTMLButtonElement).style.color = MUTED; }}>
-                <Icon name="add" size={16} /> {tt("submitScholar.success.submitAnother", "Submit Another Scholar")}
+                <Icon name="add" size={16} /> {t("submitScholar.success.submitAnother")}
               </button>
             </div>
           </Card>
@@ -1167,15 +1145,15 @@ const handleDateChange = (field: keyof FormState, value: string) => {
     switch (step) {
       case 0: return (
         <Card>
-          <CardTitle num="01" title={tt("submitScholar.step1.title", "Identity & Metadata")} />
+          <CardTitle num="01" title={t("submitScholar.step1.title")} />
           {showValidationErrors && <ErrorBanner errors={errors} title={tt("submitScholar.errors.bannerTitle", "PLEASE FIX THE FOLLOWING")} />}
           {metaError && (<div style={{ display: "flex", alignItems: "flex-start", gap: "12px", padding: "16px 18px", background: DANGER_BG, border: `1.5px solid ${DANGER_BORDER}`, borderRadius: "12px", marginBottom: "28px" }}>
             <span style={{ color: DANGER, flexShrink: 0 }}><Icon name="error" size={20} /></span>
-            <div><div style={{ fontFamily: HANKEN, fontSize: "14px", color: DANGER, fontWeight: 700, marginBottom: "6px" }}>Failed to load data</div><div style={{ fontSize: "13px", color: "#7a231d", lineHeight: 1.6 }}>{metaError}</div></div>
+            <div><div style={{ fontFamily: HANKEN, fontSize: "14px", color: DANGER, fontWeight: 700, marginBottom: "6px" }}>{tt("submitScholar.errors.failedToLoad", "Failed to load data")}</div><div style={{ fontSize: "13px", color: "#7a231d", lineHeight: 1.6 }}>{metaError}</div></div>
           </div>)}
           <div style={{ display: "grid", gridTemplateColumns: "1fr", gap: "24px", marginBottom: "32px" }} className="responsive-grid-portrait">
             <div>
-              <label style={labelStyle}>{tt("submitScholar.step1.portrait", "Portrait")}</label>
+              <label style={labelStyle}>{t("submitScholar.step1.portrait")}</label>
               {form.portraitUrl ? (
                 <div style={{ position: "relative", borderRadius: "12px", overflow: "hidden", aspectRatio: "3/4", background: "#e7e8e6" }}>
                   <img src={form.portraitUrl} alt="Portrait" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
@@ -1183,112 +1161,104 @@ const handleDateChange = (field: keyof FormState, value: string) => {
                 </div>
               ) : (
                 <div onClick={() => portraitInputRef.current?.click()} style={{ border: `2px dashed ${BORDER}`, borderRadius: "12px", padding: "28px 16px", textAlign: "center", cursor: "pointer", background: "#fafbf8", transition: "all 0.2s", aspectRatio: "3/4", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: "10px" }} onMouseEnter={e => { (e.currentTarget as HTMLDivElement).style.borderColor = GREEN; (e.currentTarget as HTMLDivElement).style.background = GREEN_LIGHT; }} onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.borderColor = BORDER; (e.currentTarget as HTMLDivElement).style.background = "#fafbf8"; }}>
-                  <Icon name="add_photo_alternate" size={32} /><span style={{ fontSize: "12px", color: MUTED, fontFamily: MONO }}>{tt("submitScholar.step1.uploadImage", "Upload Image")}</span>
+                  <Icon name="add_photo_alternate" size={32} /><span style={{ fontSize: "12px", color: MUTED, fontFamily: MONO }}>{t("submitScholar.step1.uploadImage")}</span>
                 </div>
               )}
               <input ref={portraitInputRef} type="file" accept="image/*" style={{ display: "none" }} onChange={e => { const f = e.target.files?.[0]; if (f) { upd("portraitUrl", URL.createObjectURL(f)); upd("portraitFile", f); } }} />
             </div>
             <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
               <div>
-                <label style={labelStyle}>{tt("submitScholar.step1.canonicalName", "Canonical Name")} <span style={{ color: DANGER }}>*</span></label>
-                <FocusInput type="text" value={form.canonical_name} onChange={e => upd("canonical_name", e.target.value)} placeholder="e.g. Malek Bennabi" hasError={showValidationErrors && !!errors.canonical_name} />
+                <label style={labelStyle}>{t("submitScholar.step1.canonicalName")} <span style={{ color: DANGER }}>*</span></label>
+                <FocusInput type="text" value={form.canonical_name} onChange={e => upd("canonical_name", e.target.value)} placeholder={t("submitScholar.placeholders.canonicalName")} hasError={showValidationErrors && !!errors.canonical_name} />
                 {showValidationErrors && <FieldError msg={errors.canonical_name} />}
               </div>
-              <div><label style={labelStyle}>{tt("submitScholar.step1.aliases", "Aliases")}</label><ChipInput items={form.aliases} onAdd={v => upd("aliases", [...form.aliases, v])} onRemove={i => upd("aliases", form.aliases.filter((_, idx) => idx !== i))} placeholder="e.g. Malik Bin Nabi" /></div>
+              <div><label style={labelStyle}>{t("submitScholar.step1.aliases")}</label><ChipInput items={form.aliases} onAdd={v => upd("aliases", [...form.aliases, v])} onRemove={i => upd("aliases", form.aliases.filter((_, idx) => idx !== i))} placeholder={t("submitScholar.placeholders.aliasExample")} t={t} /></div>
             </div>
           </div>
           
           <div style={{ display: "grid", gridTemplateColumns: "1fr", gap: "20px", marginBottom: "28px" }} className="responsive-grid-2">
             <div>
-              <label style={labelStyle}>{tt("submitScholar.step1.birthDateGregorian", "Birth Date (Gregorian)")}</label>
-              <FocusInput 
-                type="text"
-                inputMode="numeric"
-                value={form.birth_date_gregorian} 
-                onChange={e => handleDateChange("birth_date_gregorian", e.target.value)} 
-                placeholder="e.g. 1905" 
-                hasError={!!errors.birth_date_gregorian} 
-              />
+              <label style={labelStyle}>{t("submitScholar.step1.birthDateGregorian")}</label>
+              <FocusInput type="text" inputMode="numeric" value={form.birth_date_gregorian} onChange={e => handleDateChange("birth_date_gregorian", e.target.value)} placeholder={t("submitScholar.placeholders.yearExample")} hasError={!!errors.birth_date_gregorian} />
               {errors.birth_date_gregorian && <FieldError msg={errors.birth_date_gregorian} />}
             </div>
             <div>
-              <label style={labelStyle}>{tt("submitScholar.step1.birthDateHijri", "Birth Date (Hijri)")}</label>
-              <FocusInput 
-                type="text"
-                inputMode="numeric"
-                value={form.birth_date_hijri} 
-                onChange={e => handleDateChange("birth_date_hijri", e.target.value)} 
-                placeholder="e.g. 1323" 
-                hasError={!!errors.birth_date_hijri} 
-              />
+              <label style={labelStyle}>{t("submitScholar.step1.birthDateHijri")}</label>
+              <FocusInput type="text" inputMode="numeric" value={form.birth_date_hijri} onChange={e => handleDateChange("birth_date_hijri", e.target.value)} placeholder={t("submitScholar.placeholders.yearExample")} hasError={!!errors.birth_date_hijri} />
               {errors.birth_date_hijri && <FieldError msg={errors.birth_date_hijri} />}
             </div>
           </div>
           <div style={{ display: "grid", gridTemplateColumns: "1fr", gap: "20px", marginBottom: "28px" }} className="responsive-grid-2">
             <div>
-              <label style={labelStyle}>{tt("submitScholar.step1.deathDateGregorian", "Death Date (Gregorian)")}</label>
-              <FocusInput 
-                type="text"
-                inputMode="numeric"
-                value={form.death_date_gregorian} 
-                onChange={e => handleDateChange("death_date_gregorian", e.target.value)} 
-                placeholder="e.g. 1973" 
-                hasError={!!errors.death_date_gregorian} 
-              />
+              <label style={labelStyle}>{t("submitScholar.step1.deathDateGregorian")}</label>
+              <FocusInput type="text" inputMode="numeric" value={form.death_date_gregorian} onChange={e => handleDateChange("death_date_gregorian", e.target.value)} placeholder={t("submitScholar.placeholders.yearExample")} hasError={!!errors.death_date_gregorian} />
               {errors.death_date_gregorian && <FieldError msg={errors.death_date_gregorian} />}
             </div>
             <div>
-              <label style={labelStyle}>{tt("submitScholar.step1.deathDateHijri", "Death Date (Hijri)")}</label>
-              <FocusInput 
-                type="text"
-                inputMode="numeric"
-                value={form.death_date_hijri} 
-                onChange={e => handleDateChange("death_date_hijri", e.target.value)} 
-                placeholder="e.g. 1393" 
-                hasError={!!errors.death_date_hijri} 
-              />
+              <label style={labelStyle}>{t("submitScholar.step1.deathDateHijri")}</label>
+              <FocusInput type="text" inputMode="numeric" value={form.death_date_hijri} onChange={e => handleDateChange("death_date_hijri", e.target.value)} placeholder={t("submitScholar.placeholders.yearExample")} hasError={!!errors.death_date_hijri} />
               {errors.death_date_hijri && <FieldError msg={errors.death_date_hijri} />}
             </div>
           </div>
 
           <div style={{ display: "grid", gridTemplateColumns: "1fr", gap: "20px", marginBottom: "28px" }} className="responsive-grid-3">
             <div>
-              <label style={labelStyle}>{tt("submitScholar.step1.region", "Region")} <span style={{ color: DANGER }}>*</span></label>
-              {isLoadingMeta ? (<div style={{ padding: "14px 16px", border: `1.5px solid ${BORDER}`, borderRadius: "10px", background: "#f5f5f5", color: MUTED, fontSize: "13px", display: "flex", alignItems: "center", gap: "10px" }}><Spinner size={14} color={MUTED} /> Loading regions...</div>) : (
+              <label style={labelStyle}>{t("submitScholar.step1.region")} <span style={{ color: DANGER }}>*</span></label>
+              {isLoadingMeta ? (<div style={{ padding: "14px 16px", border: `1.5px solid ${BORDER}`, borderRadius: "10px", background: "#f5f5f5", color: MUTED, fontSize: "13px", display: "flex", alignItems: "center", gap: "10px" }}><Spinner size={14} color={MUTED} /> {t("submitScholar.step1.loadingRegions")}</div>) : (
                 <FocusSelect value={form.region_id ? String(form.region_id) : ""} onChange={e => upd("region_id", e.target.value ? parseInt(e.target.value, 10) : null)} hasError={showValidationErrors && !!errors.region_id}>
-                  <option value="">Select Region</option>
-                  {regions.map(r => (<option key={r.region_id} value={r.region_id}>{r.name}</option>))}
+                  <option value="">{t("submitScholar.placeholders.region")}</option>
+                  {regions
+  .filter(r => r.translations?.[lang.toLowerCase()])
+  .map(r => (
+    <option key={r.region_id} value={r.region_id}>
+      {r.translations?.[lang.toLowerCase()]}
+    </option>
+  ))}
                 </FocusSelect>
               )}
               {showValidationErrors && <FieldError msg={errors.region_id} />}
             </div>
             <div>
-              <label style={labelStyle}>{tt("submitScholar.step1.centuryGregorianStart", "Century Gregorian Start")}</label>
-              <FocusInput type="number" value={form.century_gregorian_start ?? ""} onChange={e => handleCenturyChange("century_gregorian_start", e.target.value)} placeholder="e.g. 20" hasError={!!errors.century_gregorian_start} />
+              <label style={labelStyle}>{t("submitScholar.step1.centuryGregorianStart")}</label>
+              <FocusInput type="number" value={form.century_gregorian_start ?? ""} onChange={e => handleCenturyChange("century_gregorian_start", e.target.value)} placeholder={t("submitScholar.placeholders.centuryStart")} hasError={!!errors.century_gregorian_start} />
               {errors.century_gregorian_start && <FieldError msg={errors.century_gregorian_start} />}
             </div>
             <div>
-              <label style={labelStyle}>{tt("submitScholar.step1.centuryGregorianEnd", "Century Gregorian End")}</label>
-              <FocusInput type="number" value={form.century_gregorian_end ?? ""} onChange={e => handleCenturyChange("century_gregorian_end", e.target.value)} placeholder="e.g. 21" hasError={!!errors.century_gregorian_end} />
+              <label style={labelStyle}>{t("submitScholar.step1.centuryGregorianEnd")}</label>
+              <FocusInput type="number" value={form.century_gregorian_end ?? ""} onChange={e => handleCenturyChange("century_gregorian_end", e.target.value)} placeholder={t("submitScholar.placeholders.centuryEnd")} hasError={!!errors.century_gregorian_end} />
               {errors.century_gregorian_end && <FieldError msg={errors.century_gregorian_end} />}
             </div>
             <div>
-              <label style={labelStyle}>{tt("submitScholar.step1.centuryHijriStart", "Century Hijri Start")}</label>
-              <FocusInput type="number" value={form.century_hijri_start ?? ""} onChange={e => handleCenturyChange("century_hijri_start", e.target.value)} placeholder="e.g. 14" hasError={!!errors.century_hijri_start} />
+              <label style={labelStyle}>{t("submitScholar.step1.centuryHijriStart")}</label>
+              <FocusInput type="number" value={form.century_hijri_start ?? ""} onChange={e => handleCenturyChange("century_hijri_start", e.target.value)} placeholder={t("submitScholar.placeholders.centuryStart")} hasError={!!errors.century_hijri_start} />
               {errors.century_hijri_start && <FieldError msg={errors.century_hijri_start} />}
             </div>
             <div>
-              <label style={labelStyle}>{tt("submitScholar.step1.centuryHijriEnd", "Century Hijri End")}</label>
-              <FocusInput type="number" value={form.century_hijri_end ?? ""} onChange={e => handleCenturyChange("century_hijri_end", e.target.value)} placeholder="e.g. 15" hasError={!!errors.century_hijri_end} />
+              <label style={labelStyle}>{t("submitScholar.step1.centuryHijriEnd")}</label>
+              <FocusInput type="number" value={form.century_hijri_end ?? ""} onChange={e => handleCenturyChange("century_hijri_end", e.target.value)} placeholder={t("submitScholar.placeholders.centuryEnd")} hasError={!!errors.century_hijri_end} />
               {errors.century_hijri_end && <FieldError msg={errors.century_hijri_end} />}
             </div>
           </div>
           <Divider />
           <div style={{ marginBottom: "28px" }}>
-            <label style={labelStyle}>{tt("submitScholar.step1.disciplines", "Disciplines")} <span style={{ color: DANGER }}>*</span></label>
+            <label style={labelStyle}>{t("submitScholar.step1.disciplines")} <span style={{ color: DANGER }}>*</span></label>
             <div style={{ display: "flex", flexWrap: "wrap", gap: "10px", marginTop: "10px" }}>
-              {isLoadingMeta ? (<span style={{ fontFamily: MONO, fontSize: "11px", color: MUTED, display: "flex", alignItems: "center", gap: "8px" }}><Spinner size={12} color={MUTED} /> Loading disciplines...</span>) : disciplines.length === 0 ? (<span style={{ fontFamily: MONO, fontSize: "11px", color: DANGER }}>No disciplines available.</span>) : (
-                disciplines.map(d => (<DisciplineBtn key={d.discipline_id} label={d.name} active={form.discipline_ids.includes(d.discipline_id)} onClick={() => { const newIds = form.discipline_ids.includes(d.discipline_id) ? form.discipline_ids.filter(x => x !== d.discipline_id) : [...form.discipline_ids, d.discipline_id]; upd("discipline_ids", newIds); }} />))
+              {isLoadingMeta ? (<span style={{ fontFamily: MONO, fontSize: "11px", color: MUTED, display: "flex", alignItems: "center", gap: "8px" }}><Spinner size={12} color={MUTED} /> {t("submitScholar.step1.loadingDisciplines")}</span>) : disciplines.length === 0 ? (<span style={{ fontFamily: MONO, fontSize: "11px", color: DANGER }}>{t("submitScholar.step1.noDisciplines")}</span>) : (
+                disciplines
+  .filter(d => d.translations?.[lang.toLowerCase()])
+  .map(d => (
+    <DisciplineBtn 
+      key={d.discipline_id} 
+      label={d.translations?.[lang.toLowerCase()]!} 
+      active={form.discipline_ids.includes(d.discipline_id)} 
+      onClick={() => { 
+        const newIds = form.discipline_ids.includes(d.discipline_id) 
+          ? form.discipline_ids.filter(x => x !== d.discipline_id) 
+          : [...form.discipline_ids, d.discipline_id]; 
+        upd("discipline_ids", newIds); 
+      }} 
+    />
+  ))
               )}
             </div>
             {showValidationErrors && <FieldError msg={errors.discipline_ids} />}
@@ -1305,7 +1275,7 @@ const handleDateChange = (field: keyof FormState, value: string) => {
               <button onClick={() => upd("teachers", [...form.teachers, emptyPerson()])} style={{ padding: "8px 16px", border: `2px solid ${GREEN}`, borderRadius: "8px", background: "transparent", color: GREEN, fontFamily: HANKEN, fontSize: "10px", fontWeight: 700, letterSpacing: "0.05em", cursor: "pointer", display: "inline-flex", alignItems: "center", gap: "6px", transition: "all 0.2s" }} onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = GREEN; (e.currentTarget as HTMLButtonElement).style.color = "#fff"; }} onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = "transparent"; (e.currentTarget as HTMLButtonElement).style.color = GREEN; }}><Icon name="add" size={14} /> {t("submitScholar.step2.addTeacher")}</button>
             </div>
             {form.teachers.length === 0 && <p style={{ fontSize: "14px", color: MUTED, fontStyle: "italic", padding: "18px 0" }}>{t("submitScholar.step2.noTeachers")}</p>}
-            {form.teachers.map((p, i) => (<ItemCard key={i} index={i} label="Teacher" onRemove={() => upd("teachers", form.teachers.filter((_, idx) => idx !== i))}><PersonLinkSection person={p} onChange={np => { const t2 = [...form.teachers]; t2[i] = np; upd("teachers", t2); }} t={t} lang={lang.toLowerCase()} selectedScholarIds={selectedScholarIds} /></ItemCard>))}
+            {form.teachers.map((p, i) => (<ItemCard key={i} index={i} label={t("submitScholar.step2.teacher")} onRemove={() => upd("teachers", form.teachers.filter((_, idx) => idx !== i))}><PersonLinkSection person={p} onChange={np => { const t2 = [...form.teachers]; t2[i] = np; upd("teachers", t2); }} t={t} lang={lang.toLowerCase()} selectedScholarIds={selectedScholarIds} /></ItemCard>))}
           </div>
           <Divider />
           <div style={{ marginBottom: "32px" }}>
@@ -1314,7 +1284,7 @@ const handleDateChange = (field: keyof FormState, value: string) => {
               <button onClick={() => upd("students", [...form.students, emptyPerson()])} style={{ padding: "8px 16px", border: `2px solid ${GREEN}`, borderRadius: "8px", background: "transparent", color: GREEN, fontFamily: HANKEN, fontSize: "10px", fontWeight: 700, letterSpacing: "0.05em", cursor: "pointer", display: "inline-flex", alignItems: "center", gap: "6px", transition: "all 0.2s" }} onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = GREEN; (e.currentTarget as HTMLButtonElement).style.color = "#fff"; }} onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = "transparent"; (e.currentTarget as HTMLButtonElement).style.color = GREEN; }}><Icon name="add" size={14} /> {t("submitScholar.step2.addStudent")}</button>
             </div>
             {form.students.length === 0 && <p style={{ fontSize: "14px", color: MUTED, fontStyle: "italic", padding: "18px 0" }}>{t("submitScholar.step2.noStudents")}</p>}
-            {form.students.map((p, i) => (<ItemCard key={i} index={i} label="Student" onRemove={() => upd("students", form.students.filter((_, idx) => idx !== i))}><PersonLinkSection person={p} onChange={np => { const t2 = [...form.students]; t2[i] = np; upd("students", t2); }} t={t} lang={lang.toLowerCase()} selectedScholarIds={selectedScholarIds} /></ItemCard>))}
+            {form.students.map((p, i) => (<ItemCard key={i} index={i} label={t("submitScholar.step2.student")} onRemove={() => upd("students", form.students.filter((_, idx) => idx !== i))}><PersonLinkSection person={p} onChange={np => { const t2 = [...form.students]; t2[i] = np; upd("students", t2); }} t={t} lang={lang.toLowerCase()} selectedScholarIds={selectedScholarIds} /></ItemCard>))}
           </div>
         </Card>
       );
@@ -1330,99 +1300,103 @@ const handleDateChange = (field: keyof FormState, value: string) => {
           <div style={{ marginBottom: "24px" }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: "8px" }}>
               <label style={labelStyle}>{t("submitScholar.step3.biography")} <span style={{ color: DANGER }}>*</span></label>
-              <span style={{ fontFamily: MONO, fontSize: "10px", color: MUTED }}>Rich Text Editor</span>
+              <span style={{ fontFamily: MONO, fontSize: "10px", color: MUTED }}>{t("submitScholar.step3.richTextEditor")}</span>
             </div>
-            <RichTextEditor value={form.biography} onChange={(html) => upd("biography", html)} placeholder="Write biography here... Select text and click buttons to format." lang={lang.toLowerCase()} />
+            <RichTextEditor value={form.biography} onChange={(html) => upd("biography", html)} placeholder={t("submitScholar.step3.placeholder")} lang={lang.toLowerCase()} />
             {showValidationErrors && <FieldError msg={errors.biography} />}
-            <p style={{ fontFamily: MONO, fontSize: "10px", color: MUTED, marginTop: "10px", fontStyle: "italic" }}>Tip: Click a button to toggle formatting on. Click it again to turn it off.</p>
+            <p style={{ fontFamily: MONO, fontSize: "10px", color: MUTED, marginTop: "10px", fontStyle: "italic" }}>{t("submitScholar.step3.tip")}</p>
           </div>
         </Card>
       );
 
       case 3: return (
         <Card>
-          <CardTitle num="04" title={t("submitScholar.step4.title")} />
+          <CardTitle num="04" title={t("submitScholar.step3.title")} />
           {showValidationErrors && <ErrorBanner errors={errors} title={tt("submitScholar.errors.bannerTitle", "PLEASE FIX THE FOLLOWING")} />}
-          {form.works.length === 0 && (<div style={{ textAlign: "center", padding: "56px 0", border: `2px dashed ${BORDER}`, borderRadius: "14px", marginBottom: "18px" }}><Icon name="menu_book" size={48} /><p style={{ color: MUTED, fontSize: "15px", marginTop: "14px" }}>{t("submitScholar.step4.noWorks")}</p></div>)}
+          {form.works.length === 0 && (<div style={{ textAlign: "center", padding: "56px 0", border: `2px dashed ${BORDER}`, borderRadius: "14px", marginBottom: "18px" }}><Icon name="menu_book" size={48} /><p style={{ color: MUTED, fontSize: "15px", marginTop: "14px" }}>{t("submitScholar.step3.noWorks")}</p></div>)}
           {form.works.map((w, i) => (
-            <ItemCard key={i} index={i} label={t("submitScholar.step4.work")} onRemove={() => upd("works", form.works.filter((_, idx) => idx !== i))}>
+            <ItemCard key={i} index={i} label={t("submitScholar.step3.work")} onRemove={() => upd("works", form.works.filter((_, idx) => idx !== i))}>
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "18px", marginBottom: "18px" }}>
-                <div><label style={labelStyle}>TITLE <span style={{ color: DANGER }}>*</span></label><FocusInput type="text" value={w.title} onChange={e => { const t2 = [...form.works]; t2[i] = { ...t2[i], title: e.target.value }; upd("works", t2); }} placeholder="e.g. The Problem of Culture" hasError={showValidationErrors && !!errors[`work_${i}_title`]} />{showValidationErrors && <FieldError msg={errors[`work_${i}_title`]} />}</div>
-                <div><label style={labelStyle}>YEAR <span style={{ color: DANGER }}>*</span></label><FocusInput type="number" value={w.year} onChange={e => { const t2 = [...form.works]; t2[i] = { ...t2[i], year: e.target.value }; upd("works", t2); }} placeholder="e.g. 1959" hasError={showValidationErrors && !!errors[`work_${i}_year`]} />{showValidationErrors && <FieldError msg={errors[`work_${i}_year`]} />}</div>
+                <div><label style={labelStyle}>{t("submitScholar.step3.titleLabel")} <span style={{ color: DANGER }}>*</span></label><FocusInput type="text" value={w.title} onChange={e => { const t2 = [...form.works]; t2[i] = { ...t2[i], title: e.target.value }; upd("works", t2); }} placeholder={t("submitScholar.placeholders.workTitleExample")} hasError={showValidationErrors && !!errors[`work_${i}_title`]} />{showValidationErrors && <FieldError msg={errors[`work_${i}_title`]} />}</div>
+                <div><label style={labelStyle}>{t("submitScholar.step3.yearLabel")} <span style={{ color: DANGER }}>*</span></label><FocusInput type="number" value={w.year} onChange={e => { const t2 = [...form.works]; t2[i] = { ...t2[i], year: e.target.value }; upd("works", t2); }} placeholder={t("submitScholar.placeholders.workYearExample")} hasError={showValidationErrors && !!errors[`work_${i}_year`]} />{showValidationErrors && <FieldError msg={errors[`work_${i}_year`]} />}</div>
               </div>
               <div style={{ display: "grid", gridTemplateColumns: "1fr", gap: "16px", marginBottom: "18px" }}>
-                <div><label style={labelStyle}>FORMAT</label><FocusSelect value={w.type} onChange={e => { const t2 = [...form.works]; t2[i] = { ...t2[i], type: e.target.value }; upd("works", t2); }}>{WORK_FORMATS.map(x => (<option key={x} value={x}>{x.charAt(0) + x.slice(1).toLowerCase()}</option>))}</FocusSelect></div>
+                <div><label style={labelStyle}>{t("submitScholar.step3.format")}</label><FocusSelect value={w.type} onChange={e => { const t2 = [...form.works]; t2[i] = { ...t2[i], type: e.target.value }; upd("works", t2); }}>
+                  {WORK_FORMATS.map(x => (<option key={x} value={x}>{t(`submitScholar.step3.workFormats.${x.toLowerCase()}`) || x.charAt(0) + x.slice(1).toLowerCase()}</option>))}
+                </FocusSelect></div>
               </div>
-              <div style={{ marginBottom: "18px" }}><label style={labelStyle}>DESCRIPTION</label><FocusTextarea value={w.desc} onChange={e => { const t2 = [...form.works]; t2[i] = { ...t2[i], desc: e.target.value }; upd("works", t2); }} rows={3} placeholder="Brief description of the work" /></div>
-              <div><label style={labelStyle}>DIGITAL ACCESS</label>
+              <div style={{ marginBottom: "18px" }}><label style={labelStyle}>{t("submitScholar.step3.description")}</label><FocusTextarea value={w.desc} onChange={e => { const t2 = [...form.works]; t2[i] = { ...t2[i], desc: e.target.value }; upd("works", t2); }} rows={3} placeholder={t("submitScholar.step3.descPlaceholder")} /></div>
+              <div><label style={labelStyle}>{t("submitScholar.step3.digitalAccess")}</label>
                 <AccessModeTabs mode={w.accessMode} onChange={m => { const t2 = [...form.works]; t2[i] = { ...t2[i], accessMode: m }; upd("works", t2); }} t={t}>
-                  {w.accessMode === "upload" && <UploadZone file={w.file} onFile={f => { const t2 = [...form.works]; t2[i] = { ...t2[i], file: f }; upd("works", t2); }} onRemove={() => { const t2 = [...form.works]; t2[i] = { ...t2[i], file: null }; upd("works", t2); }} accept=".pdf,.mp3,.wav,.epub,.doc,.docx" />}
-                  {w.accessMode === "link" && <FocusInput type="url" value={w.url} onChange={e => { const t2 = [...form.works]; t2[i] = { ...t2[i], url: e.target.value }; upd("works", t2); }} placeholder="https://archive.org/details/…" />}
-                  {w.accessMode === "none" && <p style={{ fontFamily: MONO, fontSize: "10px", color: MUTED, fontStyle: "italic" }}>{t("submitScholar.step4.noneHint")}</p>}
+                  {w.accessMode === "upload" && <UploadZone file={w.file} onFile={f => { const t2 = [...form.works]; t2[i] = { ...t2[i], file: f }; upd("works", t2); }} onRemove={() => { const t2 = [...form.works]; t2[i] = { ...t2[i], file: null }; upd("works", t2); }} accept=".pdf,.mp3,.wav,.epub,.doc,.docx" t={t} />}
+                  {w.accessMode === "link" && <FocusInput type="url" value={w.url} onChange={e => { const t2 = [...form.works]; t2[i] = { ...t2[i], url: e.target.value }; upd("works", t2); }} placeholder={t("submitScholar.placeholders.archiveLink")} />}
+                  {w.accessMode === "none" && <p style={{ fontFamily: MONO, fontSize: "10px", color: MUTED, fontStyle: "italic" }}>{t("submitScholar.step3.noneHint")}</p>}
                 </AccessModeTabs>
               </div>
             </ItemCard>
           ))}
-          <AddBtn onClick={() => upd("works", [...form.works, emptyWork()])}>{t("submitScholar.step4.addWork")}</AddBtn>
+          <AddBtn onClick={() => upd("works", [...form.works, emptyWork()])}>{t("submitScholar.step3.addWork")}</AddBtn>
         </Card>
       );
 
       case 4: return (
         <Card>
-          <CardTitle num="05" title={t("submitScholar.step5.title")} />
+          <CardTitle num="05" title={t("submitScholar.step4.title")} />
           {showValidationErrors && <ErrorBanner errors={errors} title={tt("submitScholar.errors.bannerTitle", "PLEASE FIX THE FOLLOWING")} />}
-          <p style={{ fontSize: "14px", color: MUTED, marginBottom: "28px", lineHeight: 1.6 }}>{t("submitScholar.step5.desc")}</p>
-          {form.media.length === 0 && (<div style={{ textAlign: "center", padding: "56px 0", border: `2px dashed ${BORDER}`, borderRadius: "14px", marginBottom: "18px" }}><Icon name="perm_media" size={48} /><p style={{ color: MUTED, fontSize: "15px", marginTop: "14px" }}>{t("submitScholar.step5.noMedia")}</p></div>)}
+          <p style={{ fontSize: "14px", color: MUTED, marginBottom: "28px", lineHeight: 1.6 }}>{t("submitScholar.step4.desc")}</p>
+          {form.media.length === 0 && (<div style={{ textAlign: "center", padding: "56px 0", border: `2px dashed ${BORDER}`, borderRadius: "14px", marginBottom: "18px" }}><Icon name="perm_media" size={48} /><p style={{ color: MUTED, fontSize: "15px", marginTop: "14px" }}>{t("submitScholar.step4.noMedia")}</p></div>)}
           {form.media.map((m, i) => (
-            <ItemCard key={i} index={i} label={t("submitScholar.step5.media")} onRemove={() => upd("media", form.media.filter((_, idx) => idx !== i))}>
+            <ItemCard key={i} index={i} label={t("submitScholar.step4.media")} onRemove={() => upd("media", form.media.filter((_, idx) => idx !== i))}>
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "18px", marginBottom: "18px" }}>
-                <div><label style={labelStyle}>TITLE <span style={{ color: DANGER }}>*</span></label><FocusInput type="text" value={m.title} onChange={e => { const t2 = [...form.media]; t2[i] = { ...t2[i], title: e.target.value }; upd("media", t2); }} placeholder="e.g. 1972 Lecture" hasError={showValidationErrors && !!errors[`media_${i}_title`]} />{showValidationErrors && <FieldError msg={errors[`media_${i}_title`]} />}</div>
-                <div><label style={labelStyle}>YEAR</label><FocusInput type="number" value={m.year} onChange={e => { const t2 = [...form.media]; t2[i] = { ...t2[i], year: e.target.value }; upd("media", t2); }} placeholder="e.g. 1959" /></div>
+                <div><label style={labelStyle}>{t("submitScholar.step4.titleLabel")} <span style={{ color: DANGER }}>*</span></label><FocusInput type="text" value={m.title} onChange={e => { const t2 = [...form.media]; t2[i] = { ...t2[i], title: e.target.value }; upd("media", t2); }} placeholder={t("submitScholar.placeholders.mediaTitleExample")} hasError={showValidationErrors && !!errors[`media_${i}_title`]} />{showValidationErrors && <FieldError msg={errors[`media_${i}_title`]} />}</div>
+                <div><label style={labelStyle}>{t("submitScholar.step4.yearLabel")}</label><FocusInput type="number" value={m.year} onChange={e => { const t2 = [...form.media]; t2[i] = { ...t2[i], year: e.target.value }; upd("media", t2); }} placeholder={t("submitScholar.placeholders.mediaYearExample")} /></div>
               </div>
               <div style={{ display: "grid", gridTemplateColumns: "1fr", gap: "16px", marginBottom: "18px" }}>
-                <div><label style={labelStyle}>FILE TYPE</label><FocusSelect value={m.type} onChange={e => { const t2 = [...form.media]; t2[i] = { ...t2[i], type: e.target.value }; upd("media", t2); }}>{MEDIA_FILE_TYPES.map(x => (<option key={x} value={x}>{x.toUpperCase()}</option>))}</FocusSelect></div>
+                <div><label style={labelStyle}>{t("submitScholar.step4.fileType")}</label><FocusSelect value={m.type} onChange={e => { const t2 = [...form.media]; t2[i] = { ...t2[i], type: e.target.value }; upd("media", t2); }}>
+                  {MEDIA_FILE_TYPES.map(x => (<option key={x} value={x}>{t(`submitScholar.step4.fileTypes.${x}`) || x.toUpperCase()}</option>))}
+                </FocusSelect></div>
               </div>
-              <div style={{ marginBottom: "18px" }}><label style={labelStyle}>DESCRIPTION</label><FocusTextarea value={m.desc} onChange={e => { const t2 = [...form.media]; t2[i] = { ...t2[i], desc: e.target.value }; upd("media", t2); }} rows={3} placeholder="Brief description of the media" /></div>
-              <div><label style={labelStyle}>FILE / LINK</label>
+              <div style={{ marginBottom: "18px" }}><label style={labelStyle}>{t("submitScholar.step4.description")}</label><FocusTextarea value={m.desc} onChange={e => { const t2 = [...form.media]; t2[i] = { ...t2[i], desc: e.target.value }; upd("media", t2); }} rows={3} placeholder={t("submitScholar.step4.descPlaceholder")} /></div>
+              <div><label style={labelStyle}>{t("submitScholar.step4.fileLink")}</label>
                 <div>
                   <div style={{ display: "flex", border: `1.5px solid ${BORDER}`, borderRadius: "10px", overflow: "hidden", marginBottom: "14px" }}>
-                    <button style={{ flex: 1, padding: "10px 0", textAlign: "center", fontFamily: MONO, fontSize: "10px", fontWeight: 700, letterSpacing: "0.05em", border: "none", cursor: "pointer", transition: "all 0.2s", background: m.accessMode === "upload" ? GREEN : "transparent", color: m.accessMode === "upload" ? "#fff" : MUTED, display: "flex", alignItems: "center", justifyContent: "center", gap: "6px", borderRight: `1px solid ${BORDER}` }} onClick={() => { const t2 = [...form.media]; t2[i] = { ...t2[i], accessMode: "upload" }; upd("media", t2); }}><Icon name="upload_file" size={14} /> {t("submitScholar.step4.upload")}</button>
-                    <button style={{ flex: 1, padding: "10px 0", textAlign: "center", fontFamily: MONO, fontSize: "10px", fontWeight: 700, letterSpacing: "0.05em", border: "none", cursor: "pointer", transition: "all 0.2s", background: m.accessMode === "link" ? GREEN : "transparent", color: m.accessMode === "link" ? "#fff" : MUTED, display: "flex", alignItems: "center", justifyContent: "center", gap: "6px" }} onClick={() => { const t2 = [...form.media]; t2[i] = { ...t2[i], accessMode: "link" }; upd("media", t2); }}><Icon name="link" size={14} /> {t("submitScholar.step4.link")}</button>
+                    <button style={{ flex: 1, padding: "10px 0", textAlign: "center", fontFamily: MONO, fontSize: "10px", fontWeight: 700, letterSpacing: "0.05em", border: "none", cursor: "pointer", transition: "all 0.2s", background: m.accessMode === "upload" ? GREEN : "transparent", color: m.accessMode === "upload" ? "#fff" : MUTED, display: "flex", alignItems: "center", justifyContent: "center", gap: "6px", borderRight: `1px solid ${BORDER}` }} onClick={() => { const t2 = [...form.media]; t2[i] = { ...t2[i], accessMode: "upload" }; upd("media", t2); }}><Icon name="upload_file" size={14} /> {t("submitScholar.step4.uploadFile")}</button>
+                    <button style={{ flex: 1, padding: "10px 0", textAlign: "center", fontFamily: MONO, fontSize: "10px", fontWeight: 700, letterSpacing: "0.05em", border: "none", cursor: "pointer", transition: "all 0.2s", background: m.accessMode === "link" ? GREEN : "transparent", color: m.accessMode === "link" ? "#fff" : MUTED, display: "flex", alignItems: "center", justifyContent: "center", gap: "6px" }} onClick={() => { const t2 = [...form.media]; t2[i] = { ...t2[i], accessMode: "link" }; upd("media", t2); }}><Icon name="link" size={14} /> {t("submitScholar.step4.pasteLink")}</button>
                   </div>
-                  {m.accessMode === "upload" && <UploadZone file={m.file} onFile={f => { const t2 = [...form.media]; t2[i] = { ...t2[i], file: f }; upd("media", t2); }} onRemove={() => { const t2 = [...form.media]; t2[i] = { ...t2[i], file: null }; upd("media", t2); }} accept=".pdf,.mp3,.wav,.mp4,.webm" hint="PDF, Audio (MP3/WAV), Video (MP4) — up to 100 MB" />}
-                  {m.accessMode === "link" && <FocusInput type="url" value={m.url} onChange={e => { const t2 = [...form.media]; t2[i] = { ...t2[i], url: e.target.value }; upd("media", t2); }} placeholder="https://youtube.com/… or direct file URL" />}
+                  {m.accessMode === "upload" && <UploadZone file={m.file} onFile={f => { const t2 = [...form.media]; t2[i] = { ...t2[i], file: f }; upd("media", t2); }} onRemove={() => { const t2 = [...form.media]; t2[i] = { ...t2[i], file: null }; upd("media", t2); }} accept=".pdf,.mp3,.wav,.mp4,.webm" hint={t("submitScholar.step4.fileHint")} t={t} />}
+                  {m.accessMode === "link" && <FocusInput type="url" value={m.url} onChange={e => { const t2 = [...form.media]; t2[i] = { ...t2[i], url: e.target.value }; upd("media", t2); }} placeholder={t("submitScholar.step4.linkPlaceholder")} />}
                 </div>
               </div>
             </ItemCard>
           ))}
-          <AddBtn onClick={() => upd("media", [...form.media, emptyMedia()])}>{t("submitScholar.step5.addMedia")}</AddBtn>
+          <AddBtn onClick={() => upd("media", [...form.media, emptyMedia()])}>{t("submitScholar.step4.addMedia")}</AddBtn>
         </Card>
       );
 
       case 5: return (
         <Card>
-          <CardTitle num="06" title={t("submitScholar.step6.title")} />
+          <CardTitle num="06" title={t("submitScholar.step5.title")} />
           {showValidationErrors && <ErrorBanner errors={errors} title={tt("submitScholar.errors.bannerTitle", "PLEASE FIX THE FOLLOWING")} />}
           <div style={{ display: "flex", alignItems: "center", gap: "12px", padding: "14px 18px", background: "rgba(179,38,30,0.05)", border: "1.5px solid rgba(179,38,30,0.2)", borderRadius: "10px", marginBottom: "28px" }}>
-            <Icon name="warning" size={18} /><span style={{ fontFamily: MONO, fontSize: "11px", color: DANGER, fontWeight: 700, letterSpacing: "0.05em" }}>{t("submitScholar.step6.warning")}</span>
+            <Icon name="warning" size={18} /><span style={{ fontFamily: MONO, fontSize: "11px", color: DANGER, fontWeight: 700, letterSpacing: "0.05em" }}>{t("submitScholar.step5.warning")}</span>
           </div>
-          {form.refs.length === 0 && (<div style={{ textAlign: "center", padding: "56px 0", border: `2px dashed ${BORDER}`, borderRadius: "14px", marginBottom: "18px" }}><Icon name="auto_stories" size={48} /><p style={{ color: MUTED, fontSize: "15px", marginTop: "14px" }}>{t("submitScholar.step6.noRefs")}</p></div>)}
+          {form.refs.length === 0 && (<div style={{ textAlign: "center", padding: "56px 0", border: `2px dashed ${BORDER}`, borderRadius: "14px", marginBottom: "18px" }}><Icon name="auto_stories" size={48} /><p style={{ color: MUTED, fontSize: "15px", marginTop: "14px" }}>{t("submitScholar.step5.noRefs")}</p></div>)}
           {form.refs.map((r, i) => (
-            <ItemCard key={i} index={i} label={t("submitScholar.step6.reference")} onRemove={() => upd("refs", form.refs.filter((_, idx) => idx !== i))}>
+            <ItemCard key={i} index={i} label={t("submitScholar.step5.reference")} onRemove={() => upd("refs", form.refs.filter((_, idx) => idx !== i))}>
               <div style={{ display: "flex", flexDirection: "column", gap: "18px" }}>
-                <div><label style={labelStyle}>Title *</label><FocusInput type="text" value={r.title} onChange={e => { const t2 = [...form.refs]; t2[i] = { ...t2[i], title: e.target.value }; upd("refs", t2); }} placeholder="e.g. Wikipedia" hasError={showValidationErrors && !!errors[`ref_${i}_title`]} />{showValidationErrors && <FieldError msg={errors[`ref_${i}_title`]} />}</div>
-                <div><label style={labelStyle}>Citation *</label><FocusInput type="text" value={r.citation} onChange={e => { const t2 = [...form.refs]; t2[i] = { ...t2[i], citation: e.target.value }; upd("refs", t2); }} placeholder="e.g. Malek Bennabi" hasError={showValidationErrors && !!errors[`ref_${i}_citation`]} />{showValidationErrors && <FieldError msg={errors[`ref_${i}_citation`]} />}</div>
-                <div><label style={labelStyle}>URL</label><FocusInput type="url" value={r.url} onChange={e => { const t2 = [...form.refs]; t2[i] = { ...t2[i], url: e.target.value }; upd("refs", t2); }} placeholder="https://en.wikipedia.org/wiki/Malek_Bennabi" /></div>
+                <div><label style={labelStyle}>{t("submitScholar.step5.titleLabel")} *</label><FocusInput type="text" value={r.title} onChange={e => { const t2 = [...form.refs]; t2[i] = { ...t2[i], title: e.target.value }; upd("refs", t2); }} placeholder={t("submitScholar.placeholders.refTitleExample")} hasError={showValidationErrors && !!errors[`ref_${i}_title`]} />{showValidationErrors && <FieldError msg={errors[`ref_${i}_title`]} />}</div>
+                <div><label style={labelStyle}>{t("submitScholar.step5.citation")} *</label><FocusInput type="text" value={r.citation} onChange={e => { const t2 = [...form.refs]; t2[i] = { ...t2[i], citation: e.target.value }; upd("refs", t2); }} placeholder={t("submitScholar.placeholders.refCitationExample")} hasError={showValidationErrors && !!errors[`ref_${i}_citation`]} />{showValidationErrors && <FieldError msg={errors[`ref_${i}_citation`]} />}</div>
+                <div><label style={labelStyle}>{t("submitScholar.step5.url")}</label><FocusInput type="url" value={r.url} onChange={e => { const t2 = [...form.refs]; t2[i] = { ...t2[i], url: e.target.value }; upd("refs", t2); }} placeholder={t("submitScholar.placeholders.refUrlExample")} /></div>
               </div>
             </ItemCard>
           ))}
-          <AddBtn onClick={() => upd("refs", [...form.refs, emptyRef()])}>{t("submitScholar.step6.addRef")}</AddBtn>
+          <AddBtn onClick={() => upd("refs", [...form.refs, emptyRef()])}>{t("submitScholar.step5.addRef")}</AddBtn>
         </Card>
       );
 
       case 6: return (
         <Card>
-          <CardTitle num="07" title={t("submitScholar.step7.title")} />
+          <CardTitle num="07" title={t("submitScholar.step6.title")} />
           {showValidationErrors && <ErrorBanner errors={errors} title={tt("submitScholar.errors.bannerTitle", "PLEASE FIX THE FOLLOWING")} />}
           {submitError && (
             <div style={{ display: "flex", alignItems: "flex-start", gap: "12px", padding: "16px 18px", background: DANGER_BG, border: `1.5px solid ${DANGER_BORDER}`, borderRadius: "12px", marginBottom: "28px", animation: "fade-in-up 0.3s ease-out" }}>
@@ -1430,9 +1404,9 @@ const handleDateChange = (field: keyof FormState, value: string) => {
               <div><div style={{ fontFamily: HANKEN, fontSize: "14px", color: DANGER, fontWeight: 700, letterSpacing: "0.02em", marginBottom: "6px" }}>{tt("submitScholar.errors.serverTitle", "SUBMISSION FAILED")}</div><div style={{ fontSize: "13px", color: "#7a231d", lineHeight: 1.7 }}>{submitError}</div></div>
             </div>
           )}
-          <p style={{ fontSize: "14px", color: MUTED, marginBottom: "32px", lineHeight: 1.6 }}>{t("submitScholar.step7.desc")}</p>
+          <p style={{ fontSize: "14px", color: MUTED, marginBottom: "32px", lineHeight: 1.6 }}>{t("submitScholar.step6.desc")}</p>
           
-          <ReviewSection title={tt("submitScholar.step7.identitySection", "Identity & Metadata")}>
+          <ReviewSection title={t("submitScholar.step6.identitySection")}>
             <div style={{ display: "grid", gridTemplateColumns: "120px 1fr", gap: "24px", alignItems: "start" }}>
               {form.portraitUrl ? (
                 <img src={form.portraitUrl} alt="Portrait" style={{ width: "100%", borderRadius: "10px", aspectRatio: "3/4", objectFit: "cover", background: "#e7e8e6", boxShadow: "0 4px 12px rgba(0,0,0,0.08)" }} />
@@ -1443,7 +1417,13 @@ const handleDateChange = (field: keyof FormState, value: string) => {
               )}
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "20px" }}>
                 <ReviewField label={t("submitScholar.step1.canonicalName")} value={form.canonical_name || "—"} />
-                <ReviewField label={t("submitScholar.step1.region")} value={regions.find(r => r.region_id === form.region_id)?.name || "—"} />
+                <ReviewField 
+  label={t("submitScholar.step1.region")} 
+  value={(() => {
+    const r = regions.find(reg => reg.region_id === form.region_id);
+    return r ? (r.translations?.[lang.toLowerCase()] || "—") : "—";
+  })()} 
+/>
                 <ReviewField label={t("submitScholar.step1.birthDateGregorian")} value={form.birth_date_gregorian || "—"} />
                 <ReviewField label={t("submitScholar.step1.birthDateHijri")} value={form.birth_date_hijri || "—"} />
                 <ReviewField label={t("submitScholar.step1.deathDateGregorian")} value={form.death_date_gregorian || "—"} />
@@ -1451,7 +1431,13 @@ const handleDateChange = (field: keyof FormState, value: string) => {
                 <ReviewField label={t("submitScholar.step1.centuryGregorianStart")} value={form.century_gregorian_start ? String(form.century_gregorian_start) : "—"} />
                 <ReviewField label={t("submitScholar.step1.centuryHijriStart")} value={form.century_hijri_start ? String(form.century_hijri_start) : "—"} />
                 <div style={{ gridColumn: "1 / -1" }}>
-                  <ReviewField label={t("submitScholar.step1.disciplines")} value={form.discipline_ids.length > 0 ? form.discipline_ids.map(id => disciplines.find(d => d.discipline_id === id)?.name).filter(Boolean).join(", ") : "—"} />
+                  <ReviewField 
+  label={t("submitScholar.step1.disciplines")} 
+  value={form.discipline_ids.length > 0 ? form.discipline_ids.map(id => {
+    const d = disciplines.find(disc => disc.discipline_id === id);
+    return d ? (d.translations?.[lang.toLowerCase()] || "") : "";
+  }).filter(Boolean).join(", ") : "—"} 
+/>
                 </div>
                 {form.aliases.length > 0 && (<div style={{ gridColumn: "1 / -1" }}><ReviewField label={t("submitScholar.step1.aliases")} value={form.aliases.join(", ")} /></div>)}
               </div>
@@ -1459,12 +1445,12 @@ const handleDateChange = (field: keyof FormState, value: string) => {
           </ReviewSection>
 
           {(form.teachers.length > 0 || form.students.length > 0) && (
-            <ReviewSection title={t("submitScholar.steps.relations")}>
+            <ReviewSection title={t("submitScholar.step6.relationsSection")}>
               {form.teachers.length > 0 && (
                 <div style={{ marginBottom: "20px" }}>
                   <div style={{ ...sectionLabelStyle, marginBottom: "10px" }}>{t("submitScholar.step2.teachers")}</div>
                   <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-                    {form.teachers.map((t_item, i) => (<div key={i} style={{ padding: "12px 16px", background: "#fff", borderRadius: "8px", border: `1px solid ${BORDER}`, fontSize: "14px", fontWeight: 600 }}>{t_item.scholar_name || `Teacher ${i + 1}`}</div>))}
+                    {form.teachers.map((t_item, i) => (<div key={i} style={{ padding: "12px 16px", background: "#fff", borderRadius: "8px", border: `1px solid ${BORDER}`, fontSize: "14px", fontWeight: 600 }}>{t_item.scholar_name || `${t("submitScholar.step2.teacher")} ${i + 1}`}</div>))}
                   </div>
                 </div>
               )}
@@ -1472,36 +1458,35 @@ const handleDateChange = (field: keyof FormState, value: string) => {
                 <div>
                   <div style={{ ...sectionLabelStyle, marginBottom: "10px" }}>{t("submitScholar.step2.students")}</div>
                   <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-                    {form.students.map((s_item, i) => (<div key={i} style={{ padding: "12px 16px", background: "#fff", borderRadius: "8px", border: `1px solid ${BORDER}`, fontSize: "14px", fontWeight: 600 }}>{s_item.scholar_name || `Student ${i + 1}`}</div>))}
+                    {form.students.map((s_item, i) => (<div key={i} style={{ padding: "12px 16px", background: "#fff", borderRadius: "8px", border: `1px solid ${BORDER}`, fontSize: "14px", fontWeight: 600 }}>{s_item.scholar_name || `${t("submitScholar.step2.student")} ${i + 1}`}</div>))}
                   </div>
                 </div>
               )}
             </ReviewSection>
           )}
 
-          <ReviewSection title={tt("submitScholar.step7.narrativeSection", "Narrative") + ` (${langLabel.toUpperCase()})`}>
+          <ReviewSection title={`${t("submitScholar.step6.narrativeSection")} (${langLabel.toUpperCase()})`}>
             {form.pageTitle && <ReviewField label={t("submitScholar.step3.pageTitle")} value={form.pageTitle} />}
             {form.summary && <ReviewField label={t("submitScholar.step3.summary")} value={form.summary} />}
             {form.quote && <ReviewField label={t("submitScholar.step3.quote")} value={form.quote} />}
             <div style={{ marginTop: "16px" }}>
               <div style={{ ...sectionLabelStyle, marginBottom: "10px" }}>{t("submitScholar.step3.biography")}</div>
-              {/* ✅ sanitized right before it's rendered via dangerouslySetInnerHTML */}
               <div style={{ padding: "16px", background: "#fff", borderRadius: "8px", border: `1px solid ${BORDER}`, fontSize: "14px", lineHeight: "1.7" }} dangerouslySetInnerHTML={{ __html: form.biography ? sanitizeBiography(form.biography) : "—" }} />
             </div>
           </ReviewSection>
 
           {form.works.length > 0 && (
-            <ReviewSection title={t("submitScholar.steps.works")}>
+            <ReviewSection title={t("submitScholar.step6.worksSection")}>
               <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
                 {form.works.map((w, i) => (
                   <div key={i} style={{ padding: "16px", background: "#fff", borderRadius: "10px", border: `1px solid ${BORDER}` }}>
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "10px" }}>
                       <span style={{ fontWeight: 700, fontSize: "15px", color: GREEN }}>{w.title}</span>
-                      <span style={{ fontFamily: MONO, fontSize: "10px", color: GREEN, background: GREEN_LIGHT, padding: "4px 10px", borderRadius: "6px", fontWeight: 700 }}>{w.type}</span>
+                      <span style={{ fontFamily: MONO, fontSize: "10px", color: GREEN, background: GREEN_LIGHT, padding: "4px 10px", borderRadius: "6px", fontWeight: 700 }}>{t(`submitScholar.step3.workFormats.${w.type.toLowerCase()}`) || w.type}</span>
                     </div>
                     <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px", fontSize: "13px", color: "#404945", marginBottom: "8px" }}>
-                      <div><span style={{ color: MUTED, fontWeight: 600 }}>Year:</span> {w.year || "—"}</div>
-                      <div><span style={{ color: MUTED, fontWeight: 600 }}>Access:</span> {w.accessMode === "upload" ? (w.file ? w.file.name : "Uploaded") : w.accessMode === "link" ? w.url : "None"}</div>
+                      <div><span style={{ color: MUTED, fontWeight: 600 }}>{t("submitScholar.step3.yearLabel")}:</span> {w.year || "—"}</div>
+                      <div><span style={{ color: MUTED, fontWeight: 600 }}>{t("submitScholar.step3.digitalAccess")}:</span> {w.accessMode === "upload" ? (w.file ? w.file.name : "Uploaded") : w.accessMode === "link" ? w.url : t("submitScholar.step3.none")}</div>
                     </div>
                     {w.desc && <div style={{ fontSize: "13px", color: "#404945", lineHeight: 1.6, paddingTop: "8px", borderTop: `1px solid ${BORDER}` }}>{w.desc}</div>}
                   </div>
@@ -1511,17 +1496,17 @@ const handleDateChange = (field: keyof FormState, value: string) => {
           )}
 
           {form.media.length > 0 && (
-            <ReviewSection title={t("submitScholar.steps.media")}>
+            <ReviewSection title={t("submitScholar.step6.mediaSection")}>
               <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
                 {form.media.map((m, i) => (
                   <div key={i} style={{ padding: "16px", background: "#fff", borderRadius: "10px", border: `1px solid ${BORDER}` }}>
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "10px" }}>
                       <span style={{ fontWeight: 700, fontSize: "15px", color: GREEN }}>{m.title}</span>
-                      <span style={{ fontFamily: MONO, fontSize: "10px", color: GREEN, background: GREEN_LIGHT, padding: "4px 10px", borderRadius: "6px", fontWeight: 700 }}>{m.type.toUpperCase()}</span>
+                      <span style={{ fontFamily: MONO, fontSize: "10px", color: GREEN, background: GREEN_LIGHT, padding: "4px 10px", borderRadius: "6px", fontWeight: 700 }}>{t(`submitScholar.step4.fileTypes.${m.type}`) || m.type.toUpperCase()}</span>
                     </div>
                     <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px", fontSize: "13px", color: "#404945", marginBottom: "8px" }}>
-                      <div><span style={{ color: MUTED, fontWeight: 600 }}>Year:</span> {m.year || "—"}</div>
-                      <div><span style={{ color: MUTED, fontWeight: 600 }}>Access:</span> {m.accessMode === "upload" ? (m.file ? m.file.name : "Uploaded") : m.accessMode === "link" ? m.url : "None"}</div>
+                      <div><span style={{ color: MUTED, fontWeight: 600 }}>{t("submitScholar.step4.yearLabel")}:</span> {m.year || "—"}</div>
+                      <div><span style={{ color: MUTED, fontWeight: 600 }}>{t("submitScholar.step4.fileLink")}:</span> {m.accessMode === "upload" ? (m.file ? m.file.name : "Uploaded") : m.accessMode === "link" ? m.url : t("submitScholar.step3.none")}</div>
                     </div>
                     {m.desc && <div style={{ fontSize: "13px", color: "#404945", lineHeight: 1.6, paddingTop: "8px", borderTop: `1px solid ${BORDER}` }}>{m.desc}</div>}
                   </div>
@@ -1531,7 +1516,7 @@ const handleDateChange = (field: keyof FormState, value: string) => {
           )}
 
           {form.refs.length > 0 && (
-            <ReviewSection title={t("submitScholar.steps.refs")}>
+            <ReviewSection title={t("submitScholar.step6.refsSection")}>
               <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
                 {form.refs.map((r, i) => (
                   <div key={i} style={{ padding: "14px 16px", background: "#fff", borderRadius: "8px", border: `1px solid ${BORDER}` }}>
@@ -1547,7 +1532,7 @@ const handleDateChange = (field: keyof FormState, value: string) => {
           <div style={{ marginTop: "32px", padding: "24px", background: GREEN_LIGHT, border: `1.5px solid ${showValidationErrors && errors.confirmed ? DANGER : GREEN_BORDER}`, borderRadius: "12px" }}>
             <label style={{ display: "flex", alignItems: "flex-start", gap: "14px", cursor: "pointer" }}>
               <input type="checkbox" checked={form.confirmed} onChange={e => upd("confirmed", e.target.checked)} style={{ width: "18px", height: "18px", accentColor: GREEN, flexShrink: 0, marginTop: "2px" }} />
-              <span style={{ fontSize: "14px", color: "#404945", lineHeight: 1.7 }}>{t("submitScholar.step7.confirmText")}</span>
+              <span style={{ fontSize: "14px", color: "#404945", lineHeight: 1.7 }}>{t("submitScholar.step6.confirmText")}</span>
             </label>
             {showValidationErrors && <FieldError msg={errors.confirmed} />}
           </div>
@@ -1567,7 +1552,6 @@ const handleDateChange = (field: keyof FormState, value: string) => {
         @import url('https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=swap'); 
         .material-symbols-outlined { font-variation-settings: 'FILL' 0,'wght' 400,'GRAD' 0,'opsz' 24; font-family: 'Material Symbols Outlined'; display: inline-block; vertical-align: middle; } 
         .submit-scholar-page * { box-sizing: border-box; margin: 0; padding: 0; } 
-        .submit-scholar-page a { text-decoration: none; } 
         .submit-scholar-page input[type=number]::-webkit-inner-spin-button { opacity: 1; } 
         @keyframes submit-spin { to { transform: rotate(360deg); } } 
         @keyframes step-fade-in { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } } 
@@ -1584,13 +1568,11 @@ const handleDateChange = (field: keyof FormState, value: string) => {
           .responsive-card-padding { padding: 48px !important; }
         }
 
-        /* ✅ FULL WIDTH ON MOBILE - No left/right padding */
         @media (max-width: 767px) {
           .responsive-padding { padding: 24px 0 96px 0 !important; }
           .responsive-card-padding { padding: 20px !important; }
         }
 
-        /* ✅ UPDATED: Footer buttons reduced width on mobile */
         @media (max-width: 640px) {
           .footer-nav-row { flex-wrap: wrap; row-gap: 10px; }
           .footer-actions { width: 100%; justify-content: space-between !important; gap: 8px !important; }
@@ -1614,9 +1596,19 @@ const handleDateChange = (field: keyof FormState, value: string) => {
       
       <header style={{ position: "sticky", top: 0, zIndex: 50, background: "rgba(251,249,244,0.96)", backdropFilter: "blur(8px)", borderBottom: "1.5px solid rgba(192,201,195,0.3)", padding: "16px 0" }}>
         <div style={{ width: "100%", maxWidth: "100%", padding: "0 16px", display: "flex", justifyContent: "space-between", alignItems: "center" }} className="responsive-header-padding">
-          <div><div style={{ fontFamily: MONO, fontSize: "11px", color: GOLD, letterSpacing: "0.2em", opacity: 0.9, fontWeight: 700 }}>OULAMAUNA</div><div style={{ fontSize: "14px", color: MUTED, fontFamily: HANKEN, fontWeight: 600 }}>{t("submitScholar.portal.title")}</div></div>
+          <div 
+  onClick={handleLogoClick}
+  style={{ display: "flex", alignItems: "center", gap: "16px", cursor: "pointer" }}
+>
+  <img src={tlogo2} alt="Oulamauna Logo" style={{ height: "36px", width: "auto", objectFit: "contain" }} />
+  <div>
+    <div style={{ fontFamily: MONO, fontSize: "11px", color: GOLD, letterSpacing: "0.2em", opacity: 0.9, fontWeight: 700, lineHeight: 1 }}>OULAMAUNA</div>
+    <div style={{ fontSize: "14px", color: MUTED, fontFamily: HANKEN, fontWeight: 600, lineHeight: 1.4, marginTop: "2px" }}>{t("submitScholar.portal.title")}</div>
+  </div>
+</div>
+
           <button onClick={startFreshDraft} style={{ padding: "10px 20px", border: `2px solid ${BORDER}`, borderRadius: "10px", background: "transparent", color: MUTED, fontFamily: HANKEN, fontSize: "11px", fontWeight: 700, letterSpacing: "0.03em", cursor: "pointer", display: "inline-flex", alignItems: "center", gap: "8px", transition: "all 0.2s" }} onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.borderColor = GREEN; (e.currentTarget as HTMLButtonElement).style.color = GREEN; }} onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.borderColor = BORDER; (e.currentTarget as HTMLButtonElement).style.color = MUTED; }}>
-            <Icon name="add_circle" size={16} /> {tt("submitScholar.header.newScholar", "New Scholar")}
+            <Icon name="add_circle" size={16} /> {t("submitScholar.header.newScholar")}
           </button>
         </div>
       </header>
@@ -1626,16 +1618,16 @@ const handleDateChange = (field: keyof FormState, value: string) => {
         {draftRestored && (
           <div style={{ display: "flex", alignItems: "center", gap: "12px", padding: "14px 18px", background: GOLD_LIGHT, border: "1.5px solid rgba(201,168,76,0.3)", borderRadius: "12px", marginBottom: "24px", animation: "step-fade-in 0.3s ease" }}>
             <span style={{ color: GOLD, flexShrink: 0 }}><Icon name="history" size={18} /></span>
-            <span style={{ fontSize: "13px", color: "#5c4a00", lineHeight: 1.6, flex: 1 }}>{tt("submitScholar.draft.restored", "A saved draft was restored. Files (portrait, works, media) need to be re-attached.")}</span>
+            <span style={{ fontSize: "13px", color: "#5c4a00", lineHeight: 1.6, flex: 1 }}>{t("submitScholar.draft.restored")}</span>
             <button onClick={() => setDraftRestored(false)} style={{ background: "none", border: "none", cursor: "pointer", color: GOLD, display: "flex", alignItems: "center", flexShrink: 0 }}><Icon name="close" size={18} /></button>
           </div>
         )}
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: "12px", marginBottom: "36px" }}>
           <div style={{ display: "inline-flex", alignItems: "center", gap: "8px", padding: "8px 18px", background: GREEN_LIGHT, border: `1.5px solid ${GREEN_BORDER}`, borderRadius: "12px", width: "fit-content" }}>
-            <Icon name="lock" size={14} /><span style={{ fontFamily: MONO, fontSize: "11px", fontWeight: 700, letterSpacing: "0.03em", color: GREEN }}>{NATIVE_LANG_NAMES[lang]}</span>
+            <Icon name="lock" size={14} /><span style={{ fontFamily: MONO, fontSize: "11px", fontWeight: 700, letterSpacing: "0.03em", color: GREEN }}>{langLabel}</span>
           </div>
           <div style={{ display: "inline-flex", alignItems: "center", gap: "8px", fontFamily: MONO, fontSize: "10px", color: MUTED, letterSpacing: "0.03em" }}>
-            <Icon name="cloud_done" size={15} /> {tt("submitScholar.draft.autosaved", "Progress is saved automatically on this device")}
+            <Icon name="cloud_done" size={15} /> {t("submitScholar.draft.autosaved")}
           </div>
         </div>
         <div style={{ display: "flex", alignItems: "flex-start", marginBottom: "40px", overflowX: "auto", paddingBottom: "6px" }}>
@@ -1651,7 +1643,6 @@ const handleDateChange = (field: keyof FormState, value: string) => {
         </div>
         <div key={step} style={{ animation: "step-fade-in 0.32s ease" }}>{renderStep()}</div>
 
-        {/* ✅ UPDATED FOOTER: uses hover-enabled components, compact on mobile */}
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: "10px" }} className="footer-nav-row">
           <div>
             {step > 0 && <FooterBackButton onClick={goPrev} label={t("submitScholar.footer.back")} />}
@@ -1663,8 +1654,8 @@ const handleDateChange = (field: keyof FormState, value: string) => {
                 error={!!draftSaveError}
                 saved={draftSavedPulse}
                 labelDefault={t("submitScholar.footer.saveDraft")}
-                labelSaved={tt("submitScholar.footer.draftSaved", "Saved")}
-                labelError={tt("submitScholar.footer.draftSaveFailed", "Save failed")}
+                labelSaved={t("submitScholar.footer.saved")}
+                labelError={t("submitScholar.footer.saveFailed")}
               />
               {draftSaveError && (<div style={{ position: "absolute", bottom: "calc(100% + 10px)", right: 0, width: "240px", padding: "10px 14px", background: "#fff", border: `1.5px solid ${DANGER_BORDER}`, borderRadius: "10px", fontSize: "12px", color: "#7a231d", boxShadow: "0 4px 16px rgba(0,0,0,0.1)" }}>{draftSaveError}</div>)}
             </div>
@@ -1676,7 +1667,7 @@ const handleDateChange = (field: keyof FormState, value: string) => {
                 disabled={!canSubmit}
                 submitting={isSubmitting}
                 label={t("submitScholar.footer.submit")}
-                submittingLabel={tt("submitScholar.footer.submitting", "Submitting...")}
+                submittingLabel={t("submitScholar.footer.submitting")}
               />
             )}
           </div>

@@ -4,14 +4,35 @@ import axios, { AxiosInstance, AxiosError } from 'axios';
 // 1. TYPESCRIPT INTERFACES (واجهات البيانات)
 // ==========================================
 
+export type NotificationType =
+  | "NEW_SCHOLAR_SUBMISSION"
+  | "EDIT_PROPOSAL"
+  | "REPORT_SUBMITTED"
+  | "SCHOLAR_APPROVED"
+  | "SCHOLAR_REJECTED"
+  | "MEDIA_APPROVED"
+  | "MEDIA_REJECTED"
+  | "IMAGE_APPROVED"
+  | "IMAGE_REJECTED"
+  | "WORK_APPROVED"
+  | "WORK_REJECTED"
+  | "REFERENCE_APPROVED"
+  | "REFERENCE_REJECTED"
+  | "NEW_DISCIPLINE_SUBMISSION"
+  | "NEW_REGION_SUBMISSION"
+  | "NEW_FORUM_POST"
+  | "COMMENT_ON_POST"
+  | "REPLY_TO_COMMENT";
+
 export interface Notification {
   notification_id: number;
   user_id: number;
   title: string;
   message: string;
-  type?: string;          // مثال: 'comment', 'order', 'system'
+  type?: NotificationType;
   is_read: boolean;
   created_at: string;
+  related_entity?: string;
 }
 
 export interface NotificationListResponse {
@@ -24,7 +45,7 @@ export interface CreateNotificationPayload {
   user_id: number;
   title: string;
   message: string;
-  type?: string;
+  type?: NotificationType;
 }
 
 // واجهة موحدة للاستجابات (نفس المستخدمة في userApi)
@@ -79,9 +100,8 @@ api.interceptors.response.use(
 
 export const notificationApi = {
   
-  // 📥 1. جلب الإشعارات (مع دعم الفلترة والترقيم)
-  getNotifications: (params?: { unread_only?: boolean; page?: number; limit?: number }) => 
-    api.get<NotificationListResponse>('/', { params }),
+ getNotifications: (params?: { unread_only?: boolean; page?: number; limit?: number; scope?: "public" | "admin" }) => 
+  api.get<NotificationListResponse>('/', { params }),
 
   // ✅ 2. تحديد إشعار واحد كمقروء
   markAsRead: (id: number) => 
@@ -95,5 +115,21 @@ export const notificationApi = {
   createNotification: (payload: CreateNotificationPayload) => 
     api.post<ApiResponse<Notification>>('/', payload),
 };
+
+// ==========================================
+// 4. SCOPE FILTERING (public vs admin)
+// ==========================================
+
+export const ADMIN_ONLY_TYPES: Set<NotificationType> = new Set([
+  "NEW_SCHOLAR_SUBMISSION",
+  "EDIT_PROPOSAL",
+  "REPORT_SUBMITTED",
+  "NEW_DISCIPLINE_SUBMISSION",
+  "NEW_REGION_SUBMISSION",
+  "NEW_FORUM_POST",
+]);
+
+export const isAdminNotification = (type?: NotificationType): boolean =>
+  !!type && ADMIN_ONLY_TYPES.has(type);
 
 export default notificationApi;

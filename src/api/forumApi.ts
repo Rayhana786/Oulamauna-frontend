@@ -9,6 +9,7 @@ export interface ForumUser {
   username: string;
   name: string | null;
   profile_picture: string | null;
+  roles?: { role_name: string }; 
 }
 
 export interface ForumCategory {
@@ -161,8 +162,10 @@ export const forumApi = {
       api.post<ApiResponse<ForumReport>>(`/comments/${id}/report`, { reason }),
   },
    categories: {
-    getAll: () => 
-      api.get<ApiResponse<ForumCategory[]>>('/categories'),
+    getAll: (lang?: string) => 
+      api.get<ApiResponse<ForumCategory[]>>('/categories', { 
+        params: lang ? { lang } : undefined 
+      }),
   },
 };
 

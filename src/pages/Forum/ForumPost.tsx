@@ -1,6 +1,6 @@
 // src/pages/ForumPost.tsx
 import React, { useEffect, useState, useRef } from "react";
-import { useParams, useNavigate, Link } from "react-router-dom";
+import { useParams, useNavigate, Link, useLocation } from "react-router-dom"; // ✅ Added useLocation
 import { useLang } from "../../context/LanguageContext";
 import { useAuth } from "../../context/AuthContext";
 import { forumApi, ForumPost as ApiForumPost, ForumComment as ApiForumComment } from "../../api/forumApi";
@@ -74,6 +74,7 @@ const ForumPost: React.FC = () => {
   const navigate = useNavigate();
   const { lang, t } = useLang();
   const { user } = useAuth();
+  const location = useLocation(); // ✅ Added to read the ?highlight=ID from URL
   const isRTL = lang === "AR";
   const currentLangCode = lang.toLowerCase(); 
 
@@ -100,10 +101,17 @@ const ForumPost: React.FC = () => {
     });
   };
 
-  const [isFullscreen, setIsFullscreen] = useState(false);
+  const [isFullscreen, setIsFullscreen] = useState(() => {
+    // Check localStorage on initial load
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('forumPostFullscreen') === 'true';
+    }
+    return false;
+  });
   const [postReportModal, setPostReportModal] = useState<{ isOpen: boolean; reason: string }>({ isOpen: false, reason: "" });
   const [commentReportModal, setCommentReportModal] = useState<{ isOpen: boolean; commentId: number | null; reason: string }>({ isOpen: false, commentId: null, reason: "" });
-
+  // ✅ NEW: Toast state for login warnings
+  const [toast, setToast] = useState<{ message: string; type: "success" | "error" } | null>(null);
   useEffect(() => {
     const fetchPost = async () => {
       if (!id) return;
@@ -125,6 +133,38 @@ const ForumPost: React.FC = () => {
     fetchPost();
   }, [id, navigate]);
 
+
+    // ✅ NEW: Highlight and scroll to comment if 'highlight' is in the URL
+  useEffect(() => {
+    const queryParams = new URLSearchParams(location.search);
+    const highlightId = queryParams.get("highlight");
+
+    if (highlightId && postData) {
+      // Wait a moment for the comments to fully render in the DOM
+      setTimeout(() => {
+        const el = document.getElementById(`comment-${highlightId}`);
+        if (el) {
+          // 1. Smooth scroll to the comment
+          el.scrollIntoView({ behavior: "smooth", block: "center" });
+          
+          // 2. Apply a temporary amber highlight
+          el.style.transition = "background-color 0.5s ease, border-color 0.5s ease";
+          const originalBg = el.style.backgroundColor;
+          const originalBorder = el.style.borderColor;
+          
+          el.style.backgroundColor = "rgba(184, 134, 11, 0.15)"; // Amber with opacity
+          el.style.borderColor = colors.amber;
+
+          // 3. Remove highlight after 2.5 seconds
+          setTimeout(() => {
+            el.style.backgroundColor = originalBg;
+            el.style.borderColor = originalBorder;
+          }, 2500);
+        }
+      }, 500); // 500ms delay ensures the DOM is ready
+    }
+  }, [location.search, postData]);
+
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
       if (sortDropdownRef.current && !sortDropdownRef.current.contains(e.target as Node)) {
@@ -136,7 +176,14 @@ const ForumPost: React.FC = () => {
   }, []);
 
   const handlePostComment = async () => {
+    // ✅ NEW: Check if user is logged in BEFORE calling the API
+    if (!user) {
+      setToast({ message: t("forumPost.loginToPost"), type: "error" });
+      return; // Stop here, do not call the API
+    }
+
     if (!commentText.trim() || !postData) return;
+    
     try {
       const response = await forumApi.comments.create(postData.post.post_id, {
         content: commentText.trim(),
@@ -172,7 +219,8 @@ const ForumPost: React.FC = () => {
       }
     } catch (error) {
       console.error("Failed to post comment:", error);
-      alert(t("forumPost.failedToPostComment"));
+      // ✅ UPGRADE: Use the Toast instead of a jarring browser alert
+      setToast({ message: t("forumPost.failedToPostComment"), type: "error" });
     }
   };
 
@@ -189,21 +237,38 @@ const ForumPost: React.FC = () => {
     setCommentText("");
   };
 
-  const handleLikePost = async (e: React.MouseEvent) => {
+   const handleLikePost = async (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
+
+    // ✅ NEW: Check if user is logged in BEFORE calling the API
+    if (!user) {
+      setToast({ message: t("forumPost.loginToLike"), type: "error" });
+      return; // Stop here, do not call the API
+    }
+
     try {
       const res = await forumApi.posts.toggleLike(postData!.post.post_id);
       if (res.data.success) {
         const { like_count, liked } = res.data; 
         setPostData(prev => prev ? { ...prev, post: { ...prev.post, like_count, liked } } : null);
       }
-    } catch (err) { console.error("Failed to toggle post like", err); }
+    } catch (err) { 
+      console.error("Failed to toggle post like", err); 
+      setToast({ message: t("forumPost.failedToLikePost"), type: "error" });
+    }
   };
 
-  const handleLikeComment = async (e: React.MouseEvent, commentId: number) => {
+    const handleLikeComment = async (e: React.MouseEvent, commentId: number) => {
     e.preventDefault();
     e.stopPropagation();
+
+    // ✅ NEW: Check if user is logged in BEFORE calling the API
+    if (!user) {
+      setToast({ message: t("forumPost.loginToLike"), type: "error" });
+      return; // Stop here, do not call the API
+    }
+
     try {
       const res = await forumApi.comments.toggleLike(commentId);
       if (res.data.success) {
@@ -213,7 +278,10 @@ const ForumPost: React.FC = () => {
           return { ...prev, comments: prev.comments.map(c => c.comment_id === commentId ? { ...c, like_count, liked } : c) };
         });
       }
-    } catch (err) { console.error("Failed to toggle comment like", err); }
+    } catch (err) { 
+      console.error("Failed to toggle comment like", err); 
+      setToast({ message: t("forumPost.failedToLikeComment"), type: "error" });
+    }
   };
 
   const openPostReport = () => setPostReportModal({ isOpen: true, reason: "" });
@@ -239,6 +307,11 @@ const ForumPost: React.FC = () => {
   };
 
   const isAdmin = user?.role_name === "admin";
+  
+  // ✅ NEW: Helper to check if the POST/COMMENT author is an admin
+  const isAuthorAdmin = (author: any) => {
+    return author?.roles?.role_name === "admin";
+  };
 
   const handleDeletePost = async (e: React.MouseEvent) => {
     e.preventDefault();
@@ -334,7 +407,11 @@ const ForumPost: React.FC = () => {
             <h2 className="font-['Hanken_Grotesk'] text-lg md:text-xl font-bold truncate" style={{ color: colors.forestGreen }}>{post.title}</h2>
           </div>
           <div className="flex items-center gap-2">
-            <button onClick={() => setIsFullscreen(!isFullscreen)} className="hidden md:flex w-9 h-9 items-center justify-center rounded-lg transition-colors flex-shrink-0 cursor-pointer" style={{ color: colors.forestGreen }} onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "rgba(11, 67, 53, 0.1)")} onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "transparent")} title={isFullscreen ? t("forumPost.exitFullscreen") : t("forumPost.fullscreen")}>
+            <button onClick={() => {
+              const newState = !isFullscreen;
+              setIsFullscreen(newState);
+              localStorage.setItem('forumPostFullscreen', String(newState));
+            }} className="hidden md:flex w-9 h-9 items-center justify-center rounded-lg transition-colors flex-shrink-0 cursor-pointer" style={{ color: colors.forestGreen }} onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "rgba(11, 67, 53, 0.1)")} onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "transparent")} title={isFullscreen ? t("forumPost.exitFullscreen") : t("forumPost.fullscreen")}>
               <Icon name={isFullscreen ? "close_fullscreen" : "open_in_full"} size={22} />
             </button>
 
@@ -353,7 +430,7 @@ const ForumPost: React.FC = () => {
               </div>
             )}
 
-            {user && user.id !== post.user_id && (
+            {user && user.id !== post.user_id && !isAuthorAdmin(post.users) && (
               <button onClick={openPostReport} className="w-9 h-9 flex items-center justify-center rounded-lg transition-colors flex-shrink-0 cursor-pointer" style={{ color: colors.red }} onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "rgba(139, 44, 44, 0.1)")} onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "transparent")} title={t("forumPost.report")}>
                 <Icon name="flag" size={22} />
               </button>
@@ -458,7 +535,7 @@ const ForumPost: React.FC = () => {
                               <Icon name="reply" size={17} />
                               <span className="font-['Inter'] text-[12px]">{t("forumPost.reply")}</span>
                             </button>
-                            {user && user.id !== comment.user_id && (
+                            {user && user.id !== comment.user_id && !isAuthorAdmin(comment.users) && (
                               <button onClick={(e) => { e.preventDefault(); e.stopPropagation(); openCommentReport(comment.comment_id); }} className="flex items-center gap-1.5 transition-all duration-300 cursor-pointer opacity-30 hover:opacity-100" style={{ color: colors.red }} title={t("forumPost.report")}>
                                 <Icon name="flag" size={16} />
                                 <span className="hidden md:inline font-['Inter'] text-[12px]">{t("forumPost.report")}</span>
@@ -499,7 +576,7 @@ const ForumPost: React.FC = () => {
                                       <Icon name="reply" size={15} />
                                       <span className="hidden md:inline font-['Inter'] text-[12px]">{t("forumPost.reply")}</span>
                                     </button>
-                                    {user && user.id !== reply.user_id && (
+                                    {user && user.id !== reply.user_id && !isAuthorAdmin(reply.users) && (
                                       <button onClick={(e) => { e.preventDefault(); e.stopPropagation(); openCommentReport(reply.comment_id); }} className="flex items-center gap-1.5 transition-all duration-300 cursor-pointer opacity-30 hover:opacity-100" style={{ color: colors.red }}>
                                         <Icon name="flag" size={15} />
                                       </button>
@@ -539,39 +616,58 @@ const ForumPost: React.FC = () => {
         </div>
 
         <div className="flex-shrink-0 border-t p-4 md:p-6 md:rounded-b-xl" style={{ borderColor: colors.creamDark, backgroundColor: colors.creamLight }}>
-          {replyingTo && (
-            <div className={`flex items-center justify-between mb-3 px-3 py-2 rounded-lg ${isRTL ? "flex-row-reverse" : ""}`} style={{ backgroundColor: colors.creamMid }}>
-              <div className={`flex items-center gap-2 ${isRTL ? "flex-row-reverse" : ""}`}>
-                <Icon name="reply" size={16} />
-                <span className="font-['Inter'] text-[12px]" style={{ color: colors.forestGreen }}>
-                  {t("forumPost.replyingTo")} <span className="font-semibold" style={{ color: colors.forestGreen }}>{replyingTo.name}</span>
-                </span>
+          {user?.id ? (
+            // ✅ LOGGED IN: Show the comment input box
+            <>
+              {replyingTo && (
+                <div className={`flex items-center justify-between mb-3 px-3 py-2 rounded-lg ${isRTL ? "flex-row-reverse" : ""}`} style={{ backgroundColor: colors.creamMid }}>
+                  <div className={`flex items-center gap-2 ${isRTL ? "flex-row-reverse" : ""}`}>
+                    <Icon name="reply" size={16} />
+                    <span className="font-['Inter'] text-[12px]" style={{ color: colors.forestGreen }}>
+                      {t("forumPost.replyingTo")} <span className="font-semibold" style={{ color: colors.forestGreen }}>{replyingTo.name}</span>
+                    </span>
+                  </div>
+                  <button onClick={cancelReply} className="transition-opacity hover:opacity-70 cursor-pointer" style={{ color: colors.forestGreen }}><Icon name="close" size={18} /></button>
+                </div>
+              )}
+              <div className="flex gap-2.5 items-start">
+                <UserAvatar user={{ name: "You" }} size="md" t={t} />
+                <div className="flex-1 flex items-center gap-3">
+                  <textarea id="comment-input" value={commentText} onChange={(e) => setCommentText(e.target.value)} placeholder={t("forumPost.commentPlaceholder")} rows={1}
+                    className="w-full px-4 py-3 rounded-lg border bg-[#fcfaf5] font-['Inter'] text-[14px] outline-none transition-all resize-none cursor-text"
+                    style={{ borderColor: colors.creamDark }}
+                    onFocus={(e) => { e.currentTarget.style.borderColor = colors.amber; e.currentTarget.style.boxShadow = `0 0 0 1px ${colors.amber}`; }}
+                    onBlur={(e) => { e.currentTarget.style.borderColor = colors.creamDark; e.currentTarget.style.boxShadow = "none"; }}
+                    dir={isRTL ? "rtl" : "ltr"}
+                    onKeyDown={(e) => { if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) { handlePostComment(); } }}
+                  />
+                  <button onClick={handlePostComment} disabled={!commentText.trim()}
+                    className="flex-shrink-0 inline-flex items-center gap-2 px-5 py-2.5 rounded-lg text-[13px] font-bold tracking-[0.05em] font-['Hanken_Grotesk'] transition-all duration-200 border disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
+                    style={{ backgroundColor: colors.forestGreen, color: colors.creamLight, borderColor: colors.forestGreen }}
+                    onMouseEnter={(e) => { if (commentText.trim()) { e.currentTarget.style.backgroundColor = colors.creamLight; e.currentTarget.style.color = colors.forestGreen; } }}
+                    onMouseLeave={(e) => { if (commentText.trim()) { e.currentTarget.style.backgroundColor = colors.forestGreen; e.currentTarget.style.color = colors.creamLight; } }}
+                  >
+                    <Icon name="send" size={16} filled />
+                    <span className="hidden sm:inline">{t("forumPost.postComment")}</span>
+                  </button>
+                </div>
               </div>
-              <button onClick={cancelReply} className="transition-opacity hover:opacity-70 cursor-pointer" style={{ color: colors.forestGreen }}><Icon name="close" size={18} /></button>
+            </>
+          ) : (
+            // ✅ NOT LOGGED IN: Tiny inline link
+            <div className={`flex items-center justify-center py-3 gap-1 ${isRTL ? "flex-row-reverse" : ""}`}>
+              <span className="font-['Inter'] text-[13px]" style={{ color: colors.forestGreen + "99" }}>
+                {t("forumPost.loginToComment") || "Log in to comment"}
+              </span>
+              <Link 
+                to="/login" 
+                className="font-['Inter'] text-[13px] font-semibold hover:underline"
+                style={{ color: colors.amber }}
+              >
+                {t("forumPost.logIn") || "Log in"} →
+              </Link>
             </div>
           )}
-          <div className="flex gap-2.5 items-start">
-            <UserAvatar user={{ name: "You" }} size="md" t={t} />
-            <div className="flex-1 flex items-center gap-3">
-              <textarea id="comment-input" value={commentText} onChange={(e) => setCommentText(e.target.value)} placeholder={t("forumPost.commentPlaceholder")} rows={1}
-                className="w-full px-4 py-3 rounded-lg border bg-[#fcfaf5] font-['Inter'] text-[14px] outline-none transition-all resize-none cursor-text"
-                style={{ borderColor: colors.creamDark }}
-                onFocus={(e) => { e.currentTarget.style.borderColor = colors.amber; e.currentTarget.style.boxShadow = `0 0 0 1px ${colors.amber}`; }}
-                onBlur={(e) => { e.currentTarget.style.borderColor = colors.creamDark; e.currentTarget.style.boxShadow = "none"; }}
-                dir={isRTL ? "rtl" : "ltr"}
-                onKeyDown={(e) => { if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) { handlePostComment(); } }}
-              />
-              <button onClick={handlePostComment} disabled={!commentText.trim()}
-                className="flex-shrink-0 inline-flex items-center gap-2 px-5 py-2.5 rounded-lg text-[13px] font-bold tracking-[0.05em] font-['Hanken_Grotesk'] transition-all duration-200 border disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
-                style={{ backgroundColor: colors.forestGreen, color: colors.creamLight, borderColor: colors.forestGreen }}
-                onMouseEnter={(e) => { if (commentText.trim()) { e.currentTarget.style.backgroundColor = colors.creamLight; e.currentTarget.style.color = colors.forestGreen; } }}
-                onMouseLeave={(e) => { if (commentText.trim()) { e.currentTarget.style.backgroundColor = colors.forestGreen; e.currentTarget.style.color = colors.creamLight; } }}
-              >
-                <Icon name="send" size={16} filled />
-                <span className="hidden sm:inline">{t("forumPost.postComment")}</span>
-              </button>
-            </div>
-          </div>
         </div>
       </div>
 
@@ -636,6 +732,34 @@ const ForumPost: React.FC = () => {
           </div>
         </div>
       )}
+
+      {/* ✅ PASTE THE TOAST CODE RIGHT HERE ✅ */}
+      {toast && (
+        <div 
+          className="fixed bottom-6 right-6 z-[100] flex items-center gap-3 px-5 py-3 rounded-lg shadow-lg border animate-slide-up" 
+          style={{ 
+            backgroundColor: toast.type === "success" ? colors.forestGreen : colors.red, 
+            borderColor: "transparent", 
+            color: colors.creamLight 
+          }}
+          onClick={(e) => e.stopPropagation()}
+        >
+          <Icon name={toast.type === "success" ? "check_circle" : "error"} size={20} />
+          <span className="font-['Inter'] text-[14px] font-medium">{toast.message}</span>
+          <button onClick={(e) => { e.stopPropagation(); setToast(null); }} className="ml-2 hover:opacity-70 transition-opacity">
+            <Icon name="close" size={18} />
+          </button>
+        </div>
+      )}
+      
+      <style>{`
+        @keyframes slide-up {
+          from { transform: translateY(100%); opacity: 0; }
+          to { transform: translateY(0); opacity: 1; }
+        }
+        .animate-slide-up { animation: slide-up 0.3s ease-out; }
+      `}</style>
+
     </div>
   );
 };

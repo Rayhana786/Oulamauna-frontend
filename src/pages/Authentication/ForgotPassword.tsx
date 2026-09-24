@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useLang } from "../../context/LanguageContext";
-import logoImg from "../../assets/logo.png"; // ✅ Import the logo (adjust path if needed)
+import logoImg from "../../assets/tlogo2.png"; // ✅ Import the logo (adjust path if needed)
 
 // --- Colors & Fonts (Matching your website design system) ---
 const colors = {

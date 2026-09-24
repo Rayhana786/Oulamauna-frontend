@@ -1,21 +1,35 @@
-import React, { useState, useRef, useEffect } from "react";
-import { Link, useLocation, useNavigate } from "react-router-dom";
+import React from "react";
+import { Link, useLocation } from "react-router-dom";
 import { useLang } from "../../context/LanguageContext";
-import { useAuth } from "../../context/AuthContext";
 
-// ✅ IMPORT THE LOGO (Adjust the path if your folder structure is different)
-import logoImg from "../../assets/logo.png"; 
+// Logo
+import logoImg from "../../assets/tlogo2.png";
+
+// Exact Islamic decorative pattern
+import islamicPattern from "../../assets/islamic-pattern.png";
 
 /* ------------------------------------------------------------------ */
-/*  Design tokens — Oulamnauna admin palette                          */
+/* Design tokens                                                       */
 /* ------------------------------------------------------------------ */
+
 const colors = {
   creamLight: "#fcfaf5",
   creamMid: "#f6efdc",
   creamDark: "#e5d5a8",
+
   forestGreen: "#0b4335",
+  forestDark: "#07382d",
+
   amber: "#b8860b",
   red: "#8b2c2c",
+
+  sidebarText: "#f4f3eb",
+  sidebarMuted: "rgba(244, 243, 235, 0.62)",
+  sidebarHover: "rgba(126, 139, 82, 0.20)",
+  sidebarHoverText: "#d9d0ad",
+  sidebarActive: "rgba(112, 128, 73, 0.48)",
+  sidebarActiveText: "#e3dcc0",
+  sectionText: "rgba(216, 191, 134, 0.78)",
 };
 
 const fonts = {
@@ -24,77 +38,161 @@ const fonts = {
   label: "'JetBrains Mono', monospace",
 };
 
-const Icon: React.FC<{ name: string; size?: number; filled?: boolean }> = ({
-  name,
-  size = 18,
-  filled = false,
-}) => (
+/* ------------------------------------------------------------------ */
+/* Icon                                                                */
+/* ------------------------------------------------------------------ */
+
+const Icon: React.FC<{
+  name: string;
+  size?: number;
+  filled?: boolean;
+}> = ({ name, size = 23, filled = false }) => (
   <span
     className="material-symbols-outlined"
     style={{
       fontSize: size,
       lineHeight: 1,
       fontVariationSettings: `'FILL' ${filled ? 1 : 0}, 'wght' 400, 'GRAD' 0, 'opsz' 24`,
+      fontWeight: 400,
     }}
   >
     {name}
   </span>
 );
 
-type NavLink = { icon: string; labelKey: string; to: string };
-type NavGroup = { sectionKey?: string; links: NavLink[] };
+/* ------------------------------------------------------------------ */
+/* Navigation types                                                    */
+/* ------------------------------------------------------------------ */
+
+type NavLink = {
+  icon: string;
+  labelKey: string;
+  to: string;
+};
+
+type NavGroup = {
+  sectionKey?: string;
+  links: NavLink[];
+};
+
+/* ------------------------------------------------------------------ */
+/* Navigation Groups                                                   */
+/* ------------------------------------------------------------------ */
 
 const navGroups: NavGroup[] = [
-  { links: [{ icon: "grid_view", labelKey: "navbar.dashboard", to: "/admin/dashboard" }] },
   {
-    sectionKey: "sidebar.section.scholars",
-    links: [{ icon: "school", labelKey: "sidebar.allScholars", to: "/admin/scholars" }],
-  },
-  {
-    sectionKey: "sidebar.section.review",
     links: [
-      { icon: "how_to_reg", labelKey: "sidebar.pendingNewScholars", to: "/admin/pending/scholars" },
-      { icon: "edit_document", labelKey: "sidebar.pendingScholarEdits", to: "/admin/pending/edits" },
-      { icon: "menu_book", labelKey: "sidebar.pendingWorks", to: "/admin/pending/works" },
-      { icon: "perm_media", labelKey: "sidebar.mediaVerification", to: "/admin/pending/media" },
-      { icon: "block", labelKey: "sidebar.rejected", to: "/admin/rejected" },
+      {
+        icon: "dashboard",
+        labelKey: "admin.sidebar.dashboard",
+        to: "/admin/dashboard",
+      },
     ],
   },
   {
-    sectionKey: "sidebar.section.classification",
+    sectionKey: "admin.sidebar.section.content",
     links: [
-      { icon: "category", labelKey: "sidebar.disciplines", to: "/admin/disciplines" },
-      { icon: "public", labelKey: "sidebar.regions", to: "/admin/regions" },
+      {
+        icon: "history_edu",
+        labelKey: "admin.sidebar.allScholars",
+        to: "/admin/scholars",
+      },
+      {
+        icon: "menu_book",
+        labelKey: "admin.sidebar.allWorks",
+        to: "/admin/works",
+      },
+      {
+        icon: "perm_media",
+        labelKey: "admin.sidebar.allMedia",
+        to: "/admin/media",
+      },
     ],
   },
   {
-    sectionKey: "sidebar.section.discussions",
+    sectionKey: "admin.sidebar.section.review",
     links: [
-      { icon: "forum", labelKey: "sidebar.allDiscussions", to: "/admin/discussions" },
-      { icon: "category", labelKey: "sidebar.discussionCategories", to: "/admin/discussions/categories" },
+      {
+        icon: "person_add",
+        labelKey: "admin.sidebar.pendingNewScholars",
+        to: "/admin/pending/scholars",
+      },
+      {
+        icon: "edit_document",
+        labelKey: "admin.sidebar.pendingScholarEdits",
+        to: "/admin/pending/edits",
+      },
+      {
+        icon: "post_add",
+        labelKey: "admin.sidebar.pendingWorks",
+        to: "/admin/pending/works",
+      },
+      {
+        icon: "image_search",
+        labelKey: "admin.sidebar.mediaVerification",
+        to: "/admin/pending/media",
+      },
     ],
   },
   {
-    sectionKey: "sidebar.section.community",
-    links: [{ icon: "manage_accounts", labelKey: "sidebar.userManagement", to: "/admin/users" }],
-  },
-  {
+    sectionKey: "admin.sidebar.section.classification",
     links: [
-      { icon: "summarize", labelKey: "sidebar.reports", to: "/admin/reports" },
-      { icon: "notifications", labelKey: "sidebar.notifications", to: "/admin/notifications" },
+      {
+        icon: "category",
+        labelKey: "admin.sidebar.disciplines",
+        to: "/admin/disciplines",
+      },
+      {
+        icon: "travel_explore",
+        labelKey: "admin.sidebar.regions",
+        to: "/admin/regions",
+      },
     ],
   },
   {
-    sectionKey: "sidebar.section.system",
+    sectionKey: "admin.sidebar.section.discussions",
     links: [
-      { icon: "translate", labelKey: "sidebar.translation", to: "/admin/settings/translation" },
-      { icon: "backup", labelKey: "sidebar.backups", to: "/admin/settings/backups" },
+      {
+        icon: "forum",
+        labelKey: "admin.sidebar.allDiscussions",
+        to: "/admin/discussions",
+      },
+      {
+        icon: "sell",
+        labelKey: "admin.sidebar.discussionCategories",
+        to: "/admin/discussions/categories",
+      },
+    ],
+  },
+  {
+    sectionKey: "admin.sidebar.section.community",
+    links: [
+      {
+        icon: "manage_accounts",
+        labelKey: "admin.sidebar.userManagement",
+        to: "/admin/users",
+      },
+    ],
+  },
+  {
+    sectionKey: "admin.sidebar.section.support",
+    links: [
+      {
+        icon: "assessment",
+        labelKey: "admin.sidebar.reports",
+        to: "/admin/reports",
+      },
+      {
+        icon: "contact_mail",
+        labelKey: "admin.sidebar.contactUs",
+        to: "/admin/contactus",
+      },
     ],
   },
 ];
 
 /* ------------------------------------------------------------------ */
-/*  Sidebar                                                             */
+/* Sidebar props                                                       */
 /* ------------------------------------------------------------------ */
 
 interface AdminSidebarProps {
@@ -102,33 +200,14 @@ interface AdminSidebarProps {
   onToggle: () => void;
 }
 
+/* ------------------------------------------------------------------ */
+/* Admin Sidebar                                                       */
+/* ------------------------------------------------------------------ */
+
 const AdminSidebar: React.FC<AdminSidebarProps> = ({ collapsed, onToggle }) => {
   const location = useLocation();
-  const navigate = useNavigate();
   const { t, lang } = useLang();
-  const { user, logout } = useAuth();
   const isRTL = lang === "AR";
-
-  const [profileOpen, setProfileOpen] = useState(false);
-  const profileRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (profileRef.current && !profileRef.current.contains(event.target as Node)) {
-        setProfileOpen(false);
-      }
-    };
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
-
-  const currentUser = {
-    username: user?.username || "User",
-    role: "Administrator",
-    // ✅ Fixed TypeScript error: safely access 'name' or fallback to 'username'
-    initial: ((user as any)?.name || user?.username || "U").charAt(0).toUpperCase(),
-    profile_picture: (user as any)?.profile_picture || (user as any)?.avatar,
-  };
 
   return (
     <nav
@@ -139,15 +218,15 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({ collapsed, onToggle }) => {
         top: 0,
         left: isRTL ? "auto" : 0,
         right: isRTL ? 0 : "auto",
-        borderRight: isRTL ? "none" : `1px solid ${colors.forestGreen}`,
-        borderLeft: isRTL ? `1px solid ${colors.forestGreen}` : "none",
-        backgroundColor: colors.creamLight,
-        boxShadow: "0px 4px 20px rgba(11, 67, 53, 0.08)",
+        background: "linear-gradient(180deg, #0b4335 0%, #07382d 100%)",
+        borderRight: isRTL ? "none" : "1px solid rgba(255,255,255,0.05)",
+        borderLeft: isRTL ? "1px solid rgba(255,255,255,0.05)" : "none",
+        boxShadow: "4px 0 24px rgba(4, 38, 30, 0.18)",
         zIndex: 50,
         display: "flex",
         flexDirection: "column",
         paddingTop: 18,
-        paddingBottom: 12,
+        paddingBottom: 16,
         transition: "width 0.3s ease",
         overflow: "hidden",
       }}
@@ -155,6 +234,7 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({ collapsed, onToggle }) => {
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap');
         @import url('https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap');
+
         .material-symbols-outlined {
           font-family: 'Material Symbols Outlined';
           font-weight: normal;
@@ -164,37 +244,50 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({ collapsed, onToggle }) => {
           word-wrap: normal;
           direction: ltr;
           -webkit-font-smoothing: antialiased;
+          text-rendering: optimizeLegibility;
         }
-        .admin-sidebar-scroll::-webkit-scrollbar { width: 5px; }
-        .admin-sidebar-scroll::-webkit-scrollbar-thumb { background: ${colors.creamDark}; border-radius: 10px; }
+
+        .admin-sidebar-scroll::-webkit-scrollbar { width: 4px; }
+        .admin-sidebar-scroll::-webkit-scrollbar-track { background: transparent; }
+        .admin-sidebar-scroll::-webkit-scrollbar-thumb {
+          background: rgba(126, 139, 82, 0.28);
+          border-radius: 10px;
+        }
+        .admin-sidebar-scroll {
+          scrollbar-width: thin;
+          scrollbar-color: rgba(126, 139, 82, 0.28) transparent;
+        }
       `}</style>
 
-      {/* ✅ Collapse/Expand Arrow Button */}
+      {/* Collapse / Expand Button */}
       <button
         onClick={onToggle}
         style={{
           position: "absolute",
           top: 18,
-          [isRTL ? "left" : "right"]: 8,
-          width: 24,
-          height: 24,
+          [isRTL ? "left" : "right"]: 10,
+          width: 28,
+          height: 28,
           borderRadius: "50%",
-          border: `1px solid ${colors.forestGreen}`,
-          backgroundColor: colors.creamLight,
+          border: "1px solid rgba(216, 191, 134, 0.40)",
+          backgroundColor: "rgba(255,255,255,0.05)",
+          color: colors.creamDark,
           cursor: "pointer",
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          transition: "all 0.2s",
+          transition: "background-color 0.2s ease, border-color 0.2s ease",
           zIndex: 60,
         }}
         onMouseEnter={(e) => {
-          e.currentTarget.style.backgroundColor = colors.forestGreen;
-          e.currentTarget.style.color = colors.creamLight;
+          e.currentTarget.style.backgroundColor = "rgba(126, 139, 82, 0.22)";
+          e.currentTarget.style.borderColor = "rgba(216, 191, 134, 0.55)";
+          e.currentTarget.style.color = colors.sidebarHoverText;
         }}
         onMouseLeave={(e) => {
-          e.currentTarget.style.backgroundColor = colors.creamLight;
-          e.currentTarget.style.color = colors.forestGreen;
+          e.currentTarget.style.backgroundColor = "rgba(255,255,255,0.05)";
+          e.currentTarget.style.borderColor = "rgba(216, 191, 134, 0.40)";
+          e.currentTarget.style.color = colors.creamDark;
         }}
         title={collapsed ? "Expand sidebar" : "Collapse sidebar"}
       >
@@ -204,8 +297,8 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({ collapsed, onToggle }) => {
         />
       </button>
 
-      {/* ✅ Logo / header using imported image + Text */}
-      <div style={{ padding: "0 18px", marginBottom: 20 }}>
+      {/* Logo */}
+      <div style={{ padding: "0 16px", marginBottom: 24 }}>
         <Link
           to="/admin/dashboard"
           style={{
@@ -213,22 +306,23 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({ collapsed, onToggle }) => {
             alignItems: "center",
             justifyContent: collapsed ? "center" : "flex-start",
             textDecoration: "none",
-            gap: 10, // ✅ Adds space between the logo and the text
+            gap: 10,
+            minHeight: 44,
           }}
         >
-          <img 
-            src={logoImg} 
-            alt="Oulamnauna Logo" 
-            style={{ 
-              height: collapsed ? 32 : 44, // Scales down smoothly when collapsed
-              width: "auto", 
+          <img
+            src={logoImg}
+            alt="Oulamnauna Logo"
+            style={{
+              height: collapsed ? 32 : 42,
+              width: "auto",
               maxWidth: "100%",
               objectFit: "contain",
               transition: "height 0.3s ease",
-            }} 
+              filter: "none",
+              opacity: 0.95,
+            }}
           />
-          
-          {/* ✅ Text that hides when collapsed */}
           {!collapsed && (
             <span
               style={{
@@ -236,7 +330,7 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({ collapsed, onToggle }) => {
                 fontSize: 18,
                 lineHeight: "24px",
                 fontWeight: 700,
-                color: colors.forestGreen,
+                color: colors.sidebarText,
                 whiteSpace: "nowrap",
                 overflow: "hidden",
               }}
@@ -247,193 +341,164 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({ collapsed, onToggle }) => {
         </Link>
       </div>
 
-      {/* Nav groups - SCROLLABLE AREA */}
-      <div className="admin-sidebar-scroll" style={{ flex: 1, overflowY: "auto", padding: "0 8px", marginBottom: 12 }}>
-        {navGroups.map((group, idx) => (
-          <div key={group.sectionKey ?? `group-${idx}`} style={{ marginBottom: 16 }}>
-            {!collapsed && group.sectionKey && (
-              <p
-                style={{
-                  fontFamily: fonts.label,
-                  fontSize: 10,
-                  letterSpacing: "0.05em",
-                  textTransform: "uppercase",
-                  color: colors.forestGreen,
-                  opacity: 0.55,
-                  margin: "0 0 4px",
-                  padding: "0 8px",
-                }}
-              >
-                {t(group.sectionKey)}
-              </p>
-            )}
-            <ul style={{ listStyle: "none", display: "flex", flexDirection: "column", gap: 1, margin: 0, padding: 0 }}>
-              {group.links.map((item) => {
-                const active = location.pathname === item.to || location.pathname.startsWith(item.to + "/");
-                return (
-                  <li key={item.to}>
-                    <Link
-                      to={item.to}
-                      title={collapsed ? t(item.labelKey) : ""}
-                      style={{
-                        display: "flex",
-                        alignItems: "center",
-                        gap: 9,
-                        padding: collapsed ? "7px" : "7px 9px",
-                        borderRadius: 7,
-                        fontFamily: fonts.body,
-                        fontSize: 13,
-                        textDecoration: "none",
-                        transition: "background-color 0.15s, color 0.15s",
-                        ...(active
-                          ? { backgroundColor: colors.forestGreen, color: colors.creamLight }
-                          : { color: colors.forestGreen }),
-                        justifyContent: collapsed ? "center" : "flex-start",
-                        whiteSpace: "nowrap",
-                      }}
-                      onMouseEnter={(e) => {
-                        if (!active) e.currentTarget.style.backgroundColor = colors.creamMid;
-                      }}
-                      onMouseLeave={(e) => {
-                        if (!active) e.currentTarget.style.backgroundColor = "transparent";
-                      }}
-                    >
-                      <Icon name={item.icon} size={16} filled={active} />
-                      {!collapsed && (
-                        <span style={{ overflow: "hidden", textOverflow: "ellipsis" }}>
-                          {t(item.labelKey)}
-                        </span>
-                      )}
-                    </Link>
-                  </li>
-                );
-              })}
-            </ul>
-          </div>
-        ))}
-      </div>
-
-      {/* User Profile & Dropdown Menu - STICKY AT BOTTOM */}
-      <div 
-        ref={profileRef}
-        style={{ 
-          padding: "12px 18px 0", 
-          borderTop: `1px solid ${colors.forestGreen}`,
-          backgroundColor: colors.creamLight,
-          zIndex: 10,
+      {/* Scrollable Navigation */}
+      <div
+        className="admin-sidebar-scroll"
+        style={{
+          flex: 1,
+          overflowY: "auto",
+          paddingTop: 0,
+          paddingLeft: collapsed ? 8 : 10,
+          paddingRight: collapsed ? 8 : 10,
+          paddingBottom: 185,
+          marginBottom: 8,
           position: "relative",
+          zIndex: 2,
         }}
       >
-        <button
-          onClick={() => setProfileOpen(!profileOpen)}
+        {navGroups.map((group, idx) => {
+          // Skip rendering empty groups (e.g., if a section has no links)
+          if (group.links.length === 0) return null;
+
+          return (
+            <div key={group.sectionKey ?? `group-${idx}`} style={{ marginBottom: 18 }}>
+              {!collapsed && group.sectionKey && (
+                <p
+                  style={{
+                    fontFamily: fonts.label,
+                    fontSize: 10,
+                    letterSpacing: "0.08em",
+                    textTransform: "uppercase",
+                    color: colors.sectionText,
+                    opacity: 0.82,
+                    margin: "0 0 8px",
+                    padding: "0 10px",
+                    lineHeight: "16px",
+                  }}
+                >
+                  {t(group.sectionKey)}
+                </p>
+              )}
+
+              <ul style={{ listStyle: "none", display: "flex", flexDirection: "column", gap: 3, margin: 0, padding: 0 }}>
+                {group.links.map((item) => {
+                  const active = location.pathname === item.to || location.pathname.startsWith(item.to + "/");
+
+                  return (
+                    <li key={item.to}>
+                      <Link
+                        to={item.to}
+                        title={collapsed ? t(item.labelKey) : ""}
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          gap: 14,
+                          padding: collapsed ? "10px 8px" : "10px 14px",
+                          minHeight: 44,
+                          borderRadius: 10,
+                          fontFamily: fonts.body,
+                          fontSize: 14,
+                          fontWeight: active ? 600 : 500,
+                          textDecoration: "none",
+                          color: active ? colors.sidebarActiveText : colors.sidebarText,
+                          backgroundColor: active ? colors.sidebarActive : "transparent",
+                          justifyContent: collapsed ? "center" : "flex-start",
+                          whiteSpace: "nowrap",
+                          position: "relative",
+                          overflow: "hidden",
+                          transition: "background-color 0.18s ease, color 0.18s ease",
+                        }}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.backgroundColor = colors.sidebarHover;
+                          e.currentTarget.style.color = colors.sidebarHoverText;
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.backgroundColor = active ? colors.sidebarActive : "transparent";
+                          e.currentTarget.style.color = active ? colors.sidebarActiveText : colors.sidebarText;
+                        }}
+                      >
+                        <span
+                          style={{
+                            width: 26,
+                            height: 26,
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            flexShrink: 0,
+                            color: active ? colors.sidebarActiveText : colors.sidebarText,
+                            transition: "color 0.18s ease",
+                          }}
+                        >
+                          <Icon name={item.icon} size={23} filled={active && item.icon === "dashboard"} />
+                        </span>
+
+                        {!collapsed && (
+                          <span
+                            style={{
+                              overflow: "hidden",
+                              textOverflow: "ellipsis",
+                              flex: 1,
+                              lineHeight: "20px",
+                              transition: "color 0.18s ease",
+                            }}
+                          >
+                            {t(item.labelKey)}
+                          </span>
+                        )}
+                      </Link>
+                    </li>
+                  );
+                })}
+              </ul>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Islamic Decorative Pattern */}
+      <div
+        aria-hidden="true"
+        style={{
+          position: "absolute",
+          bottom: 0,
+          left: 0,
+          width: "100%",
+          height: collapsed ? 150 : 205,
+          pointerEvents: "none",
+          zIndex: 1,
+          overflow: "hidden",
+          display: "flex",
+          alignItems: "flex-end",
+          justifyContent: "center",
+          transition: "height 0.3s ease",
+        }}
+      >
+        <img
+          src={islamicPattern}
+          alt=""
           style={{
             width: "100%",
-            display: "flex",
-            alignItems: "center",
-            gap: 9,
-            background: "none",
-            border: "none",
-            cursor: "pointer",
-            padding: 0,
-            textAlign: isRTL ? "right" : "left",
-            justifyContent: collapsed ? "center" : "flex-start",
+            height: "100%",
+            objectFit: "cover",
+            objectPosition: "center bottom",
+            display: "block",
+            opacity: 0.48,
           }}
-        >
-          <div
-            style={{
-              width: 32,
-              height: 32,
-              borderRadius: "50%",
-              border: `1px solid ${colors.forestGreen}`,
-              backgroundColor: colors.creamMid,
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              fontFamily: fonts.headline,
-              fontWeight: 600,
-              color: colors.forestGreen,
-              flexShrink: 0,
-              fontSize: 13,
-              overflow: "hidden"
-            }}
-          >
-            {currentUser.profile_picture ? (
-              <img src={currentUser.profile_picture} alt="Avatar" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-            ) : (
-              currentUser.initial
-            )}
-          </div>
-          {!collapsed && (
-            <>
-              <div style={{ display: "flex", flexDirection: "column", flex: 1, minWidth: 0 }}>
-                <span style={{ fontFamily: fonts.body, fontSize: 12, fontWeight: 600, color: colors.forestGreen }}>
-                  Hello {currentUser.username}
-                </span>
-                <span style={{ fontFamily: fonts.label, fontSize: 10, color: colors.forestGreen, opacity: 0.7 }}>
-                  {currentUser.role}
-                </span>
-              </div>
-              <Icon name={profileOpen ? "expand_less" : "expand_more"} size={16} />
-            </>
-          )}
-        </button>
-
-        {/* ✅ Dropdown Menu - Fixed position so it NEVER gets cut off */}
-        {profileOpen && (
-          <div
-            style={{
-              position: "fixed",
-              bottom: 80,
-              [isRTL ? "right" : "left"]: collapsed ? 80 : 18,
-              width: 212,
-              backgroundColor: colors.creamLight,
-              border: `1px solid ${colors.forestGreen}`,
-              borderRadius: 8,
-              boxShadow: "0px -4px 20px rgba(11, 67, 53, 0.12)",
-              overflow: "hidden",
-              zIndex: 100,
-            }}
-          >
-            <Link
-              to="/admin/profile"
-              onClick={() => setProfileOpen(false)}
-              style={{ display: "flex", alignItems: "center", gap: 8, padding: "10px 14px", textDecoration: "none", color: colors.forestGreen, fontSize: 13, fontFamily: fonts.body, transition: "background 0.15s" }}
-              onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = colors.creamMid)}
-              onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "transparent")}
-            >
-              <Icon name="person" size={16} />
-              My Profile
-            </Link>
-            
-            <Link
-              to="/"
-              onClick={() => setProfileOpen(false)}
-              style={{ display: "flex", alignItems: "center", gap: 8, padding: "10px 14px", textDecoration: "none", color: colors.forestGreen, fontSize: 13, fontFamily: fonts.body, transition: "background 0.15s" }}
-              onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = colors.creamMid)}
-              onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "transparent")}
-            >
-              <Icon name="public" size={16} />
-              View Public Site
-            </Link>
-
-            <div style={{ height: 1, backgroundColor: colors.forestGreen, opacity: 0.1, margin: "4px 0" }} />
-
-            <button
-              onClick={() => { 
-                logout(); 
-                navigate("/login"); 
-                setProfileOpen(false); 
-              }}
-              style={{ width: "100%", display: "flex", alignItems: "center", gap: 8, padding: "10px 14px", background: "none", border: "none", cursor: "pointer", color: colors.red, fontSize: 13, fontFamily: fonts.body, transition: "background 0.15s", textAlign: isRTL ? "right" : "left" }}
-              onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "rgba(139, 44, 44, 0.08)")}
-              onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "transparent")}
-            >
-              <Icon name="logout" size={16} />
-              Logout
-            </button>
-          </div>
-        )}
+        />
       </div>
+
+      {/* Bottom separator */}
+      {!collapsed && (
+        <div
+          style={{
+            height: 1,
+            margin: "0 18px",
+            backgroundColor: "rgba(216, 191, 134, 0.14)",
+            position: "relative",
+            zIndex: 5,
+          }}
+        />
+      )}
     </nav>
   );
 };

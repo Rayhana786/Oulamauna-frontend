@@ -43,6 +43,25 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return data;
       }
 
+      // ✅ NEW: Handle Banned Account (403)
+      if (response.status === 403) {
+        const errorData = await response.json().catch(() => ({}));
+        if (errorData.code === "ACCOUNT_BANNED") {
+          
+          // ✅ Call the REAL logout endpoint to destroy the backend cookie
+          await fetch(`${API_URL}/logout`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            credentials: "include",
+          }).catch(() => {});
+
+          setUser(null);
+          setIsLoggedIn(false);
+          navigate("/login?banned=true", { replace: true }); 
+          return null; 
+        }
+      }
+
       // 401 = no token = definitely logged out
       if (response.status === 401) return null;
 
@@ -53,7 +72,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       // Network error — don't log out, server might be temporarily down
       return undefined;
     }
-  }, []);
+  }, [navigate]); // ✅ Added 'navigate' to dependencies
 
   const checkUserStatus = useCallback(async (): Promise<boolean> => {
     const userData = await fetchMe();
@@ -111,6 +130,23 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       navigate("/");
     }
   }, [navigate]);
+
+  // ✅ NEW: Catch live bans (if user gets banned while already logged in)
+  // This MUST be after logout is defined
+  useEffect(() => {
+    if (user?.is_banned) {
+      // ✅ Call the REAL logout endpoint to destroy the backend cookie
+      fetch(`${API_URL}/logout`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+      }).finally(() => {
+        setUser(null);
+        setIsLoggedIn(false);
+        navigate("/login?banned=true", { replace: true });
+      });
+    }
+  }, [user, navigate]);
 
   return (
     <AuthContext.Provider value={{ user, isLoggedIn, login, logout, checkUserStatus, loading }}>

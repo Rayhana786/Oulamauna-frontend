@@ -1,0 +1,1805 @@
+{
+  "languages": {
+    "english": "Inglés",
+    "arabic": "Árabe",
+    "french": "Francés",
+    "spanish":"spdhdk",
+    "unknown": "Desconocido"
+  },
+  "months": {
+    "jan": "enero", "feb": "febrero", "mar": "marzo", "apr": "abril",
+    "may": "mayo", "jun": "junio", "jul": "julio", "aug": "agosto",
+    "sep": "septiembre", "oct": "octubre", "nov": "noviembre", "dec": "diciembre"
+  },
+  "common": {
+    "cancel": "Cancelar",
+    "confirm": "Confirmar",
+    "noData": "No hay datos disponibles",
+    "user": "Usuario"
+  },
+  "adminDashboard": {
+    "title": "Panel de administración",
+    "welcomeUser": "Bienvenido al panel de administración",
+    "stats": {
+      "scholars": "Eruditos",
+      "edits": "Ediciones",
+      "media": "Medios",
+      "works": "Obras"
+    },
+    "metrics": {
+      "scholars": "Total de eruditos",
+      "allTime": "Todo el tiempo",
+      "pending": "En revisión",
+      "requiresAttention": "Requiere atención",
+      "activeUsers": "Colaboradores activos",
+      "canContribute": "Pueden contribuir",
+      "reports": "Reportes abiertos",
+      "moderationQueue": "Cola de moderación",
+      "forumPosts": "Publicaciones del foro",
+      "totalPosts": "Total de publicaciones"
+    },
+    "charts": {
+      "monthly": "Actividad mensual",
+      "yearly": "Actividad anual",
+      "daily": "Actividad diaria",
+      "thisYearDesc": "Contribuciones durante el año actual",
+      "allTimeDesc": "Historial total de contribuciones",
+      "last30DaysDesc": "Contribuciones durante los últimos 30 días",
+      "toggle": {
+        "30days": "30 días",
+        "yearly": "Anual",
+        "all": "Todo"
+      },
+      "queue": "Cola de espera",
+      "currentQueue": "Elementos actualmente en revisión",
+      "total": "Total pendiente",
+      "topDisciplines": "Principales disciplinas",
+      "rankedByVolume": "Clasificado por volumen"
+    },
+    "empty": {
+      "data": "Aún no hay datos disponibles.",
+      "recent": "No hay actividad reciente",
+      "languages": "No hay datos de idiomas disponibles."
+    },
+    "moderation": {
+      "title": "Moderación y seguridad",
+      "subtitle": "Métricas de salud de la plataforma y seguridad de los usuarios",
+      "urgentReports": "Reportes urgentes",
+      "highStrike": "Usuarios infractores",
+      "sixMonthTrend": "Tendencia del foro (6 meses)",
+      "legend": {
+        "forum": "Publicaciones del foro",
+        "reports": "Reportes"
+      }
+    },
+    "performance": {
+      "title": "Resumen de rendimiento",
+      "subtitle": "Salud de la plataforma y tasas de interacción",
+      "totalUsers": "Total de usuarios registrados",
+      "approvalRate": "Tasa de aprobación",
+      "openReports": "Indicador de reportes abiertos",
+      "hiddenPosts": "Publicaciones ocultas",
+      "systemStatus": "Estado del sistema",
+      "operational": "Funcionando correctamente"
+    },
+    "events": {
+      "latest": "Últimos eventos",
+      "recent": "Actividad reciente y actualizaciones de la plataforma"
+    },
+    "contributors": {
+      "top": "Principales colaboradores",
+      "mostActive": "Los más activos este mes"
+    },
+    "languages": {
+      "title": "Distribución de idiomas",
+      "distribution": "Distribución del contenido por idioma"
+    }
+  },
+    "scholar": {
+    "unknown": "Desconocido",
+    "noContent": "No hay contenido disponible en",
+    "langName": {
+      "EN": "Inglés",
+      "AR": "Árabe",
+      "FR": "Francés",
+      "SP":"spanish"
+    },
+    "contribute": "Contribuir",
+    "view": "Ver",
+    "download": "Descargar",
+    "titleRequired": "El título es obligatorio",
+    "validYear": "Por favor, introduce un año válido",
+    "urlRequired": "El enlace es obligatorio",
+    "fileRequired": "El archivo es obligatorio",
+    "fileTooLarge": "El tamaño del archivo es demasiado grande",
+    "workAddedSuccess": "La obra se agregó correctamente",
+    "addNewWork": "Agregar nueva obra",
+    "title": "Título",
+    "workTitlePlaceholder": "Introduce el título de la obra",
+    "year": "Año",
+    "yearPlaceholder": "Ejemplo: 1200",
+    "formatLabel": "Tipo",
+    "format": {
+      "BOOK": "Libro",
+      "ARTICLE": "Artículo",
+      "TREATISE": "Tratado",
+      "MANUSCRIPT": "Manuscrito",
+      "LECTURE": "Conferencia",
+      "SERMON": "Sermón",
+      "FATWA": "Fetua",
+      "POEM": "Poema",
+      "LETTER": "Carta",
+      "COMMENTARY": "Comentario",
+      "TRANSLATION": "Traducción",
+      "RESEARCH": "Investigación",
+      "COURSE": "Curso",
+      "DEVICE": "Dispositivo",
+      "INVENTION": "Invento",
+      "SOFTWARE": "Software",
+      "MAP": "Mapa",
+      "OTHER": "Otro"
+    },
+    "digitalAccess": "Acceso digital",
+    "none": "Ninguno",
+    "uploadFile": "Subir archivo",
+    "pasteLink": "Pegar enlace",
+    "noFileAttached": "No hay archivo adjunto",
+    "cancel": "Cancelar",
+    "saving": "Guardando...",
+    "addWorkBtn": "Agregar obra",
+    "addMediaModal": "Agregar medios",
+    "mediaTitlePlaceholder": "Introduce el título de los medios",
+    "description": "Descripción",
+    "descriptionPlaceholder": "Introduce la descripción",
+    "fileLink": "Archivo o enlace",
+    "uploading": "Subiendo...",
+    "addMediaBtn": "Agregar medios",
+    "addedBy": "Agregado por",
+    "loading": "Cargando...",
+    "downloading": "Descargando...",
+    "openLink": "Abrir enlace",
+    "loginFirst": "Por favor, inicia sesión primero",
+    "accountBanned": "Tu cuenta ha sido suspendida",
+    "privilegesRevoked": "Se han revocado tus privilegios de contribución",
+    "notFound": "No se encontró al erudito",
+    "home": "Inicio",
+    "scholars": "Eruditos",
+    "createdBy": "Creado por",
+    "lastUpdated": "Última actualización por",
+    "shareText": "Descubre a este erudito: {{name}}",
+    "linkCopied": "Enlace copiado al portapapeles",
+    "editBtn": "Editar",
+    "addVersionBtn": "Agregar versión",
+    "atAGlance": "Resumen general",
+    "fullName": "Nombre completo",
+    "born": "Fecha de nacimiento",
+    "died": "Fecha de fallecimiento",
+    "century": "Siglo",
+    "region": "Región",
+    "discipline": "Disciplina",
+    "allContributors": "Todos los colaboradores",
+    "contributors": "colaboradores",
+    "contributor": "Colaborador",
+    "contributions": "Contribuciones",
+    "tab": {
+      "works": "Obras",
+      "media": "Medios",
+      "relations": "Relaciones",
+      "more": "Más"
+    },
+    "bibliographyTitle": "Bibliografía",
+    "addWork": "Agregar obra",
+    "emptyWorks": "Aún no se han incluido obras.",
+    "addFirstWork": "Agregar la primera obra",
+    "colTitle": "Título",
+    "colYear": "Año",
+    "colFormat": "Tipo",
+    "colAccess": "Acceso",
+    "mediaTitle": "Medios",
+    "addMedia": "Agregar medios",
+    "emptyMedia": "Aún no hay medios disponibles.",
+    "addFirstMedia": "Agregar el primer medio",
+    "emptyRelations": "Aún no se han registrado relaciones intelectuales ni discípulos.",
+    "intellectualLineage": "Linaje intelectual",
+    "notableDisciples": "Discípulos destacados",
+    "relatedByField": "Relacionados por área",
+    "emptyReferences": "Aún no se han incluido referencias académicas.",
+    "academicReferences": "Referencias académicas",
+    "recentRevisions": "Revisiones recientes",
+    "showLess": "Mostrar menos",
+    "viewMore": "Ver más"
+  },
+      "time": {
+    "justNow": "Justo ahora",
+    "minutesShort": "min",
+    "hoursShort": "h",
+    "daysShort": "d"
+  },
+  "notifications": {
+    "title": "Notificaciones",
+    "markAllRead": "Marcar todo como leído",
+    "viewAll": "Ver todo",
+    "all": "Todo",
+    "unread": "No leído",
+    "noNotifications": "No hay notificaciones",
+    "caughtUp": "¡Estás al día!",
+    "willNotify": "Te avisaremos cuando haya algo nuevo.",
+    "new": "Nuevo",
+    "week": "Esta semana",
+    "earlier": "Anteriormente",
+    "loadMore": "Cargar más",
+    "readMore": "Ver más",
+    "readLess": "Ver menos",
+    "time": {
+      "justNow": "Justo ahora",
+      "minsAgo": "min",
+      "hoursAgo": "h",
+      "daysAgo": "d"
+    }
+  },
+  "admin": {
+    "common": {
+      "user": "Usuario"
+    },
+    "roles": {
+      "administrator": "Administrador"
+    },
+    "navbar": {
+      "changeLanguage": "Cambiar idioma",
+      "language": "Idioma",
+      "myProfile": "Mi perfil",
+      "notifications": "Notificaciones",
+      "viewPublicSite": "Ver sitio público",
+      "logout": "Cerrar sesión",
+      "loading": "Cargando...",
+      "noLanguages": "No hay idiomas",
+      "logoutConfirmTitle": "Confirmar cierre de sesión",
+      "logoutConfirmMessage": "¿Estás seguro de que deseas cerrar sesión? Podrías perder cualquier cambio no guardado.",
+      "cancel": "Cancelar",
+      "confirmLogout": "Cerrar sesión"
+    },
+    "notifications": {
+      "title": "Notificaciones",
+      "adminTitle": "Notificaciones de administración",
+      "markAllRead": "Marcar todo como leído",
+      "loading": "Cargando...",
+      "empty": "No hay notificaciones administrativas",
+      "time": {
+        "justNow": "Justo ahora",
+        "minutes": "min",
+        "hours": "h",
+        "days": "d"
+      }
+    },
+    "sidebar": {
+      "dashboard": "Panel de control",
+      "section": {
+        "content": "Contenido",
+        "review": "Colas de revisión",
+        "classification": "Clasificación",
+        "discussions": "Discusiones",
+        "community": "Comunidad",
+        "support": "Reportes y soporte"
+      },
+      "allScholars": "Todos los eruditos",
+      "allWorks": "Todas las obras",
+      "allMedia": "Todos los medios",
+      "pendingNewScholars": "Nuevos eruditos",
+      "pendingScholarEdits": "Ediciones de eruditos",
+      "pendingWorks": "Obras en revisión",
+      "mediaVerification": "Verificación de medios",
+      "disciplines": "Disciplinas",
+      "regions": "Regiones",
+      "allDiscussions": "Todas las discusiones",
+      "discussionCategories": "Categorías",
+      "userManagement": "Gestión de usuarios",
+      "reports": "Reportes",
+      "contactUs": "Contáctanos"
+    }
+  },
+   "scholarDetail": {
+  "loginFirst": "Por favor, inicia sesión primero.",
+  "accountBanned": "Tu cuenta está suspendida.",
+  "privilegesRevoked": "Se han revocado tus privilegios de contribución.",
+  "linkCopied": "¡Enlace copiado!",
+  "emptyWorks": "Aún no se han agregado obras.",
+  "addFirstWork": "Agregar la primera obra",
+  "emptyMedia": "Aún no se han agregado medios.",
+  "addFirstMedia": "Agregar el primer medio",
+  "emptyRelations": "Aún no hay relaciones registradas para este erudito.",
+  "emptyReferences": "Aún no se han agregado referencias académicas.",
+  "view": "Ver",
+  "download": "Descargar",
+  "openLink": "Abrir enlace",
+  "loading": "Cargando...",
+  "downloading": "Descargando...",
+  "fileTooLarge": "El tamaño del archivo es demasiado grande",
+  "saving": "Guardando...",
+  "uploading": "Subiendo...",
+  "createdBy": "Creado por",
+  "lastUpdated": "Última actualización por",
+  "atAGlance": "Resumen rápido",
+  "fullName": "Nombre completo",
+  "born": "Nacimiento",
+  "died": "Fallecimiento",
+  "century": "Siglo",
+  "region": "Región",
+  "discipline": "Disciplina",
+  "allContributors": "Todos los colaboradores",
+  "contributor": "Colaborador",
+  "contributions": "Contribuciones",
+  "contributors": "colaboradores",
+  "bibliographyTitle": "Lista de obras",
+  "colTitle": "Título",
+  "colYear": "Año",
+  "colFormat": "Formato",
+  "colAccess": "Acceso digital",
+  "mediaTitle": "Biblioteca de medios integrada",
+  "addWork": "Agregar obra",
+  "addMedia": "Agregar medios",
+  "intellectualLineage": "Linaje intelectual",
+  "notableDisciples": "Discípulos destacados",
+  "relatedByField": "Eruditos relacionados por área",
+  "academicReferences": "Referencias académicas",
+  "recentRevisions": "Revisiones más recientes",
+  "viewMore": "Ver más",
+  "showLess": "Mostrar menos",
+  "noContent": "Aún no se ha contribuido a esta página en",
+  "contribute": "Contribuir ahora →",
+  "editEnglish": "EDITAR INGLÉS",
+  "editArabic": "Editar árabe",
+  "editFrench": "EDITAR FRANCÉS",
+  "addEnglish": "AGREGAR VERSIÓN EN INGLÉS",
+  "addArabic": "Agregar versión en árabe",
+  "addFrench": "AGREGAR VERSIÓN EN FRANCÉS",
+  "tabWorks": "Obras",
+  "tabMedia": "Medios",
+  "tabRelations": "Relaciones",
+  "tabReferences": "Referencias",
+  "addNewWork": "Agregar nueva obra",
+  "addMediaModal": "Agregar medios",
+  "title": "Título",
+  "year": "Año",
+  "format": "Formato",
+  "digitalAccess": "Acceso digital",
+  "none": "Sin acceso",
+  "uploadFile": "Subir archivo",
+  "pasteLink": "Pegar enlace",
+  "noFileAttached": "No se adjuntará ningún archivo digital.",
+  "cancel": "Cancelar",
+  "addWorkBtn": "Agregar obra",
+  "addMediaBtn": "Agregar medios",
+  "description": "Descripción",
+  "fileLink": "Archivo / enlace",
+  "noFile": "No se adjuntará ningún archivo.",
+  "workTitlePlaceholder": "Ejemplo: El problema de la cultura",
+  "yearPlaceholder": "Ejemplo: 1959",
+  "mediaTitlePlaceholder": "Ejemplo: Conferencia de 1972 sobre la colonizabilidad",
+  "descriptionPlaceholder": "Descripción breve",
+  "urlPlaceholder": "https://archive.org/details/…",
+  "titleRequired": "El título es obligatorio.",
+  "validYear": "Por favor, introduce un año válido.",
+  "urlRequired": "Por favor, introduce un enlace.",
+  "fileRequired": "Por favor, sube un archivo.",
+  "pdfFile": "Archivo PDF",
+  "audioFile": "Archivo de audio",
+  "videoFile": "Archivo de video",
+  "home": "Inicio",
+  "scholars": "Eruditos",
+  "addedBy": "Agregado por",
+  "uploadedBy": "Subido por",
+  "teacher": "Maestro",
+  "student": "Discípulo",
+  "version": "Versión",
+  "more": "Más",
+  "untitledMedia": "Medios sin título",
+  "scholarNotFound": "No se encontró al erudito",
+  "workAddedSuccess": "¡La obra se agregó correctamente!",
+  "mediaAddedSuccess": "¡Los medios se agregaron correctamente!",
+  "failedToAddWork": "Error al agregar la obra.",
+  "failedToAddMedia": "Error al agregar los medios.",
+  "shareText": "Descubre a {name} en la Enciclopedia de Nuestros Eruditos",
+  "shareFailed": "Error al compartir:"
+},
+  "scholarPage": {
+    "breadcrumb": "Inicio › Enciclopedia de eruditos",
+    "breadcrumbHome": "Inicio",
+    "breadcrumbCurrent": "Enciclopedia de eruditos",
+    "heroTitle": "Explora el legado intelectual islámico",
+    "heroSub": "Una guía completa de los eruditos, pensadores y sabios que han forjado la civilización humana.",
+    "searchPlaceholder": "Busca por nombre del erudito...",
+    "searchBtn": "Buscar",
+    "filters": "Filtros",
+    "clearAll": "Borrar todo",
+    "regionLabel": "Región",
+    "centuryLabel": "Siglo (H)",
+    "disciplineLabel": "Disciplina",
+    "statusLabel": "Estado",
+    "statusAll": "Todos",
+    "statusDeceased": "Fallecido",
+    "showing": "Mostrando",
+    "of": "de",
+    "scholars": "erudito",
+    "sortBy": "Ordenar por:",
+    "biography": "Biografía",
+    "addScholar": "Agregar erudito",
+    "centuries": ["Siglos 1-3", "Siglos 4-6", "Siglos 7-9"],
+    "sortOptions": ["Nombre (A-Z)", "Nombre (Z-A)", "Más antiguo", "Más reciente"],
+    "noScholars": "Aún no hay eruditos disponibles en este idioma.",
+    "noResults": "No hay eruditos que coincidan con tu búsqueda o filtro.",
+    "tryChanging": "Intenta cambiar los términos de búsqueda o borrar los filtros.",
+    "loading": "Cargando..."
+  },
+     "contributorRoute": {
+    "loading": "Cargando...",
+    "loginRequired": {
+      "title": "Por favor, inicia sesión",
+      "message": "Debes iniciar sesión primero para contribuir agregando o editando datos de eruditos.",
+      "loginButton": "Iniciar sesión",
+      "goBack": "Volver"
+    },
+    "restricted": {
+      "banned": {
+        "title": "Cuenta suspendida",
+        "message": "Tu cuenta ha sido suspendida y no puedes enviar nuevos eruditos. Por favor, ponte en contacto con soporte técnico si crees que esto es un error."
+      },
+      "revoked": {
+        "title": "Privilegios de contribución revocados",
+        "message": "Un administrador ha revocado tus privilegios de contribución. No puedes enviar nuevos eruditos ni ediciones en este momento."
+      },
+      "goBack": "Volver"
+    }
+  },
+  "navbar": {
+    "home": "Inicio",
+    "scholars": "Eruditos",
+    "forum": "Foro",
+    "about": "Sobre nosotros",
+    "contact": "Contacto",
+    "logoAlt": "Logotipo de Oulamauna",
+    "searchPlaceholder": "Busca eruditos, obras, medios o publicaciones...",
+    "searching": "Buscando...",
+    "works": "Obras",
+    "media": "Medios",
+    "forumPosts": "Publicaciones del foro",
+    "noResults": "No hay resultados para",
+    "notifications": "Notificaciones",
+    "login": "Iniciar sesión",
+    "register": "Crear cuenta",
+    "profile": "Perfil",
+    "dashboard": "Panel de control",
+    "settings": "Configuración",
+    "siteAdminPanel": "Panel de administración",
+    "signOut": "Cerrar sesión",
+    "logoutSuccess": "Sesión cerrada correctamente",
+    "logoutTitle": "Cerrar sesión",
+    "logoutConfirm": "¿Estás seguro de que deseas cerrar sesión?",
+    "profileMenu": "Menú de perfil",
+    "close": "Cerrar"
+  },
+  
+"contact": {
+  "breadcrumb": "Contacto",
+  "title": "Contáctanos",
+  "description": "¿Tienes una pregunta, sugerencia o comentario? Nos encantaría escucharte. Completa el formulario a continuación y nuestro equipo te responderá lo antes posible.",
+  "formTitle": "Envíanos un mensaje",
+  "sentTitle": "¡Mensaje enviado con éxito!",
+  "sentSubtitle": "Gracias por contactarnos. Hemos recibido tu mensaje y responderemos a tu correo electrónico pronto.",
+  "sentBack": "Enviar otro mensaje",
+  "directContact": "Otras formas de contacto",
+  "labels": {
+    "name": "Nombre",
+    "email": "Correo electrónico",
+    "subject": "Asunto",
+    "message": "Mensaje",
+    "btn": "Enviar",
+    "sending": "Enviando..."
+  },
+  "placeholders": {
+    "name": "Nombre completo",
+    "email": "example@mail.com",
+    "message": "¿Cómo podemos ayudarte?"
+  },
+  "errors": {
+    "nameEmpty": "El nombre es obligatorio.",
+    "emailEmpty": "El correo electrónico es obligatorio.",
+    "emailInvalid": "Por favor, introduce un correo electrónico válido.",
+    "messageEmpty": "El mensaje es obligatorio.",
+    "messageShort": "El mensaje debe tener al menos 10 caracteres."
+  },
+  "info": {
+    "emailLabel": "Correo electrónico",
+    "emailValue": "contact@oulamauna.com",
+    "locationLabel": "Ubicación",
+    "locationValue": "Global / En línea",
+    "phoneLabel": "Teléfono",
+    "phoneValue": "+966 50 000 0000"
+  },
+  "subjects": {
+    "general": "Consulta general",
+    "technical": "Problema técnico",
+    "partnership": "Colaboración / Asociación",
+    "correction": "Corrección de contenido",
+    "other": "Otro"
+  }
+},
+"about": {
+  "breadcrumb": "Sobre nosotros",
+  "title": "Sobre nosotros",
+  "heroDescription": "Una enciclopedia colaborativa y gratuita dedicada a los eruditos y pensadores del patrimonio intelectual islámico.",
+  "introLeft": "La plataforma Oulamauna se creó con un objetivo claro: preservar las biografías y obras de los eruditos que han forjado el pensamiento islámico, y hacer que este conocimiento sea fácil de acceder, leer y transmitir.",
+  "introRight": "Gracias a años de dedicación detrás de cada entrada, nuestros colaboradores están motivados por el respeto al saber y el amor por el patrimonio que documentan.",
+  "whatLabel": "¿Qué hacemos?",
+  "whatBody": "Reunimos biografías, manuscritos y referencias académicas en un archivo único y multilingüe.",
+  "archiveLabel": "Nuestro archivo",
+  "archiveP1": "Cada entrada reúne la biografía del erudito, sus obras destacadas y sus manuscritos disponibles en un solo lugar, en árabe, inglés y francés.",
+  "archiveP2": "Para mantener la fiabilidad de las entradas, pedimos a los colaboradores que citen sus fuentes, y cada contribución pasa por una revisión antes de publicarse.",
+  "accessLabel": "Apertura",
+  "accessBody": "En Oulamauna, la apertura es el núcleo de nuestro trabajo. Creemos que el patrimonio del saber debe ser accesible y fácil de comprender.",
+  "accessSub": "Por eso cada entrada está disponible de forma gratuita en tres idiomas, para que ningún idioma limite quién puede aprender de ella.",
+  "teamLabel": "Nuestros colaboradores",
+  "teamBody": "Nuestros colaboradores no son simples añadidores de nombres, sino investigadores y lectores que sienten un profundo respeto por el patrimonio que documentan. Su cuidado con las fuentes y la precisión es lo que mantiene la fiabilidad del archivo.",
+  "exploreLink": "Explorar eruditos",
+  "ctaLabel": "Contáctanos",
+  "ctaTitle": "¿Tienes una corrección, una sugerencia para agregar un erudito o una pregunta sobre el archivo? Nos encantaría saber de ti.",
+  "ctaButton": "Escríbenos"
+},
+
+   "forum": {
+    "pageTitle": "Foro de discusiones",
+    "searchPlaceholder": "Buscar por título, contenido o autor...",
+    "newPostButton": "Iniciar nueva discusión",
+    "allDiscussions": "Todas las discusiones",
+    "categoriesLabel": "Categorías",
+    "sortRecent": "Más recientes primero",
+    "sortPopular": "Más populares",
+    "sortUnanswered": "Sin responder",
+    "loadMore": "Cargar más",
+    "noResults": "No hay discusiones que coincidan con los filtros.",
+    "composerTitle": "Iniciar una discusión",
+    "composerCategoryLabel": "Categoría",
+    "composerCategoryPlaceholder": "Selecciona una categoría",
+    "composerTitleLabel": "Título",
+    "composerTitlePlaceholder": "¿Cuál es tu pregunta o tema?",
+    "composerContentLabel": "Contenido",
+    "composerContentPlaceholder": "Comparte los detalles, el contexto o las fuentes...",
+    "composerCancel": "Cancelar",
+    "composerPublish": "Publicar",
+    "comments": "comentarios",
+    "posts": "publicaciones",
+    "report": "Reportar",
+    "reportPost": "Reportar publicación",
+    "confirmReport": "¿Estás seguro de que deseas reportar esta publicación?",
+    "reportReason": "Motivo del reporte (opcional)",
+    "cancel": "Cancelar",
+    "submit": "Enviar",
+    "deletePost": "Eliminar",
+    "confirmDeletePost": "¿Estás seguro de que deseas eliminar esta publicación? Esta acción no se puede deshacer.",
+    "loadingDiscussions": "Cargando discusiones...",
+    "uncategorized": "Sin categoría",
+    "anonymous": "Anónimo",
+    "failedToPublish": "Error al publicar la publicación.",
+    "reportSubmitted": "El reporte se envió correctamente.",
+    "failedToReport": "Error al enviar el reporte.",
+    "failedToDelete": "Error al eliminar la publicación.",
+    "loginToPost": "Por favor, inicia sesión para crear una publicación.",
+    "postPublishedSuccess": "¡Publicación publicada con éxito!",
+    "loginToLike": "Por favor, inicia sesión para dar \"me gusta\".",
+    "failedToLike": "Error al dar \"me gusta\" a la publicación.",
+    "postDeletedSuccess": "Publicación eliminada correctamente."
+  },
+  "forumPost": {
+    "loginToComment": "Inicia sesión para comentar",
+"logIn": "Iniciar sesión",
+"loginToPost": "Por favor, inicia sesión para agregar un comentario.",
+"loginToLike": "Por favor, inicia sesión para dar \"me gusta\".",
+"failedToLikePost": "Error al dar \"me gusta\" a la publicación.",
+"failedToLikeComment": "Error al dar \"me gusta\" al comentario.",
+"failedToPostComment": "Error al agregar el comentario.",
+    "backToForum": "Volver a las discusiones",
+    "postedBy": "Publicado por",
+    "onDate": "el",
+    "views": "vistas",
+    "comments": "comentarios",
+    "commentPlaceholder": "Comparte tus ideas...",
+    "postComment": "Publicar comentario",
+    "noComments": "Aún no hay comentarios. ¡Sé el primero en compartir tu opinión!",
+    "replyingTo": "Respondiendo a",
+    "cancelReply": "Cancelar",
+    "reply": "Responder",
+    "loading": "Cargando publicación...",
+    "report": "Reportar",
+    "reportPost": "Reportar publicación",
+    "reportComment": "Reportar comentario",
+    "confirmReport": "¿Estás seguro de que deseas reportar esto?",
+    "reportReason": "Motivo del reporte (opcional)",
+    "cancel": "Cancelar",
+    "submit": "Enviar",
+    "fullscreen": "Pantalla completa",
+    "exitFullscreen": "Salir de pantalla completa",
+    "loadMoreComments": "Mostrar más comentarios",
+    "viewReplies": "Ver respuestas",
+    "hideReplies": "Ocultar respuestas",
+    "sortNewest": "Más recientes primero",
+    "sortOldest": "Más antiguos primero",
+    "deletePost": "Eliminar publicación",
+    "deleteComment": "Eliminar",
+    "confirmDeletePost": "¿Estás seguro de que deseas eliminar esta publicación? Esta acción no se puede deshacer.",
+    "confirmDeleteComment": "¿Estás seguro de que deseas eliminar este comentario?",
+    "deletedComment": "[Este comentario ha sido eliminado]",
+    "uncategorized": "Sin categoría",
+    "unknownUser": "Usuario desconocido",
+    "postNotFound": "No se encontró la publicación.",
+    
+    "reportSubmitted": "El reporte se envió correctamente.",
+    "failedToReport": "Error al enviar el reporte.",
+    "failedToDeletePost": "Error al eliminar la publicación.",
+    "failedToDeleteComment": "Error al eliminar el comentario.",
+    "time": {
+      "justNow": "Justo ahora",
+      "minsAgo": "min",
+      "hoursAgo": "h",
+      "daysAgo": "d"
+    }
+  },
+  "errors": {
+    "server": {
+      "title": "Ciertamente, con la dificultad viene la facilidad",
+      "desc": "Actualmente estamos realizando un mantenimiento rápido de la biblioteca. Por favor, inténtalo de nuevo en unos momentos.",
+      "button": "Actualizar la página"
+    },
+    "notFound": {
+      "title": "404",
+      "subtitle": "Página no encontrada",
+      "desc": "El conocimiento que buscas no está en esta sección de la biblioteca.",
+      "button": "Volver al inicio"
+    },
+    "invalidToken": {
+      "title": "El enlace ha expirado",
+      "desc": "Este enlace de verificación ya no es válido. Es posible que haya expirado o que ya se haya utilizado.",
+      "login": "Iniciar sesión de nuevo",
+      "help": "¿Necesitas ayuda?"
+    },
+    "forbidden": {
+      "title": "Acceso restringido",
+      "desc": "No tienes los permisos necesarios para ver esta página.",
+      "button": "Volver al inicio"
+    }
+  },
+
+  "login": {
+    "title": "Bienvenido de nuevo",
+    "subtitle": "Introduce tus datos para acceder a tu cuenta",
+    "emailLabel": "Correo electrónico",
+    "emailPlaceholder": "Introduce tu correo electrónico",
+    "passwordLabel": "Contraseña",
+    "passwordPlaceholder": "Introduce tu contraseña",
+    "forgot": "¿Olvidaste tu contraseña?",
+    "button": "Iniciar sesión",
+    "loading": "Iniciando sesión...",
+    "google": "Iniciar sesión con Google",
+    "noAccount": "¿No tienes una cuenta?",
+    "join": "Crear cuenta",
+    "or": "o",
+    "errEmailEmpty": "El correo electrónico es obligatorio",
+    "errEmailInvalid": "Dirección de correo electrónico no válida",
+    "errPasswordEmpty": "La contraseña es obligatoria",
+    "errInvalidAuth": "Correo electrónico o contraseña incorrectos",
+    "errServer": "Error al conectar con el servidor",
+    "imageTitle": "Preservando el patrimonio del saber islámico",
+    "imageSubtitle": "Descubre siglos de conocimiento de los grandes eruditos.",
+    "badge1": "Fuentes verificadas",
+    "badge2": "+500 eruditos"
+  },
+  "register": {
+    "title": "Crear cuenta",
+    "subtitle": "Comienza tu viaje con Oulamauna hoy",
+    "usernameLabel": "Nombre completo",
+    "usernamePlaceholder": "Introduce tu nombre completo",
+    "emailLabel": "Correo electrónico",
+    "emailPlaceholder": "Introduce tu correo electrónico",
+    "passwordLabel": "Contraseña",
+    "passwordPlaceholder": "Crea una contraseña",
+    "confirmLabel": "Confirmar contraseña",
+    "confirmPlaceholder": "Confirma tu contraseña",
+    "button": "Crear cuenta",
+    "google": "Registrarse con Google",
+    "haveAccount": "¿Ya tienes una cuenta?",
+    "signIn": "Iniciar sesión",
+    "or": "o",
+    "loading": "Creando cuenta...",
+    "errors": {
+      "usernameEmpty": "El nombre completo es obligatorio",
+      "emailEmpty": "El correo electrónico es obligatorio",
+      "emailInvalid": "Dirección de correo electrónico no válida",
+      "passwordEmpty": "La contraseña es obligatoria",
+      "passwordWeak": "La contraseña debe tener al menos 8 caracteres, con una mayúscula, un número y un símbolo",
+      "confirmEmpty": "Por favor, confirma tu contraseña",
+      "confirmMatch": "Las contraseñas no coinciden",
+      "server": "Ocurrió un error. Por favor, inténtalo de nuevo."
+    },
+    "imageTitle": "Únete a nuestra comunidad",
+    "imageSubtitle": "Conviértete en colaborador y ayuda a preservar el patrimonio del saber islámico.",
+    "badge1": "Únete a más de 1000 eruditos",
+    "badge2": "Seguro y verificado"
+  },
+  
+  "forgotPassword": {
+    "back": "Volver a iniciar sesión ", "title": "¿Olvidaste tu contraseña?", "subtitle": "Introduce tu correo electrónico y te enviaremos un enlace para restablecer tu contraseña.",
+    "emailLabel": "Dirección de correo electrónico", "emailPlaceholder": "scholar@oulamauna.org", "button": "Enviar enlace de restablecimiento", "sending": "Enviando...",
+    "errEmpty": "Por favor, introduce tu dirección de correo electrónico.", "errInvalid": "Por favor, introduce una dirección de correo electrónico válida.", "errServer": "Error al conectar con el servidor. Por favor, inténtalo más tarde.",
+    "sentTitle": "Revisa tu bandeja de entrada", "sentSubtitle": "Enviamos el enlace de restablecimiento a", "sentNote": "¿No lo recibiste? Revisa tu carpeta de spam o", "sentRetry": "prueba con otro correo", "sentBack": "Volver a iniciar sesión"
+  },
+  "resetPassword": {
+    "back": "Volver a iniciar sesión ", "title": "Restablecer contraseña", "subtitle": "Elige una nueva contraseña para tu cuenta.",
+    "passwordLabel": "Nueva contraseña", "passwordPlaceholder": "Introduce una nueva contraseña",
+    "confirmLabel": "Confirmar contraseña", "confirmPlaceholder": "Vuelve a introducir la contraseña",
+    "button": "Establecer contraseña", "sending": "Estableciendo...",
+    "errPasswordEmpty": "Por favor, introduce una nueva contraseña.", "errPasswordWeak": "Por favor, cumple con todos los requisitos de la contraseña.",
+    "errConfirmEmpty": "Por favor, confirma la contraseña.", "errConfirmMatch": "Las contraseñas no coinciden.", "errServer": "Error al restablecer la contraseña.",
+    "doneTitle": "Contraseña actualizada", "doneSubtitle": "Tu contraseña se ha restablecido correctamente. Ya puedes iniciar sesión.", "doneButton": "Iniciar sesión",
+    "invalidToken": "El enlace de restablecimiento no es válido o ha expirado.", "invalidBack": "Solicitar un nuevo enlace",
+    "checks": { "length": "Al menos 8 caracteres", "upper": "Una mayúscula", "number": "Un número", "symbol": "Un símbolo", "add": "Agregar:", "allGood": "¡Contraseña segura!" }
+  },
+  "verifyEmail": {
+    "category": "Seguridad de la cuenta", "loadingTitle": "Verificando tu correo electrónico...", "loadingSubtitle": "Por favor, espera mientras activamos tu cuenta",
+    "successTitle": "¡Correo electrónico confirmado!", "successSubtitle": "Tu cuenta ya está activa. Serás redirigido para iniciar sesión en breve.",
+    "successRedirect": "Redirigiendo para iniciar sesión", "successBack": "Iniciar sesión ahora", "successHome": "O ir a la página principal", "counting": "en",
+    "resendPlaceholder": "Introduce tu correo electrónico", "resendButton": "Enviar nuevo enlace", "resendSent": "¡Enviado! Revisa tu correo.",
+    "resendErrorEmpty": "Por favor, introduce tu correo electrónico.", "resendErrorFailed": "Error al enviar. Inténtalo de nuevo.",
+    "errors": {
+      "no_token": { "title": "Enlace faltante", "subtitle": "No se encontró el código de verificación. Introduce tu correo para obtener un nuevo enlace.", "backHome": "Volver al inicio" },
+      "invalid_token": { "title": "Enlace no válido", "subtitle": "Este enlace ya se usó o no es reconocido.", "backHome": "Volver al inicio", "register": "O crear una cuenta nueva" },
+      "expired_token": { "title": "El enlace ha expirado", "subtitle": "El enlace ha expirado. Introduce tu correo para recibir uno nuevo.", "backHome": "Volver al inicio" },
+      "network": { "title": "Error de conexión", "subtitle": "No se pudo acceder al servidor. Por favor, verifica tu conexión.", "tryAgain": "Intentar de nuevo", "backHome": "Volver al inicio" },
+      "server": { "title": "Error del servidor", "subtitle": "Ocurrió un error de nuestra parte. Por favor, inténtalo más tarde.", "tryAgain": "Intentar de nuevo", "backHome": "Volver al inicio" },
+      "unknown": { "title": "Fallo en la confirmación", "subtitle": "Ocurrió un error inesperado. Por favor, inténtalo de nuevo.", "backHome": "Volver al inicio" }
+    }
+  },
+  "verifyEmailPending": {
+    "category": "Seguridad de la cuenta", "title": "Confirmación de correo electrónico", "subtitle": "Se ha enviado un enlace de confirmación a tu correo electrónico.",
+    "alreadyVerifiedTitle": "Ya confirmado", "alreadyVerifiedSub": "Tu correo electrónico ya está confirmado. Todo listo.",
+    "alreadyVerifiedBack": "Volver a la página anterior", "alreadyVerifiedHome": "O ir a la página principal",
+    "cta": "ABRIR GMAIL", "resend": "Reenviar", "resentSuccess": "Enviado", "backToLogin": "Volver",
+    "checking": "Verificando...", "errorMessage": "Ocurrió un error. Por favor, inténtalo de nuevo."
+  },
+
+   "dashboard": {
+  "title": "Panel de control",
+  "welcome": "Bienvenido",
+  "welcomeUser": "Bienvenido al panel de control",
+  "roleLabel": "Rol",
+  "roleAdmin": "Administrador",
+  "roleContributor": "Colaborador",
+  "tabs": {
+    "overview": "Resumen",
+    "submissions": "Mis envíos",
+    "media": "Medios",
+    "works": "Obras y referencias",
+    "notifications": "Notificaciones"
+  },
+  "stats": {
+    "scholars": "Eruditos",
+    "versions": "Versiones",
+    "media": "Medios",
+    "works": "Obras"
+  },
+  "overview": {
+    "recentActivity": "Actividad reciente"
+  },
+  "activity": {
+    "newScholar": "Se envió un nuevo erudito",
+    "editProposed": "Se propuso una edición"
+  },
+  "empty": {
+    "recent": "No hay actividad reciente",
+    "submissions": "No se encontraron envíos",
+    "media": "Aún no se han subido medios",
+    "works": "Aún no se han agregado obras",
+    "notifications": "Aún no hay notificaciones"
+  },
+  "loading": {
+    "submissions": "Cargando envíos...",
+    "media": "Cargando medios...",
+    "works": "Cargando obras..."
+  },
+  "filter": {
+    "all": "Todo",
+    "draft": "Borrador",
+    "pending": "En revisión",
+    "approved": "Aprobado",
+    "rejected": "Rechazado",
+    "superseded": "Reemplazado"
+  },
+  "status": {
+    "draft": "Borrador",
+    "pending": "En revisión",
+    "approved": "Aprobado",
+    "rejected": "Rechazado",
+    "superseded": "Reemplazado"
+  },
+  "table": {
+    "type": "Tipo",
+    "scholar": "Erudito",
+    "language": "Idioma",
+    "version": "Versión",
+    "date": "Fecha",
+    "status": "Estado",
+    "actions": "Acciones",
+    "file": "Archivo",
+    "title": "Título"
+  },
+  "actions": {
+    "view": "Ver",
+    "edit": "Editar",
+    "delete": "Eliminar",
+    "continue": "Continuar",
+    "newScholar": "Nuevo erudito ",
+    "viewFile": "Ver archivo",
+    "download": "Descargar",
+    "openLink": "Abrir enlace",
+    "viewOnScholarPage": "Ver en la página del erudito"
+  },
+  "confirm": {
+    "deleteDraft": "¿Estás seguro de que deseas eliminar este borrador de forma permanente?",
+    "deleteRejected": "¿Estás seguro de que deseas eliminar este rechazo de forma permanente?"
+  },
+  "success": {
+    "draftDeleted": "¡Borrador eliminado correctamente!",
+    "rejectedDeleted": "¡Rechazo eliminado correctamente!"
+  },
+  "error": {
+    "deleteDraft": "Error al eliminar el borrador. Por favor, inténtalo de nuevo.",
+    "deleteRejected": "Error al eliminar. Por favor, inténtalo de nuevo."
+  },
+  "cta": {
+    "title": "¿Listo para contribuir?",
+    "desc": "Comienza agregando eruditos, obras y medios a la plataforma.",
+    "button": "Nuevo envío"
+  },
+  "media": {
+    "tempNote": "La gestión de medios estará disponible próximamente."
+  },
+  "scholarInfo": {
+    "region": "Región",
+    "dates": "Fechas",
+    "alsoKnownAs": "También conocido como"
+  },
+  "banner": {
+    "pendingDesc": "Un administrador está revisando actualmente este envío.",
+    "supersededDesc": "Esta versión ha sido reemplazada por una versión más reciente aprobada.",
+    "draftDesc": "Este elemento aún no se ha enviado para revisión.",
+    "pendingItemDesc": "Un administrador está revisando actualmente este elemento.",
+    "approvedDesc": "Este elemento está publicado en la página del erudito.",
+    "rejectedDesc": "Este elemento no ha sido aprobado.",
+    "supersededItemDesc": "Este elemento ha sido reemplazado por una versión más reciente."
+  },
+  "biography": "Biografía",
+  "loadingDetails": "Cargando detalles...",
+  "errorLoadData": "Error al cargar los datos.",
+  "untitledSubmission": "Envío sin título",
+  "newScholarSubmission": "Envío de nuevo erudito",
+  "editProposal": "Propuesta de edición",
+  "submitted": "Enviado el",
+  "noFileAttached": "No hay archivo adjunto.",
+  "pagination": {
+    "previous": "Anterior",
+    "next": "Siguiente"
+  },
+  "kind": {
+    "new": "Nuevo",
+    "edit": "Edición"
+  },
+  "unknownScholar": "Erudito desconocido",
+  "unknown": "Desconocido",
+  "untitled": "Sin título"
+},
+ "editProfile": {
+    "loading": "Cargando perfil...",
+    "title": "Editar perfil",
+    "success": "¡Perfil actualizado correctamente!",
+    "error": {
+      "load": "Error al cargar los datos del perfil.",
+      "update": "Error al actualizar el perfil.",
+      "general": "Ocurrió un error al guardar."
+    },
+    "newImageSelected": "Se seleccionó una nueva imagen",
+    "changePicture": "Cambiar foto de perfil",
+    "roleAdmin": "Administrador",
+    "roleUser": "Usuario",
+    "roleContributor": "Colaborador",
+    "statusBrowsing": "Navegando",
+    "statusContributing": "Contribuyendo",
+    "newImageReady": "Nueva imagen lista para guardar",
+    "personalInfo": "Información personal",
+     "editProfile": "Editar perfil",
+    "displayName": "Nombre para mostrar",
+    "username": "Nombre de usuario",
+    "email": "Correo electrónico",
+    "bio": "Biografía breve",
+    "links": "Enlaces",
+    "linksHint": "Agrega enlaces a redes sociales o a tu sitio web personal.",
+    "linkPlaceholder": "https://...",
+    "addLink": "Agregar enlace",
+    "cancel": "Cancelar",
+    "saving": "Guardando...",
+    "saveProfile": "Guardar perfil"
+  },
+  "settings": {
+    "loading": "Cargando configuración...",
+    "errorLoad": "Error al cargar la configuración.",
+    "errorUpdate": "Error al actualizar la configuración. Por favor, inténtalo de nuevo.",
+    "errorDeactivate": "Error al desactivar la cuenta.",
+    "errorDelete": "Error al eliminar la cuenta.",
+    "saved": "Guardado",
+    "processing": "Procesando...",
+    "cancel": "Cancelar",
+    "title": "Configuración de la cuenta",
+    "desc": "Administra tus preferencias, privacidad y estado de la cuenta.",
+    "language": "Idioma",
+    "preferredLanguage": "Idioma preferido",
+    "notifications": "Notificaciones",
+    "enableNotifications": "Activar notificaciones",
+    "notificationsDesc": "Recibe notificaciones generales sobre tu cuenta y tus contribuciones.",
+    "privacy": "Privacidad",
+    "profileVisibility": "Visibilidad del perfil",
+    "visibilityPublic": "Público",
+    "visibilityRegistered": "Solo usuarios registrados",
+    "visibilityPrivate": "Privado",
+    "showEmail": "Mostrar correo electrónico",
+    "showEmailDesc": "Mostrar tu dirección de correo electrónico en tu perfil público.",
+    "showContributions": "Mostrar contribuciones",
+    "showContributionsDesc": "Mostrar tu historial de contribuciones en tu perfil público.",
+    "accountManagement": "Gestión de la cuenta",
+    "deactivateAccount": "Desactivar cuenta",
+    "deactivateAccountDesc": "Desactiva tu cuenta temporalmente. Puedes reactivarla iniciando sesión de nuevo.",
+    "deactivate": "Desactivar",
+    "deactivateConfirmMessage": "¿Estás seguro de que deseas desactivar tu cuenta? Tus datos se conservarán, y podrás reactivarla en cualquier momento iniciando sesión de nuevo.",
+    "deleteAccount": "Eliminar cuenta",
+    "deleteAccountDesc": "Anonimiza tu cuenta de forma permanente. Esta acción no se puede deshacer.",
+    "deleteAccountWarning": "Esta acción es irreversible. Tu cuenta será anonimizada, se eliminará tu contraseña y no podrás volver a iniciar sesión. Tus contribuciones anteriores seguirán siendo visibles bajo un nombre de usuario anónimo.",
+    "typeDeleteToConfirm": "Escribe DELETE para confirmar:",
+    "deleteAccountConfirm": "Eliminar cuenta"
+  },
+  "logout": {
+    "confirmMessage": "¿Estás seguro de que deseas cerrar sesión? Podrías perder cualquier cambio no guardado.",
+    "cancel": "Cancelar",
+    "confirm": "Cerrar sesión"
+  },
+ "footer": {
+    "tagline": "Dedicados a preservar el patrimonio del saber islámico",
+    "quickLinks": "Enlaces rápidos",
+    "about": "Sobre nosotros",
+    "scholars": "Eruditos",
+    "works": "Obras y manuscritos",
+    "disciplines": "Disciplinas",
+    "resources": "Recursos",
+    "forum": "Foro",
+    "faq": "Preguntas frecuentes",
+    "privacy": "Política de privacidad",
+    "contact": "Contacto",
+    "address": "Argel, Argelia",
+    "email": "contact@oulamauna.com",
+    "phone": "+213 (0) XX XX XX XX",
+    "copyright": "© 2026 Oulamauna. Todos los derechos reservados.",
+    "terms": "Términos de uso",
+    "privacyLink": "Privacidad"
+  },
+    "hero": {
+    "tagline": "Bienvenido a Oulamauna",
+    "title": "Descubre a los eruditos que forjaron el pensamiento islámico",
+    "subtitle": "Explora siglos de conocimiento, desde la era clásica hasta la era moderna. Biografías documentadas, obras originales y un archivo de manuscritos, todo en un solo lugar.",
+    "exploreButton": "Comenzar a explorar"
+  },
+   
+    "sidebar": {
+    "dashboard": "Panel de control",
+    "editProfile": "Editar perfil",
+    "settings": "Configuración",
+    "signOut": "Cerrar sesión",
+    "profileCompletion": "Progreso del perfil",
+    "completeHint": "Agrega más detalles para aumentar tu visibilidad.",
+    "links": "Enlaces"
+  },
+  "profileMenu": {
+    "dashboard": "Panel de control",
+    "editProfile": "Editar perfil",
+    "settings": "Configuración",
+    "logout": "Cerrar sesión",
+    "ariaLabel": "Menú de perfil"
+  },
+    "profile": {
+    "loading": "Cargando perfil...",
+    "roleUser": "Usuario",
+    "roleAdmin": "Administrador",
+    "roleContributor": "Colaborador",
+    "joined": "Se unió en",
+    "stats": {
+      "contributions": "Contribuciones",
+      "forumPosts": "Publicaciones del foro",
+      "contribs": "contribuciones",
+      "forum": "foro"
+    },
+    "activityTitle": "Actividad",
+    "activity": {
+      "recentContributions": "Contribuciones recientes",
+      "hiddenContributions": "Este usuario ha ocultado sus contribuciones.",
+      "noContributions": "Aún no hay contribuciones.",
+      "forumActivity": "Actividad en el foro",
+      "noForumActivity": "Aún no hay actividad en el foro."
+    },
+    "contributionTag": {
+      "annotation": "Anotación",
+      "translation": "Traducción",
+      "media": "Medios",
+      "research": "Investigación"
+    },
+    "contribution": {
+      "untitled": "Sin título",
+      "mediaUpload": "Subida de medios",
+      "newEdition": "Nueva edición",
+      "work": "Obra",
+      "submission": "Envío",
+      "newScholarEntry": "Nueva entrada de erudito"
+    },
+    "forum": {
+      "general": "General"
+    },
+    "reply": "Responder",
+    "replies": "respuestas",
+    "status": {
+      "deleted": "Esta cuenta ha sido eliminada",
+      "banned": "Esta cuenta ha sido suspendida",
+      "deactivated": "Esta cuenta está desactivada",
+      "private": "Este perfil es privado",
+      "registeredOnly": "Inicia sesión para ver este perfil"
+    },
+    "loginRequired": {
+      "title": "Necesitas iniciar sesión",
+      "desc": "Inicia sesión para ver y administrar tu perfil.",
+      "button": "Iniciar sesión"
+    },
+    "error": {
+      "notFound": {
+        "title": "Perfil no encontrado",
+        "desc": "No existe un perfil con este identificador."
+      },
+      "general": "Error al cargar el perfil",
+      "generalDesc": "Por favor, inténtalo de nuevo más tarde."
+    }
+  },
+  
+
+  "scholars": {
+    "newScholars": {
+      "title": "Nuevos eruditos",
+      "subtitle": "Revisa los perfiles de eruditos enviados recientemente antes de publicarlos en el archivo.",
+      "updatedLabel": "Actualizado ahora mismo",
+      "empty": "No hay envíos en la lista.",
+      "noResults": "No hay envíos que coincidan con tu búsqueda."
+    },
+    "stats": {
+      "totalPending": "Total en la lista",
+      "priorityReview": "Revisión prioritaria",
+      "underReview": "En revisión",
+      "changesRequested": "Cambios solicitados"
+    },
+    "search": {
+      "placeholder": "Buscar por nombre, colaborador o disciplina..."
+    },
+    "tabs": {
+      "all": "Todo"
+    },
+    "langVersion": {
+      "en": "Versión en inglés",
+      "ar": "Versión en árabe",
+      "fr": "Versión en francés"
+    },
+    "table": {
+      "scholar": "Erudito",
+      "submittedBy": "Enviado por",
+      "date": "Fecha",
+      "languages": "Idiomas",
+      "status": "Estado",
+      "actions": "Acciones"
+    },
+    "status": {
+      "pending": "Pendiente",
+      "underReview": "En revisión",
+      "changesRequested": "Cambios solicitados"
+    },
+    "actions": {
+      "view": "Ver envío",
+      "review": "Revisar",
+      "approve": "Aprobar",
+      "reject": "Rechazar",
+      "strip": "Revocar privilegios de colaborador"
+    },
+    "strip": {
+      "title": "¿Revocar los privilegios de colaborador?",
+      "body": "Esto eliminará los privilegios de colaborador de {name} y eliminará todos sus envíos pendientes. Esta acción no se puede deshacer.",
+      "confirm": "Revocar privilegios"
+    },
+    "review": {
+      "cancel": "Cancelar"
+    }
+  },
+  "scholarReview": {
+    "badge": {
+      "newSubmission": "Nuevo envío"
+    },
+    "hero": {
+      "submitter": "Enviado por",
+      "highImpact": "Envío de alto impacto"
+    },
+    "submittedLang": {
+      "en": "Inglés (principal)",
+      "ar": "Árabe (principal)",
+      "fr": "Francés (principal)"
+    },
+    "editBar": {
+      "label": "Modo de edición: corrige errores o modifica cualquier campo y luego confirma.",
+      "cancel": "Cancelar",
+      "confirm": "Confirmar"
+    },
+    "actions": {
+      "editPage": "Editar página",
+      "reject": "Rechazar / Solicitar cambios",
+      "approve": "Aprobar el envío"
+    },
+    "modal": {
+      "approveTitle": "¿Aprobar este envío?",
+      "rejectTitle": "¿Rechazar o solicitar cambios?",
+      "stripTitle": "¿Revocar los privilegios de colaborador?",
+      "approveSub": "Esto publicará a {name} en la enciclopedia.",
+      "unreviewed": "Las nuevas disciplinas que aún no han sido revisadas se agregarán automáticamente.",
+      "rejectSub": "Puedes indicarle al colaborador qué necesita cambiar. Déjalo vacío para rechazar sin mensaje.",
+      "stripSub": "Esto eliminará los privilegios de {name} como colaborador. Esta acción quedará registrada.",
+      "rejectPlaceholder": "Ejemplo: Por favor, verifica el año de nacimiento; hay una discrepancia entre las fuentes entre 1905 y 1906.",
+      "confirmApprove": "Aprobar",
+      "confirmReject": "Rechazar",
+      "confirmSendReject": "Enviar y rechazar",
+      "confirmStrip": "Revocar privilegios"
+    },
+    "sections": {
+      "biography": "Biografía académica",
+      "lineage": "Afiliación intelectual y relaciones",
+      "bibliography": "Bibliografía",
+      "media": "Documentos y medios",
+      "references": "Referencias académicas"
+    },
+    "bio": {
+      "wordCount": "Número de palabras: {n} palabras",
+      "readingTime": "Tiempo de lectura: ~{n} minutos"
+    },
+    "lineage": {
+      "teachers": "Maestros e influencias",
+      "disciples": "Discípulos destacados"
+    },
+    "works": {
+      "title": "Título",
+      "year": "Año",
+      "format": "Formato",
+      "access": "Acceso digital",
+      "view": "Ver",
+      "viewPdf": "Ver PDF"
+    },
+    "media": {
+      "viewPdf": "Ver PDF",
+      "viewPhotos": "Ver fotos",
+      "watch": "Ver",
+      "listen": "Escuchar",
+      "open": "Abrir"
+    },
+    "sidebar": {
+      "vitalStats": "Datos básicos",
+      "name": "Nombre",
+      "born": "Nacimiento",
+      "died": "Fallecimiento",
+      "lifespan": "Duración de vida",
+      "region": "Región",
+      "century": "Siglo",
+      "discipline": "Disciplina",
+      "expertiseClusters": "Áreas de especialización",
+      "submitterNote": "Nota del colaborador"
+    },
+    "chips": {
+      "kept": "Conservado",
+      "removed": "Eliminado",
+      "pending": "Pendiente",
+      "keepPrompt": "¿Conservar \"{label}\"?",
+      "yesAdd": "Sí, agregar",
+      "undo": "Deshacer",
+      "keepTitle": "Conservar esta disciplina",
+      "removeTitle": "Eliminar esta disciplina",
+      "hint": "= nueva disciplina propuesta por el colaborador — decide conservar o eliminar"
+    }
+  },
+  "reviewQueue": {
+    "title": "Cola de revisión",
+    "subtitle": "Administra los perfiles de eruditos entrantes y las contribuciones al archivo. Asegúrate de que todos los metadatos cumplan con los estándares.",
+    "stats": {
+      "totalPending": "Total pendiente",
+      "overdue": "Atrasado (>3 días)",
+      "newToday": "Nuevo hoy",
+      "avgTime": "Tiempo promedio de revisión",
+      "thisWeek": "Esta semana"
+    },
+    "filters": {
+      "title": "Filtrar envíos",
+      "clearAll": "Borrar todo",
+      "language": "Idioma",
+      "allLanguages": "Todos los idiomas",
+      "discipline": "Disciplina",
+      "allDisciplines": "Todas las disciplinas",
+      "type": "Tipo",
+      "allTypes": "Todos los tipos",
+      "newProfile": "Perfil nuevo",
+      "contentEdit": "Edición de contenido",
+      "sort": "Ordenar"
+    },
+    "sort": {
+      "newest": "Más recientes primero",
+      "oldest": "Más antiguos primero",
+      "nameAZ": "Nombre (A-Z)"
+    },
+    "lang": {
+      "en": "Inglés",
+      "ar": "Árabe",
+      "fr": "Francés"
+    },
+    "table": {
+      "title": "Envíos de nuevos eruditos",
+      "updated": "Actualizado hace 2 minutos",
+      "scholar": "Erudito",
+      "editor": "Editor",
+      "editType": "Tipo de edición",
+      "submitted": "Fecha de envío",
+      "actions": "Acciones",
+      "empty": "No hay envíos"
+    },
+    "editTypes": {
+      "bioModified": "Biografía actualizada",
+      "workAdded": "Se agregó una nueva obra",
+      "workModified": "Obra modificada",
+      "mediaAdded": "Se agregaron medios",
+      "mediaModified": "Medios actualizados",
+      "vitalsUpdated": "Datos actualizados",
+      "disciplineAdded": "Se agregó una disciplina"
+    },
+    "pagination": {
+      "showing": "Mostrando {start}–{end} de {total} envíos"
+    },
+    "actions": {
+      "review": "Revisar",
+      "approve": "Aprobar",
+      "reject": "Rechazar",
+      "strip": "Revocar privilegios de colaborador"
+    },
+    "modal": {
+      "title": "Revocar privilegios de colaborador",
+      "body": "¿Estás seguro de que deseas eliminar todos los envíos de {name}?",
+      "warning": "Esta acción no se puede deshacer.",
+      "cancel": "Cancelar",
+      "confirm": "Confirmar"
+    }
+  },
+  "pendingEditReview": {
+    "pendingEdit": "Edición pendiente",
+    "editor": "Editor",
+    "original": "Original",
+    "proposed": "Propuesto",
+    "accepted": "Aceptado",
+    "rejected": "Rechazado",
+    "pending": "Pendiente",
+    "totalChanges": "Total de cambios",
+    "rejectAll": "Rechazar todo",
+    "approveAccepted": "Aprobar lo aceptado ({count})",
+    "changedFields": "Campos modificados",
+    "disciplineChanges": "Cambios en las disciplinas",
+    "workChanges": "Cambios en las obras",
+    "mediaChanges": "Cambios en los medios",
+    "accept": "Aceptar",
+    "reject": "Rechazar",
+    "modify": "Modificar",
+    "reset": "Restablecer",
+    "editing": "Editando...",
+    "saveChanges": "Guardar cambios",
+    "cancel": "Cancelar",
+    "rejectReasonLabel": "Motivo del rechazo:",
+    "rejectReasonPlaceholder": "Explica por qué se rechaza este cambio...",
+    "rejectionReason": "Motivo del rechazo",
+    "confirmReject": "Confirmar rechazo",
+    "type": "Tipo",
+    "title": "Título",
+    "year": "Año",
+    "format": "Formato",
+    "access": "Acceso",
+    "accessUrl": "Enlace de acceso",
+    "description": "Descripción",
+    "meta": "Metadatos (tamaño/tipo)",
+    "origLabel": "Original",
+    "newLabel": "Nuevo",
+    "editLabel": "Edición",
+    "view": "Ver",
+    "newWork": "Obra nueva",
+    "modifiedWork": "Obra modificada",
+    "deletedWork": "Obra eliminada",
+    "newMedia": "Medios nuevos",
+    "modifiedMedia": "Medios modificados",
+    "deletedMedia": "Medios eliminados",
+    "proposedNewDisciplines": "Disciplinas nuevas propuestas",
+    "proposedRemovals": "Eliminaciones propuestas",
+    "acceptRemoval": "Aceptar eliminación",
+    "keepDiscipline": "Conservar (rechazar eliminación)",
+    "editInformation": "Información de la edición",
+    "editDate": "Fecha de edición",
+    "editType": "Tipo de edición",
+    "originalAuthor": "Autor original",
+    "language": "Idioma",
+    "editorNote": "Nota del editor",
+    "viewPdf": "Ver PDF",
+    "viewPhotos": "Ver fotos",
+    "watch": "Ver",
+    "listen": "Escuchar",
+    "open": "Abrir",
+    "modal": {
+      "approveTitle": "¿Aprobar los cambios aceptados?",
+      "rejectTitle": "¿Rechazar todos los cambios?",
+      "stripTitle": "¿Revocar los privilegios del editor?",
+      "approveSub": "Esto aplicará {count} cambio(s) aceptado(s) al perfil de {name}.",
+      "rejectSub": "Esto rechazará todos los cambios propuestos y notificará al editor.",
+      "stripSub": "Esto eliminará los privilegios de edición de {name}.",
+      "rejectPlaceholder": "Opcional: proporciona un motivo de rechazo...",
+      "confirmApprove": "Confirmar aprobación",
+      "confirmReject": "Confirmar rechazo",
+      "confirmStrip": "Revocar privilegios"
+    }
+  },
+    "mediaQueue": {
+    "title": "Verificación de medios",
+    "subtitle": "Revisa y verifica los archivos multimedia, enlaces y documentos enviados antes de su publicación.",
+    "stats": {
+      "totalPending": "Total pendiente",
+      "priorityReviews": "Revisiones prioritarias",
+      "avgTime": "Tiempo promedio de revisión"
+    },
+    "filters": {
+      "title": "Filtrar medios",
+      "clearAll": "Borrar todo",
+      "type": "Tipo de medio",
+      "allTypes": "Todos los tipos",
+      "scholar": "Erudito",
+      "allScholars": "Todos los eruditos",
+      "sort": "Ordenar"
+    },
+    "sort": {
+      "newest": "Más recientes primero",
+      "oldest": "Más antiguos primero",
+      "titleAZ": "Título (A–Z)"
+    },
+    "type": {
+      "pdf": "Documento PDF",
+      "audio": "Audio",
+      "video": "Video"
+    },
+    "table": {
+      "title": "Solicitudes de medios pendientes",
+      "updated": "Actualizado ahora",
+      "media": "Medios",
+      "type": "Tipo",
+      "source": "Fuente",
+      "scholar": "Erudito",
+      "submitter": "Solicitante",
+      "submitted": "Fecha de envío",
+      "actions": "Acciones",
+      "empty": "No hay solicitudes de medios"
+    },
+    "source": {
+      "link": "Enlace externo"
+    },
+    "actions": {
+      "approve": "Aprobar",
+      "reject": "Rechazar",
+      "delete": "Eliminar",
+      "strip": "Revocar privilegios del colaborador"
+    },
+    "modal": {
+      "rejectTitle": "¿Rechazar este archivo?",
+      "rejectBody": "Estás a punto de rechazar \"{title}\". Por favor, indica el motivo.",
+      "rejectPlaceholder": "Motivo del rechazo...",
+      "cancel": "Cancelar",
+      "confirm": "Confirmar"
+    },
+    "strip": {
+      "title": "¿Revocar la acreditación del colaborador?",
+      "body": "Esto eliminará a <b>{name}</b> como colaborador de \"{title}\".",
+      "warning": "Esta acción es permanente y no se puede deshacer.",
+      "cancel": "Cancelar",
+      "confirm": "Confirmar revocación",
+      "alreadyStripped": "Los privilegios del colaborador ya fueron revocados"
+    },
+    "review": {
+      "title": "Revisar medios",
+      "detailsTitle": "Detalles de los medios",
+      "label": {
+        "title": "Título:",
+        "description": "Descripción:",
+        "scholar": "Erudito:",
+        "submittedBy": "Enviado por:"
+      },
+      "checksTitle": "Comprobaciones de verificación",
+      "check1": "Los medios están disponibles y funcionan/se muestran correctamente.",
+      "check2": "El contenido coincide con el título y la descripción proporcionados.",
+      "check3": "Los derechos de autor y el uso legal están documentados.",
+      "check4": "El contenido cumple con las normas de la comunidad.",
+      "notesTitle": "Notas del revisor",
+      "notesPlaceholder": "Agrega notas internas sobre estos medios...",
+      "errorChecks": "Por favor, completa todas las comprobaciones de verificación antes de aprobar.",
+      "errorReject": "Se requiere un motivo al rechazar medios. Por favor, agrega notas."
+    }
+  },
+ "worksQueue": {
+  "title": "Verificación de obras",
+  "subtitle": "Revisa y verifica las obras académicas, libros y manuscritos enviados antes de su publicación.",
+  "yearLabel": "Año",
+  "stats": {
+    "totalPending": "Total pendiente",
+    "priorityReviews": "Revisiones prioritarias",
+    "avgTime": "Tiempo promedio de revisión"
+  },
+  "filters": {
+    "title": "Filtrar obras",
+    "clearAll": "Borrar todo",
+    "format": "Formato",
+    "allFormats": "Todos los formatos",
+    "scholar": "Erudito",
+    "allScholars": "Todos los eruditos",
+    "sort": "Ordenar"
+  },
+  "sort": {
+    "newest": "Más recientes primero",
+    "oldest": "Más antiguos primero",
+    "titleAZ": "Título (A–Z)"
+  },
+  "format": {
+    "book": "Libro",
+    "article": "Artículo",
+    "manuscript": "Manuscrito",
+    "lecture": "Conferencia",
+    "letter": "Carta",
+    "other": "Otro"
+  },
+  "table": {
+    "title": "Solicitudes de obras pendientes",
+    "updated": "Actualizado ahora",
+    "work": "Obra",
+    "format": "Formato",
+    "access": "Acceso digital",
+    "scholar": "Erudito",
+    "submitter": "Solicitante",
+    "submitted": "Fecha de envío",
+    "actions": "Acciones",
+    "empty": "No hay solicitudes de obras"
+  },
+  "access": {
+    "link": "Enlace externo",
+    "none": "Sin archivo digital"
+  },
+  "actions": {
+    "approve": "Aprobar",
+    "reject": "Rechazar",
+    "delete": "Eliminar",
+    "review": "Revisar obra",
+    "strip": "Revocar privilegios del colaborador"
+  },
+  "modal": {
+    "rejectTitle": "¿Rechazar esta obra?",
+    "rejectBody": "Estás a punto de rechazar \"{title}\". Por favor, indica el motivo.",
+    "rejectPlaceholder": "Motivo del rechazo...",
+    "deleteTitle": "¿Eliminar esta solicitud?",
+    "deleteBody": "¿Estás seguro de que deseas eliminar \"{title}\" de forma permanente? Esta acción no se puede deshacer.",
+    "deletePlaceholder": "Motivo de la eliminación (opcional)...",
+    "deleteConfirm": "Eliminar",
+    "cancel": "Cancelar",
+    "confirm": "Confirmar"
+  },
+  "strip": {
+    "title": "¿Revocar la acreditación del colaborador?",
+    "body": "Esto eliminará a <b>{name}</b> como colaborador de \"{title}\".",
+    "warning": "Esta acción es permanente y no se puede deshacer.",
+    "cancel": "Cancelar",
+    "confirm": "Confirmar revocación",
+    "alreadyStripped": "Los privilegios del colaborador ya fueron revocados"
+  },
+  "review": {
+    "title": "Revisar obra",
+    "detailsTitle": "Detalles de la obra",
+    "label": {
+      "title": "Título:",
+      "year": "Año:",
+      "format": "Formato:",
+      "scholar": "Erudito:",
+      "submittedBy": "Enviado por:"
+    },
+    "checksTitle": "Comprobaciones de verificación",
+    "check1": "La información bibliográfica es precisa y completa.",
+    "check2": "La obra está correctamente atribuida al erudito.",
+    "check3": "Los derechos de autor y el uso están documentados.",
+    "check4": "El contenido cumple con los estándares académicos.",
+    "notesTitle": "Notas del revisor",
+    "notesPlaceholder": "Agrega notas internas sobre esta obra...",
+    "errorChecks": "Por favor, completa todas las comprobaciones de verificación antes de aprobar.",
+    "errorReject": "Se requiere un motivo al rechazar una obra. Por favor, agrega notas."
+  },
+  "badge": {
+    "stripped": "Revocado"
+  },
+  "toast": {
+    "approved": "\"{title}\" fue aprobado correctamente.",
+    "rejected": "\"{title}\" fue rechazado.",
+    "deleted": "\"{title}\" fue eliminado.",
+    "stripped": "Se revocaron los privilegios del colaborador \"{name}\"."
+  }
+},
+"editScholar": {
+  "editing": "Edición de la versión en árabe",
+  "basicInfo": "Información básica",
+  "fullName": "Nombre completo (como aparece en las publicaciones)",
+  "aliases": "Apodos / Variantes alternativas",
+  "born": "Año de nacimiento",
+  "died": "Año de fallecimiento",
+  "region": "Región",
+  "discipline": "Disciplinas y áreas",
+  "expertise": "Áreas de especialización",
+  "narrativeContent": "Contenido narrativo",
+  "subtitle": "Subtítulo / Título honorífico",
+  "quote": "Cita principal",
+  "overview": "Resumen general",
+  "improveAI": "Mejorar con IA",
+  "previewFormatting": "Vista previa del formato",
+  "biography": "Biografía",
+  "biographyHint": "Usa [[nombre del erudito]] para vincular referencias a otros perfiles. Separa los párrafos con una línea en blanco.",
+  "startTranslation": "← Comenzar traducción al árabe",
+  "notStarted": "Aún no se ha contribuido a esta página en árabe.",
+  "academicContext": "Contexto académico",
+  "teachers": "Maestros / Linaje intelectual",
+  "disciples": "Discípulos destacados",
+  "addPersonPlaceholder": "Vincular a una persona del archivo…",
+  "bibliography": "Lista de obras",
+  "addWork": "Agregar obra",
+  "mediaLibrary": "Biblioteca de medios integrada",
+  "addMedia": "Agregar medios",
+  "references": "Referencias académicas",
+  "addReference": "Agregar referencia",
+  "revisionHistory": "Historial de revisiones",
+  "cancel": "Cancelar",
+  "saveChanges": "Guardar cambios",
+  "lastUpdated": "Última actualización por",
+  "unsavedChanges": "Cambios sin guardar",
+  "saveAsDraft": "Guardar como borrador",
+  "sharedBanner": "Compartido entre todos los idiomas",
+  "readOnlyBanner": "Solo lectura — generado automáticamente",
+  "editWork": "Editar obra",
+  "addNewWork": "Agregar nueva obra",
+  "editMedia": "Editar medios",
+  "addNewMedia": "Agregar medios",
+  "titleRequired": "Título *",
+  "titleWorkPlaceholder": "Ejemplo: El problema de la cultura",
+  "year": "Año *",
+  "yearPlaceholder": "Ejemplo: 1959",
+  "format": "Formato",
+  "formatBook": "Libro",
+  "formatManuscript": "Manuscrito",
+  "formatArticle": "Artículo",
+  "digitalAccess": "Acceso digital",
+  "accessNone": "Ninguno",
+  "accessUpload": "Subir",
+  "accessLink": "Enlace",
+  "noAccessNote": "No hay ningún archivo digital adjunto. Aparecerá como \"—\" en la bibliografía.",
+  "uploadHintWork": "PDF, audio (MP3/WAV), video, ePub, Word — hasta 50 MB",
+  "linkPlaceholderWork": "https://archive.org/details/…",
+  "mediaTitlePlaceholder": "Ejemplo: Conferencia de 1972 sobre la colonizabilidad",
+  "description": "Descripción",
+  "descriptionPlaceholder": "Descripción breve de este elemento",
+  "fileOrLink": "Archivo / enlace",
+  "uploadHintMedia": "PDF, audio (MP3/WAV), video (MP4/WebM) — hasta 100 MB",
+  "linkPlaceholderMedia": "https://youtube.com/watch?v=… o enlace directo del archivo",
+  "dropFileHere": "Suelta un archivo aquí, o",
+  "browse": "Explorar",
+  "remove": "Eliminar",
+  "portrait": "Retrato",
+  "portraitHint": "JPG o PNG — mínimo 800×1000 píxeles",
+  "noWorksYet": "Aún no se han agregado obras.",
+  "noMediaYet": "Aún no se han agregado medios.",
+  "noReferencesYet": "Aún no se han agregado referencias.",
+  "saveChangesBtn": "Guardar cambios",
+  "addWorkBtn": "Agregar obra",
+  "addMediaBtn": "Agregar medios",
+  "titleRequiredError": "El título es obligatorio.",
+  "yearRequiredError": "Por favor, introduce un año válido.",
+  "urlRequiredError": "Por favor, introduce un enlace o cambia a \"Ninguno\".",
+  "fileRequiredError": "Por favor, sube un archivo o cambia a \"Ninguno\".",
+  "urlRequiredErrorMedia": "Por favor, introduce un enlace.",
+  "fileRequiredErrorMedia": "Por favor, sube un archivo.",
+  "breadcrumbHome": "Inicio",
+  "breadcrumbScholars": "Eruditos",
+  "breadcrumbAdminEdit": "Edición administrativa",
+  "breadcrumbEdit": "Editar"
+},
+
+"submitScholar": {
+  "portal": {
+    "title": "Portal de envío académico",
+    "subtitle": "Contribuye al registro digital de referencia del patrimonio intelectual islámico. Asegúrate de documentar y verificar todos los datos.",
+    "selectLang": "Selecciona el idioma de envío",
+    "langDesc": "Elige el idioma en el que deseas enviar tu contribución académica. Se pueden enviar idiomas adicionales después de la revisión de la entrada inicial.",
+    "begin": "Comenzar envío"
+  },
+  "steps": {
+    "identity": "Identidad y metadatos",
+    "relations": "Relaciones académicas",
+    "narrative": "Contenido narrativo",
+    "works": "Obras académicas",
+    "media": "Biblioteca de medios",
+    "refs": "Referencias",
+    "review": "Revisión y envío"
+  },
+  "success": {
+    "title": "Solicitud recibida",
+    "desc": "El registro del erudito se envió para revisión editorial. Se te notificará en cuanto se complete el proceso de revisión.",
+    "pending": "En revisión",
+    "note": "El equipo editorial revisará tu entrada y podrá aprobarla, rechazarla o solicitar modificaciones. Puedes seguir el estado desde el panel de control."
+  },
+  "step1": {
+    "title": "Identidad y metadatos básicos",
+    "portrait": "Retrato del erudito",
+    "uploadImage": "Subir imagen",
+    "fullName": "Nombre completo / Nombre de nacimiento",
+    "fullNamePh": "Ejemplo: Abderrahmane Ibn Mohammed Al-Thaalibi",
+    "canonicalName": "Nombre por el que se conoce",
+    "canonicalNamePh": "Ejemplo: Al-Thaalibi",
+    "aliases": "Apodos / Grafías alternativas",
+    "aliasesPh": "Agregar grafía…",
+    "birthDate": "Fecha de nacimiento",
+    "birthDateGregorian": "Fecha de nacimiento (gregoriana)",
+    "birthDateHijri": "Fecha de nacimiento (hégira)",
+    "deathDate": "Fecha de fallecimiento",
+    "deathDateGregorian": "Fecha de fallecimiento (gregoriana)",
+    "deathDateHijri": "Fecha de fallecimiento (hégira)",
+    "year": "Año",
+    "month": "Mes (opcional)",
+    "region": "Región",
+    "selectRegion": "Selecciona la región",
+    "century": "Siglo",
+    "centuryGregorianStart": "Inicio del siglo gregoriano",
+      "centuryGregorianEnd": "Fin del siglo gregoriano",
+      "centuryHijriStart": "Inicio del siglo de la hégira",
+      "centuryHijriEnd": "Fin del siglo de la hégira",
+    "selectCentury": "Selecciona el siglo",
+    "country": "País",
+    "countryPh": "Ejemplo: Argelia",
+    "era": "Época histórica",
+    "disciplines": "Disciplinas (áreas generales)",
+    "expertise": "Áreas de especialización",
+    "expertisePh": "Ejemplo: Teoría social",
+    "keywords": "Palabras clave / Etiquetas",
+    "keywordsPh": "Ejemplo: Reforma, Resistencia…"
+  },
+  "step2": {
+    "title": "Relaciones académicas y clasificación",
+    "teachers": "Maestros principales",
+    "addTeacher": "Agregar maestro",
+    "noTeachers": "Aún no se ha agregado ningún maestro.",
+    "students": "Discípulos destacados",
+    "addStudent": "Agregar discípulo",
+    "noStudents": "Aún no se ha agregado ningún discípulo.",
+    "related": "Eruditos relacionados",
+    "addRelation": "Agregar relación",
+    "noRelated": "Aún no se ha agregado ninguna relación.",
+    "name": "Nombre",
+    "scholarName": "Nombre del erudito",
+    "relationDesc": "Descripción de la relación",
+    "relationType": "Tipo de relación",
+    "description": "Descripción",
+    "linkToScholar": "Vincular a un erudito",
+    "database": "Base de datos",
+    "externalLink": "Enlace externo",
+    "noLink": "Sin enlace",
+    "searchPlaceholder": "Busca a un erudito por nombre…",
+    "noScholarFound": "No se encontró ningún erudito en la base de datos",
+    "externalUrlPh": "https://es.wikipedia.org/wiki/…",
+    "externalUrlHint": "Enlace externo — entrada enciclopédica, página universitaria o registro de archivo.",
+    "dbHint": "Si el erudito ya existe en Oulamauna, vincularlo por identificador garantiza que su perfil permanezca conectado.",
+    "noLinkHint": "El nombre aparecerá como texto simple sin enlace."
+  },
+  "step3": {
+    "title": "Biografía",
+    "pageTitle": "Título de la página de la enciclopedia",
+    "pageTitlePh": "Ejemplo: El legado de Abderrahmane Al-Thaalibi",
+    "summary": "Resumen breve (70–280 caracteres)",
+    "summaryPh": "Proporciona una breve descripción general de 2-3 frases para las vistas previas de búsqueda y los encabezados de página…",
+    "biography": "Biografía",
+    "richText": "Editor de texto enriquecido",
+    "biographyPh": "Comienza a escribir la biografía académica aquí... Usa [[nombre del erudito]] para vincular con otros perfiles.",
+    "quote": "Cita famosa",
+    "quoteOptional": "(opcional)",
+    "quotePh": "\"La civilización nace cuando…\""
+  },
+  "step4": {
+    "title": "Obras académicas",
+    "noWorks": "Aún no se ha agregado ninguna obra.",
+    "work": "Obra",
+    "titleField": "Título",
+    "titlePh": "Ejemplo: El fenómeno coránico",
+    "origTitle": "Título original",
+    "origTitlePh": "Título en el idioma original",
+    "workType": "Tipo de obra",
+    "pubYear": "Año de publicación",
+    "language": "Idioma",
+    "languagePh": "Árabe, francés…",
+    "description": "Descripción",
+    "descPh": "Breve descripción de esta obra…",
+    "digitalAccess": "Acceso digital",
+    "addWork": "Agregar nueva obra",
+    "none": "Ninguno",
+    "upload": "Subir archivo",
+    "link": "Pegar enlace",
+    "noneHint": "No hay ningún archivo digital. Aparecerá como \"—\" en la lista de obras."
+  },
+  "step5": {
+    "title": "Biblioteca de medios pública",
+    "desc": "Adjunta archivos PDF, grabaciones de audio, documentales y fotografías relacionados con este erudito. Esta biblioteca se comparte entre todas las versiones de idioma.",
+    "noMedia": "Aún no se han agregado medios.",
+    "media": "Medios",
+    "titleField": "Título",
+    "titlePh": "Ejemplo: Conferencia de El Cairo de 1968",
+    "mediaType": "Tipo de medio",
+    "description": "Descripción",
+    "descPh": "Breve descripción de este elemento multimedia…",
+    "fileLink": "Archivo / enlace",
+    "addMedia": "Agregar medios",
+    "noneHint": "No hay archivo. El título y la descripción seguirán siendo visibles para los usuarios.",
+    "year": "Año"
+  },
+  "step6": {
+    "title": "Referencias y fuentes",
+    "warning": "Se requiere al menos una referencia antes de enviar.",
+    "noRefs": "Aún no se ha agregado ninguna referencia.",
+    "reference": "Referencia",
+    "titleField": "Título",
+    "titlePh": "Ejemplo: Condiciones del renacimiento",
+    "author": "Autor / Editor",
+    "authorPh": "Apellido, Nombre",
+    "year": "Año",
+    "yearPh": "Ejemplo: 1948",
+    "publisher": "Editorial",
+    "publisherPh": "Nombre de la editorial",
+    "type": "Tipo",
+    "url": "Enlace (opcional)",
+    "notes": "Notas",
+    "notesPh": "Notas adicionales",
+    "addRef": "Agregar referencia"
+  },
+  "step7": {
+    "title": "Revisión y envío",
+    "desc": "Revisa tu solicitud a continuación. Haz clic en cualquier paso de la barra de progreso para volver y realizar modificaciones.",
+    "identitySection": "01 — Identidad",
+    "narrativeSection": "03 — Contenido narrativo",
+    "worksSection": "04 — Obras académicas",
+    "refsSection": "06 — Referencias",
+    "noneAdded": "No se agregó nada.",
+    "refsRequired": "No hay referencias — se requieren antes de enviar.",
+    "confirmText": "Confirmo que la información proporcionada es exacta según mi conocimiento, y que cumple con las directrices de envío de Oulamauna y los estándares de integridad académica.",
+    "confirmNote": "Después del envío, el equipo editorial podrá aprobar, rechazar o solicitar modificaciones.",
+    "submitAlert": "Por favor, agrega al menos una referencia y confirma la precisión antes de enviar."
+  },
+  "footer": {
+    "back": "Atrás",
+    "saveDraft": "Guardar como borrador",
+    "next": "Siguiente",
+    "submit": "Enviar para revisión"
+  }
+}
+
+}

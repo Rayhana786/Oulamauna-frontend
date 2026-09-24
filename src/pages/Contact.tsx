@@ -1,7 +1,9 @@
-// src/pages/ContactPage.tsx
 import React, { useState } from "react";
 import { useLang } from "../context/LanguageContext";
 import heroImage from "../assets/library-1.jpg";
+
+// ✅ 1. IMPORT THE API FUNCTION
+import { submitContactForm } from "../api/contactusApi";
 
 const MONO: React.CSSProperties = { fontFamily: "'JetBrains Mono', monospace" };
 const GROTESK: React.CSSProperties = { fontFamily: "'Hanken Grotesk', sans-serif" };
@@ -31,8 +33,8 @@ function HoverBtn({ children, onClick, type = "button", style, disabled }: {
       type={type}
       onClick={onClick}
       disabled={disabled}
-      onMouseEnter={() => setHov(true)}
-      onMouseLeave={() => setHov(false)}
+      onMouseEnter={() => !disabled && setHov(true)}
+      onMouseLeave={() => !disabled && setHov(false)}
       style={{
         ...BTN_PRIMARY,
         backgroundColor: disabled ? "#c0c9c3" : hov ? "#fbf9f4" : "#1e4d3a",
@@ -48,14 +50,20 @@ function HoverBtn({ children, onClick, type = "button", style, disabled }: {
 
 const ContactPage: React.FC = () => {
   const { lang, t } = useLang();
+  const isRTL = lang === "AR";
+
+  // ✅ 2. FORM STATE (Added subject)
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
+  const [subject, setSubject] = useState("General Inquiry");
   const [message, setMessage] = useState("");
+  
+  // UI State
   const [errors, setErrors] = useState<{ name?: string; email?: string; message?: string }>({});
   const [submitted, setSubmitted] = useState(false);
   const [sent, setSent] = useState(false);
-
-  const isRTL = lang === "AR";
+  const [loading, setLoading] = useState(false);
+  const [apiError, setApiError] = useState("");
 
   const validate = () => {
     const newErrors: { name?: string; email?: string; message?: string } = {};
@@ -68,17 +76,45 @@ const ContactPage: React.FC = () => {
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  // ✅ 3. ASYNC SUBMIT WITH SUBJECT
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setSubmitted(true);
+    setApiError("");
+
     if (validate()) {
-      setSent(true);
+      setLoading(true);
+      try {
+        await submitContactForm({
+          name: name.trim(),
+          email: email.trim(),
+          subject: subject, // Passes the selected subject to the backend
+          message: message.trim(),
+        });
+        
+        setSent(true);
+        setName("");
+        setEmail("");
+        setSubject("General Inquiry"); // Reset to default
+        setMessage("");
+      } catch (error: any) {
+        console.error("Contact form submission error:", error);
+        setApiError(error.response?.data?.error || "Failed to send message. Please try again later.");
+      } finally {
+        setLoading(false);
+      }
     }
   };
 
   const handleReset = () => {
-    setName(""); setEmail(""); setMessage("");
-    setErrors({}); setSubmitted(false); setSent(false);
+    setName(""); 
+    setEmail(""); 
+    setSubject("General Inquiry"); 
+    setMessage("");
+    setErrors({}); 
+    setSubmitted(false); 
+    setSent(false);
+    setApiError("");
   };
 
   const inputStyle = (hasError: boolean): React.CSSProperties => ({
@@ -110,9 +146,10 @@ const ContactPage: React.FC = () => {
         @import url('https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap');
         .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; font-family: 'Material Symbols Outlined'; display: inline-block; vertical-align: middle; }
         * { box-sizing: border-box; }
-        input::placeholder, textarea::placeholder { color: rgba(30,77,58,0.4); }
+        input::placeholder, textarea::placeholder, select::placeholder { color: rgba(30,77,58,0.4); }
         input:focus, textarea:focus, select:focus { border-color: #C9A84C !important; outline: none; box-shadow: 0 0 0 3px rgba(201,168,76,0.1); }
         .contact-info-row:hover .contact-icon-badge { background-color: rgba(30,77,58,0.08); }
+        @keyframes spin { 100% { transform: rotate(360deg); } }
       `}</style>
 
       <div style={{ maxWidth: "1280px", margin: "0 auto", padding: "64px 40px 120px" }}>
@@ -148,6 +185,14 @@ const ContactPage: React.FC = () => {
               <form onSubmit={handleSubmit} noValidate>
                 <h3 style={{ ...GROTESK, fontSize: "20px", fontWeight: 700, color: "#1e4d3a", margin: "0 0 24px" }}>{t("contact.formTitle")}</h3>
                 
+                {/* API Error Display */}
+                {apiError && (
+                  <div style={{ marginBottom: "20px", padding: "12px", backgroundColor: "rgba(179,38,30,0.05)", border: "1px solid rgba(179,38,30,0.2)", borderRadius: "8px", display: "flex", alignItems: "center", gap: "8px" }}>
+                    <Icon name="error" size={18} />
+                    <span style={{ ...INTER, fontSize: "13px", color: "#b3261e" }}>{apiError}</span>
+                  </div>
+                )}
+
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "20px", marginBottom: "20px" }}>
                   <div>
                     <label style={labelStyle}>{t("contact.labels.name")}</label>
@@ -161,16 +206,59 @@ const ContactPage: React.FC = () => {
                   </div>
                 </div>
 
+                {/* ✅ 4. NEW: SUBJECT DROPDOWN */}
+                <div style={{ marginBottom: "20px" }}>
+                  <label style={labelStyle}>{t("contact.labels.subject") || "SUBJECT"}</label>
+                  <select 
+                    value={subject} 
+                    onChange={e => setSubject(e.target.value)} 
+                    style={{
+                      ...inputStyle(false),
+                      cursor: "pointer",
+                      appearance: "none", // Removes default browser arrow
+                      backgroundImage: `url("data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%231e4d3a%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E")`,
+                      backgroundRepeat: "no-repeat",
+                      backgroundPosition: isRTL ? "left 16px center" : "right 16px center",
+                      backgroundSize: "12px auto",
+                    }}
+                  >
+                    <option value="General Inquiry">{t("contact.subjects.general") || "General Inquiry"}</option>
+                    <option value="Technical Issue">{t("contact.subjects.technical") || "Technical Issue"}</option>
+                    <option value="Partnership">{t("contact.subjects.partnership") || "Partnership / Collaboration"}</option>
+                    <option value="Content Correction">{t("contact.subjects.correction") || "Content Correction"}</option>
+                    <option value="Other">{t("contact.subjects.other") || "Other"}</option>
+                  </select>
+                </div>
+
                 <div style={{ marginBottom: "28px" }}>
                   <label style={labelStyle}>{t("contact.labels.message")}</label>
                   <textarea rows={6} value={message} onChange={e => { setMessage(e.target.value); if (submitted) setErrors(prev => ({ ...prev, message: undefined })); }} placeholder={t("contact.placeholders.message")} style={{ ...inputStyle(!!errors.message), resize: "vertical", minHeight: "140px" }} />
                   {errors.message && <ErrorMsg msg={errors.message} />}
                 </div>
 
-                <button type="submit" style={{ ...BTN_PRIMARY, width: "100%", justifyContent: "center" }}
-                  onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = "#fbf9f4"; e.currentTarget.style.color = "#1e4d3a"; }}
-                  onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = "#1e4d3a"; e.currentTarget.style.color = "#fbf9f4"; }}>
-                  <Icon name="send" size={16} /> {t("contact.labels.btn")}
+                {/* Submit Button with Loading State */}
+                <button 
+                  type="submit" 
+                  disabled={loading}
+                  style={{ 
+                    ...BTN_PRIMARY, 
+                    width: "100%", 
+                    justifyContent: "center",
+                    opacity: loading ? 0.7 : 1,
+                    cursor: loading ? "wait" : "pointer"
+                  }}
+                  onMouseEnter={(e) => { if(!loading) { e.currentTarget.style.backgroundColor = "#fbf9f4"; e.currentTarget.style.color = "#1e4d3a"; } }}
+                  onMouseLeave={(e) => { if(!loading) { e.currentTarget.style.backgroundColor = "#1e4d3a"; e.currentTarget.style.color = "#fbf9f4"; } }}>
+                  {loading ? (
+                    <span style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                      <span className="material-symbols-outlined" style={{ fontSize: "16px", animation: "spin 1s linear infinite" }}>refresh</span>
+                      {t("contact.labels.sending") || "Sending..."}
+                    </span>
+                  ) : (
+                    <>
+                      <Icon name="send" size={16} /> {t("contact.labels.btn") || "Send Message"}
+                    </>
+                  )}
                 </button>
               </form>
             )}

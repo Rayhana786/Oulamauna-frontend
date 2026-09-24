@@ -4,6 +4,7 @@ import { useLang } from "../../context/LanguageContext";
 import { useAuth } from "../../context/AuthContext";
 import ProfileSidebar from "../../components/ProfileSidebar";
 import settingsService, { UserSettings, UpdateSettingsPayload } from "../../api/settingsApi";
+import { userApi } from "../../api/userApi";
 
 const colors = { creamLight: "#fcfaf5", creamMid: "#f6efdc", creamDark: "#e5d5a8", forestGreen: "#0b4335", amber: "#b8860b", red: "#8b2c2c" };
 const GREEN = colors.forestGreen;
@@ -67,7 +68,7 @@ function SavedBadge({ show, t }: { show: boolean; t: (k: string) => string }) {
   );
 }
 
-function SectionHeader({ icon, title, saved, accent, isMobile }: { icon: string; title: string; saved?: boolean; accent?: string; isMobile: boolean }) {
+function SectionHeader({ icon, title, saved, accent, isMobile, t }: { icon: string; title: string; saved?: boolean; accent?: string; isMobile: boolean; t: (k: string) => string }) {
   return (
     <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: isMobile ? "16px 18px 14px" : "20px 24px 16px", borderBottom: `1.5px solid ${BORDER}` }}>
       <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
@@ -75,8 +76,7 @@ function SectionHeader({ icon, title, saved, accent, isMobile }: { icon: string;
         <Icon name={icon} size={18} />
         <h2 style={{ ...SERIF, fontSize: isMobile ? "15px" : "16px", fontWeight: 700, color: GREEN, margin: 0 }}>{title}</h2>
       </div>
-      {saved !== undefined && <SavedBadge show={saved} t={(k: string) => k} />} 
-      {/* Note: t is passed via closure in main component, but for simplicity we'll adjust below */}
+      {saved !== undefined && <SavedBadge show={saved} t={t} />} 
     </div>
   );
 }
@@ -222,7 +222,7 @@ function DeleteAccountModal({ open, onClose, onConfirm, loading, t }: { open: bo
       <label style={{ fontSize: "11px", ...MONO, color: MUTED, display: "block" }}>
         {t("settings.typeDeleteToConfirm")}
         <input
-          value={typed} onChange={(e) => setTyped(e.target.value)} placeholder="DELETE"
+          value={typed} onChange={(e) => setTyped(e.target.value)} placeholder={t("settings.deletePlaceholder")}
           style={{
             width: "100%", padding: "10px 12px", borderRadius: "8px", border: `1.5px solid ${BORDER}`,
             fontSize: "13px", marginTop: "6px", boxSizing: "border-box", ...SANS, color: GREEN,
@@ -241,7 +241,7 @@ function DeleteAccountModal({ open, onClose, onConfirm, loading, t }: { open: bo
 }
 
 export default function SettingsPage() {
-  const { lang, setLang, t } = useLang();
+  const { lang, setLang, t, dbLanguages } = useLang(); 
   const { user, logout } = useAuth();
   const isRTL = lang === "AR";
   const isMobile = useIsMobile();
@@ -255,6 +255,11 @@ export default function SettingsPage() {
   const [deactivateOpen, setDeactivateOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [actionLoading, setActionLoading] = useState(false);
+
+  const [passwordData, setPasswordData] = useState({ current: "", newPass: "", confirm: "" });
+  const [passwordSaved, setPasswordSaved] = useState(false);
+  const [passwordError, setPasswordError] = useState("");
+  const [isUpdatingPassword, setIsUpdatingPassword] = useState(false);
 
   useEffect(() => {
     const fetchSettings = async () => {
@@ -323,6 +328,52 @@ export default function SettingsPage() {
     }
   };
 
+  const handlePasswordChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setPasswordData({ ...passwordData, [e.target.name]: e.target.value });
+    setPasswordSaved(false);
+    setPasswordError("");
+  };
+
+  const handleUpdatePassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setPasswordSaved(false);
+    setPasswordError("");
+
+    if (passwordData.current === passwordData.newPass) {
+      setPasswordError(t("settings.errorSamePassword"));
+      return;
+    }
+    if (passwordData.newPass !== passwordData.confirm) {
+      setPasswordError(t("settings.errorPasswordMismatch"));
+      return;
+    }
+    if (passwordData.newPass.length < 6) {
+      setPasswordError(t("settings.errorPasswordLength"));
+      return;
+    }
+
+    setIsUpdatingPassword(true);
+    try {
+      const res = await userApi.profile.updatePassword({
+        currentPassword: passwordData.current,
+        newPassword: passwordData.newPass,
+        confirmNewPassword: passwordData.confirm,
+      });
+
+      if (res.data.success) {
+        setPasswordSaved(true);
+        setPasswordData({ current: "", newPass: "", confirm: "" });
+        setTimeout(() => setPasswordSaved(false), 1800);
+      } else {
+        setPasswordError(res.data.message || t("settings.errorUpdate"));
+      }
+    } catch (err: any) {
+      setPasswordError(err.response?.data?.message || t("settings.errorUpdate"));
+    } finally {
+      setIsUpdatingPassword(false);
+    }
+  };
+
   if (loading) {
     return (
       <div style={{ ...SANS, backgroundColor: BG, minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", color: GREEN }}>
@@ -339,17 +390,19 @@ export default function SettingsPage() {
     );
   }
 
-  const langOptions = [
-    { value: "1", label: "العربية" },
-    { value: "2", label: "English" },
-    { value: "3", label: "Français" },
-  ];
+  const langOptions = dbLanguages.map((dbLang) => ({
+    value: dbLang.language_id.toString(),
+    label: dbLang.name,
+  }));
 
   const handleLangChange = async (v: string) => {
     const langId = parseInt(v, 10);
     await updateSetting({ preferred_language_id: langId });
-    const langCode = langId === 1 ? "AR" : langId === 2 ? "EN" : "FR";
-    setLang(langCode);
+    
+    const selectedLang = dbLanguages.find((l) => l.language_id === langId);
+    if (selectedLang) {
+      setLang(selectedLang.code);
+    }
   };
 
   return (
@@ -374,21 +427,21 @@ export default function SettingsPage() {
           </div>
 
           <HoverCard>
-            <SectionHeader icon="translate" title={t("settings.language")} saved={savedSection === "settings"} isMobile={isMobile} />
+            <SectionHeader icon="translate" title={t("settings.language")} saved={savedSection === "settings"} isMobile={isMobile} t={t} />
             <Row isRTL={isRTL} isMobile={isMobile} label={t("settings.preferredLanguage")} control={
               <Select value={settings.preferred_language_id?.toString() ?? "2"} onChange={handleLangChange} options={langOptions} />
             } />
           </HoverCard>
 
           <HoverCard>
-            <SectionHeader icon="notifications_active" title={t("settings.notifications")} saved={savedSection === "settings"} isMobile={isMobile} />
+            <SectionHeader icon="notifications_active" title={t("settings.notifications")} saved={savedSection === "settings"} isMobile={isMobile} t={t} />
             <Row isRTL={isRTL} isMobile={isMobile} label={t("settings.enableNotifications")} desc={t("settings.notificationsDesc")} control={
               <Toggle isRTL={isRTL} checked={settings.notifications_enabled} onChange={(v) => updateSetting({ notifications_enabled: v })} />
             } />
           </HoverCard>
 
           <HoverCard>
-            <SectionHeader icon="shield" title={t("settings.privacy")} saved={savedSection === "settings"} isMobile={isMobile} />
+            <SectionHeader icon="shield" title={t("settings.privacy")} saved={savedSection === "settings"} isMobile={isMobile} t={t} />
             <Row isRTL={isRTL} isMobile={isMobile} label={t("settings.profileVisibility")} control={
               <RadioGroup
                 value={settings.profile_visibility}
@@ -408,8 +461,58 @@ export default function SettingsPage() {
             } />
           </HoverCard>
 
+          <HoverCard>
+            <SectionHeader icon="lock" title={t("settings.securityPassword")} saved={passwordSaved} isMobile={isMobile} t={t} />
+            <form onSubmit={handleUpdatePassword} style={{ padding: isMobile ? "16px 18px" : "20px 24px", display: "flex", flexDirection: "column", gap: "16px" }}>
+              {passwordError && (
+                <div style={{ padding: "10px 12px", backgroundColor: "rgba(139, 44, 44, 0.1)", color: RED, borderRadius: "8px", fontSize: "12px", ...SANS }}>
+                  {passwordError}
+                </div>
+              )}
+              
+              <div>
+                <label style={{ ...MONO, fontSize: "10px", color: MUTED, letterSpacing: "0.06em", marginBottom: "6px", display: "block" }}>{t("settings.currentPassword")}</label>
+                <input
+                  type="password" name="current" value={passwordData.current} onChange={handlePasswordChange}
+                  style={{ width: "100%", padding: "10px 12px", borderRadius: "8px", border: `1.5px solid ${BORDER}`, backgroundColor: "rgba(11, 67, 53, 0.04)", fontSize: "13px", color: GREEN, outline: "none", boxSizing: "border-box", ...SANS }}
+                  placeholder="••••••••" required
+                />
+              </div>
+              
+              <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: "16px" }}>
+                <div>
+                  <label style={{ ...MONO, fontSize: "10px", color: MUTED, letterSpacing: "0.06em", marginBottom: "6px", display: "block" }}>{t("settings.newPassword")}</label>
+                  <input
+                    type="password" name="newPass" value={passwordData.newPass} onChange={handlePasswordChange}
+                    style={{ width: "100%", padding: "10px 12px", borderRadius: "8px", border: `1.5px solid ${BORDER}`, backgroundColor: "rgba(11, 67, 53, 0.04)", fontSize: "13px", color: GREEN, outline: "none", boxSizing: "border-box", ...SANS }}
+                    placeholder="••••••••" required
+                  />
+                </div>
+                <div>
+                  <label style={{ ...MONO, fontSize: "10px", color: MUTED, letterSpacing: "0.06em", marginBottom: "6px", display: "block" }}>{t("settings.confirmNewPassword")}</label>
+                  <input
+                    type="password" name="confirm" value={passwordData.confirm} onChange={handlePasswordChange}
+                    style={{ width: "100%", padding: "10px 12px", borderRadius: "8px", border: `1.5px solid ${BORDER}`, backgroundColor: "rgba(11, 67, 53, 0.04)", fontSize: "13px", color: GREEN, outline: "none", boxSizing: "border-box", ...SANS }}
+                    placeholder="••••••••" required
+                  />
+                </div>
+              </div>
+
+              <div style={{ display: "flex", justifyContent: "flex-end", marginTop: "8px" }}>
+                <HoverBtn 
+                  variant="primary" 
+                  disabled={isUpdatingPassword}
+                  style={{ minWidth: "140px", justifyContent: "center" }}
+                >
+                  <Icon name={isUpdatingPassword ? "hourglass_empty" : (passwordSaved ? "check_circle" : "lock_reset")} size={16} />
+                  {isUpdatingPassword ? t("settings.processing") : (passwordSaved ? t("settings.updated") : t("settings.updatePassword"))}
+                </HoverBtn>
+              </div>
+            </form>
+          </HoverCard>
+
           <HoverCard style={{ border: `1.5px solid rgba(139, 44, 44, 0.25)` }}>
-            <SectionHeader icon="warning" title={t("settings.accountManagement")} accent={RED} isMobile={isMobile} />
+            <SectionHeader icon="warning" title={t("settings.accountManagement")} accent={RED} isMobile={isMobile} t={t} />
             <Row isRTL={isRTL} isMobile={isMobile} label={t("settings.deactivateAccount")} desc={t("settings.deactivateAccountDesc")} control={
               <HoverBtn onClick={() => setDeactivateOpen(true)} style={isMobile ? { width: "100%" } : undefined}>{t("settings.deactivate")}</HoverBtn>
             } />

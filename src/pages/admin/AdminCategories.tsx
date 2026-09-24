@@ -2,20 +2,6 @@ import React, { useState, useEffect } from "react";
 import { adminApi } from "../../api/adminApi";
 import { useLang } from "../../context/LanguageContext";
 
-/* ------------------------------------------------------------------ */
-/*  Design Tokens                                                      */
-/* ------------------------------------------------------------------ */
-const colors = {
-  creamLight: "#fcfaf5", creamMid: "#f6efdc", creamDark: "#e5d5a8",
-  forestGreen: "#0b4335", amber: "#b8860b", red: "#8b2c2c", blue: "#4a7fcb",
-};
-const fonts = { headline: "'Hanken Grotesk', sans-serif", body: "'Inter', sans-serif", label: "'JetBrains Mono', monospace" };
-const cardStyle: React.CSSProperties = { backgroundColor: colors.creamLight, borderRadius: 12, boxShadow: "0px 4px 20px rgba(11, 67, 53, 0.08)", border: `1px solid ${colors.forestGreen}` };
-
-const Icon: React.FC<{ name: string; size?: number; filled?: boolean }> = ({ name, size = 18, filled = false }) => (
-  <span className="material-symbols-outlined" style={{ fontSize: size, lineHeight: 1, fontVariationSettings: `'FILL' ${filled ? 1 : 0}, 'wght' 400, 'GRAD' 0, 'opsz' 24` }}>{name}</span>
-);
-
 interface Category {
   category_id: number;
   name: string;
@@ -26,7 +12,7 @@ interface Category {
 }
 
 export default function AdminCategories() {
-  const { lang } = useLang();
+  const { lang, t, dbLanguages } = useLang();
   const isRTL = lang === "AR";
   
   const [categories, setCategories] = useState<Category[]>([]);
@@ -34,9 +20,15 @@ export default function AdminCategories() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingCategory, setEditingCategory] = useState<Category | null>(null);
   
+  // ✅ Pagination State
+  const [currentPage, setCurrentPage] = useState(1);
+  const ITEMS_PER_PAGE = 10;
+
+  const initialTranslations = dbLanguages.reduce((acc: any, l: any) => ({ ...acc, [l.code]: "" }), {});
+  
   const [formData, setFormData] = useState({
     name: "",
-    translations: { en: "", ar: "", fr: "" },
+    translations: initialTranslations,
     description: ""
   });
 
@@ -61,26 +53,24 @@ export default function AdminCategories() {
   const openModal = (category?: Category) => {
     if (category) {
       setEditingCategory(category);
-      
-      // ✅ Safely parse translations for the form
       let parsedTranslations = category.translations;
       if (typeof parsedTranslations === 'string') {
         try { parsedTranslations = JSON.parse(parsedTranslations); } catch (e) { parsedTranslations = {}; }
       }
       const safeTranslations = parsedTranslations || {};
+      const dynamicTranslations = dbLanguages.reduce((acc: any, l: any) => ({
+        ...acc,
+        [l.code]: safeTranslations[l.code] || ""
+      }), {});
 
       setFormData({
         name: category.name,
-        translations: {
-          en: safeTranslations.en || "",
-          ar: safeTranslations.ar || "",
-          fr: safeTranslations.fr || ""
-        },
+        translations: dynamicTranslations,
         description: category.description || ""
       });
     } else {
       setEditingCategory(null);
-      setFormData({ name: "", translations: { en: "", ar: "", fr: "" }, description: "" });
+      setFormData({ name: "", translations: initialTranslations, description: "" });
     }
     setIsModalOpen(true);
   };
@@ -107,7 +97,7 @@ export default function AdminCategories() {
   };
 
   const handleDelete = async (id: number) => {
-    if (!window.confirm("Delete this category? Posts must be moved or deleted first.")) return;
+    if (!window.confirm(t("admin.categories.deleteConfirm") || "Delete this category? Posts must be moved or deleted first.")) return;
     try {
       await adminApi.forum.deleteCategory(id);
       fetchCategories();
@@ -142,136 +132,219 @@ export default function AdminCategories() {
     }
   };
 
-  const thStyle: React.CSSProperties = { fontFamily: fonts.label, fontSize: 11, letterSpacing: "0.06em", fontWeight: 600, color: colors.forestGreen, textAlign: isRTL ? "right" : "left", padding: "12px 14px", borderBottom: `1px solid ${colors.forestGreen}`, textTransform: "uppercase", opacity: 0.8 };
-  const tdStyle: React.CSSProperties = { fontFamily: fonts.body, fontSize: 13, color: colors.forestGreen, padding: "14px", borderBottom: `1px solid ${colors.creamDark}`, textAlign: isRTL ? "right" : "left", verticalAlign: "top" };
+  // ✅ Pagination Logic
+  const totalPages = Math.ceil(categories.length / ITEMS_PER_PAGE);
+  const paginatedCategories = categories.slice(
+    (currentPage - 1) * ITEMS_PER_PAGE, 
+    currentPage * ITEMS_PER_PAGE
+  );
 
-  if (isLoading) return <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center" }}><Icon name="hourglass_empty" size={40} /></div>;
+  if (isLoading) return (
+    <div className="min-h-screen flex items-center justify-center bg-[#fbf9f4]">
+      <span className="material-symbols-outlined text-[40px] text-[#1e4d3a]/40 animate-pulse">hourglass_empty</span>
+    </div>
+  );
 
   return (
-    <div style={{ padding: 24, maxWidth: 1400, margin: "0 auto", fontFamily: fonts.body, color: colors.forestGreen }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 24 }}>
-        <div>
-          <h1 style={{ fontFamily: fonts.headline, fontSize: 28, fontWeight: 700, margin: 0 }}>Forum Categories</h1>
-          <p style={{ fontFamily: fonts.body, fontSize: 14, color: colors.forestGreen, opacity: 0.7, margin: "4px 0 0" }}>Manage discussion categories and translations.</p>
+    <div className="oulamauna-dashboard min-h-screen text-[#1e4d3a] antialiased font-['Inter']" dir={isRTL ? "rtl" : "ltr"}>
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&family=Source+Serif+4:wght@400;500;600;700&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap');
+        .oulamauna-dashboard { background: radial-gradient(circle at 8% 10%, rgba(201,168,76,0.055), transparent 24%), radial-gradient(circle at 92% 16%, rgba(79,145,132,0.06), transparent 25%), #fbf9f4; }
+        .oulamauna-dashboard * { box-sizing: border-box; }
+        .oulamauna-dashboard .serif-title { font-family: 'Source Serif 4', Georgia, serif; letter-spacing: -0.025em; }
+        .oulamauna-dashboard .mono-label { font-family: 'JetBrains Mono', monospace; letter-spacing: 0.06em; }
+        .oulamauna-dashboard .dashboard-card { background: rgba(251,249,244,0.96); border: 1px solid rgba(30,77,58,0.10); border-radius: 10px; box-shadow: 0 5px 18px rgba(30,77,58,0.055); transition: box-shadow 180ms ease; }
+        .oulamauna-dashboard .dashboard-card:hover { box-shadow: 0 9px 26px rgba(30,77,58,0.08); }
+        .oulamauna-dashboard ::selection { background: #C9A84C; color: #1e4d3a; }
+      `}</style>
+
+      <main className="max-w-[1450px] mx-auto px-3 md:px-5 xl:px-7 py-6 md:py-8">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
+          <div>
+            <h1 className="serif-title text-[27px] md:text-[32px] leading-tight font-semibold text-[#082f27]">{t("admin.categories.title") || "Forum Categories"}</h1>
+            <p className="text-[12px] text-[#1e4d3a]/60 mt-1">{t("admin.categories.subtitle") || "Manage discussion categories and translations."}</p>
+          </div>
+          <button onClick={() => openModal()} className="flex items-center gap-2 px-5 py-2.5 rounded-[8px] bg-[#1e4d3a] text-white border-2 border-[#1e4d3a] text-[12px] font-bold uppercase tracking-wide hover:bg-transparent hover:text-[#1e4d3a] transition-all duration-300 cursor-pointer">
+  <span className="material-symbols-outlined text-[18px]">add</span> {t("admin.categories.addCategory") || "Add Category"}
+</button>
         </div>
-        <button onClick={() => openModal()} style={{ display: "flex", alignItems: "center", gap: 8, padding: "10px 20px", backgroundColor: colors.forestGreen, color: colors.creamLight, border: "none", borderRadius: 8, fontFamily: fonts.body, fontSize: 13, fontWeight: 600, cursor: "pointer" }}>
-          <Icon name="add" size={18} /> Add Category
-        </button>
-      </div>
 
-      <div style={{ ...cardStyle, overflow: "hidden" }}>
-        <div style={{ overflowX: "auto" }}>
-          <table style={{ width: "100%", borderCollapse: "collapse" }}>
-            <thead style={{ backgroundColor: colors.creamMid }}>
-              <tr>
-                <th style={thStyle}>Order</th>
-                <th style={thStyle}>Category Name</th>
-                <th style={thStyle}>Translations</th>
-                <th style={thStyle}>Description</th>
-                <th style={{ ...thStyle, textAlign: "center" }}>Posts</th>
-                <th style={{ ...thStyle, textAlign: isRTL ? "left" : "right" }}>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {categories.length === 0 ? (
-                <tr><td colSpan={6} style={{ ...tdStyle, textAlign: "center", padding: 40, opacity: 0.6 }}>No categories yet.</td></tr>
-              ) : (
-                categories.map((category, index) => {
-                  // ✅ Safely parse for table display
-                  const tableTranslations = typeof category.translations === 'string' 
-                    ? JSON.parse(category.translations || '{}') 
-                    : (category.translations || {});
+        <div className="dashboard-card overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full text-left border-collapse">
+              <thead>
+                <tr className="border-b border-[#1e4d3a]/10 bg-[#1e4d3a]/[0.02]">
+                  <th className="mono-label text-[9px] uppercase font-bold text-[#1e4d3a]/60 px-5 py-3.5 text-center">{t("admin.categories.order") || "Order"}</th>
+                  <th className="mono-label text-[9px] uppercase font-bold text-[#1e4d3a]/60 px-5 py-3.5">{t("admin.categories.categoryName") || "Category Name"}</th>
+                  <th className="mono-label text-[9px] uppercase font-bold text-[#1e4d3a]/60 px-5 py-3.5">{t("admin.categories.translations") || "Translations"}</th>
+                  <th className="mono-label text-[9px] uppercase font-bold text-[#1e4d3a]/60 px-5 py-3.5">{t("admin.categories.description") || "Description"}</th>
+                  <th className="mono-label text-[9px] uppercase font-bold text-[#1e4d3a]/60 px-5 py-3.5 text-center">{t("admin.categories.posts") || "Posts"}</th>
+                  <th className="mono-label text-[9px] uppercase font-bold text-[#1e4d3a]/60 px-5 py-3.5 text-right">{t("admin.categories.actions") || "Actions"}</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-[#1e4d3a]/[0.06]">
+                {paginatedCategories.length === 0 ? (
+                  <tr><td colSpan={6} className="px-5 py-12 text-center text-[12px] text-[#1e4d3a]/50">{t("admin.categories.noCategories") || "No categories yet."}</td></tr>
+                ) : (
+                  paginatedCategories.map((category, index) => {
+                    // Calculate the actual index in the full array for reordering
+                    const actualIndex = (currentPage - 1) * ITEMS_PER_PAGE + index;
+                    const tableTranslations = typeof category.translations === 'string' 
+                      ? JSON.parse(category.translations || '{}') 
+                      : (category.translations || {});
 
+                    return (
+                      <tr key={category.category_id} className="hover:bg-[#1e4d3a]/[0.015] transition-colors">
+                        <td className="px-5 py-3.5">
+                          <div className="flex gap-1 justify-center">
+                            <button onClick={() => handleReorder(actualIndex, "up")} disabled={actualIndex === 0} className="w-7 h-7 flex items-center justify-center rounded-[4px] border border-[#1e4d3a]/10 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-[#1e4d3a]/5 transition-colors cursor-pointer">
+                              <span className="material-symbols-outlined text-[16px] text-[#1e4d3a]">arrow_upward</span>
+                            </button>
+                            <button onClick={() => handleReorder(actualIndex, "down")} disabled={actualIndex === categories.length - 1} className="w-7 h-7 flex items-center justify-center rounded-[4px] border border-[#1e4d3a]/10 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-[#1e4d3a]/5 transition-colors cursor-pointer">
+                              <span className="material-symbols-outlined text-[16px] text-[#1e4d3a]">arrow_downward</span>
+                            </button>
+                          </div>
+                        </td>
+                        <td className="px-5 py-3.5">
+                          <span className="font-['Source_Serif_4'] text-[14px] font-semibold text-[#082f27]">{category.name}</span>
+                        </td>
+                        <td className="px-5 py-3.5">
+                          <div className="flex flex-col gap-1 text-[11px]">
+                            {dbLanguages.map(l => (
+                              tableTranslations[l.code] && (
+                                <span key={l.code}>
+                                  {l.code === 'ar' ? '🇸🇦' : l.code === 'fr' ? '🇫🇷' : '🇬🇧'} {l.code.toUpperCase()}: {tableTranslations[l.code]}
+                                </span>
+                              )
+                            ))}
+                            {dbLanguages.every(l => !tableTranslations[l.code]) && <span className="opacity-50">None</span>}
+                          </div>
+                        </td>
+                        <td className="px-5 py-3.5 max-w-[300px] text-[#1e4d3a]/70 truncate">{category.description || "-"}</td>
+                        <td className="px-5 py-3.5 text-center">
+                          <span className="inline-flex items-center px-3 py-1 rounded-full bg-[#1e4d3a]/5 border border-[#1e4d3a]/10 text-[12px] font-semibold text-[#1e4d3a]">{category.post_count}</span>
+                        </td>
+                        <td className="px-5 py-3.5 text-right">
+                          <div className="flex items-center justify-end gap-2">
+                            <button onClick={() => openModal(category)} title={t("admin.categories.edit") || "Edit"} className="w-8 h-8 flex items-center justify-center rounded-[6px] border border-[#3d6b96] text-[#3d6b96] hover:bg-[#3d6b96] hover:text-white transition-colors cursor-pointer">
+                              <span className="material-symbols-outlined text-[18px]">edit</span>
+                            </button>
+                            <button onClick={() => handleDelete(category.category_id)} title={t("admin.categories.delete") || "Delete"} className="w-8 h-8 flex items-center justify-center rounded-[6px] border border-[#e96d5c] text-[#e96d5c] hover:bg-[#e96d5c] hover:text-white transition-colors cursor-pointer">
+                              <span className="material-symbols-outlined text-[18px]">delete</span>
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })
+                )}
+              </tbody>
+            </table>
+          </div>
+
+          {/* ✅ PAGINATION FOOTER */}
+          {totalPages > 1 && (
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 px-5 py-4 border-t border-[#1e4d3a]/10 bg-[#1e4d3a]/[0.01]">
+              <div className="text-[11px] text-[#1e4d3a]/60 mono-label">
+                {t("admin.common.showing") || "Showing"} {(currentPage - 1) * ITEMS_PER_PAGE + 1}–{Math.min(currentPage * ITEMS_PER_PAGE, categories.length)} {t("admin.common.of") || "of"} {categories.length}
+              </div>
+              <div className="flex items-center gap-2">
+                <button onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))} disabled={currentPage === 1} className="flex items-center justify-center w-8 h-8 rounded-[6px] border border-[#1e4d3a]/20 text-[#1e4d3a] disabled:opacity-30 disabled:cursor-not-allowed hover:bg-[#1e4d3a] hover:text-white transition-colors cursor-pointer">
+                  <span className="material-symbols-outlined text-[18px]">{isRTL ? 'arrow_forward' : 'arrow_back'}</span>
+                </button>
+                {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                  let pageNum;
+                  if (totalPages <= 5) pageNum = i + 1;
+                  else if (currentPage <= 3) pageNum = i + 1;
+                  else if (currentPage >= totalPages - 2) pageNum = totalPages - 4 + i;
+                  else pageNum = currentPage - 2 + i;
                   return (
-                    <tr key={category.category_id}>
-                      <td style={tdStyle}>
-                        <div style={{ display: "flex", gap: 4, justifyContent: "center" }}>
-                          <button onClick={() => handleReorder(index, "up")} disabled={index === 0} style={{ width: 28, height: 28, border: `1px solid ${colors.creamDark}`, backgroundColor: index === 0 ? colors.creamMid : "transparent", borderRadius: 4, cursor: index === 0 ? "not-allowed" : "pointer", opacity: index === 0 ? 0.4 : 1 }}>
-                            <Icon name="arrow_upward" size={16} />
-                          </button>
-                          <button onClick={() => handleReorder(index, "down")} disabled={index === categories.length - 1} style={{ width: 28, height: 28, border: `1px solid ${colors.creamDark}`, backgroundColor: index === categories.length - 1 ? colors.creamMid : "transparent", borderRadius: 4, cursor: index === categories.length - 1 ? "not-allowed" : "pointer", opacity: index === categories.length - 1 ? 0.4 : 1 }}>
-                            <Icon name="arrow_downward" size={16} />
-                          </button>
-                        </div>
-                      </td>
-                      <td style={tdStyle}><span style={{ fontFamily: fonts.headline, fontSize: 14, fontWeight: 600 }}>{category.name}</span></td>
-                      <td style={tdStyle}>
-                        <div style={{ display: "flex", flexDirection: "column", gap: 2, fontSize: 11 }}>
-                          {tableTranslations.en && <span>🇬🇧 EN: {tableTranslations.en}</span>}
-                          {tableTranslations.ar && <span>🇸🇦 AR: {tableTranslations.ar}</span>}
-                          {tableTranslations.fr && <span>🇫🇷 FR: {tableTranslations.fr}</span>}
-                          {!tableTranslations.en && !tableTranslations.ar && !tableTranslations.fr && <span style={{opacity: 0.5}}>None</span>}
-                        </div>
-                      </td>
-                      <td style={{ ...tdStyle, maxWidth: 300, opacity: 0.8 }}>{category.description || "-"}</td>
-                      <td style={{ ...tdStyle, textAlign: "center" }}>
-                        <span style={{ padding: "4px 12px", borderRadius: 9999, backgroundColor: colors.creamMid, border: `1px solid ${colors.creamDark}`, fontSize: 12, fontWeight: 600 }}>{category.post_count}</span>
-                      </td>
-                      <td style={{ ...tdStyle, textAlign: isRTL ? "left" : "right" }}>
-                        <div style={{ display: "flex", gap: 6, justifyContent: isRTL ? "flex-start" : "flex-end" }}>
-                          <button onClick={() => openModal(category)} title="Edit" style={{ width: 32, height: 32, display: "flex", alignItems: "center", justifyContent: "center", borderRadius: 6, border: `1px solid ${colors.blue}`, backgroundColor: "transparent", color: colors.blue, cursor: "pointer" }}>
-                            <Icon name="edit" size={18} />
-                          </button>
-                          <button onClick={() => handleDelete(category.category_id)} title="Delete" style={{ width: 32, height: 32, display: "flex", alignItems: "center", justifyContent: "center", borderRadius: 6, border: `1px solid ${colors.red}`, backgroundColor: "transparent", color: colors.red, cursor: "pointer" }}>
-                            <Icon name="delete" size={18} />
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
+                    <button key={pageNum} onClick={() => setCurrentPage(pageNum)} className={`w-8 h-8 rounded-[6px] text-[11px] font-bold mono-label transition-colors cursor-pointer ${currentPage === pageNum ? 'bg-[#1e4d3a] text-white' : 'border border-[#1e4d3a]/20 text-[#1e4d3a] hover:bg-[#1e4d3a]/10'}`}>
+                      {pageNum}
+                    </button>
                   );
-                })
-              )}
-            </tbody>
-          </table>
-        </div>
-      </div>
-
-      {/* Modal */}
-      {isModalOpen && (
-        <div style={{ position: "fixed", inset: 0, backgroundColor: "rgba(11, 67, 53, 0.5)", zIndex: 100, display: "flex", alignItems: "center", justifyContent: "center", padding: 20, backdropFilter: "blur(4px)" }} onClick={closeModal}>
-          <div style={{ ...cardStyle, backgroundColor: colors.creamLight, width: "100%", maxWidth: 600, maxHeight: "90vh", overflowY: "auto" }} onClick={(e) => e.stopPropagation()}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "20px 24px", borderBottom: `1px solid ${colors.creamDark}` }}>
-              <h2 style={{ fontFamily: fonts.headline, fontSize: 20, fontWeight: 700, color: colors.forestGreen, margin: 0 }}>{editingCategory ? "Edit Category" : "Add New Category"}</h2>
-              <button onClick={closeModal} style={{ background: "none", border: "none", cursor: "pointer", color: colors.forestGreen }}><Icon name="close" size={24} /></button>
+                })}
+                <button onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))} disabled={currentPage === totalPages} className="flex items-center justify-center w-8 h-8 rounded-[6px] border border-[#1e4d3a]/20 text-[#1e4d3a] disabled:opacity-30 disabled:cursor-not-allowed hover:bg-[#1e4d3a] hover:text-white transition-colors cursor-pointer">
+                  <span className="material-symbols-outlined text-[18px]">{isRTL ? 'arrow_back' : 'arrow_forward'}</span>
+                </button>
+              </div>
             </div>
+          )}
+        </div>
 
-            <form onSubmit={handleSubmit} style={{ padding: 24 }}>
-              <div style={{ marginBottom: 20 }}>
-                <label style={{ display: "block", fontFamily: fonts.label, fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 6, color: colors.forestGreen }}>Primary Name *</label>
-                <input type="text" value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })} placeholder="e.g., Manuscripts" required style={{ width: "100%", padding: "10px 12px", borderRadius: 6, border: `1px solid ${colors.creamDark}`, fontFamily: fonts.body, fontSize: 14, outline: "none" }} />
+        {/* Modal */}
+        {isModalOpen && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#082f27]/40 backdrop-blur-sm" onClick={closeModal}>
+            <div className="dashboard-card w-full max-w-2xl max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+              <div className="flex justify-between items-center p-6 border-b border-[#1e4d3a]/10">
+                <h2 className="serif-title text-[20px] font-semibold text-[#082f27]">{editingCategory ? (t("admin.categories.editCategory") || "Edit Category") : (t("admin.categories.createCategory") || "Create Category")}</h2>
+                <button onClick={closeModal} className="p-1.5 rounded-full hover:bg-[#1e4d3a]/10 transition-colors cursor-pointer">
+                  <span className="material-symbols-outlined text-[20px] text-[#1e4d3a]">close</span>
+                </button>
               </div>
 
-              <div style={{ marginBottom: 20 }}>
-                <label style={{ display: "block", fontFamily: fonts.label, fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 12, color: colors.forestGreen }}>Translations</label>
-                <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-                  <div>
-                    <label style={{ display: "block", fontSize: 12, marginBottom: 4, opacity: 0.8 }}>🇬🇧 English</label>
-                    <input type="text" value={formData.translations.en} onChange={(e) => setFormData({ ...formData, translations: { ...formData.translations, en: e.target.value } })} placeholder="English translation" style={{ width: "100%", padding: "8px 10px", borderRadius: 6, border: `1px solid ${colors.creamDark}`, fontFamily: fonts.body, fontSize: 13 }} />
-                  </div>
-                  <div>
-                    <label style={{ display: "block", fontSize: 12, marginBottom: 4, opacity: 0.8 }}>🇸🇦 Arabic</label>
-                    <input type="text" value={formData.translations.ar} onChange={(e) => setFormData({ ...formData, translations: { ...formData.translations, ar: e.target.value } })} placeholder="الترجمة العربية" dir="rtl" style={{ width: "100%", padding: "8px 10px", borderRadius: 6, border: `1px solid ${colors.creamDark}`, fontFamily: fonts.body, fontSize: 13 }} />
-                  </div>
-                  <div>
-                    <label style={{ display: "block", fontSize: 12, marginBottom: 4, opacity: 0.8 }}>🇫🇷 French</label>
-                    <input type="text" value={formData.translations.fr} onChange={(e) => setFormData({ ...formData, translations: { ...formData.translations, fr: e.target.value } })} placeholder="Traduction française" style={{ width: "100%", padding: "8px 10px", borderRadius: 6, border: `1px solid ${colors.creamDark}`, fontFamily: fonts.body, fontSize: 13 }} />
+              <form onSubmit={handleSubmit} className="p-6 space-y-6">
+                <div>
+                  <label className="mono-label text-[9px] uppercase font-bold text-[#1e4d3a]/60 mb-1.5 block">{t("admin.categories.primaryName") || "Primary Name *"}</label>
+                  <input 
+                    type="text" 
+                    value={formData.name} 
+                    onChange={(e) => setFormData({ ...formData, name: e.target.value })} 
+                    placeholder={t("admin.categories.primaryNamePlaceholder") || "e.g., Manuscripts"} 
+                    required 
+                    className="w-full bg-[#fbf9f4] border border-[#1e4d3a]/15 rounded-[6px] px-3 py-2 text-[13px] font-medium text-[#1e4d3a] focus:outline-none focus:ring-2 focus:ring-[#1e4d3a]/20 focus:border-[#1e4d3a]" 
+                  />
+                </div>
+
+                <div>
+                  <label className="mono-label text-[9px] uppercase font-bold text-[#1e4d3a]/60 mb-3 block">{t("admin.categories.translations") || "Translations"}</label>
+                  <div className="space-y-3">
+                    {dbLanguages.map((l: any) => (
+                      <div key={l.code}>
+                        <label className="text-[12px] text-[#1e4d3a]/80 mb-1 block">
+                          {l.code === 'ar' ? '🇸🇦' : l.code === 'fr' ? '🇫🇷' : '🇬🇧'} {l.name}
+                        </label>
+                        <input 
+                          type="text" 
+                          value={formData.translations[l.code] || ""} 
+                          onChange={(e) => setFormData({ 
+                            ...formData, 
+                            translations: { ...formData.translations, [l.code]: e.target.value } 
+                          })} 
+                          placeholder={`${l.name} translation`} 
+                          dir={l.code === 'ar' ? 'rtl' : 'ltr'}
+                          className="w-full bg-[#fbf9f4] border border-[#1e4d3a]/15 rounded-[6px] px-3 py-2 text-[13px] font-medium text-[#1e4d3a] focus:outline-none focus:ring-2 focus:ring-[#1e4d3a]/20 focus:border-[#1e4d3a]" 
+                        />
+                      </div>
+                    ))}
                   </div>
                 </div>
-              </div>
 
-              <div style={{ marginBottom: 24 }}>
-                <label style={{ display: "block", fontFamily: fonts.label, fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 6, color: colors.forestGreen }}>Description</label>
-                <textarea value={formData.description} onChange={(e) => setFormData({ ...formData, description: e.target.value })} placeholder="Brief description of this category..." rows={3} style={{ width: "100%", padding: "10px 12px", borderRadius: 6, border: `1px solid ${colors.creamDark}`, fontFamily: fonts.body, fontSize: 14, resize: "vertical", outline: "none" }} />
-              </div>
+                <div>
+                  <label className="mono-label text-[9px] uppercase font-bold text-[#1e4d3a]/60 mb-1.5 block">{t("admin.categories.description") || "Description"}</label>
+                  <textarea 
+                    value={formData.description} 
+                    onChange={(e) => setFormData({ ...formData, description: e.target.value })} 
+                    placeholder={t("admin.categories.descriptionPlaceholder") || "Brief description of this category..."} 
+                    rows={3} 
+                    className="w-full bg-[#fbf9f4] border border-[#1e4d3a]/15 rounded-[6px] px-3 py-2 text-[13px] font-medium text-[#1e4d3a] focus:outline-none focus:ring-2 focus:ring-[#1e4d3a]/20 focus:border-[#1e4d3a] resize-y" 
+                  />
+                </div>
 
-              <div style={{ display: "flex", justifyContent: "flex-end", gap: 12 }}>
-                <button type="button" onClick={closeModal} style={{ padding: "10px 20px", borderRadius: 6, border: `1px solid ${colors.forestGreen}`, backgroundColor: "transparent", color: colors.forestGreen, fontFamily: fonts.body, fontSize: 13, fontWeight: 600, cursor: "pointer" }}>Cancel</button>
-                <button type="submit" style={{ padding: "10px 20px", borderRadius: 6, border: "none", backgroundColor: colors.forestGreen, color: colors.creamLight, fontFamily: fonts.body, fontSize: 13, fontWeight: 600, cursor: "pointer" }}>{editingCategory ? "Update Category" : "Create Category"}</button>
-              </div>
-            </form>
+                <div className="flex justify-end gap-3 pt-4 border-t border-[#1e4d3a]/10">
+                  <button type="button" onClick={closeModal} className="px-5 py-2 rounded-[6px] border border-[#1e4d3a]/20 text-[#1e4d3a] text-[12px] font-bold uppercase tracking-wide hover:bg-[#1e4d3a]/5 transition-colors cursor-pointer">
+                    {t("admin.categories.cancel") || "Cancel"}
+                  </button>
+                 <button type="submit" className="px-5 py-2 rounded-[6px] bg-[#1e4d3a] text-white border-2 border-[#1e4d3a] text-[12px] font-bold uppercase tracking-wide hover:bg-transparent hover:text-[#1e4d3a] transition-all duration-300 cursor-pointer">
+  {editingCategory ? (t("admin.categories.updateCategory") || "Update Category") : (t("admin.categories.createCategory") || "Create Category")}
+</button>
+                </div>
+              </form>
+            </div>
           </div>
-        </div>
-      )}
+        )}
+      </main>
     </div>
   );
 }

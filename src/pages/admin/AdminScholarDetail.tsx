@@ -2,93 +2,28 @@ import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useLang } from "../../context/LanguageContext";
 import { adminApi } from "../../api/adminApi";
-
-/* ------------------------------------------------------------------ */
-/*  Design tokens — same as PendingEditReview / AllScholarsAdmin      */
-/* ------------------------------------------------------------------ */
-const colors = {
-  creamLight: "#fcfaf5",
-  creamMid: "#f6efdc",
-  creamDark: "#e5d5a8",
-  forestGreen: "#0b4335",
-  amber: "#b8860b",
-  red: "#8b2c2c",
-};
-
-const fonts = {
-  headline: "'Hanken Grotesk', sans-serif",
-  body: "'Inter', sans-serif",
-  label: "'JetBrains Mono', monospace",
-};
-
-const cardStyle: React.CSSProperties = {
-  backgroundColor: colors.creamLight,
-  borderRadius: 12,
-  boxShadow: "0px 4px 20px rgba(11, 67, 53, 0.08)",
-  border: `1px solid ${colors.forestGreen}`,
-};
-
-const Icon: React.FC<{ name: string; size?: number; filled?: boolean }> = ({
-  name,
-  size = 18,
-  filled = false,
-}) => (
-  <span
-    className="material-symbols-outlined"
-    style={{
-      fontSize: size,
-      lineHeight: 1,
-      fontVariationSettings: `'FILL' ${filled ? 1 : 0}, 'wght' 400, 'GRAD' 0, 'opsz' 24`,
-    }}
-  >
-    {name}
-  </span>
-);
+import BiographyRenderer from "../../components/BiographyRenderer";
 
 /* ------------------------------------------------------------------ */
 /*  Types                                                              */
 /* ------------------------------------------------------------------ */
 interface WorkRow { 
-  id: number; 
-  title: string; 
-  year: string; 
-  format: string; 
-  access: string | null; 
-  accessSource: "upload" | "link";
-  fileName: string | null; // ✅ Added to preserve original file extension
+  id: number; title: string; year: string; format: string; 
+  access: string | null; accessSource: "upload" | "link"; fileName: string | null;
 }
-
 interface MediaRow { 
-  id: number; 
-  title: string; 
-  meta: string; 
-  type: "Upload" | "Link"; 
-  description: string; 
-  access: string | null; 
-  accessSource: "upload" | "link";
-  fileName: string | null; // ✅ Added to preserve original file extension
+  id: number; title: string; meta: string; type: "Upload" | "Link"; 
+  description: string; access: string | null; accessSource: "upload" | "link"; fileName: string | null;
 }
-
 interface ReferenceRow { id: number; title: string; citation: string; url: string | null; }
 interface RelationshipRow { type: string; name: string; relatedScholarId: number | null; }
 
 interface VersionDetail {
-  scholarId: number;
-  name: string;
-  bio: string;
-  image: string | null;
-  region: string;
-  century: string;
-  aliases: string[];
-  birth: string;
-  death: string;
-  disciplines: string[];
-  works: WorkRow[];
-  media: MediaRow[];
-  references: ReferenceRow[];
-  relationships: RelationshipRow[];
-  editor: string;
-  createdAt: string;
+  scholarId: number; name: string; bio: string; image: string | null;
+  region: string; century: string; aliases: string[]; birth: string; death: string;
+  disciplines: string[]; works: WorkRow[]; media: MediaRow[]; references: ReferenceRow[];
+  relationships: RelationshipRow[]; editor: string; createdAt: string; status?: string;
+  languageName?: string;
 }
 
 /* ------------------------------------------------------------------ */
@@ -99,8 +34,7 @@ const formatScholarDate = (d: any) => {
   return d.raw_text || (d.year ? `${d.year} ${d.calendar}`.trim() : "");
 };
 
-const getMediaIcon = (type: string) =>
-  type?.includes("video") ? "movie" : type?.includes("audio") ? "graphic_eq" : "article";
+const getMediaIcon = (type: string) => type?.includes("video") ? "movie" : type?.includes("audio") ? "graphic_eq" : "article";
 
 const getAccessType = (url: string | null | undefined): "pdf" | "audio" | "video" => {
   if (!url) return "pdf";
@@ -111,200 +45,109 @@ const getAccessType = (url: string | null | undefined): "pdf" | "audio" | "video
 };
 
 /* ------------------------------------------------------------------ */
-/*  Unified File Actions (Handles Upload vs Link perfectly)            */
+/*  Unified File Actions (Dashboard Style)                             */
 /* ------------------------------------------------------------------ */
-function FileActions({ 
-  url, 
-  filename, 
-  mediaType, 
-  accessSource 
-}: { 
-  url: string; 
-  filename: string; 
-  mediaType: "pdf" | "audio" | "video"; 
-  accessSource: "upload" | "link"; 
-}) {
+function FileActions({ url, filename, mediaType, accessSource, t }: { url: string; filename: string; mediaType: "pdf" | "audio" | "video"; accessSource: "upload" | "link"; t: (key: string) => string; }) {
   const [isViewing, setIsViewing] = useState(false);
   const [isDownloading, setIsDownloading] = useState(false);
   const contentType = mediaType === "video" ? "video/mp4" : mediaType === "audio" ? "audio/mpeg" : "application/pdf";
 
   const handleView = async (e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    
-    if (accessSource === "link") {
-      window.open(url, "_blank");
-      return;
-    }
-
+    e.preventDefault(); e.stopPropagation();
+    if (accessSource === "link") { window.open(url, "_blank"); return; }
     setIsViewing(true);
     try {
       const response = await fetch(url);
       const blob = await response.blob();
-      const typedBlob = new Blob([blob], { type: contentType });
-      const blobUrl = URL.createObjectURL(typedBlob);
+      const blobUrl = URL.createObjectURL(new Blob([blob], { type: contentType }));
       window.open(blobUrl, "_blank");
       setTimeout(() => URL.revokeObjectURL(blobUrl), 60000);
-    } catch (err) {
-      console.error("View failed:", err);
-      window.open(url, "_blank");
-    } finally {
-      setIsViewing(false);
-    }
+    } catch (err) { window.open(url, "_blank"); }
+    finally { setIsViewing(false); }
   };
 
   const handleDownload = async (e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-
-    if (accessSource === "link") {
-      window.open(url, "_blank");
-      return;
-    }
-
+    e.preventDefault(); e.stopPropagation();
+    if (accessSource === "link") { window.open(url, "_blank"); return; }
     setIsDownloading(true);
     try {
-      // 1. Fetch the file as a Blob to bypass cross-origin download restrictions
       const response = await fetch(url);
       if (!response.ok) throw new Error('Network response was not ok');
       const blob = await response.blob();
-      
-      // 2. Create a local object URL (same-origin, so 'download' attribute WORKS!)
       const blobUrl = window.URL.createObjectURL(blob);
-      
-      // 3. Trigger the download with the correct filename
       const link = document.createElement("a");
-      link.href = blobUrl;
-      link.download = filename; 
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      
-      // 4. Clean up memory
+      link.href = blobUrl; link.download = filename; 
+      document.body.appendChild(link); link.click(); document.body.removeChild(link);
       window.URL.revokeObjectURL(blobUrl);
-    } catch (err) {
-      console.error("Download failed:", err);
-      window.open(url, "_blank");
-    } finally {
-      setIsDownloading(false);
-    }
+    } catch (err) { window.open(url, "_blank"); }
+    finally { setIsDownloading(false); }
   };
 
   if (accessSource === "link") {
     return (
-      <a
-        href={url}
-        target="_blank"
-        rel="noopener noreferrer"
-        style={{ 
-          display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
-          padding: "6px 12px", borderRadius: 6, border: `1.5px solid ${colors.forestGreen}`, 
-          backgroundColor: "transparent", color: colors.forestGreen, 
-          textDecoration: "none", fontFamily: fonts.body, fontSize: 11, fontWeight: 600, cursor: "pointer",
-          transition: "all 0.2s ease"
-        }}
-        onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = colors.forestGreen; e.currentTarget.style.color = colors.creamLight; }}
-        onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = "transparent"; e.currentTarget.style.color = colors.forestGreen; }}
-      >
-        <Icon name="open_in_new" size={14} /> Open Link
+      <a href={url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-[#1e4d3a]/5 text-[#1e4d3a] text-[11px] font-bold hover:bg-[#1e4d3a] hover:text-white transition-all cursor-pointer">
+        <span className="material-symbols-outlined text-[14px]">open_in_new</span> {t("admin.scholarDetail.openLink")}
       </a>
     );
   }
 
   return (
-    <div style={{ display: "flex", gap: 6 }}>
-      <button
-        onClick={handleView}
-        disabled={isViewing}
-        title="View File"
-        style={{ 
-          width: 32, height: 32, borderRadius: 6, border: `1.5px solid ${colors.forestGreen}`, 
-          backgroundColor: "transparent", color: colors.forestGreen, 
-          cursor: isViewing ? "wait" : "pointer", display: "flex", alignItems: "center", justifyContent: "center", 
-          transition: "all 0.2s ease" 
-        }}
-        onMouseEnter={(e) => { if (!isViewing) e.currentTarget.style.backgroundColor = "rgba(11,67,53,0.05)"; }}
-        onMouseLeave={(e) => { if (!isViewing) e.currentTarget.style.backgroundColor = "transparent"; }}
-      >
-        <Icon name={isViewing ? "hourglass_empty" : "visibility"} size={16} />
+    <div className="flex items-center gap-2">
+      <button onClick={handleView} disabled={isViewing} title={t("admin.scholarDetail.view")} className="flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-[#1e4d3a]/5 text-[#1e4d3a] text-[11px] font-bold hover:bg-[#1e4d3a] hover:text-white transition-all cursor-pointer disabled:opacity-50">
+        <span className="material-symbols-outlined text-[14px]">{isViewing ? "hourglass_empty" : "visibility"}</span> {t("admin.scholarDetail.view")}
       </button>
-      <button
-        onClick={handleDownload}
-        disabled={isDownloading}
-        title="Download File"
-        style={{ 
-          width: 32, height: 32, borderRadius: 6, border: `1.5px solid ${colors.forestGreen}`, 
-          backgroundColor: isDownloading ? colors.forestGreen : "transparent", 
-          color: isDownloading ? colors.creamLight : colors.forestGreen, 
-          cursor: isDownloading ? "wait" : "pointer", display: "flex", alignItems: "center", justifyContent: "center", 
-          transition: "all 0.2s ease" 
-        }}
-        onMouseEnter={(e) => { if (!isDownloading) { e.currentTarget.style.backgroundColor = colors.forestGreen; e.currentTarget.style.color = colors.creamLight; } }}
-        onMouseLeave={(e) => { if (!isDownloading) { e.currentTarget.style.backgroundColor = "transparent"; e.currentTarget.style.color = colors.forestGreen; } }}
-      >
-        <Icon name={isDownloading ? "hourglass_empty" : "download"} size={16} />
+      <button onClick={handleDownload} disabled={isDownloading} title={t("admin.scholarDetail.download")} className="flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-[#C9A84C]/10 text-[#8a6d3b] text-[11px] font-bold hover:bg-[#C9A84C] hover:text-white transition-all cursor-pointer disabled:opacity-50">
+        <span className="material-symbols-outlined text-[14px]">{isDownloading ? "hourglass_empty" : "download"}</span> {t("admin.scholarDetail.download")}
       </button>
     </div>
   );
 }
 
-const transformDetail = (v: any): VersionDetail => {
+const transformDetail = (v: any, t: (key: string) => string): VersionDetail => {
   const century = `${v.century_gregorian_start || ""}-${v.century_gregorian_end || ""}`.replace(/^-+|-+$/g, "");
   const birth = formatScholarDate((v.scholar_dates || []).find((d: any) => d.date_type === "birth"));
   const death = formatScholarDate((v.scholar_dates || []).find((d: any) => d.date_type === "death"));
 
   return {
-    scholarId: v.scholar_id,
-    name: v.canonical_name || "Unknown",
-    bio: v.biography || "",
+    scholarId: v.scholar_id, 
+    name: v.canonical_name || t("admin.scholarDetail.unknown"), 
+    bio: v.biography || "", 
     image: v.image_url || null,
-    region: v.regions?.name || "",
-    century: century || "Unknown",
+    region: v.regions?.name || t("admin.scholarDetail.unknown"), 
+    century: century || t("admin.scholarDetail.unknown"),
     aliases: (v.scholar_aliases || []).map((a: any) => a.alias_name),
-    birth: birth || "Unknown",
-    death: death || "Unknown",
+    birth: birth || t("admin.scholarDetail.unknown"), 
+    death: death || t("admin.scholarDetail.unknown"),
     disciplines: (v.scholar_disciplines || []).map((d: any) => d.disciplines?.name).filter(Boolean),
-    
+    status: v.status,
+    languageName: v.languages?.name || v.languages?.code || t("admin.scholarDetail.unknown"),
     works: (v.scholar_works || []).map((w: any) => ({
-      id: w.work_id, 
-      title: w.title, 
-      year: w.year?.toString() || "", 
-      format: w.format,
-      access: w.media_url || w.file_path,
-      accessSource: (w.source_type === "upload" ? "upload" : "link") as "upload" | "link",
-      fileName: w.file_name || null, // ✅ Captures original filename with extension
+      id: w.work_id, title: w.title, year: w.year?.toString() || "", format: w.format,
+      access: w.media_url || w.file_path, accessSource: (w.source_type === "upload" ? "upload" : "link") as "upload" | "link", fileName: w.file_name || null,
     })),
-    
     media: (v.media || []).map((m: any) => ({
-      id: m.media_id, 
-      title: m.title || "Untitled", 
-      meta: m.file_type || "file",
-      type: (m.source_type === "upload" ? "Upload" : "Link") as "Upload" | "Link",
-      description: m.description || "",
-      access: m.media_url || m.file_path || m.external_url,
-      accessSource: (m.source_type === "upload" ? "upload" : "link") as "upload" | "link",
-      fileName: m.file_name || null, // ✅ Captures original filename with extension
+      id: m.media_id, title: m.title || t("admin.scholarDetail.untitled"), meta: m.file_type || "file",
+      type: (m.source_type === "upload" ? "Upload" : "Link") as "Upload" | "Link", description: m.description || "",
+      access: m.media_url || m.file_path || m.external_url, accessSource: (m.source_type === "upload" ? "upload" : "link") as "upload" | "link", fileName: m.file_name || null,
     })),
-    references: (v.scholar_references || []).map((r: any) => ({
-      id: r.reference_id, title: r.title, citation: r.citation, url: r.url,
-    })),
+    references: (v.scholar_references || []).map((r: any) => ({ id: r.reference_id, title: r.title, citation: r.citation, url: r.url })),
     relationships: (v.scholar_relationships_as_source || []).map((r: any) => ({
-      type: r.relation_type,
-      name: r.related_scholar_version?.canonical_name || "Unknown",
-      relatedScholarId: r.related_scholar_version?.scholar_id ?? null,
+      type: r.relation_type, name: r.related_scholar_version?.canonical_name || t("admin.scholarDetail.unknown"), relatedScholarId: r.related_scholar_version?.scholar_id ?? null,
     })),
-    editor: v.users?.username || "Unknown",
+    editor: v.users?.username || t("admin.scholarDetail.unknown"),
     createdAt: v.created_at ? new Date(v.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }) : "",
   };
 };
 
 /* ------------------------------------------------------------------ */
-/*  Main Component                                                     */
+/*  Main Component (Dashboard Style)                                   */
 /* ------------------------------------------------------------------ */
 export default function AdminScholarDetail() {
-  const { id, lang: langParam } = useParams<{ id: string; lang: string }>();
+  const { id: versionIdStr, lang: langParam } = useParams<{ id: string; lang: string }>();
+  const versionId = Number(versionIdStr);
+  
   const navigate = useNavigate();
-  const { lang: siteLang } = useLang();
+  const { lang: siteLang, t } = useLang();
   const isRTL = siteLang === "AR";
 
   const [detail, setDetail] = useState<VersionDetail | null>(null);
@@ -313,111 +156,134 @@ export default function AdminScholarDetail() {
 
   useEffect(() => {
     const fetchDetail = async () => {
-      if (!id || !langParam) return;
+      if (!versionIdStr || !langParam) return;
       setIsLoading(true);
       setError(null);
       try {
-        const response = await adminApi.scholars.getVersionDetail(Number(id), langParam);
+        const response = await adminApi.scholars.getVersionDetail(versionId, langParam);
         if (response.data?.success && response.data.data) {
-          setDetail(transformDetail(response.data.data));
+          setDetail(transformDetail(response.data.data, t));
         } else {
-          setError("Version not found");
+          setError(t("admin.scholarDetail.notFound"));
         }
       } catch (err) {
         console.error("Failed to fetch scholar version detail:", err);
-        setError("Failed to load this version");
+        setError(t("admin.scholarDetail.failedToLoad"));
       } finally {
         setIsLoading(false);
       }
     };
     fetchDetail();
-  }, [id, langParam]);
-
-  const thStyle: React.CSSProperties = { fontFamily: fonts.label, fontSize: 11, letterSpacing: "0.06em", fontWeight: 600, color: colors.forestGreen, textAlign: isRTL ? "right" : "left", padding: "12px 14px", borderBottom: `1px solid ${colors.forestGreen}`, textTransform: "uppercase", opacity: 0.8 };
-  const tdStyle: React.CSSProperties = { fontFamily: fonts.body, fontSize: 13, color: colors.forestGreen, padding: "14px", borderBottom: `1px solid ${colors.creamDark}`, textAlign: isRTL ? "right" : "left" };
+  }, [versionIdStr, langParam, versionId, t]);
 
   if (isLoading) {
-    return <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", backgroundColor: colors.creamLight, color: colors.forestGreen }}><Icon name="hourglass_empty" size={32} /></div>;
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-[#fbf9f4]">
+        <span className="material-symbols-outlined text-[40px] text-[#1e4d3a]/40 animate-pulse">hourglass_empty</span>
+      </div>
+    );
   }
 
   if (error || !detail) {
     return (
-      <div dir={isRTL ? "rtl" : "ltr"} style={{ fontFamily: fonts.body, color: colors.forestGreen, backgroundColor: colors.creamLight, minHeight: "100vh", padding: 24 }}>
-        <div style={{ maxWidth: 600, margin: "80px auto", textAlign: "center" }}>
-          <Icon name="person_off" size={40} />
-          <p style={{ fontFamily: fonts.headline, fontSize: 18, fontWeight: 700, margin: "12px 0 20px" }}>{error || "Not found"}</p>
-          <button onClick={() => navigate("/admin/scholars")} style={{ padding: "8px 16px", borderRadius: 8, border: `1px solid ${colors.forestGreen}`, backgroundColor: "transparent", color: colors.forestGreen, cursor: "pointer", fontFamily: fonts.body, fontSize: 13 }}>
-            Back to All Scholars
+      <div className="oulamauna-dashboard min-h-screen flex items-center justify-center p-6" dir={isRTL ? "rtl" : "ltr"}>
+        <div className="dashboard-card p-12 text-center max-w-md w-full">
+          <span className="material-symbols-outlined text-[40px] text-[#e96d5c] mb-4">person_off</span>
+          <h2 className="serif-title text-[20px] font-semibold text-[#082f27] mb-2">{error || t("admin.scholarDetail.notFound")}</h2>
+          <p className="text-[13px] text-[#1e4d3a]/60 mb-6">{t("admin.scholarDetail.notFoundDesc")}</p>
+          <button onClick={() => navigate("/admin/scholars")} className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-[#1e4d3a] text-white text-[12px] font-bold hover:bg-[#082f27] transition-colors cursor-pointer">
+            <span className="material-symbols-outlined text-[16px]">{isRTL ? "arrow_forward" : "arrow_back"}</span>
+            {t("admin.scholarDetail.backToAll")}
           </button>
         </div>
       </div>
     );
   }
 
-  return (
-    <div dir={isRTL ? "rtl" : "ltr"} style={{ fontFamily: fonts.body, color: colors.forestGreen, backgroundColor: colors.creamLight, minHeight: "100vh", padding: 24 }}>
-      <div style={{ maxWidth: 1100, margin: "0 auto" }}>
+  const statusColor = detail.status === "approved" ? "bg-[#1e4d3a]" : detail.status === "rejected" ? "bg-[#e96d5c]" : detail.status === "superseded" ? "bg-gray-400" : "bg-[#C9A84C]";
+  const statusLabel = t(`dashboard.status.${detail.status}`) || detail.status?.toUpperCase();
 
-        <button
-          onClick={() => navigate("/admin/scholars")}
-          style={{ display: "flex", alignItems: "center", gap: 6, padding: "6px 12px", backgroundColor: "transparent", border: `1px solid ${colors.forestGreen}`, borderRadius: 8, fontFamily: fonts.body, fontSize: 12, color: colors.forestGreen, cursor: "pointer", marginBottom: 16 }}
-        >
-          <Icon name={isRTL ? "arrow_forward" : "arrow_back"} size={14} /> Back to All Scholars
+  return (
+    <div className="oulamauna-dashboard min-h-screen text-[#1e4d3a] antialiased font-['Inter']" dir={isRTL ? "rtl" : "ltr"}>
+      <style>{`
+        .oulamauna-dashboard { background: radial-gradient(circle at 8% 10%, rgba(201,168,76,0.055), transparent 24%), radial-gradient(circle at 92% 16%, rgba(79,145,132,0.06), transparent 25%), #fbf9f4; }
+        .oulamauna-dashboard .dashboard-card { background: rgba(251,249,244,0.96); border: 1px solid rgba(30,77,58,0.10); border-radius: 10px; box-shadow: 0 5px 18px rgba(30,77,58,0.055); transition: all 180ms ease; }
+        .oulamauna-dashboard .serif-title { font-family: 'Source Serif 4', Georgia, serif; letter-spacing: -0.025em; }
+        .oulamauna-dashboard .mono-label { font-family: 'JetBrains Mono', monospace; letter-spacing: 0.06em; }
+      `}</style>
+
+      <main className="max-w-[1100px] mx-auto px-3 md:px-5 xl:px-7 py-6 md:py-8">
+        
+        {/* Back Button */}
+        <button onClick={() => navigate("/admin/scholars")} className="flex items-center gap-2 px-4 py-2 rounded-lg bg-[#1e4d3a]/5 text-[#1e4d3a] border border-[#1e4d3a]/10 hover:bg-[#1e4d3a] hover:text-white transition-all cursor-pointer mb-6">
+          <span className="material-symbols-outlined text-[18px]">{isRTL ? "arrow_forward" : "arrow_back"}</span>
+          <span className="text-[12px] font-bold uppercase tracking-wide">{t("admin.scholarDetail.backToAll")}</span>
         </button>
 
         {/* ── HEADER: image + core facts ── */}
-        <div style={{ ...cardStyle, padding: 24, marginBottom: 18, display: "flex", gap: 24, flexWrap: "wrap" }}>
-          <div style={{ width: 140, height: 140, borderRadius: 12, overflow: "hidden", backgroundColor: colors.creamMid, border: `2px solid ${colors.forestGreen}`, flexShrink: 0 }}>
+        <div className="dashboard-card p-5 md:p-6 mb-6 flex flex-col md:flex-row gap-6">
+          <div className="w-32 h-32 md:w-36 md:h-36 rounded-xl overflow-hidden bg-[#f6efdc] border-2 border-[#1e4d3a]/20 flex-shrink-0 flex items-center justify-center">
             {detail.image ? (
-              <img src={detail.image} alt={detail.name} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+              <img src={detail.image} alt={detail.name} className="w-full h-full object-cover" />
             ) : (
-              <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center", color: colors.forestGreen }}><Icon name="account_circle" size={64} /></div>
+              <span className="material-symbols-outlined text-[48px] text-[#1e4d3a]/30">account_circle</span>
             )}
           </div>
 
-          <div style={{ flex: 1, minWidth: 260 }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap", marginBottom: 8 }}>
-              <h1 style={{ fontFamily: fonts.headline, fontSize: 24, fontWeight: 700, margin: 0 }}>{detail.name}</h1>
-              <span style={{ padding: "2px 9px", borderRadius: 4, backgroundColor: colors.creamMid, fontFamily: fonts.label, fontSize: 10, fontWeight: 700, letterSpacing: "0.06em", border: `1px solid ${colors.forestGreen}` }}>{langParam?.toUpperCase()}</span>
+          <div className="flex-1 min-w-0">
+            <div className="flex flex-wrap items-center gap-3 mb-3">
+              <h1 className="serif-title text-[24px] md:text-[28px] font-semibold text-[#082f27] truncate">{detail.name}</h1>
+              <span className="px-2.5 py-1 rounded-full text-[9px] font-bold uppercase tracking-wider text-white bg-[#1e4d3a]">
+                {detail.languageName || langParam?.toUpperCase()}
+              </span>
+              {detail.status && (
+                <span className={`px-2.5 py-1 rounded-full text-[9px] font-bold uppercase tracking-wider text-white ${statusColor}`}>
+                  {statusLabel}
+                </span>
+              )}
             </div>
 
-            <div style={{ display: "flex", gap: 18, flexWrap: "wrap", marginBottom: 14 }}>
-              <span style={{ fontFamily: fonts.label, fontSize: 11, opacity: 0.75, display: "flex", alignItems: "center", gap: 4 }}><Icon name="person" size={13} /> Editor: <strong>{detail.editor}</strong></span>
-              <span style={{ fontFamily: fonts.label, fontSize: 11, opacity: 0.75, display: "flex", alignItems: "center", gap: 4 }}><Icon name="calendar_today" size={13} /> {detail.createdAt}</span>
-              <span style={{ fontFamily: fonts.label, fontSize: 11, opacity: 0.75, display: "flex", alignItems: "center", gap: 4 }}><Icon name="fingerprint" size={13} /> Scholar ID: {detail.scholarId}</span>
+            <div className="flex flex-wrap gap-4 mb-5 mono-label text-[10px] text-[#1e4d3a]/60">
+              <span className="flex items-center gap-1.5"><span className="material-symbols-outlined text-[14px]">person</span> {t("admin.scholarDetail.editor")}: <strong className="text-[#1e4d3a]">{detail.editor}</strong></span>
+              <span className="flex items-center gap-1.5"><span className="material-symbols-outlined text-[14px]">calendar_today</span> {detail.createdAt}</span>
+              <span className="flex items-center gap-1.5"><span className="material-symbols-outlined text-[14px]">fingerprint</span> {t("admin.scholarDetail.scholarId")}: {detail.scholarId}</span>
+              <span className="flex items-center gap-1.5"><span className="material-symbols-outlined text-[14px]">tag</span> {t("admin.scholarDetail.versionId")}: {versionId}</span>
             </div>
 
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(140px, 1fr))", gap: 14 }}>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
               <div>
-                <p style={{ fontFamily: fonts.label, fontSize: 10, opacity: 0.6, margin: "0 0 2px" }}>BORN</p>
-                <p style={{ fontFamily: fonts.body, fontSize: 13, margin: 0 }}>{detail.birth}</p>
+                <p className="mono-label text-[9px] uppercase font-bold text-[#1e4d3a]/50 mb-1">{t("admin.scholarDetail.born")}</p>
+                <p className="text-[13px] font-semibold text-[#082f27]">{detail.birth}</p>
               </div>
               <div>
-                <p style={{ fontFamily: fonts.label, fontSize: 10, opacity: 0.6, margin: "0 0 2px" }}>DIED</p>
-                <p style={{ fontFamily: fonts.body, fontSize: 13, margin: 0 }}>{detail.death}</p>
+                <p className="mono-label text-[9px] uppercase font-bold text-[#1e4d3a]/50 mb-1">{t("admin.scholarDetail.died")}</p>
+                <p className="text-[13px] font-semibold text-[#082f27]">{detail.death}</p>
               </div>
               <div>
-                <p style={{ fontFamily: fonts.label, fontSize: 10, opacity: 0.6, margin: "0 0 2px" }}>CENTURY</p>
-                <p style={{ fontFamily: fonts.body, fontSize: 13, margin: 0 }}>{detail.century}</p>
+                <p className="mono-label text-[9px] uppercase font-bold text-[#1e4d3a]/50 mb-1">{t("admin.scholarDetail.century")}</p>
+                <p className="text-[13px] font-semibold text-[#082f27]">{detail.century}</p>
               </div>
-              {detail.region && (
+              {detail.region && detail.region !== t("admin.scholarDetail.unknown") && (
                 <div>
-                  <p style={{ fontFamily: fonts.label, fontSize: 10, opacity: 0.6, margin: "0 0 2px" }}>REGION</p>
-                  <p style={{ fontFamily: fonts.body, fontSize: 13, margin: 0 }}>{detail.region}</p>
-                </div>
-              )}
-              {detail.aliases.length > 0 && (
-                <div style={{ gridColumn: "1 / -1" }}>
-                  <p style={{ fontFamily: fonts.label, fontSize: 10, opacity: 0.6, margin: "0 0 2px" }}>ALIASES</p>
-                  <p style={{ fontFamily: fonts.body, fontSize: 13, margin: 0 }}>{detail.aliases.join(", ")}</p>
+                  <p className="mono-label text-[9px] uppercase font-bold text-[#1e4d3a]/50 mb-1">{t("admin.scholarDetail.region")}</p>
+                  <p className="text-[13px] font-semibold text-[#082f27]">{detail.region}</p>
                 </div>
               )}
             </div>
+
+            {detail.aliases.length > 0 && (
+              <div className="mb-4">
+                <p className="mono-label text-[9px] uppercase font-bold text-[#1e4d3a]/50 mb-1.5">{t("admin.scholarDetail.aliases")}</p>
+                <p className="text-[13px] text-[#1e4d3a]/80">{detail.aliases.join(", ")}</p>
+              </div>
+            )}
 
             {detail.disciplines.length > 0 && (
-              <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 16 }}>
+              <div className="flex flex-wrap gap-2 mt-2">
                 {detail.disciplines.map((d) => (
-                  <span key={d} style={{ padding: "4px 10px", borderRadius: 20, backgroundColor: colors.creamMid, border: `1px solid ${colors.forestGreen}`, fontFamily: fonts.body, fontSize: 11, fontWeight: 600 }}>{d}</span>
+                  <span key={d} className="px-3 py-1 rounded-full bg-[#1e4d3a]/5 border border-[#1e4d3a]/10 text-[11px] font-bold text-[#1e4d3a]">
+                    {d}
+                  </span>
                 ))}
               </div>
             )}
@@ -426,23 +292,26 @@ export default function AdminScholarDetail() {
 
         {/* ── BIOGRAPHY ── */}
         {detail.bio && (
-          <div style={{ ...cardStyle, padding: 24, marginBottom: 18 }}>
-            <h2 style={{ fontFamily: fonts.headline, fontSize: 15, fontWeight: 700, margin: "0 0 12px", display: "flex", alignItems: "center", gap: 8 }}><Icon name="menu_book" size={17} filled /> Biography</h2>
-            <p style={{ fontFamily: fonts.body, fontSize: 14, lineHeight: 1.75, margin: 0, whiteSpace: "pre-line" }}>{detail.bio}</p>
+          <div className="dashboard-card p-5 md:p-6 mb-6">
+            <h2 className="serif-title text-[18px] font-semibold text-[#082f27] mb-4 flex items-center gap-2">
+              <span className="material-symbols-outlined text-[20px]">menu_book</span> {t("admin.scholarDetail.biography")}
+            </h2>
+            <div className="text-[14px] text-[#1e4d3a]/80 leading-relaxed">
+              <BiographyRenderer content={detail.bio} lang={langParam} />
+            </div>
           </div>
         )}
 
         {/* ── RELATIONSHIPS ── */}
         {detail.relationships.length > 0 && (
-          <div style={{ ...cardStyle, padding: 20, marginBottom: 18 }}>
-            <h2 style={{ fontFamily: fonts.headline, fontSize: 15, fontWeight: 700, margin: "0 0 12px", display: "flex", alignItems: "center", gap: 8 }}><Icon name="hub" size={17} filled /> Relationships ({detail.relationships.length})</h2>
-            <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+          <div className="dashboard-card p-5 md:p-6 mb-6">
+            <h2 className="serif-title text-[18px] font-semibold text-[#082f27] mb-4 flex items-center gap-2">
+              <span className="material-symbols-outlined text-[20px]">hub</span> {t("admin.scholarDetail.relationships")} ({detail.relationships.length})
+            </h2>
+            <div className="flex flex-wrap gap-2">
               {detail.relationships.map((r, i) => (
-                <span
-                  key={i}
-                  onClick={() => r.relatedScholarId && navigate(`/admin/scholars/${r.relatedScholarId}/${langParam}`)}
-                  style={{ fontFamily: fonts.body, fontSize: 12, padding: "5px 12px", borderRadius: 6, backgroundColor: "rgba(11,67,53,0.06)", cursor: r.relatedScholarId ? "pointer" : "default" }}
-                >
+                <span key={i} onClick={() => r.relatedScholarId && navigate(`/admin/scholars/${r.relatedScholarId}/${langParam}`)}
+                  className="px-3 py-1.5 rounded-lg bg-[#1e4d3a]/5 border border-[#1e4d3a]/10 text-[12px] font-semibold text-[#1e4d3a] cursor-pointer hover:bg-[#1e4d3a] hover:text-white transition-colors">
                   {r.type}: <strong>{r.name}</strong>
                 </span>
               ))}
@@ -450,30 +319,34 @@ export default function AdminScholarDetail() {
           </div>
         )}
 
-        {/* ── WORKS (Updated with fileName) ── */}
+        {/* ── WORKS ── */}
         {detail.works.length > 0 && (
-          <div style={{ ...cardStyle, padding: 20, marginBottom: 18 }}>
-            <h2 style={{ fontFamily: fonts.headline, fontSize: 15, fontWeight: 700, margin: "0 0 12px", display: "flex", alignItems: "center", gap: 8 }}><Icon name="menu_book" size={17} filled /> Works ({detail.works.length})</h2>
-            <div style={{ overflowX: "auto", border: `1px solid ${colors.creamDark}`, borderRadius: 8 }}>
-              <table style={{ width: "100%", borderCollapse: "collapse" }}>
-                <thead style={{ backgroundColor: colors.creamMid }}>
-                  <tr><th style={thStyle}>Title</th><th style={thStyle}>Year</th><th style={thStyle}>Format</th><th style={thStyle}>Access</th></tr>
+          <div className="dashboard-card p-5 md:p-6 mb-6">
+            <h2 className="serif-title text-[18px] font-semibold text-[#082f27] mb-4 flex items-center gap-2">
+              <span className="material-symbols-outlined text-[20px]">library_books</span> {t("admin.scholarDetail.works")} ({detail.works.length})
+            </h2>
+            <div className="overflow-x-auto rounded-lg border border-[#1e4d3a]/10">
+              <table className="w-full border-collapse">
+                <thead>
+                  <tr className="bg-[#1e4d3a]/[0.03]">
+                    <th className="mono-label text-[10px] uppercase font-bold text-[#1e4d3a]/60 text-left p-3 border-b border-[#1e4d3a]/10">{t("admin.scholarDetail.title")}</th>
+                    <th className="mono-label text-[10px] uppercase font-bold text-[#1e4d3a]/60 text-left p-3 border-b border-[#1e4d3a]/10">{t("admin.scholarDetail.year")}</th>
+                    <th className="mono-label text-[10px] uppercase font-bold text-[#1e4d3a]/60 text-left p-3 border-b border-[#1e4d3a]/10">{t("admin.scholarDetail.format")}</th>
+                    <th className="mono-label text-[10px] uppercase font-bold text-[#1e4d3a]/60 text-left p-3 border-b border-[#1e4d3a]/10">{t("admin.scholarDetail.access")}</th>
+                  </tr>
                 </thead>
                 <tbody>
                   {detail.works.map((w) => (
-                    <tr key={w.id}>
-                      <td style={{ ...tdStyle, fontFamily: fonts.headline, fontStyle: "italic" }}>{w.title}</td>
-                      <td style={tdStyle}>{w.year}</td>
-                      <td style={tdStyle}><span style={{ fontFamily: fonts.label, fontSize: 9, fontWeight: 700, padding: "3px 9px", borderRadius: 4, backgroundColor: colors.creamMid }}>{w.format}</span></td>
-                      <td style={tdStyle}>
+                    <tr key={w.id} className="hover:bg-[#1e4d3a]/[0.02] transition-colors">
+                      <td className="text-[13px] font-semibold text-[#082f27] p-3 border-b border-[#1e4d3a]/5 italic">{w.title}</td>
+                      <td className="text-[13px] text-[#1e4d3a] p-3 border-b border-[#1e4d3a]/5">{w.year}</td>
+                      <td className="p-3 border-b border-[#1e4d3a]/5">
+                        <span className="mono-label text-[9px] font-bold px-2 py-1 rounded bg-[#C9A84C]/10 text-[#8a6d3b]">{w.format}</span>
+                      </td>
+                      <td className="p-3 border-b border-[#1e4d3a]/5">
                         {w.access ? (
-                          <FileActions 
-                            url={w.access} 
-                            filename={w.fileName || w.title || "work"} 
-                            mediaType={getAccessType(w.access)} 
-                            accessSource={w.accessSource} 
-                          />
-                        ) : "—"}
+                          <FileActions url={w.access} filename={w.fileName || w.title || "work"} mediaType={getAccessType(w.access)} accessSource={w.accessSource} t={t} />
+                        ) : <span className="text-[#1e4d3a]/30">—</span>}
                       </td>
                     </tr>
                   ))}
@@ -483,154 +356,62 @@ export default function AdminScholarDetail() {
           </div>
         )}
 
-        {/* ── MEDIA (Keep old design, add proper buttons with fileName) ── */}
+        {/* ── MEDIA ── */}
         {detail.media.length > 0 && (
-          <div style={{ ...cardStyle, padding: 20, marginBottom: 18 }}>
-            <h2 style={{ fontFamily: fonts.headline, fontSize: 15, fontWeight: 700, margin: "0 0 12px", display: "flex", alignItems: "center", gap: 8 }}>
-              <Icon name="folder_open" size={17} filled /> Media ({detail.media.length})
+          <div className="dashboard-card p-5 md:p-6 mb-6">
+            <h2 className="serif-title text-[18px] font-semibold text-[#082f27] mb-4 flex items-center gap-2">
+              <span className="material-symbols-outlined text-[20px]">folder_open</span> {t("admin.scholarDetail.media")} ({detail.media.length})
             </h2>
-            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+            <div className="space-y-3">
               {detail.media.map((m) => {
-                // ✅ Extract filename from URL if fileName is not available from backend
                 const downloadName = m.fileName || (m.access ? m.access.split('/').pop()?.split('?')[0] || "file.pdf" : "file.pdf");
-
                 return (
-                  <div key={m.id} style={{ display: "flex", gap: 10, padding: 10, border: `1px solid ${colors.creamDark}`, borderRadius: 8, alignItems: "center" }}>
-                    <div style={{ width: 34, height: 34, borderRadius: 6, backgroundColor: colors.creamMid, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                      <Icon name={getMediaIcon(m.meta)} size={18} />
+                  <div key={m.id} className="flex flex-col sm:flex-row sm:items-center gap-4 p-4 rounded-lg bg-white border border-[#1e4d3a]/10">
+                    <div className="w-10 h-10 rounded-lg bg-[#f6efdc] flex items-center justify-center flex-shrink-0">
+                      <span className="material-symbols-outlined text-[#1e4d3a] text-[20px]">{getMediaIcon(m.meta)}</span>
                     </div>
-                    <div style={{ flex: 1 }}>
-                      <p style={{ fontFamily: fonts.headline, fontSize: 13, fontWeight: 600, margin: "0 0 2px" }}>{m.title}</p>
-                      <p style={{ fontFamily: fonts.body, fontSize: 11, opacity: 0.8, margin: 0 }}>{m.meta} · {m.type}{m.description ? ` · ${m.description}` : ""}</p>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-[14px] font-semibold text-[#082f27] truncate">{m.title}</p>
+                      <p className="mono-label text-[10px] text-[#1e4d3a]/60 mt-0.5">{m.meta} · {m.type}{m.description ? ` · ${m.description}` : ""}</p>
                     </div>
-                    
-                    {/* BUTTONS */}
                     {m.access && (
-                      <div style={{ alignSelf: "center", display: "flex", gap: 6 }}>
+                      <div className="flex-shrink-0">
                         {m.type === "Upload" ? (
-                          <>
-                            {/* VIEW Button for Uploads */}
-                            <button
-                              onClick={async (e) => {
-                                e.preventDefault();
-                                e.stopPropagation();
+                          <div className="flex items-center gap-2">
+                            <button onClick={async (e) => {
+                                e.preventDefault(); e.stopPropagation();
                                 try {
                                   const response = await fetch(m.access!);
                                   const blob = await response.blob();
-                                  const typedBlob = new Blob([blob], { 
-                                    type: m.meta?.includes("video") ? "video/mp4" : m.meta?.includes("audio") ? "audio/mpeg" : "application/pdf" 
-                                  });
+                                  const typedBlob = new Blob([blob], { type: m.meta?.includes("video") ? "video/mp4" : m.meta?.includes("audio") ? "audio/mpeg" : "application/pdf" });
                                   const blobUrl = URL.createObjectURL(typedBlob);
                                   window.open(blobUrl, "_blank");
                                   setTimeout(() => URL.revokeObjectURL(blobUrl), 60000);
-                                } catch (err) {
-                                  console.error("View failed:", err);
-                                  window.open(m.access, "_blank");
-                                }
+                                } catch (err) { window.open(m.access, "_blank"); }
                               }}
-                              style={{ 
-                                padding: "6px 12px", 
-                                borderRadius: 6, 
-                                border: `1.5px solid ${colors.forestGreen}`, 
-                                backgroundColor: "transparent", 
-                                color: colors.forestGreen,
-                                fontFamily: fonts.label,
-                                fontSize: 10,
-                                fontWeight: 700,
-                                letterSpacing: "0.05em",
-                                cursor: "pointer",
-                                display: "flex",
-                                alignItems: "center",
-                                gap: 4,
-                                transition: "all 0.2s ease"
-                              }}
-                              onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = "rgba(11,67,53,0.05)"; }}
-                              onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = "transparent"; }}
-                            >
-                              <Icon name="visibility" size={14} /> VIEW
+                              className="flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-[#1e4d3a]/5 text-[#1e4d3a] text-[11px] font-bold hover:bg-[#1e4d3a] hover:text-white transition-all cursor-pointer">
+                              <span className="material-symbols-outlined text-[14px]">visibility</span> {t("admin.scholarDetail.view")}
                             </button>
-                            
-                            {/* DOWNLOAD Button for Uploads */}
-                            <button
-                              onClick={async (e) => {
-                                e.preventDefault();
-                                e.stopPropagation();
+                            <button onClick={async (e) => {
+                                e.preventDefault(); e.stopPropagation();
                                 try {
-                                  // 1. Fetch the file as a Blob
                                   const response = await fetch(m.access!);
                                   if (!response.ok) throw new Error('Network response was not ok');
                                   const blob = await response.blob();
-                                  
-                                  // 2. Create a local object URL
                                   const blobUrl = window.URL.createObjectURL(blob);
-                                  
-                                  // 3. Trigger the download with the correct filename
                                   const link = document.createElement("a");
-                                  link.href = blobUrl;
-                                  link.download = downloadName;
-                                  document.body.appendChild(link);
-                                  link.click();
-                                  document.body.removeChild(link);
-                                  
-                                  // 4. Clean up memory
+                                  link.href = blobUrl; link.download = downloadName;
+                                  document.body.appendChild(link); link.click(); document.body.removeChild(link);
                                   window.URL.revokeObjectURL(blobUrl);
-                                } catch (err) {
-                                  console.error("Download failed:", err);
-                                  window.open(m.access, "_blank");
-                                }
+                                } catch (err) { window.open(m.access, "_blank"); }
                               }}
-                              style={{ 
-                                padding: "6px 12px", 
-                                borderRadius: 6, 
-                                border: `1.5px solid ${colors.forestGreen}`, 
-                                backgroundColor: colors.forestGreen, 
-                                color: colors.creamLight,
-                                fontFamily: fonts.label,
-                                fontSize: 10,
-                                fontWeight: 700,
-                                letterSpacing: "0.05em",
-                                cursor: "pointer",
-                                display: "flex",
-                                alignItems: "center",
-                                gap: 4,
-                                transition: "all 0.2s ease"
-                              }}
-                              onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = "#083328"; }}
-                              onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = colors.forestGreen; }}
-                            >
-                              <Icon name="download" size={14} /> DOWNLOAD
+                              className="flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-[#C9A84C]/10 text-[#8a6d3b] text-[11px] font-bold hover:bg-[#C9A84C] hover:text-white transition-all cursor-pointer">
+                              <span className="material-symbols-outlined text-[14px]">download</span> {t("admin.scholarDetail.download")}
                             </button>
-                          </>
+                          </div>
                         ) : (
-                          /* OPEN LINK Button for Links */
-                          <a
-                            href={m.access}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            style={{ textDecoration: "none" }}
-                          >
-                            <button
-                              style={{ 
-                                padding: "6px 12px", 
-                                borderRadius: 6, 
-                                border: `1.5px solid ${colors.forestGreen}`, 
-                                backgroundColor: colors.forestGreen, 
-                                color: colors.creamLight,
-                                fontFamily: fonts.label,
-                                fontSize: 10,
-                                fontWeight: 700,
-                                letterSpacing: "0.05em",
-                                cursor: "pointer",
-                                display: "flex",
-                                alignItems: "center",
-                                gap: 4,
-                                transition: "all 0.2s ease"
-                              }}
-                              onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = "#083328"; }}
-                              onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = colors.forestGreen; }}
-                            >
-                              OPEN LINK <Icon name="open_in_new" size={14} />
-                            </button>
+                          <a href={m.access} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-[#1e4d3a] text-white text-[11px] font-bold hover:bg-[#082f27] transition-all cursor-pointer">
+                            {t("admin.scholarDetail.openLink")} <span className="material-symbols-outlined text-[14px]">open_in_new</span>
                           </a>
                         )}
                       </div>
@@ -644,19 +425,31 @@ export default function AdminScholarDetail() {
 
         {/* ── REFERENCES ── */}
         {detail.references.length > 0 && (
-          <div style={{ ...cardStyle, padding: 20, marginBottom: 18 }}>
-            <h2 style={{ fontFamily: fonts.headline, fontSize: 15, fontWeight: 700, margin: "0 0 12px", display: "flex", alignItems: "center", gap: 8 }}><Icon name="link" size={17} filled /> References ({detail.references.length})</h2>
-            <div style={{ overflowX: "auto", border: `1px solid ${colors.creamDark}`, borderRadius: 8 }}>
-              <table style={{ width: "100%", borderCollapse: "collapse" }}>
-                <thead style={{ backgroundColor: colors.creamMid }}>
-                  <tr><th style={thStyle}>Title</th><th style={thStyle}>Citation</th><th style={thStyle}>URL</th></tr>
+          <div className="dashboard-card p-5 md:p-6 mb-6">
+            <h2 className="serif-title text-[18px] font-semibold text-[#082f27] mb-4 flex items-center gap-2">
+              <span className="material-symbols-outlined text-[20px]">link</span> {t("admin.scholarDetail.references")} ({detail.references.length})
+            </h2>
+            <div className="overflow-x-auto rounded-lg border border-[#1e4d3a]/10">
+              <table className="w-full border-collapse">
+                <thead>
+                  <tr className="bg-[#1e4d3a]/[0.03]">
+                    <th className="mono-label text-[10px] uppercase font-bold text-[#1e4d3a]/60 text-left p-3 border-b border-[#1e4d3a]/10">{t("admin.scholarDetail.title")}</th>
+                    <th className="mono-label text-[10px] uppercase font-bold text-[#1e4d3a]/60 text-left p-3 border-b border-[#1e4d3a]/10">{t("admin.scholarDetail.citation")}</th>
+                    <th className="mono-label text-[10px] uppercase font-bold text-[#1e4d3a]/60 text-left p-3 border-b border-[#1e4d3a]/10">{t("admin.scholarDetail.url")}</th>
+                  </tr>
                 </thead>
                 <tbody>
                   {detail.references.map((r) => (
-                    <tr key={r.id}>
-                      <td style={{ ...tdStyle, fontFamily: fonts.headline, fontStyle: "italic" }}>{r.title}</td>
-                      <td style={tdStyle}>{r.citation}</td>
-                      <td style={tdStyle}>{r.url ? <a href={r.url} target="_blank" rel="noopener noreferrer" style={{ fontFamily: fonts.label, fontSize: 10, fontWeight: 700, color: colors.forestGreen, textDecoration: "underline" }}>View</a> : "—"}</td>
+                    <tr key={r.id} className="hover:bg-[#1e4d3a]/[0.02] transition-colors">
+                      <td className="text-[13px] font-semibold text-[#082f27] p-3 border-b border-[#1e4d3a]/5 italic">{r.title}</td>
+                      <td className="text-[13px] text-[#1e4d3a] p-3 border-b border-[#1e4d3a]/5">{r.citation}</td>
+                      <td className="p-3 border-b border-[#1e4d3a]/5">
+                        {r.url ? (
+                          <a href={r.url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 mono-label text-[10px] font-bold text-[#1e4d3a] hover:text-[#C9A84C] transition-colors">
+                            <span className="material-symbols-outlined text-[14px]">open_in_new</span> {t("admin.scholarDetail.view")}
+                          </a>
+                        ) : <span className="text-[#1e4d3a]/30">—</span>}
+                      </td>
                     </tr>
                   ))}
                 </tbody>
@@ -665,7 +458,7 @@ export default function AdminScholarDetail() {
           </div>
         )}
 
-      </div>
+      </main>
     </div>
   );
 }

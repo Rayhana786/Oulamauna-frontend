@@ -4,10 +4,9 @@ import { Link, useLocation, useNavigate } from "react-router-dom";
 import Hero from "../components/Hero";
 import ScholarImage from "../components/ScholarImage";
 import { useLang } from "../context/LanguageContext";
+import { useAuth } from "../context/AuthContext";
 import { fetchHomeData } from "../api/homeApi";
 import { searchGlobal, SearchResponse } from "../api/searchApi";
-
-type Language = "EN" | "AR" | "FR";
 
 /* ------------------------------------------------------------------ */
 /*  API DATA SHAPES                                                   */
@@ -23,6 +22,7 @@ interface ApiScholar {
   image_url: string | null;
   biography: string | null;
   language_code: string;
+  isFallback?: boolean;
 }
 
 interface ApiRecentScholar {
@@ -33,11 +33,13 @@ interface ApiRecentScholar {
   image_url: string | null;
   created_at: string;
   language_code: string;
+  isFallback?: boolean;
 }
 
 interface ApiDiscipline {
   discipline_id: number;
   name: string;
+  image_url: string | null;
   count: number;
 }
 
@@ -68,6 +70,25 @@ interface ApiStats {
   centuries: number;
 }
 
+interface ApiPopularPost {
+  post_id: number;
+  title: string;
+  excerpt: string;
+  like_count: number;
+  comment_count: number;
+  author: {
+    id: number;
+    username: string;
+    name: string | null;
+    profile_picture: string | null;
+  };
+  category: {
+    category_id: number;
+    name: string;
+  } | null;
+  created_at: string;
+}
+
 interface HomeApiData {
   featuredScholars: ApiScholar[];
   recentScholars: ApiRecentScholar[];
@@ -75,6 +96,7 @@ interface HomeApiData {
   eras: ApiEra[];
   featuredWorks: ApiWork[];
   stats: ApiStats;
+  popularForumPosts: ApiPopularPost[];
 }
 
 /* ------------------------------------------------------------------ */
@@ -155,175 +177,6 @@ const WorkCover: React.FC<{ work: ApiWork; className?: string }> = ({ work, clas
 };
 
 /* ------------------------------------------------------------------ */
-/*  TRANSLATIONS                                                      */
-/* ------------------------------------------------------------------ */
-interface HomeContent {
-  tagline: string;
-  title: string;
-  subtitle: string;
-  searchPlaceholder: string;
-  exploreButton: string;
-  featuredLabel: string;
-  viewAll: string;
-  disciplinesLabel: string;
-  erasLabel: string;
-  statsLabel: string;
-  ctaTitle: string;
-  ctaText: string;
-  ctaButton: string;
-  recentLabel: string;
-  worksLabel: string;
-}
-
-const content: Record<Language, HomeContent> = {
-  EN: {
-    tagline: "WELCOME TO OULAMAUNA",
-    title: "Discover the Scholars Who Shaped Islamic Thought",
-    subtitle: "Explore centuries of knowledge, from the Classical era to modern times. Verified biographies, original works, and manuscript archives — all in one place.",
-    searchPlaceholder: "Search by name, discipline, or era...",
-    exploreButton: "Start Exploring",
-    featuredLabel: "Featured Scholars",
-    viewAll: "View All Scholars",
-    disciplinesLabel: "Browse by Discipline",
-    erasLabel: "Explore by Era",
-    statsLabel: "The Archive",
-    ctaTitle: "Ready to dive deeper?",
-    ctaText: "Join our community of researchers and contributors",
-    ctaButton: "Become a Contributor",
-    recentLabel: "Recently Added",
-    worksLabel: "Featured Works & Manuscripts",
-  },
-  AR: {
-    tagline: "مرحباً بكم في علماؤنا",
-    title: "اكتشف العلماء الذين شكّلوا الفكر الإسلامي",
-    subtitle: "استكشف قروناً من المعرفة، من العصر الكلاسيكي إلى العصر الحديث. سير موثقة وأعمال أصلية وأرشيف مخطوطات — كل ذلك في مكان واحد.",
-    searchPlaceholder: "ابحث بالاسم أو التخصص أو الحقبة...",
-    exploreButton: "ابدأ الاستكشاف",
-    featuredLabel: "علماء مميزون",
-    viewAll: "عرض جميع العلماء",
-    disciplinesLabel: "تصفح حسب التخصص",
-    erasLabel: "استكشف حسب الحقبة",
-    statsLabel: "الأرشيف",
-    ctaTitle: "مستعد للغوص أعمق؟",
-    ctaText: "انضم إلى مجتمعنا من الباحثين والمساهمين",
-    ctaButton: "كن مساهماً",
-    recentLabel: "أضيف مؤخراً",
-    worksLabel: "أعمال ومخطوطات مميزة",
-  },
-  FR: {
-    tagline: "BIENVENUE SUR OULAMAUNA",
-    title: "Découvrez les Savants qui ont Façonné la Pensée Islamique",
-    subtitle: "Explorez des siècles de savoir, de l'époque classique aux temps modernes. Biographies vérifiées, œuvres originales et archives de manuscrits — tout en un seul endroit.",
-    searchPlaceholder: "Rechercher par nom, discipline ou époque...",
-    exploreButton: "Commencer l'exploration",
-    featuredLabel: "Savants en Vedette",
-    viewAll: "Voir Tous les Savants",
-    disciplinesLabel: "Parcourir par Discipline",
-    erasLabel: "Explorer par Époque",
-    statsLabel: "L'Archive",
-    ctaTitle: "Prêt à plonger plus profondément?",
-    ctaText: "Rejoignez notre communauté de chercheurs et contributeurs",
-    ctaButton: "Devenir Contributeur",
-    recentLabel: "Récemment Ajouté",
-    worksLabel: "Œuvres et Manuscrits en Vedette",
-  },
-};
-
-interface WhyContent {
-  tagline: string;
-  titleLine1: string;
-  titleLine2: string;
-  description: string;
-  bullets: string[];
-  ctaButton: string;
-}
-
-const whyContent: Record<Language, WhyContent> = {
-  EN: {
-    tagline: "WHY OULAMAUNA",
-    titleLine1: "Preserving Knowledge",
-    titleLine2: "With Purpose",
-    description: "We believe every scholar's legacy deserves more than a footnote. Our archive pairs rigorous verification with accessible, multilingual storytelling.",
-    bullets: [
-      "Verified biographies and sources",
-      "Multilingual access in Arabic, French & English",
-      "Careful manuscript digitization",
-      "Open to researchers and contributors",
-    ],
-    ctaButton: "About The Archive",
-  },
-  AR: {
-    tagline: "لماذا علماؤنا",
-    titleLine1: "نحافظ على المعرفة",
-    titleLine2: "بهدف واضح",
-    description: "نؤمن أن إرث كل عالم يستحق أكثر من مجرد حاشية عابرة. يجمع أرشيفنا بين التحقق الدقيق والسرد المتاح بعدة لغات.",
-    bullets: [
-      "سير ذاتية ومصادر موثّقة",
-      "وصول متعدد اللغات: عربي، فرنسي، إنجليزي",
-      "رقمنة دقيقة للمخطوطات",
-      "مفتوح للباحثين والمساهمين",
-    ],
-    ctaButton: "عن الأرشيف",
-  },
-  FR: {
-    tagline: "POURQUOI OULAMAUNA",
-    titleLine1: "Préserver le Savoir",
-    titleLine2: "Avec un But Précis",
-    description: "Nous croyons que l'héritage de chaque savant mérite plus qu'une note de bas de page. Notre archive allie vérification rigoureuse et narration accessible et multilingue.",
-    bullets: [
-      "Biographies et sources vérifiées",
-      "Accès multilingue en arabe, français et anglais",
-      "Numérisation soignée des manuscrits",
-      "Ouvert aux chercheurs et contributeurs",
-    ],
-    ctaButton: "À propos de l'Archive",
-  },
-};
-
-interface SearchDropdownContent {
-  scholars: string;
-  works: string;
-  media: string;
-  discussions: string;
-  searching: string;
-  noResultsPrefix: string;
-}
-
-const searchDropdownContent: Record<Language, SearchDropdownContent> = {
-  EN: {
-    scholars: "Scholars",
-    works: "Works",
-    media: "Media",
-    discussions: "Discussions",
-    searching: "Searching...",
-    noResultsPrefix: "No results found for",
-  },
-  AR: {
-    scholars: "علماء",
-    works: "أعمال",
-    media: "وسائط",
-    discussions: "نقاشات",
-    searching: "جارٍ البحث...",
-    noResultsPrefix: "لا توجد نتائج لـ",
-  },
-  FR: {
-    scholars: "Savants",
-    works: "Œuvres",
-    media: "Médias",
-    discussions: "Discussions",
-    searching: "Recherche en cours...",
-    noResultsPrefix: "Aucun résultat pour",
-  },
-};
-
-const buildArchiveStats = (stats: ApiStats) => [
-  { icon: "groups", value: `${stats.scholars}+`, labelEN: "Scholars", labelFR: "Savants", labelAR: "عالم" },
-  { icon: "menu_book", value: `${stats.manuscripts}+`, labelEN: "Manuscripts", labelFR: "Manuscrits", labelAR: "مخطوطة" },
-  { icon: "category", value: `${stats.disciplines}`, labelEN: "Disciplines", labelFR: "Disciplines", labelAR: "تخصصات" },
-  { icon: "history_edu", value: `${stats.centuries}+`, labelEN: "Centuries", labelFR: "Siècles", labelAR: "قرون" },
-];
-
-/* ------------------------------------------------------------------ */
 /*  UI COMPONENTS                                                     */
 /* ------------------------------------------------------------------ */
 const FadeIn: React.FC<{ children: React.ReactNode; delay?: number; className?: string }> = ({
@@ -373,12 +226,12 @@ const Skeleton: React.FC<{ className?: string }> = ({ className = "" }) => (
 /*  MAIN COMPONENT                                                    */
 /* ------------------------------------------------------------------ */
 const Home: React.FC = () => {
-  const { lang } = useLang();
+  // ✅ DYNAMIC TRANSLATION FUNCTION FROM CONTEXT
+  const { lang, t } = useLang();
+  const { user } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
-  const t = content[lang as Language] || content.EN;
-  const w = whyContent[lang as Language] || whyContent.EN;
-  const sc = searchDropdownContent[lang as Language] || searchDropdownContent.EN;
+  
   const isRTL = lang === "AR";
 
   const [homeData, setHomeData] = useState<HomeApiData | null>(null);
@@ -393,6 +246,7 @@ const Home: React.FC = () => {
 
   const dropdownRef = useRef<HTMLDivElement>(null);
   const [dropdownRect, setDropdownRect] = useState<{ top: number; left: number; width: number } | null>(null);
+  const [showAllDisciplines, setShowAllDisciplines] = useState(false);
 
   useEffect(() => {
     if (!showDropdown || !searchRef.current) return;
@@ -483,26 +337,26 @@ const Home: React.FC = () => {
       }
       return isRTL ? `منذ ${diffHours} ساعة` : `${diffHours}h ago`;
     }
-    
     if (diffDays === 1) return isRTL ? "أمس" : "Yesterday";
     if (diffDays < 7) return isRTL ? `منذ ${diffDays} أيام` : `${diffDays} days ago`;
     if (diffDays < 30) return isRTL ? `منذ ${Math.floor(diffDays / 7)} أسابيع` : `${Math.floor(diffDays / 7)} weeks ago`;
     return date.toLocaleDateString(isRTL ? "ar-DZ" : lang === "FR" ? "fr-FR" : "en-US");
   };
 
-  const statLabel = (stat: ReturnType<typeof buildArchiveStats>[number]) =>
-    isRTL ? stat.labelAR : lang === "FR" ? stat.labelFR : stat.labelEN;
+  // ✅ DYNAMIC STATS WITH TRANSLATION KEYS
+  const archiveStats = homeData ? [
+    { icon: "groups", value: `${homeData.stats.scholars}+`, labelKey: "home.statScholars" },
+    { icon: "menu_book", value: `${homeData.stats.manuscripts}+`, labelKey: "home.statManuscripts" },
+    { icon: "category", value: `${homeData.stats.disciplines}`, labelKey: "home.statDisciplines" },
+    { icon: "history_edu", value: `${homeData.stats.centuries}+`, labelKey: "home.statCenturies" },
+  ] : [];
 
   const featuredScholars = homeData?.featuredScholars ?? [];
   const recentScholars = homeData?.recentScholars ?? [];
   const disciplines = homeData?.disciplines ?? [];
   const eras = homeData?.eras ?? [];
   const featuredWorks = homeData?.featuredWorks ?? [];
-  const archiveStats = homeData ? buildArchiveStats(homeData.stats) : [];
-
-  const getUrlWithLang = (url: string) => {
-    return `${url}${url.includes("?") ? "&" : "?"}lang=${lang}`;
-  };
+  const popularForumPosts = homeData?.popularForumPosts ?? [];
 
   const dropdownContent =
     showDropdown && searchQuery.trim().length >= 2 && searchResults && dropdownRect
@@ -521,12 +375,12 @@ const Home: React.FC = () => {
               }}
             >
               {isSearching ? (
-                <div className="p-6 text-center text-[#1e4d3a]/60 font-['Inter']">{sc.searching}</div>
+                <div className="p-6 text-center text-[#1e4d3a]/60 font-['Inter']">{t("home.searching")}</div>
               ) : (
                 <div className="p-2">
                   {searchResults.scholars && searchResults.scholars.length > 0 && (
                     <div className="mb-2">
-                      <div className="px-3 py-1.5 text-[10px] font-['JetBrains_Mono'] uppercase tracking-widest text-[#C9A84C] font-bold">{sc.scholars}</div>
+                      <div className="px-3 py-1.5 text-[10px] font-['JetBrains_Mono'] uppercase tracking-widest text-[#C9A84C] font-bold">{t("home.searchScholars")}</div>
                       {searchResults.scholars.map((item, idx) => (
                         <Link
                           key={`s-${idx}`}
@@ -549,7 +403,7 @@ const Home: React.FC = () => {
                   )}
                   {searchResults.works && searchResults.works.length > 0 && (
                     <div className="mb-2 border-t border-[#1e4d3a]/10 pt-2">
-                      <div className="px-3 py-1.5 text-[10px] font-['JetBrains_Mono'] uppercase tracking-widest text-[#C9A84C] font-bold">{sc.works}</div>
+                      <div className="px-3 py-1.5 text-[10px] font-['JetBrains_Mono'] uppercase tracking-widest text-[#C9A84C] font-bold">{t("home.searchWorks")}</div>
                       {searchResults.works.map((item, idx) => (
                         <Link
                           key={`w-${idx}`}
@@ -572,7 +426,7 @@ const Home: React.FC = () => {
                   )}
                   {searchResults.media && searchResults.media.length > 0 && (
                     <div className="mb-2 border-t border-[#1e4d3a]/10 pt-2">
-                      <div className="px-3 py-1.5 text-[10px] font-['JetBrains_Mono'] uppercase tracking-widest text-[#C9A84C] font-bold">{sc.media}</div>
+                      <div className="px-3 py-1.5 text-[10px] font-['JetBrains_Mono'] uppercase tracking-widest text-[#C9A84C] font-bold">{t("home.searchMedia")}</div>
                       {searchResults.media.map((item, idx) => (
                         <Link
                           key={`m-${idx}`}
@@ -595,7 +449,7 @@ const Home: React.FC = () => {
                   )}
                   {searchResults.posts && searchResults.posts.length > 0 && (
                     <div className="mb-2 border-t border-[#1e4d3a]/10 pt-2">
-                      <div className="px-3 py-1.5 text-[10px] font-['JetBrains_Mono'] uppercase tracking-widest text-[#C9A84C] font-bold">{sc.discussions}</div>
+                      <div className="px-3 py-1.5 text-[10px] font-['JetBrains_Mono'] uppercase tracking-widest text-[#C9A84C] font-bold">{t("home.searchDiscussions")}</div>
                       {searchResults.posts.map((item, idx) => (
                         <Link
                           key={`p-${idx}`}
@@ -620,7 +474,9 @@ const Home: React.FC = () => {
                     (!searchResults.works || searchResults.works.length === 0) &&
                     (!searchResults.media || searchResults.media.length === 0) &&
                     (!searchResults.posts || searchResults.posts.length === 0) && (
-                      <div className="p-6 text-center text-[#1e4d3a]/60 font-['Inter'] text-sm">{sc.noResultsPrefix} "{searchQuery}"</div>
+                      <div className="p-6 text-center text-[#1e4d3a]/60 font-['Inter'] text-sm">
+                        {t("home.noResultsPrefix")} "{searchQuery}"
+                      </div>
                     )}
                 </div>
               )}
@@ -636,6 +492,11 @@ const Home: React.FC = () => {
         @import url('https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&family=Source+Serif+4:wght@400;600;700&display=swap');
         @import url('https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap');
         .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; font-family: 'Material Symbols Outlined'; display: inline-block; vertical-align: middle; }
+        @keyframes fade-in {
+          from { opacity: 0; transform: translateY(-10px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-fade-in { animation: fade-in 0.6s ease-out; }
       `}</style>
 
       <Hero />
@@ -650,41 +511,64 @@ const Home: React.FC = () => {
       )}
 
       <main className="flex-grow pt-16 md:pt-0" dir={isRTL ? "rtl" : "ltr"}>
-        {/* 1. Feature Pillars */}
-        <FadeIn>
-          <section className="px-[20px] md:px-[64px] max-w-[1040px] mx-auto py-14 md:py-16">
-            <div className="flex flex-col md:flex-row justify-between gap-10 md:gap-6 text-center">
-              {[
-                { icon: "library_books", title: "BESPOKE RESEARCH", desc: "Tailored archives that bring history to life." },
-                { icon: "auto_stories", title: "TIMELESS WISDOM", desc: "Elegant narratives that stand the test of time." },
-                { icon: "verified", title: "QUALITY PRESERVATION", desc: "Premium digitization by trusted artisans." },
-                { icon: "explore", title: "PERSONAL JOURNEY", desc: "Collaborative exploration designed around you." },
-              ].map((card, i) => (
-                <FadeIn key={i} delay={100 + i * 100} className="flex-1 flex flex-col items-center gap-3 group cursor-pointer">
-                  <div className="mb-0.5 transition-transform duration-300 group-hover:-translate-y-1">
-                    <span className="material-symbols-outlined text-[22px] text-[#1e4d3a]" style={{ fontVariationSettings: "'FILL' 0, 'wght' 100" }}>{card.icon}</span>
-                  </div>
-                  <div>
-                    <h4 className="font-['Inter'] text-[11px] leading-[16px] text-[#1e4d3a] uppercase tracking-[0.12em] mb-1.5 font-semibold">{card.title}</h4>
-                    <p className="font-['Inter'] text-[13px] leading-[20px] text-[#1e4d3a]/60">{card.desc}</p>
-                  </div>
-                </FadeIn>
-              ))}
-            </div>
-          </section>
+       {/* 1. Feature Pillars */}
+<FadeIn>
+  <section className="px-[20px] md:px-[64px] max-w-[1040px] mx-auto py-14 md:py-16">
+    <div className="flex flex-col md:flex-row justify-between gap-10 md:gap-6 text-center">
+      {[
+        { icon: "library_books", titleKey: "home.pillar1Title", descKey: "home.pillar1Desc" },
+        { icon: "auto_stories", titleKey: "home.pillar2Title", descKey: "home.pillar2Desc" },
+        { icon: "verified", titleKey: "home.pillar3Title", descKey: "home.pillar3Desc" },
+        { icon: "explore", titleKey: "home.pillar4Title", descKey: "home.pillar4Desc" },
+      ].map((card, i) => (
+        <FadeIn key={i} delay={100 + i * 100} className="flex-1 flex flex-col items-center gap-3 group cursor-pointer">
+          <div className="mb-0.5 transition-transform duration-300 group-hover:-translate-y-1">
+            <span className="material-symbols-outlined text-[22px] text-[#1e4d3a]" style={{ fontVariationSettings: "'FILL' 0, 'wght' 100" }}>{card.icon}</span>
+          </div>
+          <div>
+            <h4 className="font-['Inter'] text-[11px] leading-[16px] text-[#1e4d3a] uppercase tracking-[0.12em] mb-1.5 font-semibold">{t(card.titleKey)}</h4>
+            <p className="font-['Inter'] text-[13px] leading-[20px] text-[#1e4d3a]/60">{t(card.descKey)}</p>
+          </div>
         </FadeIn>
+      ))}
+    </div>
+  </section>
+</FadeIn>
 
         {/* 2. Welcome & Search Section */}
         <FadeIn>
-          <section className="py-12 px-[20px] md:px-[64px] bg-[#fbf9f4] max-w-[1280px] mx-auto text-center flex flex-col items-center">
-            <h2 className="font-['JetBrains_Mono'] text-[11px] leading-[16px] text-[#C9A84C] uppercase tracking-[0.2em] font-bold mb-4">{t.tagline}</h2>
-            <h3 className="font-['Hanken_Grotesk'] text-4xl md:text-5xl leading-tight text-[#1e4d3a] font-bold mb-6 max-w-4xl">{t.title}</h3>
-            <p className="font-['Inter'] text-[18px] leading-[1.7] text-[#1e4d3a]/80 mb-10 max-w-3xl">{t.subtitle}</p>
+          <section className="py-16 px-[20px] md:px-[64px] bg-[#fbf9f4] max-w-[1280px] mx-auto text-center flex flex-col items-center">
+            {user ? (
+              <div className="mb-6 animate-fade-in">
+                <div className="inline-flex items-center gap-3 px-6 py-3 bg-gradient-to-r from-[#C9A84C]/20 to-[#C9A84C]/10 border-2 border-[#C9A84C]/40 rounded-2xl mb-6">
+                  <span className="material-symbols-outlined text-[28px] text-[#C9A84C]">waving_hand</span>
+                  <span className="font-['JetBrains_Mono'] text-[13px] uppercase tracking-[0.15em] font-bold text-[#C9A84C]">
+                    {t("home.welcomeBack")}
+                  </span>
+                </div>
+                <h2 className="font-['Hanken_Grotesk'] text-4xl md:text-5xl font-bold text-[#1e4d3a] mb-2">
+                  {user.name || user.username?.split(' ')[0]}
+                  <span className="text-[#C9A84C]">!</span>
+                </h2>
+                <p className="font-['Inter'] text-[16px] text-[#1e4d3a]/70">
+                  {t("home.readyToContinue")}
+                </p>
+              </div>
+            ) : (
+              <>
+                <h2 className="font-['JetBrains_Mono'] text-[11px] leading-[16px] text-[#C9A84C] uppercase tracking-[0.2em] font-bold mb-4">{t("home.tagline")}</h2>
+                <h3 className="font-['Hanken_Grotesk'] text-4xl md:text-5xl leading-tight text-[#1e4d3a] font-bold mb-6 max-w-4xl">{t("home.title")}</h3>
+              </>
+            )}
+            
+            <p className="font-['Inter'] text-[18px] leading-[1.7] text-[#1e4d3a]/80 mb-10 max-w-3xl">
+              {user && !isRTL ? "Explore centuries of knowledge, from the Classical era to modern times. Your personalized archive awaits." : t("home.subtitle")}
+            </p>
 
             <div ref={searchRef} className="w-full max-w-2xl relative mb-10">
               <input
                 className="w-full px-6 py-4 rounded-xl border-2 border-[#1e4d3a] bg-[#fbf9f4] focus:border-[#C9A84C] focus:ring-1 focus:ring-[#C9A84C] transition-all font-['Inter'] text-[15px] shadow-sm outline-none text-[#1e4d3a]"
-                placeholder={t.searchPlaceholder}
+                placeholder={t("home.searchPlaceholder")}
                 type="text"
                 dir={isRTL ? "rtl" : "ltr"}
                 value={searchQuery}
@@ -699,7 +583,7 @@ const Home: React.FC = () => {
             </div>
 
             <Link to="/scholars" className="inline-flex items-center gap-2 px-8 py-3.5 bg-[#1e4d3a] text-[#fbf9f4] border-2 border-[#1e4d3a] rounded-lg text-[13px] font-bold tracking-[0.05em] font-['Hanken_Grotesk'] hover:bg-[#fbf9f4] hover:text-[#1e4d3a] transition-all duration-300">
-              {t.exploreButton}
+              {t("home.exploreButton")}
               <span className="material-symbols-outlined text-[18px]">{isRTL ? "arrow_back" : "arrow_forward"}</span>
             </Link>
           </section>
@@ -710,11 +594,11 @@ const Home: React.FC = () => {
           <section className="py-20 px-[20px] md:px-[64px] max-w-[1280px] mx-auto">
             <div className="flex justify-between items-end mb-12 pb-4 border-b-2 border-[#1e4d3a]">
               <div>
-                <p className="font-['JetBrains_Mono'] text-[10px] uppercase tracking-[0.15em] font-bold text-[#C9A84C] mb-2">{t.featuredLabel}</p>
-                <h2 className="font-['Hanken_Grotesk'] text-3xl font-bold text-[#1e4d3a]">{isRTL ? "تعرف على العملاقة" : lang === "FR" ? "Rencontrez les Géants" : "Meet the Giants"}</h2>
+                <p className="font-['JetBrains_Mono'] text-[10px] uppercase tracking-[0.15em] font-bold text-[#C9A84C] mb-2">{t("home.featuredLabel")}</p>
+                <h2 className="font-['Hanken_Grotesk'] text-3xl font-bold text-[#1e4d3a]">{t("home.meetTheGiants")}</h2>
               </div>
               <Link to="/scholars" className="font-['JetBrains_Mono'] text-[12px] font-semibold text-[#1e4d3a] hover:text-[#C9A84C] flex items-center gap-1.5 transition-colors">
-                {t.viewAll}
+                {t("home.viewAll")}
                 <span className="material-symbols-outlined text-[16px]">{isRTL ? "arrow_back" : "arrow_forward"}</span>
               </Link>
             </div>
@@ -751,9 +635,9 @@ const Home: React.FC = () => {
           <section className="py-20 px-[20px] md:px-[64px] bg-[#F5F3EC] border-y-2 border-[#1e4d3a]/10">
             <div className="max-w-[1280px] mx-auto">
               <div className="flex justify-between items-center mb-12">
-                <h2 className="font-['Hanken_Grotesk'] text-2xl md:text-3xl font-bold text-[#1e4d3a]">{t.recentLabel}</h2>
+                <h2 className="font-['Hanken_Grotesk'] text-2xl md:text-3xl font-bold text-[#1e4d3a]">{t("home.recentLabel")}</h2>
                 <Link to="/scholars" className="font-['JetBrains_Mono'] text-[12px] font-semibold text-[#1e4d3a] hover:text-[#C9A84C] flex items-center gap-1.5 transition-colors">
-                  {t.viewAll}
+                  {t("home.viewAll")}
                   <span className="material-symbols-outlined text-[16px]">{isRTL ? "arrow_back" : "arrow_forward"}</span>
                 </Link>
               </div>
@@ -788,23 +672,26 @@ const Home: React.FC = () => {
           <section className="py-20 px-[20px] md:px-[64px] max-w-[1280px] mx-auto">
             <div className="grid grid-cols-1 lg:grid-cols-[1fr_1.3fr_auto] gap-12 lg:gap-10 items-center">
               <FadeIn delay={100} className={isRTL ? "text-right" : "text-left"}>
-                <p className="font-['JetBrains_Mono'] text-[10px] uppercase tracking-[0.15em] font-bold text-[#C9A84C] mb-4">{w.tagline}</p>
-                <h2 className="font-['Hanken_Grotesk'] text-3xl md:text-[34px] leading-tight font-bold text-[#1e4d3a] mb-5">{w.titleLine1}<br />{w.titleLine2}</h2>
-                <p className="font-['Inter'] text-[14px] leading-[1.7] text-[#1e4d3a]/70 mb-6">{w.description}</p>
+                <p className="font-['JetBrains_Mono'] text-[10px] uppercase tracking-[0.15em] font-bold text-[#C9A84C] mb-4">{t("home.whyTagline")}</p>
+                <h2 className="font-['Hanken_Grotesk'] text-3xl md:text-[34px] leading-tight font-bold text-[#1e4d3a] mb-5">
+                  {t("home.whyTitleLine1")}<br />{t("home.whyTitleLine2")}
+                </h2>
+                <p className="font-['Inter'] text-[14px] leading-[1.7] text-[#1e4d3a]/70 mb-6">{t("home.whyDescription")}</p>
                 <ul className="flex flex-col gap-3 mb-8">
-                  {w.bullets.map((bullet, i) => (
+                  {[1, 2, 3, 4].map((i) => (
                     <li key={i} className={`flex items-center gap-2.5 font-['Inter'] text-[13px] text-[#1e4d3a]/80 ${isRTL ? "flex-row-reverse" : ""}`}>
-                      <span className="material-symbols-outlined text-[16px] text-[#C9A84C] flex-shrink-0">check_circle</span>{bullet}
+                      <span className="material-symbols-outlined text-[16px] text-[#C9A84C] flex-shrink-0">check_circle</span>
+                      {t(`home.whyBullet${i}`)}
                     </li>
                   ))}
                 </ul>
                 <Link to="/about" className="inline-flex items-center gap-2 px-6 py-3 border-2 border-[#1e4d3a] rounded-lg text-[12px] font-bold tracking-[0.05em] font-['Hanken_Grotesk'] text-[#1e4d3a] hover:bg-[#1e4d3a] hover:text-[#fbf9f4] transition-all duration-300">
-                  {w.ctaButton}
+                  {t("home.whyCtaButton")}
                   <span className="material-symbols-outlined text-[16px]">{isRTL ? "arrow_back" : "arrow_forward"}</span>
                 </Link>
               </FadeIn>
               <FadeIn delay={200} className="rounded-2xl overflow-hidden h-[360px] md:h-[420px] bg-[#F5F3EC]">
-                <img src="https://images.unsplash.com/photo-1457369804613-52c61a468e7d?w=800&h=1000&fit=crop" alt={w.titleLine1} className="w-full h-full object-cover" />
+                <img src="https://images.unsplash.com/photo-1457369804613-52c61a468e7d?w=800&h=1000&fit=crop" alt="Why Oulamauna" className="w-full h-full object-cover" />
               </FadeIn>
               <FadeIn delay={300} className="flex flex-col gap-7 lg:pl-4">
                 {(loading ? Array.from({ length: 4 }) : archiveStats).map((stat: any, i) => (
@@ -817,7 +704,7 @@ const Home: React.FC = () => {
                     <div className={isRTL ? "text-right" : "text-left"}>
                       {loading ? (<><Skeleton className="h-6 w-14 mb-1" /><Skeleton className="h-3 w-20" /></>) : (<>
                         <div className="font-['Hanken_Grotesk'] text-2xl md:text-[26px] font-bold text-[#1e4d3a] leading-tight whitespace-nowrap">{stat.value}</div>
-                        <div className="font-['Inter'] text-[13px] text-[#1e4d3a]/60 whitespace-nowrap">{statLabel(stat)}</div>
+                        <div className="font-['Inter'] text-[13px] text-[#1e4d3a]/60 whitespace-nowrap">{t(stat.labelKey)}</div>
                       </>)}
                     </div>
                   </div>
@@ -830,7 +717,7 @@ const Home: React.FC = () => {
         {/* 6. Featured Works & Manuscripts */}
         <FadeIn>
           <section id="works" className="scroll-mt-32 py-20 px-[20px] md:px-[64px] max-w-[1280px] mx-auto">
-            <h2 className="font-['Hanken_Grotesk'] text-3xl font-bold text-[#1e4d3a] text-center mb-12">{t.worksLabel}</h2>
+            <h2 className="font-['Hanken_Grotesk'] text-3xl font-bold text-[#1e4d3a] text-center mb-12">{t("home.worksLabel")}</h2>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               {loading ? Array.from({ length: 3 }).map((_, i) => (
                 <div key={i} className="bg-[#F5F3EC] rounded-2xl overflow-hidden border border-[#1e4d3a]/10">
@@ -857,11 +744,11 @@ const Home: React.FC = () => {
           </section>
         </FadeIn>
 
-        {/* 7. Eras Timeline - WITH LOCAL IMAGES */}
+        {/* 7. Eras Timeline */}
         <FadeIn>
           <section className="py-20 px-[20px] md:px-[64px] bg-[#fbf9f4]">
             <div className="max-w-[1280px] mx-auto">
-              <h2 className="font-['Hanken_Grotesk'] text-3xl font-bold text-[#1e4d3a] text-center mb-12">{t.erasLabel}</h2>
+              <h2 className="font-['Hanken_Grotesk'] text-3xl font-bold text-[#1e4d3a] text-center mb-12">{t("home.erasLabel")}</h2>
               <div className="flex flex-col gap-6">
                 {loading ? Array.from({ length: 5 }).map((_, i) => (
                   <div key={i} className="flex bg-white rounded-xl overflow-hidden border border-[#1e4d3a]/10">
@@ -872,7 +759,6 @@ const Home: React.FC = () => {
                     </div>
                   </div>
                 )) : eras.map((era, index) => {
-                  // ✅ MAP ERA NAME TO LOCAL IMAGE PATH
                   const localImageMap: Record<string, string> = {
                     "Classical Era": "/images/eras/classical.jpg",
                     "Golden Age": "/images/eras/golden.jpg",
@@ -880,7 +766,6 @@ const Home: React.FC = () => {
                     "Ottoman Era": "/images/eras/ottoman.jpg",
                     "Modern Era": "/images/eras/modern.jpg",
                   };
-                  
                   const imageSrc = localImageMap[era.name] || era.image_url;
 
                   return (
@@ -896,7 +781,9 @@ const Home: React.FC = () => {
                           </div>
                           <div className="text-center px-6 py-4 bg-[#1e4d3a]/80 rounded-lg backdrop-blur-sm">
                             <div className="font-['Hanken_Grotesk'] text-2xl font-bold text-[#e5d5a8]">{era.scholars_count}</div>
-                            <div className="font-['JetBrains_Mono'] text-[9px] text-[#fbf9f4]/80 tracking-wider mt-1">{isRTL ? "عالم" : lang === "FR" ? "SAVANTS" : "SCHOLARS"}</div>
+                            <div className="font-['JetBrains_Mono'] text-[9px] text-[#fbf9f4]/80 tracking-wider mt-1">
+                              {t("home.scholarsCount").toUpperCase()}
+                            </div>
                           </div>
                         </div>
                       </Link>
@@ -911,45 +798,150 @@ const Home: React.FC = () => {
         {/* 8. Disciplines Grid */}
         <FadeIn>
           <section id="disciplines" className="scroll-mt-32 py-20 px-[20px] md:px-[64px] max-w-[1280px] mx-auto">
-            <h2 className="font-['Hanken_Grotesk'] text-3xl font-bold text-[#1e4d3a] text-center mb-4">{t.disciplinesLabel}</h2>
+            <h2 className="font-['Hanken_Grotesk'] text-3xl font-bold text-[#1e4d3a] text-center mb-4">{t("home.disciplinesLabel")}</h2>
             <p className="font-['Inter'] text-[15px] text-[#1e4d3a]/60 text-center mb-12 max-w-2xl mx-auto">
-              {isRTL ? "استكشف مجالات المعرفة التي شكّلت الحضارة الإسلامية عبر القرون" : lang === "FR" ? "Explorez les domaines du savoir qui ont façonné la civilisation islamique à travers les siècles" : "Explore the fields of knowledge that shaped Islamic civilization across the centuries"}
+              {t("home.disciplinesSubtitle")}
             </p>
+            
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
               {loading ? Array.from({ length: 6 }).map((_, i) => (
                 <div key={i} className="p-6 bg-[#fcfaf5] rounded-[12px] border border-[#1e4d3a]/20">
                   <Skeleton className="w-7 h-7 rounded-[6px] mb-4" /><Skeleton className="h-4 w-20 mb-2" /><Skeleton className="h-4 w-12" />
                 </div>
-              )) : disciplines.map((disc, index) => (
-                <FadeIn key={disc.discipline_id} delay={50 + index * 50}>
-                  <Link to={`/scholars?discipline=${disc.name}`} className="group block p-6 bg-[#fcfaf5] rounded-[12px] border border-[#1e4d3a] shadow-[0px_4px_20px_rgba(30,77,58,0.08)] hover:shadow-[0px_6px_24px_rgba(30,77,58,0.12)] hover:-translate-y-1 transition-all duration-300" style={{ backgroundColor: '#fcfaf5' }}>
-                    <div className="w-7 h-7 rounded-[6px] bg-[#f6efdc] border border-[#1e4d3a] flex items-center justify-center mb-4 group-hover:bg-[#1e4d3a] group-hover:border-[#1e4d3a] transition-colors duration-300">
-                      <span className="material-symbols-outlined text-[16px] text-[#1e4d3a] group-hover:text-[#fcfaf5] transition-colors duration-300" style={{ fontVariationSettings: "'FILL' 0, 'wght' 400" }}>{getDisciplineIcon(disc.name)}</span>
-                    </div>
-                    <div className="font-['Hanken_Grotesk'] text-[15px] font-semibold text-[#1e4d3a] mb-2 group-hover:text-[#1e4d3a] transition-colors">{disc.name}</div>
-                    <div className="inline-flex items-baseline gap-1.5">
-                      <span className="font-['Hanken_Grotesk'] text-xl font-bold text-[#1e4d3a] group-hover:text-[#1e4d3a] transition-colors">{disc.count}</span>
-                      <span className="font-['Inter'] text-[11px] text-[#1e4d3a]/70 group-hover:text-[#1e4d3a] transition-colors">{isRTL ? "عالم" : lang === "FR" ? "savants" : "scholars"}</span>
-                    </div>
-                  </Link>
-                </FadeIn>
-              ))}
+              )) : (
+                disciplines.slice(0, showAllDisciplines ? disciplines.length : 6).map((disc, index) => (
+                  <FadeIn key={disc.discipline_id} delay={50 + index * 50}>
+                    <Link 
+                      to={`/scholars?discipline=${disc.name}`} 
+                      className="group block p-6 bg-[#fcfaf5] rounded-[12px] border border-[#1e4d3a] shadow-[0px_4px_20px_rgba(30,77,58,0.08)] hover:shadow-[0px_6px_24px_rgba(30,77,58,0.12)] hover:-translate-y-1 transition-all duration-300 h-full flex flex-col"
+                      style={{ backgroundColor: '#fcfaf5', minHeight: '280px' }}
+                    >
+                      <div className="w-full h-24 mb-4 rounded-[6px] overflow-hidden bg-[#f6efdc] border border-[#1e4d3a]/10 group-hover:border-[#1e4d3a] transition-colors duration-300 flex-shrink-0">
+                        {disc.image_url ? (
+                          <img src={disc.image_url} alt={disc.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center">
+                            <span className="material-symbols-outlined text-[32px] text-[#1e4d3a]/40">{getDisciplineIcon(disc.name)}</span>
+                          </div>
+                        )}
+                      </div>
+                      <div className="flex flex-col flex-grow">
+                        <div className="font-['Hanken_Grotesk'] text-[15px] font-semibold text-[#1e4d3a] mb-2 group-hover:text-[#1e4d3a] transition-colors line-clamp-2 min-h-[40px]">
+                          {disc.name}
+                        </div>
+                        <div className="inline-flex items-baseline gap-1.5 mt-auto">
+                          <span className="font-['Hanken_Grotesk'] text-xl font-bold text-[#1e4d3a] group-hover:text-[#1e4d3a] transition-colors">{disc.count}</span>
+                          <span className="font-['Inter'] text-[11px] text-[#1e4d3a]/70 group-hover:text-[#1e4d3a] transition-colors">{t("home.scholarsCount")}</span>
+                        </div>
+                      </div>
+                    </Link>
+                  </FadeIn>
+                ))
+              )}
             </div>
+
+            {disciplines.length > 6 && (
+              <div className="flex justify-center mt-12">
+                <button
+                  onClick={() => setShowAllDisciplines(!showAllDisciplines)}
+                  className="inline-flex items-center gap-2 px-8 py-3 bg-transparent border-2 border-[#1e4d3a] text-[#1e4d3a] rounded-lg text-[13px] font-bold tracking-[0.05em] font-['Hanken_Grotesk'] hover:bg-[#1e4d3a] hover:text-[#fbf9f4] transition-all duration-300"
+                >
+                  {showAllDisciplines ? (
+                    <>
+                      <span className="material-symbols-outlined text-[18px]">expand_less</span>
+                      {t("home.showLess")}
+                    </>
+                  ) : (
+                    <>
+                      {t("home.showMore")}
+                      <span className="material-symbols-outlined text-[18px]">expand_more</span>
+                    </>
+                  )}
+                </button>
+              </div>
+            )}
           </section>
         </FadeIn>
 
-        {/* 9. CTA Section */}
+        {/* 9. Popular Forum Posts */}
+        {popularForumPosts.length > 0 && (
+          <FadeIn>
+            <section className="py-20 px-[20px] md:px-[64px] bg-[#F5F3EC] border-y-2 border-[#1e4d3a]/10">
+              <div className="max-w-[1280px] mx-auto">
+                <div className="flex justify-between items-end mb-12 pb-4 border-b-2 border-[#1e4d3a]">
+                  <div>
+                    <p className="font-['JetBrains_Mono'] text-[10px] uppercase tracking-[0.15em] font-bold text-[#C9A84C] mb-2">{t("home.popularLabel")}</p>
+                    <h2 className="font-['Hanken_Grotesk'] text-3xl font-bold text-[#1e4d3a]">
+                      {t("home.popularDiscussionsTitle")}
+                    </h2>
+                  </div>
+                  <Link to="/forum" className="font-['JetBrains_Mono'] text-[12px] font-semibold text-[#1e4d3a] hover:text-[#C9A84C] flex items-center gap-1.5 transition-colors">
+                    {t("home.viewAllDiscussions")}
+                    <span className="material-symbols-outlined text-[16px]">{isRTL ? "arrow_back" : "arrow_forward"}</span>
+                  </Link>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {popularForumPosts.map((post, index) => (
+                    <FadeIn key={post.post_id} delay={100 + index * 100}>
+                      <Link 
+                        to={`/forum/${post.post_id}`} 
+                        className="group flex flex-col h-full bg-[#fbf9f4] rounded-xl p-6 border border-[#1e4d3a]/10 hover:shadow-lg hover:-translate-y-1 transition-all duration-300"
+                      >
+                        <h3 className="font-['Hanken_Grotesk'] text-xl font-bold text-[#1e4d3a] mb-3 group-hover:text-[#C9A84C] transition-colors line-clamp-2">
+                          {post.title}
+                        </h3>
+                        <p className="font-['Inter'] text-sm text-[#1e4d3a]/70 leading-relaxed line-clamp-3 mb-4 flex-grow">
+                          {post.excerpt}
+                        </p>
+                        <div className="flex items-center justify-between mt-auto pt-4 border-t border-[#1e4d3a]/10">
+                          <div className="flex items-center gap-2">
+                            {post.author?.profile_picture ? (
+                              <img src={post.author.profile_picture} alt={post.author.name || post.author.username} className="w-6 h-6 rounded-full object-cover" />
+                            ) : (
+                              <div className="w-6 h-6 rounded-full bg-[#1e4d3a]/10 flex items-center justify-center">
+                                <span className="material-symbols-outlined text-[14px] text-[#1e4d3a]/60">person</span>
+                              </div>
+                            )}
+                            <span className="font-['Inter'] text-xs text-[#1e4d3a]/80 font-medium">
+                              {post.author?.name || post.author?.username}
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-4 text-[#1e4d3a]/60">
+                            <div className="flex items-center gap-1">
+                              <span className="material-symbols-outlined text-[16px]">thumb_up</span>
+                              <span className="font-['Inter'] text-xs font-semibold">{post.like_count}</span>
+                            </div>
+                            <div className="flex items-center gap-1">
+                              <span className="material-symbols-outlined text-[16px]">chat_bubble</span>
+                              <span className="font-['Inter'] text-xs font-semibold">{post.comment_count}</span>
+                            </div>
+                          </div>
+                        </div>
+                      </Link>
+                    </FadeIn>
+                  ))}
+                </div>
+              </div>
+            </section>
+          </FadeIn>
+        )}
+
+        {/* 10. CTA Section */}
         <FadeIn>
           <section className="py-24 px-[20px] md:px-[64px] text-center bg-[#1e4d3a] relative overflow-hidden">
             <div className="absolute -top-24 -right-24 w-72 h-72 rounded-full border-2 border-[#C9A84C] opacity-20" />
             <div className="absolute -bottom-20 -left-20 w-64 h-64 rounded-full border-2 border-[#C9A84C] opacity-10" />
             <div className="relative z-10 max-w-2xl mx-auto">
-              <h2 className="font-['Hanken_Grotesk'] text-3xl md:text-4xl font-bold text-[#fbf9f4] mb-4">{t.ctaTitle}</h2>
-              <p className="font-['Inter'] text-base text-[#fbf9f4]/80 mb-8 leading-relaxed">{t.ctaText}</p>
-              <Link to="/register" className="inline-flex items-center gap-2 px-10 py-4 bg-[#C9A84C] text-[#1e4d3a] border-2 border-[#C9A84C] rounded-lg text-xs font-bold tracking-[0.1em] font-['JetBrains_Mono'] uppercase hover:bg-[#fbf9f4] transition-colors duration-300">
-                {t.ctaButton}
+              <h2 className="font-['Hanken_Grotesk'] text-3xl md:text-4xl font-bold text-[#fbf9f4] mb-4">{t("home.ctaTitle")}</h2>
+              <p className="font-['Inter'] text-base text-[#fbf9f4]/80 mb-8 leading-relaxed">{t("home.ctaText")}</p>
+              <button 
+                onClick={() => user ? navigate("/scholars") : navigate("/register")} 
+                className="inline-flex items-center gap-2 px-10 py-4 bg-[#C9A84C] text-[#1e4d3a] border-2 border-[#C9A84C] rounded-lg text-xs font-bold tracking-[0.1em] font-['JetBrains_Mono'] uppercase hover:bg-[#fbf9f4] transition-colors duration-300 cursor-pointer"
+              >
+                {t("home.ctaButton")}
                 <span className="material-symbols-outlined text-[18px]">{isRTL ? "arrow_back" : "arrow_forward"}</span>
-              </Link>
+              </button>
             </div>
           </section>
         </FadeIn>

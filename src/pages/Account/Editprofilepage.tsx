@@ -194,6 +194,22 @@ export default function EditProfilePage({ role = "user" }: EditProfilePageProps)
   const isRTL = lang === "AR";
   const isUser = role === "user";
 
+  // ✅ Calculate profile completion percentage dynamically
+  const calculateProfileCompletion = () => {
+    let completed = 0;
+    const total = 5; // Total fields to check
+
+    if (name && name.trim() !== "") completed++;
+    if (bioText && bioText.trim() !== "") completed++;
+    if (profilePicture || selectedFile) completed++;
+    const validLinks = links.filter(l => l.url && l.url.trim() !== "");
+    if (validLinks.length > 0) completed++;
+    if (email && email.trim() !== "") completed++;
+
+    return Math.round((completed / total) * 100);
+  };
+  const profileCompletion = calculateProfileCompletion();
+
   useEffect(() => {
     const fetchProfile = async () => {
       try {
@@ -317,7 +333,7 @@ export default function EditProfilePage({ role = "user" }: EditProfilePageProps)
       )}
 
       <div style={{ maxWidth: "1100px", margin: "0 auto", padding: isMobile ? "32px 16px 48px" : "64px 32px 80px", display: "flex", flexDirection: isMobile ? "column" : "row", gap: isMobile ? "14px" : "32px" }}>
-        {!isMobile && <ProfileSidebar role={role} active="editProfile" />}
+        {!isMobile && <ProfileSidebar role={role} active="editProfile" profileCompletion={profileCompletion} />}
 
         <div style={{ flex: 1, maxWidth: isMobile ? "100%" : "640px", display: "flex", flexDirection: "column", gap: isMobile ? "14px" : "20px" }}>
           {isMobile && (

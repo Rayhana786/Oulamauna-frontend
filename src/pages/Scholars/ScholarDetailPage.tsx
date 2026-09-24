@@ -10,7 +10,11 @@ import BiographyRenderer from "../../components/BiographyRenderer";
 ───────────────────────────────────────────── */
 interface BackendAlias { alias_id: number; alias_name: string; }
 interface BackendLanguage { language_id: number; code: string; name: string; }
-interface BackendRegion { region_id: number; name: string; }
+interface BackendRegion { 
+  region_id: number; 
+  name: string; 
+  translations?: Record<string, string>; // ✅ Added to match backend response
+}
 interface BackendScholarDate {
   date_id: number; version_id: number;
   date_type: "birth" | "death"; calendar: "hijri" | "gregorian";
@@ -47,23 +51,17 @@ interface BackendVersion {  version_id: number; scholar_id: number; language_id:
   scholar_aliases: BackendAlias[];
   scholar_dates?: BackendScholarDate[];
   media?: BackendMedia[];
-  internal_links: any[];
-  scholar_disciplines?: { discipline_id: number; disciplines: { discipline_id: number; name: string; language_id: number } }[];
-  comments?: { comment_id: number; content: string; created_at: string; users: { id: number; username: string } }[];
+  scholar_disciplines?: { 
+    discipline_id: number; 
+    disciplines: { 
+      discipline_id: number; 
+      name: string; 
+      language_id: number;
+      translations?: Record<string, string>; // ✅ Added to match backend response
+    } 
+  }[];
   scholar_relationships_as_source?: BackendRelation[];
 }
-interface BackendDiscipline {
-  scholar_id: number;
-  discipline_id: number;
-  disciplines: { discipline_id: number; name: string; language_id: number; created_at: string };
-}
-interface BackendBibliography { bibliography_id: number; title: string; citation: string; url: string | null; }
-interface BackendComment {
-  comment_id: number; content: string; created_at: string;
-  users: { id: number; username: string };
-}
-interface BackendContributor { users: { id: number; username: string }; }
-
 interface BackendRelation {
   relation_id: number;
   relation_type: string;
@@ -87,18 +85,19 @@ interface BackendScholarResponse {
     scholar_versions: BackendVersion[];
     bibliography: BackendBibliography[];
     works: BackendWork[];
-    scholar_contributors: BackendContributor[];
+    scholar_contributors: { users: { id: number; username: string } }[];
     scholar_relationships_as_source: BackendRelation[];
     references: BackendReference[];
     history: BackendHistory[];
     available_languages: BackendLanguage[];
   };
 }
+interface BackendBibliography { bibliography_id: number; title: string; citation: string; url: string | null; }
 
 /* ─────────────────────────────────────────────
    UI TYPES
 ───────────────────────────────────────────── */
-type Language = "EN" | "AR" | "FR";
+type Language = string;
 type TabId = "works" | "media" | "relations" | "more";
 
 interface Contributor { name: string; contributions: number; profileUrl?: string; }
@@ -127,160 +126,6 @@ interface Reference {
 interface RecentRevision { date: string; author: string; action: string; authorUrl?: string; }
 interface RevisionEntry { author: string; date: string; description: string; isPrimary: boolean; }
 
-interface LangContent<T> { EN?: T; AR?: T; FR?: T; }
-
-interface ScholarDetail {
-  id: number; 
-  versionId: number;
-  name: LangContent<string>; 
-  subtitle: LangContent<string>;
-  createdBy: string; 
-  createdByUrl: string; 
-  createdDate: string;
-  lastUpdatedBy?: string; 
-  lastUpdatedByUrl?: string; 
-  lastUpdatedDate?: string;
-  image: string;
-  biography: LangContent<string>; // ✅ UPDATED: Single HTML string per language
-  atAGlance: { fullName: string; born: string; died: string; century: string; region: string; discipline: string; };
-  contributors: Contributor[]; 
-  works: Work[]; 
-  media: MediaItem[];
-  intellectualLineage: RelatedPerson[]; 
-  notableDisciples: RelatedPerson[];
-  relatedScholars: RelatedScholar[]; 
-  academicReferences: Reference[];
-  revisionHistory: RevisionEntry[]; 
-  recentRevisions: RecentRevision[];
-  comments: Comment[];
-}
-
-interface Comment {
-  id: number; author: string; role: string | null; text: string;
-  time: string; votes: number; replies?: Comment[];
-}
-type CommentsByLang = Record<Language, Comment[]>;
-type DraftByLang = Record<Language, string>;
-type VotedIds = Record<number, boolean>;
-
-interface UITranslation {
-  overview: string; atAGlance: string; fullName: string; born: string; died: string;
-  century: string; region: string; discipline: string;
-  allContributors: string; contributor: string; contributions: string; contributors: string;
-  tabs: string[]; editBtn: string; bibliographyTitle: string;
-  colTitle: string; colYear: string; colFormat: string; colAccess: string;
-  mediaTitle: string; addMedia: string; intellectualLineage: string;
-  notableDisciples: string; relatedByField: string; academicReferences: string;
-  recentRevisions: string; viewAllEdits: string; viewMore: string; showLess: string;
-  academicDiscussion: string; joinDialogue: string; reply: string; vote: string; report: string;
-  noContent: string; noDiscussion: string; startDiscussion: string;
-  contribute: string; createdBy: string; lastUpdated: string; sharedNote: string; addWork: string;
-  addNewWork: string; addMediaModal: string; title: string; year: string; format: string;
-  digitalAccess: string; none: string; uploadFile: string; pasteLink: string;
-  noFileAttached: string; cancel: string; addWorkBtn: string; addMediaBtn: string;
-  description: string; fileLink: string; noFile: string;
-  workTitlePlaceholder: string; yearPlaceholder: string; mediaTitlePlaceholder: string;
-  descriptionPlaceholder: string; urlPlaceholder: string;
-  book: string; manuscript: string; article: string;
-  titleRequired: string; validYear: string; urlRequired: string; fileRequired: string;
-}
-
-/* ─────────────────────────────────────────────
-   UI TRANSLATIONS
-───────────────────────────────────────────── */
-const T: Record<Language, UITranslation> = {
-  EN: {
-    overview: "OVERVIEW", atAGlance: "AT A GLANCE", fullName: "Full Name", born: "Born", died: "Died",
-    century: "Century", region: "Region", discipline: "Discipline",
-    allContributors: "ALL CONTRIBUTORS", contributor: "CONTRIBUTOR", contributions: "CONTRIBUTIONS",
-    contributors: "Contributors", 
-    tabs: ["WORKS", "MEDIA", "RELATIONS", "REFERENCES"], editBtn: "EDIT ENGLISH",
-    bibliographyTitle: "Bibliography", colTitle: "TITLE", colYear: "YEAR", colFormat: "FORMAT", colAccess: "DIGITAL ACCESS",
-    mediaTitle: "Integrated Media Library", addMedia: "ADD MEDIA", intellectualLineage: "Intellectual Lineage",
-    notableDisciples: "Notable Disciples", relatedByField: "Related Scholars by Field",
-    academicReferences: "Academic References", recentRevisions: "Recent Revisions",
-    viewAllEdits: "View all edits", viewMore: "View more", showLess: "Show less",
-    academicDiscussion: "Academic Discussion", joinDialogue: "Join the scholarly dialogue in English...", 
-    reply: "REPLY", vote: "VOTE", report: "REPORT",
-    noContent: "This page has not yet been contributed in", noDiscussion: "No discussion yet in English.",
-    startDiscussion: "Start the conversation →", contribute: "Contribute now →",
-    createdBy: "CREATED BY", lastUpdated: "LAST UPDATED BY", sharedNote: "Shared across all languages", addWork: "ADD WORK",
-    addNewWork: "Add New Work", addMediaModal: "Add Media", title: "TITLE", year: "YEAR", format: "FORMAT",
-    digitalAccess: "DIGITAL ACCESS", none: "None", uploadFile: "Upload File", pasteLink: "Paste Link",
-    noFileAttached: "No digital file will be attached.", cancel: "Cancel", addWorkBtn: "ADD WORK", addMediaBtn: "ADD MEDIA",
-    description: "DESCRIPTION", fileLink: "FILE / LINK", noFile: "No file will be attached.",
-    workTitlePlaceholder: "e.g. The Problem of Culture", yearPlaceholder: "e.g. 1959",
-    mediaTitlePlaceholder: "e.g. 1972 Lecture on Colonizability", descriptionPlaceholder: "Brief description",
-    urlPlaceholder: "https://archive.org/details/…",
-    book: "Book", manuscript: "Manuscript", article: "Article",
-    titleRequired: "Title is required.", validYear: "Please enter a valid year.",
-    urlRequired: "Please enter a URL.", fileRequired: "Please upload a file.",
-  },
-  AR: {
-    overview: "نظرة عامة", atAGlance: "لمحة سريعة", fullName: "الاسم الكامل", born: "الميلاد", died: "الوفاة",
-    century: "القرن", region: "المنطقة", discipline: "التخصص",
-    allContributors: "جميع المساهمين", contributor: "المساهم", contributions: "المساهمات",
-    contributors: "مساهمون", 
-    tabs: ["الأعمال", "الوسائط", "العلاقات", "المراجع"], editBtn: "تعديل العربية",
-    bibliographyTitle: "قائمة المؤلفات", colTitle: "العنوان", colYear: "السنة", colFormat: "الصيغة", colAccess: "الوصول الرقمي",
-    mediaTitle: "مكتبة الوسائط المتكاملة", addMedia: "إضافة وسائط", intellectualLineage: "السلسلة الفكرية",
-    notableDisciples: "أبرز التلامذة", relatedByField: "علماء ذوو صلة بالمجال",
-    academicReferences: "المراجع الأكاديمية", recentRevisions: "أحدث المراجعات",
-    viewAllEdits: "عرض كل التعديلات", viewMore: "عرض المزيد", showLess: "عرض أقل",
-    academicDiscussion: "النقاش الأكاديمي", joinDialogue: "انضم إلى الحوار العلمي بالعربية...", 
-    reply: "ردّ", vote: "تصويت", report: "إبلاغ",
-    noContent: "لم يتم المساهمة في هذه الصفحة بعد باللغة", noDiscussion: "لا توجد نقاشات بالعربية بعد.",
-    startDiscussion: "ابدأ المحادثة →", contribute: "ساهم الآن →",
-    createdBy: "أنشأه", lastUpdated: "آخر تحديث بواسطة", sharedNote: "مشترك بين جميع اللغات", addWork: "إضافة عمل",
-    addNewWork: "إضافة عمل جديد", addMediaModal: "إضافة وسائط", title: "العنوان", year: "السنة", format: "الصيغة",
-    digitalAccess: "الوصول الرقمي", none: "بدون", uploadFile: "رفع ملف", pasteLink: "لصق رابط",
-    noFileAttached: "لن يتم إرفاق أي ملف رقمي.", cancel: "إلغاء", addWorkBtn: "إضافة عمل", addMediaBtn: "إضافة وسائط",
-    description: "الوصف", fileLink: "ملف / رابط", noFile: "لن يتم إرفاق أي ملف.",
-    workTitlePlaceholder: "مثال: مشكلة الثقافة", yearPlaceholder: "مثال: 1959",
-    mediaTitlePlaceholder: "مثال: محاضرة 1972 عن القابلية للاستعمار", descriptionPlaceholder: "وصف موجز",
-    urlPlaceholder: "https://archive.org/details/…",
-    book: "كتاب", manuscript: "مخطوطة", article: "مقالة",
-    titleRequired: "العنوان مطلوب.", validYear: "الرجاء إدخال سنة صحيحة.",
-    urlRequired: "الرجاء إدخال رابط.", fileRequired: "الرجاء رفع ملف.",
-  },
-  FR: {
-    overview: "APERÇU", atAGlance: "EN UN COUP D'ŒIL", fullName: "Nom complet", born: "Né", died: "Décédé",
-    century: "Siècle", region: "Région", discipline: "Discipline",
-    allContributors: "TOUS LES CONTRIBUTEURS", contributor: "CONTRIBUTEUR", contributions: "CONTRIBUTIONS",
-    contributors: "Contributeurs",
-    tabs: ["ŒUVRES", "MÉDIAS", "RELATIONS", "RÉFÉRENCES"], editBtn: "MODIFIER FRANÇAIS",
-    bibliographyTitle: "Bibliographie", colTitle: "TITRE", colYear: "ANNÉE", colFormat: "FORMAT", colAccess: "ACCÈS NUMÉRIQUE",
-    mediaTitle: "Médiathèque Intégrée", addMedia: "AJOUTER MÉDIA", intellectualLineage: "LIGNÉE INTELLECTUELLE",
-    notableDisciples: "DISCIPLES NOTABLES", relatedByField: "SAVANTS LIÉS PAR DOMAINE",
-    academicReferences: "RÉFÉRENCES ACADÉMIQUES", recentRevisions: "RÉVISIONS RÉCENTES",
-    viewAllEdits: "VOIR TOUTES LES MODIFICATIONS", viewMore: "Voir plus", showLess: "Voir moins",
-    academicDiscussion: "Discussion Académique", joinDialogue: "Rejoindre le dialogue savant en français...", 
-    reply: "RÉPONDRE", vote: "VOTER", report: "SIGNALER",
-    noContent: "Cette page n'a pas encore été contribuée en", noDiscussion: "Aucune discussion en français pour l'instant.",
-    startDiscussion: "Démarrer la conversation →", contribute: "Contribuer maintenant →",
-    createdBy: "CRÉÉ PAR", lastUpdated: "MIS À JOUR PAR", sharedNote: "Partagé entre toutes les langues", addWork: "AJOUTER ŒUVRE",
-    addNewWork: "Ajouter une nouvelle œuvre", addMediaModal: "Ajouter un média", title: "TITRE", year: "ANNÉE", format: "FORMAT",
-    digitalAccess: "ACCÈS NUMÉRIQUE", none: "Aucun", uploadFile: "Télécharger un fichier", pasteLink: "Coller un lien",
-    noFileAttached: "Aucun fichier numérique ne sera joint.", cancel: "Annuler", addWorkBtn: "AJOUTER ŒUVRE", addMediaBtn: "AJOUTER MÉDIA",
-    description: "DESCRIPTION", fileLink: "FICHIER / LIEN", noFile: "Aucun fichier ne sera joint.",
-    workTitlePlaceholder: "p. ex. Le Problème de la culture", yearPlaceholder: "p. ex. 1959",
-    mediaTitlePlaceholder: "p. ex. Conférence de 1972 sur la colonisabilité", descriptionPlaceholder: "Brève description",
-    urlPlaceholder: "https://archive.org/details/…",
-    book: "Livre", manuscript: "Manuscrit", article: "Article",
-    titleRequired: "Le titre est requis.", validYear: "Veuillez entrer une année valide.",
-    urlRequired: "Veuillez entrer une URL.", fileRequired: "Veuillez télécharger un fichier.",
-  },
-};
-
-const LANG_LABELS: Record<Language, string> = { EN: "English", AR: "العربية", FR: "Français" };
-const WORK_FORMATS: Work["format"][] = ["BOOK", "ARTICLE", "TREATISE", "MANUSCRIPT", "LECTURE", "SERMON", "FATWA", "POEM", "LETTER", "COMMENTARY", "TRANSLATION", "RESEARCH", "COURSE", "DEVICE", "INVENTION", "SOFTWARE", "MAP", "OTHER"];
-
-const FORMAT_LABELS: Record<Language, Record<Work["format"], string>> = {
-  EN: { BOOK: "Book", ARTICLE: "Article", TREATISE: "Treatise", MANUSCRIPT: "Manuscript", LECTURE: "Lecture", SERMON: "Sermon", FATWA: "Fatwa", POEM: "Poem", LETTER: "Letter", COMMENTARY: "Commentary", TRANSLATION: "Translation", RESEARCH: "Research", COURSE: "Course", DEVICE: "Device", INVENTION: "Invention", SOFTWARE: "Software", MAP: "Map", OTHER: "Other" },
-  AR: { BOOK: "كتاب", ARTICLE: "مقالة", TREATISE: "رسالة علمية", MANUSCRIPT: "مخطوطة", LECTURE: "محاضرة", SERMON: "خطبة", FATWA: "فتوى", POEM: "قصيدة", LETTER: "خطاب", COMMENTARY: "شرح", TRANSLATION: "ترجمة", RESEARCH: "بحث", COURSE: "دورة", DEVICE: "جهاز", INVENTION: "اختراع", SOFTWARE: "برمجية", MAP: "خريطة", OTHER: "أخرى" },
-  FR: { BOOK: "Livre", ARTICLE: "Article", TREATISE: "Traité", MANUSCRIPT: "Manuscrit", LECTURE: "Conférence", SERMON: "Sermon", FATWA: "Fatwa", POEM: "Poème", LETTER: "Lettre", COMMENTARY: "Commentaire", TRANSLATION: "Traduction", RESEARCH: "Recherche", COURSE: "Cours", DEVICE: "Appareil", INVENTION: "Invention", SOFTWARE: "Logiciel", MAP: "Carte", OTHER: "Autre" },
-};
-
 /* ─────────────────────────────────────────────
    DATE / CENTURY HELPERS
 ───────────────────────────────────────────── */
@@ -303,31 +148,51 @@ function formatCentury(start: number | null | undefined, end: number | null | un
 /* ─────────────────────────────────────────────
    DATA TRANSFORMER (Backend -> UI)
 ───────────────────────────────────────────── */
-const transformBackendToUI = (data: BackendScholarResponse["data"], lang: Language, currentUserId?: number): ScholarDetail => {
+const transformBackendToUI = (data: BackendScholarResponse["data"], lang: Language, currentUserId?: number, t?: (key: string) => string): any => {
+  const unknown = t ? t('scholar.unknown') : "Unknown";
   const versions = data.scholar_versions || [];
-  const getVersion = (code: string) => versions.find((v) => v.languages?.code?.toLowerCase() === code.toLowerCase());
   
-  const enVersion = getVersion("en");
-  const arVersion = getVersion("ar");
-  const frVersion = getVersion("fr");
-  const activeVersion = getVersion(lang.toLowerCase());
-  const fallbackVersion = enVersion || arVersion || frVersion || versions[0];
+  // ✅ 1. Build a dynamic map of ALL available languages from the backend
+  const langMap: Record<string, BackendVersion> = {};
+  versions.forEach((v) => {
+    if (v.languages?.code) {
+      langMap[v.languages.code.toUpperCase()] = v;
+    }
+  });
+
+  // ✅ 2. Get the active version for the requested language, fallback to the first available
+  const activeVersion = langMap[lang.toUpperCase()] || versions[0];
+
+  // ✅ 3. Dynamically build name, subtitle, and biography objects for ALL languages
+  const nameObj: Record<string, string> = {};
+  const subtitleObj: Record<string, string | undefined> = {};
+  const biographyObj: Record<string, string> = {};
+
+  Object.keys(langMap).forEach((code) => {
+    const v = langMap[code];
+    nameObj[code] = v.canonical_name || "";
+    subtitleObj[code] = v.scholar_aliases?.length ? v.scholar_aliases.map((a) => a.alias_name).join(" • ") : undefined;
+    biographyObj[code] = v.biography || "";
+  });
 
   const history = data.history || [];
-  const creator = history.length > 0 ? (history[history.length - 1].users?.username ?? "Unknown") : "Unknown";
+  const creator = history.length > 0 ? (history[history.length - 1].users?.username ?? unknown) : unknown;
   const creatorId = history.length > 0 ? (history[history.length - 1].users?.id ?? 0) : 0;
   const lastUpdater = history.length > 0 ? (history[0].users?.username ?? creator) : creator;
   const lastUpdaterId = history.length > 0 ? (history[0].users?.id ?? creatorId) : creatorId;
   const hasBeenEdited = lastUpdater !== creator || history.length > 1;
 
   const disciplines = (activeVersion?.scholar_disciplines || [])
-    .map((d: any) => d.disciplines?.name)
+    .map((d: any) => {
+      const trans = d.disciplines?.translations;
+      return trans?.[lang.toLowerCase()] || trans?.["en"] || d.disciplines?.name || "";
+    })
     .filter(Boolean)
     .join(", ");
 
   const mapRelations = (rels: any[], color1: string, color2: string) => rels.map((r, i) => {
     const target = r.related_scholar_version;
-    const name = target?.canonical_name || `Scholar #${target?.scholar_id}`;
+    const name = target?.canonical_name || `${unknown} #${target?.scholar_id}`;
     return {
       initials: name.split(" ").map((n: string) => n[0]).join("").substring(0, 2).toUpperCase(),
       color: i % 2 === 0 ? color1 : color2, textColor: "#fff", name,
@@ -336,36 +201,38 @@ const transformBackendToUI = (data: BackendScholarResponse["data"], lang: Langua
     };
   });
 
+  const getAccessType = (filename: string): Work["digitalAccess"] => {
+    const ext = filename.split(".").pop()?.toLowerCase() ?? "";
+    if (["mp3", "wav", "ogg", "m4a"].includes(ext)) return "audio";
+    if (["mp4", "webm", "avi", "mov"].includes(ext)) return "file";
+    return "pdf";
+  };
+
+  const WORK_FORMATS: Work["format"][] = ["BOOK", "ARTICLE", "TREATISE", "MANUSCRIPT", "LECTURE", "SERMON", "FATWA", "POEM", "LETTER", "COMMENTARY", "TRANSLATION", "RESEARCH", "COURSE", "DEVICE", "INVENTION", "SOFTWARE", "MAP", "OTHER"];
+
   return {
     id: data.scholar_id,
-    versionId: activeVersion?.version_id || fallbackVersion?.version_id || 0,
-    name: { EN: enVersion?.canonical_name, AR: arVersion?.canonical_name, FR: frVersion?.canonical_name },
-    subtitle: {
-      EN: enVersion?.scholar_aliases?.length ? enVersion.scholar_aliases.map((a) => a.alias_name).join(" • ") : undefined,
-      AR: arVersion?.scholar_aliases?.length ? arVersion.scholar_aliases.map((a) => a.alias_name).join(" • ") : undefined,
-      FR: frVersion?.scholar_aliases?.length ? frVersion.scholar_aliases.map((a) => a.alias_name).join(" • ") : undefined,
-    },
+    versionId: activeVersion?.version_id || versions[0]?.version_id || 0,
+    name: nameObj, // ✅ Now dynamic
+    subtitle: subtitleObj, // ✅ Now dynamic
     createdBy: creator, createdByUrl: `/profile/${creatorId}`, createdDate: new Date(data.created_at).toLocaleDateString(),
     lastUpdatedBy: hasBeenEdited ? lastUpdater : undefined,
     lastUpdatedByUrl: hasBeenEdited ? `/profile/${lastUpdaterId}` : undefined,
     lastUpdatedDate: hasBeenEdited ? new Date(history[0].created_at).toLocaleDateString() : undefined,
-    image: activeVersion?.image_url || fallbackVersion?.image_url || "",
-    // ✅ UPDATED: Pass raw HTML directly instead of splitting
-    biography: { 
-      EN: enVersion?.biography || "", 
-      AR: arVersion?.biography || "", 
-      FR: frVersion?.biography || "" 
-    },
+    image: activeVersion?.image_url || versions[0]?.image_url || "",
+    biography: biographyObj, // ✅ Now dynamic
     atAGlance: {
       fullName: activeVersion?.canonical_name || "",
       born: formatDate(activeVersion?.scholar_dates, "birth"),
       died: formatDate(activeVersion?.scholar_dates, "death"),
       century: formatCentury(activeVersion?.century_gregorian_start, activeVersion?.century_gregorian_end),
-      region: activeVersion?.regions?.name || "",
+      region: activeVersion?.regions?.translations?.[lang.toLowerCase()] || activeVersion?.regions?.translations?.["en"] || activeVersion?.regions?.name || "",
       discipline: disciplines || ""
     },
-    contributors: (data.scholar_contributors || []).map((c) => ({ name: c.users?.username || "Unknown", contributions: 1, profileUrl: `/profile/${c.users?.id}` })),
-    works: (data.works && data.works.length > 0 ? data.works : (data.bibliography as any[]) || []).map((w: any): Work => {
+    contributors: (data.scholar_contributors || []).map((c) => ({ name: c.users?.username || unknown, contributions: 1, profileUrl: `/profile/${c.users?.id}` })),
+    
+    // ✅ FIX: Check root works, active version works, AND bibliography
+    works: (data.works || activeVersion?.scholar_works || data.bibliography || []).map((w: any): Work => {
       const url: string | null = w.media_url || w.file_path || w.url || null;
       const format: Work["format"] = (WORK_FORMATS.includes(w.format) ? w.format : "OTHER");
       return {
@@ -405,13 +272,14 @@ const transformBackendToUI = (data: BackendScholarResponse["data"], lang: Langua
     intellectualLineage: mapRelations((activeVersion?.scholar_relationships_as_source || []).filter((r: any) => r.relation_type === 'teacher' || r.relation_type === 'historical_influence'), "#1e4d3a", "#C9A84C"),
     notableDisciples: mapRelations((activeVersion?.scholar_relationships_as_source || []).filter((r: any) => r.relation_type === 'student' || r.relation_type === 'disciple'), "#C9A84C", "#1e4d3a"),
     relatedScholars: [],
-    academicReferences: (data.references || []).map((r) => ({ title: r.title, citation: r.citation, url: r.url })),
+    // ✅ FIX: Check root references AND active version references
+    academicReferences: (data.references || activeVersion?.scholar_references || []).map((r: any) => ({ 
+      title: r.title || "Unknown Title", 
+      citation: r.citation || "", 
+      url: r.url || null 
+    })),
     revisionHistory: [],
-    recentRevisions: history.map((h) => ({ date: new Date(h.created_at).toLocaleDateString(), author: h.users?.username || "Unknown", action: `Version ${h.version_id} - ${h.status}`, authorUrl: `/profile/${h.users?.id}` })),
-    comments: (activeVersion?.comments || []).map((c: any) => ({
-      id: c.comment_id, author: c.users?.username || "Unknown", role: null,
-      text: c.content || "", time: new Date(c.created_at).toLocaleDateString(), votes: 0, replies: []
-    }))
+    recentRevisions: history.map((h) => ({ date: new Date(h.created_at).toLocaleDateString(), author: h.users?.username || unknown, action: `Version ${h.version_id} - ${h.status}`, authorUrl: `/profile/${h.users?.id}` })),
   };
 };
 
@@ -440,19 +308,8 @@ const SERIF: React.CSSProperties = { fontFamily: "'Amiri', serif" };
 const SANS: React.CSSProperties = { fontFamily: "'Inter', sans-serif" };
 const HEADING: React.CSSProperties = { fontFamily: "'Hanken Grotesk', sans-serif" };
 
-const PRIMARY_GREEN = "#1e4d3a";
-const ACCENT_GOLD = "#C9A84C";
-const BG_CREM = "#fbf9f4";
-const CARD_BG = "#F5F3EC";
-
-const BTN_PRIMARY: React.CSSProperties = {
-  display: "inline-flex", alignItems: "center", gap: "6px", padding: "8px 16px",
-  border: "1.5px solid #1e4d3a", borderRadius: "8px", backgroundColor: "transparent", color: "#1e4d3a",
-  fontSize: "11px", fontWeight: 700, letterSpacing: "0.05em", cursor: "pointer", transition: "all 0.3s ease", ...MONO,
-};
-
-function Icon({ name, size = 20 }: { name: string; size?: number }) {
-  return <span className="material-symbols-outlined" style={{ fontSize: `${size}px`, lineHeight: 1, userSelect: "none" }}>{name}</span>;
+function Icon({ name, size = 20, style }: { name: string; size?: number; style?: React.CSSProperties }) {
+  return <span className="material-symbols-outlined" style={{ fontSize: `${size}px`, lineHeight: 1, userSelect: "none", ...style }}>{name}</span>;
 }
 
 function ProfileLink({ name, url, color = "#1e4d3a" }: { name: string; url: string; color?: string }) {
@@ -483,12 +340,12 @@ function HoverBtn({ children, onClick, style }: { children: React.ReactNode; onC
   );
 }
 
-function EmptyLangState({ lang, t, onContribute }: { lang: Language; t: UITranslation; onContribute: () => void }) {
+function EmptyLangState({ langName, t, onContribute }: { langName: string; t: (key: string) => string; onContribute: () => void }) {
   return (
     <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: "16px", padding: "64px 32px", textAlign: "center", border: "2px dashed rgba(30,77,58,0.25)", borderRadius: "16px", margin: "32px 0", backgroundColor: "#F5F3EC" }}>
       <Icon name="translate" size={40} style={{ color: "#1e4d3a66" }} />
-      <p style={{ color: "#1e4d3a99", fontSize: "15px", lineHeight: 1.6, ...SANS }}>{t.noContent} <strong style={{ color: "#1e4d3a" }}>{LANG_LABELS[lang]}</strong>.</p>
-      <button onClick={onContribute} style={{ background: "none", border: "none", padding: 0, color: "#1e4d3a", fontWeight: 700, fontSize: "13px", textDecoration: "underline", textUnderlineOffset: "3px", cursor: "pointer", transition: "color 0.2s ease" }} onMouseEnter={(e) => (e.currentTarget.style.color = "#C9A84C")} onMouseLeave={(e) => (e.currentTarget.style.color = "#1e4d3a")}>{t.contribute}</button>
+      <p style={{ color: "#1e4d3a99", fontSize: "15px", lineHeight: 1.6, ...SANS }}>{t('scholar.noContent')} <strong style={{ color: "#1e4d3a" }}>{langName}</strong>.</p>
+      <button onClick={onContribute} style={{ background: "none", border: "none", padding: 0, color: "#1e4d3a", fontWeight: 700, fontSize: "13px", textDecoration: "underline", textUnderlineOffset: "3px", cursor: "pointer", transition: "color 0.2s ease" }} onMouseEnter={(e) => (e.currentTarget.style.color = "#C9A84C")} onMouseLeave={(e) => (e.currentTarget.style.color = "#1e4d3a")}>{t('scholar.contribute')}</button>
     </div>
   );
 }
@@ -549,6 +406,43 @@ function Toast({ message, type, onClose }: ToastProps) {
 }
 
 /* ─────────────────────────────────────────────
+   TAB EMPTY STATE COMPONENT
+───────────────────────────────────────────── */
+function TabEmptyState({ 
+  icon, message, actionLabel, onAction, canAct, isRTL 
+}: { 
+  icon: string; message: string; actionLabel?: string; onAction?: () => void; canAct?: boolean; isRTL: boolean 
+}) {
+  return (
+    <div style={{ 
+      padding: "64px 32px", textAlign: "center", 
+      backgroundColor: "#F5F3EC", borderRadius: "16px", 
+      border: "1px dashed rgba(30,77,58,0.25)",
+      display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: "16px",
+      marginTop: "8px"
+    }}>
+      <Icon name={icon} size={40} style={{ color: "#1e4d3a66" }} />
+      <p style={{ color: "#1e4d3a99", fontSize: "14px", margin: 0, lineHeight: 1.6, ...SANS }}>{message}</p>
+      {canAct && actionLabel && onAction && (
+        <button 
+          onClick={onAction} 
+          style={{ 
+            background: "none", border: "none", padding: 0, 
+            color: "#1e4d3a", fontWeight: 700, fontSize: "13px", 
+            textDecoration: "underline", textUnderlineOffset: "3px", 
+            cursor: "pointer", transition: "color 0.2s ease", ...MONO, letterSpacing: "0.05em"
+          }} 
+          onMouseEnter={(e) => (e.currentTarget.style.color = "#C9A84C")} 
+          onMouseLeave={(e) => (e.currentTarget.style.color = "#1e4d3a")}
+        >
+          {actionLabel} {isRTL ? "←" : "→"}
+        </button>
+      )}
+    </div>
+  );
+}
+
+/* ─────────────────────────────────────────────
    FILE UTILS & MODALS
 ───────────────────────────────────────────── */
 function getFileIcon(filename: string): string {
@@ -558,13 +452,6 @@ function getFileIcon(filename: string): string {
   if (["epub"].includes(ext)) return "menu_book";
   if (["doc", "docx"].includes(ext)) return "description";
   return "article";
-}
-
-function getAccessType(filename: string): Work["digitalAccess"] {
-  const ext = filename.split(".").pop()?.toLowerCase() ?? "";
-  if (["mp3", "wav", "ogg", "m4a"].includes(ext)) return "audio";
-  if (["mp4", "webm", "avi", "mov"].includes(ext)) return "file";
-  return "pdf";
 }
 
 interface UploadZoneProps { file: File | null; onFile: (f: File) => void; onRemove: () => void; accept?: string; hint?: string; }
@@ -599,10 +486,10 @@ function UploadZone({ file, onFile, onRemove, accept, hint }: UploadZoneProps) {
 
 type AccessMode = "none" | "upload" | "link";
 
-/* ─────────────────────────────────────────────
+/* ────────────────────────────────────────────
    WORK ACTIONS (View & Download Icons for Table)
 ───────────────────────────────────────────── */
-function WorkActions({ work }: { work: Work }) {
+function WorkActions({ work, t }: { work: Work; t: (key: string) => string }) {
   const [isViewing, setIsViewing] = useState(false);
   const [isDownloading, setIsDownloading] = useState(false);
 
@@ -668,7 +555,7 @@ function WorkActions({ work }: { work: Work }) {
       <button 
         onClick={handleView}
         disabled={isViewing}
-        title="View"
+        title={t('scholar.view')}
         style={{ 
           display: "flex", alignItems: "center", justifyContent: "center",
           width: "32px", height: "32px", borderRadius: "6px",
@@ -684,7 +571,7 @@ function WorkActions({ work }: { work: Work }) {
       <button 
         onClick={handleDownload}
         disabled={isDownloading}
-        title="Download"
+        title={t('scholar.download')}
         style={{ 
           display: "flex", alignItems: "center", justifyContent: "center",
           width: "32px", height: "32px", borderRadius: "6px",
@@ -706,7 +593,7 @@ function WorkActions({ work }: { work: Work }) {
 interface AddWorkModalProps { 
   onClose: () => void; 
   onAdd: (work: Work) => void; 
-  t: UITranslation; 
+  t: (key: string) => string; 
   lang: Language;
   versionId: number;
   onSuccess: (message: string) => void;
@@ -728,11 +615,11 @@ function AddWorkModal({ onClose, onAdd, t, lang, versionId, onSuccess }: AddWork
   const modeTabStyle = (active: boolean): React.CSSProperties => ({ flex: 1, padding: "9px 0", textAlign: "center" as const, ...MONO, fontSize: "10px", fontWeight: 700, letterSpacing: "0.08em", borderTop: "1.5px solid", borderBottom: "1.5px solid", borderColor: active ? "#1e4d3a" : "rgba(30,77,58,0.25)", backgroundColor: active ? "#1e4d3a" : "transparent", color: active ? "#fff" : "#1e4d3a99", cursor: "pointer", transition: "all 0.2s ease", display: "flex", alignItems: "center", justifyContent: "center", gap: "6px" });
   
   const handleSubmit = async () => {
-    if (!title.trim()) { setError(t.titleRequired); return; }
+    if (!title.trim()) { setError(t('scholar.titleRequired')); return; }
     const yr = parseInt(year, 10);
-    if (!year || isNaN(yr) || yr < 600 || yr > new Date().getFullYear()) { setError(t.validYear); return; }
-    if (accessMode === "link" && !linkUrl.trim()) { setError(t.urlRequired); return; }
-    if (accessMode === "upload" && !uploadedFile) { setError(t.fileRequired); return; }
+    if (!year || isNaN(yr) || yr < 600 || yr > new Date().getFullYear()) { setError(t('scholar.validYear')); return; }
+    if (accessMode === "link" && !linkUrl.trim()) { setError(t('scholar.urlRequired')); return; }
+    if (accessMode === "upload" && !uploadedFile) { setError(t('scholar.fileRequired')); return; }
 
     setIsSubmitting(true);
     setError("");
@@ -742,7 +629,7 @@ function AddWorkModal({ onClose, onAdd, t, lang, versionId, onSuccess }: AddWork
         const MAX_FILE_SIZE_MB = 100;
         const fileSizeInMB = uploadedFile.size / (1024 * 1024);
         if (fileSizeInMB > MAX_FILE_SIZE_MB) {
-          setError(`File is too large (${fileSizeInMB.toFixed(1)} MB). Maximum allowed is ${MAX_FILE_SIZE_MB} MB.`);
+          setError(`${t('scholar.fileTooLarge')} (${fileSizeInMB.toFixed(1)} MB).`);
           setIsSubmitting(false);
           return;
         }
@@ -755,30 +642,30 @@ function AddWorkModal({ onClose, onAdd, t, lang, versionId, onSuccess }: AddWork
         formData.append("format", format);
         
         await scholarsApi.addWork(versionId, formData);
-        onSuccess("Work added successfully!");
+        onSuccess(t('scholar.workAddedSuccess'));
         onClose();
 
       } else if (accessMode === "link") {
         const workData = {
           version_id: versionId,
           title: title.trim(),
-          year: yr,
+          year: parseInt(year, 10),
           format,
           media_url: linkUrl.trim(),
         };
         await scholarsApi.addWorkUrl(versionId, workData);
-        onSuccess("Work added successfully!");
+        onSuccess(t('scholar.workAddedSuccess'));
         onClose();
 
       } else if (accessMode === "none") {
         const workData = {
           version_id: versionId,
           title: title.trim(),
-          year: yr,
+          year: parseInt(year, 10),
           format,
         };
         await scholarsApi.addWorkUrl(versionId, workData);
-        onSuccess("Work added successfully!");
+        onSuccess(t('scholar.workAddedSuccess'));
         onClose();
       }
     } catch (err: any) {
@@ -793,25 +680,25 @@ function AddWorkModal({ onClose, onAdd, t, lang, versionId, onSuccess }: AddWork
     <div style={{ position: "fixed", inset: 0, zIndex: 200, backgroundColor: "rgba(30,77,58,0.4)", display: "flex", alignItems: "center", justifyContent: "center", backdropFilter: "blur(4px)" }} onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}>
       <div style={{ backgroundColor: "#fff", borderRadius: "16px", padding: isMobile ? "24px 18px" : "36px", width: "520px", maxWidth: "calc(100vw - 32px)", boxShadow: "0 20px 60px rgba(30,77,58,0.14)", border: "1px solid rgba(30,77,58,0.12)", maxHeight: "90vh", overflowY: "auto" }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "28px" }}>
-          <h2 style={{ fontFamily: "'Hanken Grotesk', sans-serif", fontSize: isMobile ? "17px" : "20px", fontWeight: 700, color: "#1e4d3a", margin: 0, display: "flex", alignItems: "center", gap: "10px" }}><Icon name="add_circle" size={20} /> {t.addNewWork}</h2>
+          <h2 style={{ fontFamily: "'Hanken Grotesk', sans-serif", fontSize: isMobile ? "17px" : "20px", fontWeight: 700, color: "#1e4d3a", margin: 0, display: "flex", alignItems: "center", gap: "10px" }}><Icon name="add_circle" size={20} /> {t('scholar.addNewWork')}</h2>
           <button onClick={onClose} style={{ background: "none", border: "none", cursor: "pointer", color: "#1e4d3a66", padding: "4px", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center" }} onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#F5F3EC")} onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "transparent")}><Icon name="close" size={20} /></button>
         </div>
         <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
-          <div><label style={labelStyle}>{t.title} *</label><input type="text" value={title} onChange={(e) => { setTitle(e.target.value); setError(""); }} placeholder={t.workTitlePlaceholder} style={inputStyle} onFocus={(e) => (e.currentTarget.style.borderColor = "#1e4d3a")} onBlur={(e) => (e.currentTarget.style.borderColor = "rgba(30,77,58,0.25)")} /></div>
+          <div><label style={labelStyle}>{t('scholar.title')} *</label><input type="text" value={title} onChange={(e) => { setTitle(e.target.value); setError(""); }} placeholder={t('scholar.workTitlePlaceholder')} style={inputStyle} onFocus={(e) => (e.currentTarget.style.borderColor = "#1e4d3a")} onBlur={(e) => (e.currentTarget.style.borderColor = "rgba(30,77,58,0.25)")} /></div>
           <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: "16px" }}>
-            <div><label style={labelStyle}>{t.year} *</label><input type="number" value={year} onChange={(e) => { setYear(e.target.value); setError(""); }} placeholder={t.yearPlaceholder} min={600} max={new Date().getFullYear()} style={inputStyle} onFocus={(e) => (e.currentTarget.style.borderColor = "#1e4d3a")} onBlur={(e) => (e.currentTarget.style.borderColor = "rgba(30,77,58,0.25)")} /></div>
-            <div><label style={labelStyle}>{t.format}</label><select value={format} onChange={(e) => setFormat(e.target.value as Work["format"])} style={{ ...inputStyle, cursor: "pointer" }} onFocus={(e) => (e.currentTarget.style.borderColor = "#1e4d3a")} onBlur={(e) => (e.currentTarget.style.borderColor = "rgba(30,77,58,0.25)")}>{WORK_FORMATS.map((f) => (<option key={f} value={f}>{FORMAT_LABELS[lang][f]}</option>))}</select></div>
+            <div><label style={labelStyle}>{t('scholar.year')} *</label><input type="number" value={year} onChange={(e) => { setYear(e.target.value); setError(""); }} placeholder={t('scholar.yearPlaceholder')} min={600} max={new Date().getFullYear()} style={inputStyle} onFocus={(e) => (e.currentTarget.style.borderColor = "#1e4d3a")} onBlur={(e) => (e.currentTarget.style.borderColor = "rgba(30,77,58,0.25)")} /></div>
+            <div><label style={labelStyle}>{t('scholar.formatLabel')}</label><select value={format} onChange={(e) => setFormat(e.target.value as Work["format"])} style={{ ...inputStyle, cursor: "pointer" }} onFocus={(e) => (e.currentTarget.style.borderColor = "#1e4d3a")} onBlur={(e) => (e.currentTarget.style.borderColor = "rgba(30,77,58,0.25)")}>{["BOOK", "ARTICLE", "TREATISE", "MANUSCRIPT", "LECTURE", "SERMON", "FATWA", "POEM", "LETTER", "COMMENTARY", "TRANSLATION", "RESEARCH", "COURSE", "DEVICE", "INVENTION", "SOFTWARE", "MAP", "OTHER"].map((f) => (<option key={f} value={f}>{t(`scholar.format.${f}`)}</option>))}</select></div>
           </div>
           <div>
-            <label style={labelStyle}>{t.digitalAccess}</label>
+            <label style={labelStyle}>{t('scholar.digitalAccess')}</label>
             <div style={{ display: "flex", borderRadius: "8px", overflow: "hidden", border: "1.5px solid rgba(30,77,58,0.25)", marginBottom: "16px" }}>
-              <button style={modeTabStyle(accessMode === "none")} onClick={() => { setAccessMode("none"); setError(""); }}><Icon name="block" size={13} /> {t.none}</button>
-              <button style={{ ...modeTabStyle(accessMode === "upload"), borderLeft: "1px solid rgba(30,77,58,0.25)", borderRight: "1px solid rgba(30,77,58,0.25)" }} onClick={() => { setAccessMode("upload"); setError(""); }}><Icon name="upload_file" size={13} /> {t.uploadFile}</button>
-              <button style={modeTabStyle(accessMode === "link")} onClick={() => { setAccessMode("link"); setError(""); }}><Icon name="link" size={13} /> {t.pasteLink}</button>
+              <button style={modeTabStyle(accessMode === "none")} onClick={() => { setAccessMode("none"); setError(""); }}><Icon name="block" size={13} /> {t('scholar.none')}</button>
+              <button style={{ ...modeTabStyle(accessMode === "upload"), borderLeft: "1px solid rgba(30,77,58,0.25)", borderRight: "1px solid rgba(30,77,58,0.25)" }} onClick={() => { setAccessMode("upload"); setError(""); }}><Icon name="upload_file" size={13} /> {t('scholar.uploadFile')}</button>
+              <button style={modeTabStyle(accessMode === "link")} onClick={() => { setAccessMode("link"); setError(""); }}><Icon name="link" size={13} /> {t('scholar.pasteLink')}</button>
             </div>
             {accessMode === "upload" && <UploadZone file={uploadedFile} onFile={(f) => { setUploadedFile(f); setError(""); }} onRemove={() => setUploadedFile(null)} accept=".pdf,.mp3,.wav,.ogg,.m4a,.mp4,.webm,.epub,.doc,.docx,application/pdf,audio/*,video/*" hint="PDF, Audio, Video, ePub, Word — up to 100 MB" />}
-            {accessMode === "link" && <div style={{ position: "relative" }}><span style={{ position: "absolute", left: "12px", top: "50%", transform: "translateY(-50%)", color: "#1e4d3a66", display: "flex", alignItems: "center" }}><Icon name="link" size={16} /></span><input type="url" value={linkUrl} onChange={(e) => { setLinkUrl(e.target.value); setError(""); }} placeholder={t.urlPlaceholder} style={{ ...inputStyle, paddingLeft: "36px" }} onFocus={(e) => (e.currentTarget.style.borderColor = "#1e4d3a")} onBlur={(e) => (e.currentTarget.style.borderColor = "rgba(30,77,58,0.25)")} /></div>}
-            {accessMode === "none" && <p style={{ fontSize: "12px", color: "#1e4d3a66", fontStyle: "italic", margin: 0, ...SANS }}>{t.noFileAttached}</p>}
+            {accessMode === "link" && <div style={{ position: "relative" }}><span style={{ position: "absolute", left: "12px", top: "50%", transform: "translateY(-50%)", color: "#1e4d3a66", display: "flex", alignItems: "center" }}><Icon name="link" size={16} /></span><input type="url" value={linkUrl} onChange={(e) => { setLinkUrl(e.target.value); setError(""); }} placeholder={t('scholar.urlPlaceholder')} style={{ ...inputStyle, paddingLeft: "36px" }} onFocus={(e) => (e.currentTarget.style.borderColor = "#1e4d3a")} onBlur={(e) => (e.currentTarget.style.borderColor = "rgba(30,77,58,0.25)")} /></div>}
+            {accessMode === "none" && <p style={{ fontSize: "12px", color: "#1e4d3a66", fontStyle: "italic", margin: 0, ...SANS }}>{t('scholar.noFileAttached')}</p>}
           </div>
           {error && <p style={{ ...MONO, fontSize: "10px", color: "#b23b3b", margin: 0, display: "flex", alignItems: "center", gap: "6px" }}><Icon name="error" size={13} /> {error}</p>}
         </div>
@@ -823,7 +710,7 @@ function AddWorkModal({ onClose, onAdd, t, lang, versionId, onSuccess }: AddWork
             fontFamily: "'Hanken Grotesk', sans-serif", fontSize: "12px", fontWeight: 700, letterSpacing: "0.05em", cursor: "pointer", 
             transition: "all 0.3s ease"
           }} onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = "#F5F3EC"; e.currentTarget.style.color = "#1e4d3a"; }} onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = "transparent"; e.currentTarget.style.color = "#1e4d3a"; }}>
-            {t.cancel}
+            {t('scholar.cancel')}
           </button>
           <button 
             onClick={handleSubmit} 
@@ -841,7 +728,7 @@ function AddWorkModal({ onClose, onAdd, t, lang, versionId, onSuccess }: AddWork
             onMouseLeave={(e) => { if (!isSubmitting) { e.currentTarget.style.backgroundColor = "#1e4d3a"; e.currentTarget.style.color = "#fff"; } }}
           >
             {isSubmitting ? <Icon name="hourglass_empty" size={14} /> : <Icon name="check" size={14} />} 
-            {isSubmitting ? "SAVING..." : t.addWorkBtn}
+            {isSubmitting ? t('scholar.saving') : t('scholar.addWorkBtn')}
           </button>
         </div>
       </div>
@@ -855,7 +742,7 @@ function AddWorkModal({ onClose, onAdd, t, lang, versionId, onSuccess }: AddWork
 interface AddMediaModalProps { 
   onClose: () => void; 
   onAdd: (item: MediaItem) => void;
-  t: UITranslation; 
+  t: (key: string) => string; 
   versionId: number; 
   scholarId: number; 
   onSuccess: (message: string) => void; 
@@ -877,9 +764,9 @@ function AddMediaModal({ onClose, onAdd, t, versionId, scholarId, onSuccess }: A
   const modeTabStyle = (active: boolean): React.CSSProperties => ({ flex: 1, padding: "9px 0", textAlign: "center" as const, ...MONO, fontSize: "10px", fontWeight: 700, letterSpacing: "0.08em", border: "1.5px solid", borderColor: active ? "#1e4d3a" : "rgba(30,77,58,0.25)", backgroundColor: active ? "#1e4d3a" : "transparent", color: active ? "#fff" : "#1e4d3a99", cursor: "pointer", transition: "all 0.2s ease", display: "flex", alignItems: "center", justifyContent: "center", gap: "6px" });
 
   const handleSubmit = async () => {
-    if (!title.trim()) { setError(t.titleRequired); return; }
-    if (accessMode === "link" && !linkUrl.trim()) { setError(t.urlRequired); return; }
-    if (accessMode === "upload" && !uploadedFile) { setError(t.fileRequired); return; }
+    if (!title.trim()) { setError(t('scholar.titleRequired')); return; }
+    if (accessMode === "link" && !linkUrl.trim()) { setError(t('scholar.urlRequired')); return; }
+    if (accessMode === "upload" && !uploadedFile) { setError(t('scholar.fileRequired')); return; }
 
     setIsSubmitting(true);
     setError("");
@@ -896,7 +783,7 @@ function AddMediaModal({ onClose, onAdd, t, versionId, scholarId, onSuccess }: A
         if (parsedYear !== null) formData.append("year", parsedYear.toString());
 
         await scholarsApi.addMedia(versionId, formData);
-        onSuccess("Media added successfully!");
+        onSuccess(t('scholar.mediaAddedSuccess'));
         onClose();
 
       } else if (accessMode === "link") {
@@ -909,7 +796,7 @@ function AddMediaModal({ onClose, onAdd, t, versionId, scholarId, onSuccess }: A
         if (parsedYear !== null) mediaData.year = parsedYear;
 
         await scholarsApi.addMediaUrl(versionId, mediaData);
-        onSuccess("Media added successfully!");
+        onSuccess(t('scholar.mediaAddedSuccess'));
         onClose();
       }
     } catch (err: any) {
@@ -924,22 +811,22 @@ function AddMediaModal({ onClose, onAdd, t, versionId, scholarId, onSuccess }: A
     <div style={{ position: "fixed", inset: 0, zIndex: 200, backgroundColor: "rgba(30,77,58,0.4)", display: "flex", alignItems: "center", justifyContent: "center", backdropFilter: "blur(4px)" }} onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}>
       <div style={{ backgroundColor: "#fff", borderRadius: "16px", padding: isMobile ? "24px 18px" : "36px", width: "520px", maxWidth: "calc(100vw - 32px)", boxShadow: "0 20px 60px rgba(30,77,58,0.14)", border: "1px solid rgba(30,77,58,0.12)", maxHeight: "90vh", overflowY: "auto" }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "28px" }}>
-          <h2 style={{ fontFamily: "'Hanken Grotesk', sans-serif", fontSize: isMobile ? "17px" : "20px", fontWeight: 700, color: "#1e4d3a", margin: 0, display: "flex", alignItems: "center", gap: "10px" }}><Icon name="add_circle" size={20} /> {t.addMediaModal}</h2>
+          <h2 style={{ fontFamily: "'Hanken Grotesk', sans-serif", fontSize: isMobile ? "17px" : "20px", fontWeight: 700, color: "#1e4d3a", margin: 0, display: "flex", alignItems: "center", gap: "10px" }}><Icon name="add_circle" size={20} /> {t('scholar.addMediaModal')}</h2>
           <button onClick={onClose} style={{ background: "none", border: "none", cursor: "pointer", color: "#1e4d3a66", padding: "4px", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center" }} onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#F5F3EC")} onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "transparent")}><Icon name="close" size={20} /></button>
         </div>
         
         <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
-          <div><label style={labelStyle}>{t.title} *</label><input type="text" value={title} onChange={(e) => { setTitle(e.target.value); setError(""); }} placeholder={t.mediaTitlePlaceholder} style={inputStyle} onFocus={(e) => (e.currentTarget.style.borderColor = "#1e4d3a")} onBlur={(e) => (e.currentTarget.style.borderColor = "rgba(30,77,58,0.25)")} /></div>
-          <div><label style={labelStyle}>{t.year}</label><input type="number" value={year} onChange={(e) => { setYear(e.target.value); setError(""); }} placeholder={t.yearPlaceholder} min={600} max={new Date().getFullYear()} style={inputStyle} onFocus={(e) => (e.currentTarget.style.borderColor = "#1e4d3a")} onBlur={(e) => (e.currentTarget.style.borderColor = "rgba(30,77,58,0.25)")} /></div>
-          <div><label style={labelStyle}>{t.description}</label><textarea value={desc} onChange={(e) => setDesc(e.target.value)} placeholder={t.descriptionPlaceholder} rows={2} style={{ ...inputStyle, resize: "vertical", ...SANS }} onFocus={(e) => (e.currentTarget.style.borderColor = "#1e4d3a")} onBlur={(e) => (e.currentTarget.style.borderColor = "rgba(30,77,58,0.25)")} /></div>
+          <div><label style={labelStyle}>{t('scholar.title')} *</label><input type="text" value={title} onChange={(e) => { setTitle(e.target.value); setError(""); }} placeholder={t('scholar.mediaTitlePlaceholder')} style={inputStyle} onFocus={(e) => (e.currentTarget.style.borderColor = "#1e4d3a")} onBlur={(e) => (e.currentTarget.style.borderColor = "rgba(30,77,58,0.25)")} /></div>
+          <div><label style={labelStyle}>{t('scholar.year')}</label><input type="number" value={year} onChange={(e) => { setYear(e.target.value); setError(""); }} placeholder={t('scholar.yearPlaceholder')} min={600} max={new Date().getFullYear()} style={inputStyle} onFocus={(e) => (e.currentTarget.style.borderColor = "#1e4d3a")} onBlur={(e) => (e.currentTarget.style.borderColor = "rgba(30,77,58,0.25)")} /></div>
+          <div><label style={labelStyle}>{t('scholar.description')}</label><textarea value={desc} onChange={(e) => setDesc(e.target.value)} placeholder={t('scholar.descriptionPlaceholder')} rows={2} style={{ ...inputStyle, resize: "vertical", ...SANS }} onFocus={(e) => (e.currentTarget.style.borderColor = "#1e4d3a")} onBlur={(e) => (e.currentTarget.style.borderColor = "rgba(30,77,58,0.25)")} /></div>
           <div>
-            <label style={labelStyle}>{t.fileLink}</label>
+            <label style={labelStyle}>{t('scholar.fileLink')}</label>
             <div style={{ display: "flex", borderRadius: "8px", overflow: "hidden", border: "1.5px solid rgba(30,77,58,0.25)", marginBottom: "16px" }}>
-              <button style={modeTabStyle(accessMode === "upload")} onClick={() => { setAccessMode("upload"); setError(""); }}><Icon name="upload_file" size={13} /> {t.uploadFile}</button>
-              <button style={{ ...modeTabStyle(accessMode === "link"), borderLeft: "1px solid rgba(30,77,58,0.25)" }} onClick={() => { setAccessMode("link"); setError(""); }}><Icon name="link" size={13} /> {t.pasteLink}</button>
+              <button style={modeTabStyle(accessMode === "upload")} onClick={() => { setAccessMode("upload"); setError(""); }}><Icon name="upload_file" size={13} /> {t('scholar.uploadFile')}</button>
+              <button style={{ ...modeTabStyle(accessMode === "link"), borderLeft: "1px solid rgba(30,77,58,0.25)" }} onClick={() => { setAccessMode("link"); setError(""); }}><Icon name="link" size={13} /> {t('scholar.pasteLink')}</button>
             </div>
             {accessMode === "upload" && <UploadZone file={uploadedFile} onFile={(f) => { setUploadedFile(f); setError(""); }} onRemove={() => setUploadedFile(null)} accept=".pdf,.mp3,.wav,.ogg,.m4a,.mp4,.webm,.avi,audio/*,video/*,application/pdf" hint="PDF, Audio, Video — up to 100 MB" />}
-            {accessMode === "link" && <div style={{ position: "relative" }}><span style={{ position: "absolute", left: "12px", top: "50%", transform: "translateY(-50%)", color: "#1e4d3a66", display: "flex", alignItems: "center" }}><Icon name="link" size={16} /></span><input type="url" value={linkUrl} onChange={(e) => { setLinkUrl(e.target.value); setError(""); }} placeholder={t.urlPlaceholder} style={{ ...inputStyle, paddingLeft: "36px" }} onFocus={(e) => (e.currentTarget.style.borderColor = "#1e4d3a")} onBlur={(e) => (e.currentTarget.style.borderColor = "rgba(30,77,58,0.25)")} /></div>}
+            {accessMode === "link" && <div style={{ position: "relative" }}><span style={{ position: "absolute", left: "12px", top: "50%", transform: "translateY(-50%)", color: "#1e4d3a66", display: "flex", alignItems: "center" }}><Icon name="link" size={16} /></span><input type="url" value={linkUrl} onChange={(e) => { setLinkUrl(e.target.value); setError(""); }} placeholder={t('scholar.urlPlaceholder')} style={{ ...inputStyle, paddingLeft: "36px" }} onFocus={(e) => (e.currentTarget.style.borderColor = "#1e4d3a")} onBlur={(e) => (e.currentTarget.style.borderColor = "rgba(30,77,58,0.25)")} /></div>}
             </div>
           {error && <p style={{ ...MONO, fontSize: "10px", color: "#b23b3b", margin: 0, display: "flex", alignItems: "center", gap: "6px" }}><Icon name="error" size={13} /> {error}</p>}
         </div>
@@ -952,7 +839,7 @@ function AddMediaModal({ onClose, onAdd, t, versionId, scholarId, onSuccess }: A
             fontFamily: "'Hanken Grotesk', sans-serif", fontSize: "12px", fontWeight: 700, letterSpacing: "0.05em", cursor: "pointer", 
             transition: "all 0.3s ease"
           }} onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = "#F5F3EC"; e.currentTarget.style.color = "#1e4d3a"; }} onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = "transparent"; e.currentTarget.style.color = "#1e4d3a"; }}>
-            {t.cancel}
+            {t('scholar.cancel')}
           </button>
           <button 
             onClick={handleSubmit} 
@@ -970,207 +857,11 @@ function AddMediaModal({ onClose, onAdd, t, versionId, scholarId, onSuccess }: A
             onMouseLeave={(e) => { if (!isSubmitting) { e.currentTarget.style.backgroundColor = "#1e4d3a"; e.currentTarget.style.color = "#fff"; } }}
           >
             {isSubmitting ? <Icon name="hourglass_empty" size={14} /> : <Icon name="check" size={14} />} 
-            {isSubmitting ? "UPLOADING..." : t.addMediaBtn}
+            {isSubmitting ? t('scholar.uploading') : t('scholar.addMediaBtn')}
           </button>
         </div>
       </div>
     </div>
-  );
-}
-
-/* ─────────────────────────────────────────────
-   REPORT DROPDOWN & COMMENT CARD
-───────────────────────────────────────────── */
-interface ReportDropdownProps { onReport: (reason: string) => void; onClose: () => void; }
-function ReportDropdown({ onReport, onClose }: ReportDropdownProps) {
-  const reasons = ["Spam", "Misinformation", "Off-topic", "Harassment", "Other"];
-  return (
-    <div style={{ position: "absolute", top: "calc(100% + 6px)", right: 0, zIndex: 100, backgroundColor: "#fff", border: "1px solid rgba(30,77,58,0.12)", borderRadius: "8px", boxShadow: "0 8px 24px rgba(30,77,58,0.14)", minWidth: "160px", overflow: "hidden" }}>
-      <div style={{ padding: "8px 12px 6px", borderBottom: "1px solid #F5F3EC" }}><span style={{ ...MONO, fontSize: "9px", color: "#1e4d3a66", letterSpacing: "0.1em" }}>REPORT REASON</span></div>
-      {reasons.map((r) => (
-        <button key={r} onClick={() => { onReport(r); onClose(); }} style={{ display: "block", width: "100%", textAlign: "left", padding: "8px 14px", fontSize: "12px", color: r === "Harassment" ? "#b23b3b" : "#1e4d3acc", background: "none", border: "none", cursor: "pointer", transition: "background 0.2s ease", ...SANS }} onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#F5F3EC")} onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "transparent")}>{r}</button>
-      ))}
-    </div>
-  );
-}
-
-interface CommentCardProps { comment: Comment; lang: Language; t: UITranslation; votedIds: VotedIds; onVote: (id: number) => void; onAddReply: (parentId: number, text: string) => void; isReply?: boolean; }
-function CommentCard({ comment: c, lang, t, votedIds, onVote, onAddReply, isReply = false }: CommentCardProps) {
-  const isMobile = useIsMobile();
-  const [replyOpen, setReplyOpen] = useState(false);
-  const [replyDraft, setReplyDraft] = useState("");
-  const [reportOpen, setReportOpen] = useState(false);
-  const [reported, setReported] = useState(false);
-  const sendLabel = lang === "AR" ? "إرسال" : lang === "FR" ? "ENVOYER" : "SEND";
-  const handleReport = (reason: string) => { setReported(true); console.info(`Comment ${c.id} reported as: ${reason}`); };
-  const reportRef = useRef<HTMLDivElement>(null);
-  React.useEffect(() => {
-    if (!reportOpen) return;
-    const handler = (e: MouseEvent) => { if (reportRef.current && !reportRef.current.contains(e.target as Node)) setReportOpen(false); };
-    document.addEventListener("mousedown", handler);
-    return () => document.removeEventListener("mousedown", handler);
-  }, [reportOpen]);
-
-  return (
-    <div style={{ backgroundColor: "#fff", border: "1px solid rgba(30,77,58,0.1)", borderRadius: "16px", padding: isReply ? (isMobile ? "12px 14px" : "14px 18px") : (isMobile ? "16px 16px" : "20px 24px"), marginLeft: isReply ? (isMobile ? "16px" : "40px") : 0 }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "10px", flexWrap: "wrap", gap: "8px" }}>
-        <div style={{ display: "flex", alignItems: "center", gap: "10px", flexWrap: "wrap" }}>
-          <div style={{ width: isReply ? "28px" : "32px", height: isReply ? "28px" : "32px", borderRadius: "50%", backgroundColor: "#F5F3EC", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}><Icon name="person" size={isReply ? 14 : 16} style={{ color: "#1e4d3a66" }} /></div>
-          <span style={{ fontSize: "13px", fontWeight: 700, color: "#1e4d3a", ...SANS }}>{c.author}</span>
-          {c.role && <span style={{ ...MONO, fontSize: "9px", backgroundColor: "rgba(30,77,58,0.08)", color: "#1e4d3a", padding: "2px 8px", borderRadius: "4px", fontWeight: 700 }}>{c.role}</span>}
-        </div>
-        <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-          <span style={{ ...MONO, fontSize: "10px", color: "#1e4d3a66", whiteSpace: "nowrap" }}>{c.time}</span>
-          {!reported ? (
-            <div ref={reportRef} style={{ position: "relative" }}>
-              <button onClick={() => setReportOpen((v) => !v)} title={t.report} style={{ background: "none", border: "none", cursor: "pointer", color: "#1e4d3a66", display: "flex", alignItems: "center", padding: "2px", borderRadius: "4px", transition: "color 0.2s ease" }} onMouseEnter={(e) => (e.currentTarget.style.color = "#b23b3b")} onMouseLeave={(e) => (e.currentTarget.style.color = "#1e4d3a66")}><Icon name="flag" size={14} /></button>
-              {reportOpen && <ReportDropdown onReport={handleReport} onClose={() => setReportOpen(false)} />}
-            </div>
-          ) : <span style={{ ...MONO, fontSize: "9px", color: "#b23b3b", opacity: 0.7 }}>Reported</span>}
-        </div>
-      </div>
-      <p style={{ fontSize: "13px", color: "#1e4d3acc", lineHeight: 1.65, margin: "0 0 12px", ...SANS }}>{c.text}</p>
-      <div style={{ display: "flex", gap: "20px", alignItems: "center", flexWrap: "wrap" }}>
-        {!isReply && <button className="action-link" onClick={() => setReplyOpen((v) => !v)}><Icon name="reply" size={14} /> {t.reply}</button>}
-        <button className="action-link" onClick={() => onVote(c.id)} style={{ color: votedIds[c.id] ? "#1e4d3a" : "#1e4d3a99", fontWeight: votedIds[c.id] ? 700 : 400 }}><Icon name="thumb_up" size={13} /> {t.vote} ({c.votes})</button>
-      </div>
-      {replyOpen && !isReply && (
-        <div style={{ marginTop: "14px", paddingTop: "14px", borderTop: "1px solid #F5F3EC" }}>
-          <div style={{ display: "flex", gap: "10px", alignItems: "flex-start" }}>
-            <div style={{ width: "28px", height: "28px", borderRadius: "50%", flexShrink: 0, backgroundColor: "#F5F3EC", display: "flex", alignItems: "center", justifyContent: "center" }}><Icon name="person" size={14} style={{ color: "#1e4d3a66" }} /></div>
-            <div style={{ flex: 1, border: "1.5px solid rgba(30,77,58,0.25)", borderRadius: "10px", backgroundColor: "#F5F3EC", overflow: "hidden" }}>
-              <textarea autoFocus value={replyDraft} onChange={(e) => setReplyDraft(e.target.value)} placeholder={`${t.reply.toLowerCase() === "reply" ? "Reply to" : "رد على"} ${c.author}…`} rows={2} style={{ width: "100%", border: "none", outline: "none", resize: "none", padding: "10px 14px", fontSize: "13px", color: "#1e4d3a", fontFamily: "'Inter', sans-serif", backgroundColor: "transparent" }} />
-              <div style={{ display: "flex", justifyContent: "flex-end", padding: "6px 10px", borderTop: "1px solid rgba(30,77,58,0.12)", gap: "8px" }}>
-                <button onClick={() => { setReplyOpen(false); setReplyDraft(""); }} style={{ ...MONO, fontSize: "10px", color: "#1e4d3a99", background: "none", border: "none", cursor: "pointer" }}>CANCEL</button>
-                <button onClick={() => { if (!replyDraft.trim()) return; onAddReply(c.id, replyDraft.trim()); setReplyDraft(""); setReplyOpen(false); }} style={{ display: "flex", alignItems: "center", gap: "5px", backgroundColor: "#1e4d3a", color: "#fff", border: "none", borderRadius: "6px", padding: "6px 14px", cursor: "pointer", fontSize: "10px", fontWeight: 700, letterSpacing: "0.06em", fontFamily: "'JetBrains Mono', monospace" }} onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#163a2c")} onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "#1e4d3a")}><Icon name="send" size={12} /> {sendLabel}</button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-      {!isReply && c.replies && c.replies.length > 0 && (
-        <div style={{ display: "flex", flexDirection: "column", gap: "10px", marginTop: "14px" }}>
-          {c.replies.map((r) => (<CommentCard key={r.id} comment={r} lang={lang} t={t} votedIds={votedIds} onVote={onVote} onAddReply={onAddReply} isReply />))}
-        </div>
-      )}
-    </div>
-  );
-}
-
-/* ─────────────────────────────────────────────
-   DISCUSSION SECTION (Linked to Backend API)
-───────────────────────────────────────────── */
-function DiscussionSection({ lang, t, scholarId, backendComments }: { lang: Language; t: UITranslation; scholarId: number; backendComments: Comment[] }) {
-  const isMobile = useIsMobile();
-  const [commentsByLang, setCommentsByLang] = useState<CommentsByLang>({
-    EN: [],
-    AR: [],
-    FR: [],
-  });
-  const [draftByLang, setDraftByLang] = useState<DraftByLang>({ EN: "", AR: "", FR: "" });
-  const [votedIds, setVotedIds] = useState<VotedIds>({});
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [submitError, setSubmitError] = useState<string | null>(null);
-  const [showAllComments, setShowAllComments] = useState(false);
-
-  useEffect(() => {
-    setCommentsByLang(prev => ({
-      ...prev,
-      [lang]: backendComments
-    }));
-  }, [lang, backendComments]);
-
-  const isRTL = lang === "AR";
-  const comments = commentsByLang[lang];
-  const displayedComments = comments.slice(0, showAllComments ? comments.length : 3);
-  const draft = draftByLang[lang];
-  const setDraft = (val: string) => { setDraftByLang((prev) => ({ ...prev, [lang]: val })); if (submitError) setSubmitError(null); };
-  const sendLabel = lang === "AR" ? "إرسال" : lang === "FR" ? "ENVOYER" : "SEND";
-
-  const submitComment = async () => {
-    if (!draft.trim()) return;
-    setIsSubmitting(true);
-    setSubmitError(null);
-    try {
-      const response = await scholarsApi.addComment(scholarId, draft.trim());
-      const newComment: Comment = {
-        id: response.data?.comment_id || Date.now(),
-        author: response.data?.users?.username || "You",
-        role: null,
-        text: draft.trim(),
-        time: new Date(response.data?.created_at || Date.now()).toLocaleDateString(),
-        votes: 0,
-        replies: []
-      };
-      setCommentsByLang((prev) => ({ ...prev, [lang]: [...prev[lang], newComment] }));
-      setShowAllComments(true);
-      setDraft("");
-    } catch (err: any) {
-      console.error("Failed to post comment:", err);
-      setSubmitError(err.message || "Failed to post comment. Please try again.");
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  const handleVote = (id: number) => {
-    if (votedIds[id]) return;
-    setVotedIds((prev) => ({ ...prev, [id]: true }));
-    setCommentsByLang((prev) => ({
-      ...prev,
-      [lang]: prev[lang].map((c) => {
-        if (c.id === id) return { ...c, votes: c.votes + 1 };
-        return { ...c, replies: (c.replies ?? []).map((r) => r.id === id ? { ...r, votes: r.votes + 1 } : r) };
-      }),
-    }));
-  };
-
-  const handleAddReply = (parentId: number, text: string) => {
-    const reply: Comment = { id: Date.now(), author: "You", role: null, text, time: "just now", votes: 0, replies: [] };
-    setCommentsByLang((prev) => ({ ...prev, [lang]: prev[lang].map((c) => c.id === parentId ? { ...c, replies: [...(c.replies ?? []), reply] } : c) }));
-  };
-
-  return (
-    <section style={{ marginTop: isMobile ? "48px" : "80px", paddingTop: isMobile ? "28px" : "40px", borderTop: "1px solid rgba(30,77,58,0.1)" }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "28px", flexWrap: "wrap", gap: "10px" }}>
-        <h2 style={{ fontFamily: "'Hanken Grotesk', sans-serif", fontSize: isMobile ? "18px" : "22px", fontWeight: 700, color: "#1e4d3a", margin: 0, display: "flex", alignItems: "center", gap: "10px" }}><Icon name="forum" size={22} /> {t.academicDiscussion}</h2>
-        <span style={{ ...MONO, fontSize: "9px", fontWeight: 700, letterSpacing: "0.12em", padding: "4px 10px", borderRadius: "6px", backgroundColor: "rgba(30,77,58,0.08)", color: "#1e4d3a", border: "1px solid rgba(30,77,58,0.15)" }}>{LANG_LABELS[lang].toUpperCase()}</span>
-      </div>
-      <div style={{ maxWidth: "800px", display: "flex", flexDirection: "column", gap: "14px" }} dir={isRTL ? "rtl" : "ltr"}>
-        {comments.length === 0 && (
-          <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "12px", padding: isMobile ? "32px 20px" : "48px 32px", textAlign: "center", border: "2px dashed rgba(30,77,58,0.25)", borderRadius: "16px", backgroundColor: "#F5F3EC" }}>
-            <Icon name="chat_bubble_outline" size={36} style={{ color: "#1e4d3a66" }} />
-            <p style={{ color: "#1e4d3a99", fontSize: "14px", margin: 0, ...SANS }}>{t.noDiscussion}</p>
-            <span style={{ ...MONO, fontSize: "10px", color: "#1e4d3a", fontWeight: 700, cursor: "pointer", textDecoration: "underline", textUnderlineOffset: "3px" }}>{t.startDiscussion}</span>
-          </div>
-        )}
-        {displayedComments.map((c) => (
-          <CommentCard key={c.id} comment={c} lang={lang} t={t} votedIds={votedIds} onVote={handleVote} onAddReply={handleAddReply} />
-        ))}
-        {comments.length > 3 && (
-          <button 
-            className="action-link" 
-            onClick={() => setShowAllComments(!showAllComments)} 
-            style={{ alignSelf: "center", marginTop: "16px", fontSize: "12px" }}
-          >
-            {showAllComments ? t.showLess : `${t.viewMore} (${comments.length - 3} more)`}
-          </button>
-        )}
-        <div style={{ display: "flex", gap: "14px", alignItems: "flex-start", marginTop: "4px" }}>
-          <div style={{ width: "40px", height: "40px", borderRadius: "50%", flexShrink: 0, backgroundColor: "#F5F3EC", display: "flex", alignItems: "center", justifyContent: "center", color: "#1e4d3a66", marginTop: "2px" }}><Icon name="person" size={20} /></div>
-          <div style={{ flex: 1, border: "1.5px solid rgba(30,77,58,0.25)", borderRadius: "12px", backgroundColor: "#fff", overflow: "hidden" }}>
-            <textarea value={draft} onChange={(e) => setDraft(e.target.value)} placeholder={t.joinDialogue} rows={3} disabled={isSubmitting} style={{ width: "100%", border: "none", outline: "none", resize: "none", padding: "14px 16px", fontSize: "13px", color: "#1e4d3a", fontFamily: "'Inter', sans-serif", backgroundColor: "transparent", opacity: isSubmitting ? 0.6 : 1 }} />
-            {submitError && (<div style={{ padding: "0 16px 8px", display: "flex", alignItems: "center", gap: "6px" }}><Icon name="error" size={14} /><span style={{ fontSize: "11px", color: "#b23b3b", fontFamily: "'JetBrains Mono', monospace" }}>{submitError}</span></div>)}
-            <div style={{ display: "flex", justifyContent: "flex-end", padding: "8px 12px", borderTop: "1px solid #F5F3EC" }}>
-              <button onClick={submitComment} disabled={isSubmitting || !draft.trim()} style={{ display: "flex", alignItems: "center", gap: "6px", backgroundColor: (isSubmitting || !draft.trim()) ? "rgba(30,77,58,0.25)" : "#1e4d3a", color: "#fff", border: "none", borderRadius: "8px", padding: "8px 16px", cursor: (isSubmitting || !draft.trim()) ? "not-allowed" : "pointer", fontSize: "11px", fontWeight: 700, letterSpacing: "0.06em", fontFamily: "'JetBrains Mono', monospace", transition: "background 0.2s ease" }}>
-                {isSubmitting ? <Icon name="hourglass_empty" size={14} /> : <Icon name="send" size={14} />} 
-                {isSubmitting ? (lang === "AR" ? "جاري الإرسال..." : "SENDING...") : sendLabel}
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-    </section>
   );
 }
 
@@ -1180,9 +871,10 @@ function DiscussionSection({ lang, t, scholarId, backendComments }: { lang: Lang
 interface MediaCardProps { 
   item: MediaItem; 
   mediaIconName: (type: "pdf" | "audio" | "video") => string; 
+  t: (key: string) => string;
 }
 
-function MediaCard({ item: m, mediaIconName }: MediaCardProps) {
+function MediaCard({ item: m, mediaIconName, t }: MediaCardProps) {
   const [liked, setLiked] = useState(m.isLikedByUser || false);
   const [likeCount, setLikeCount] = useState(m.likeCount || 0);
   const [isDownloading, setIsDownloading] = useState(false);
@@ -1271,7 +963,7 @@ function MediaCard({ item: m, mediaIconName }: MediaCardProps) {
       
       {m.uploadedBy && (
         <p style={{ ...MONO, fontSize: "9px", color: "#1e4d3a66", letterSpacing: "0.04em", margin: "0 0 12px" }}>
-          uploaded by <ProfileLink name={m.uploadedBy} url={m.uploadedByUrl ?? "#"} />
+          {t('scholar.addedBy')} <ProfileLink name={m.uploadedBy} url={m.uploadedByUrl ?? "#"} />
         </p>
       )}
       
@@ -1330,9 +1022,9 @@ function MediaCard({ item: m, mediaIconName }: MediaCardProps) {
                 onMouseLeave={(e) => { if (!isViewing) e.currentTarget.style.backgroundColor = "transparent"; }}
               >
                 {isViewing ? (
-                  <><Icon name="hourglass_empty" size={14} /> LOADING...</>
+                  <><Icon name="hourglass_empty" size={14} /> {t('scholar.loading')}</>
                 ) : (
-                  <><Icon name="visibility" size={14} /> VIEW</>
+                  <><Icon name="visibility" size={14} /> {t('scholar.view')}</>
                 )}
               </button>
               
@@ -1361,9 +1053,9 @@ function MediaCard({ item: m, mediaIconName }: MediaCardProps) {
                 onMouseLeave={(e) => { if (!isDownloading) e.currentTarget.style.backgroundColor = "#1e4d3a"; }}
               >
                 {isDownloading ? (
-                  <><Icon name="hourglass_empty" size={14} /> DOWNLOADING...</>
+                  <><Icon name="hourglass_empty" size={14} /> {t('scholar.downloading')}</>
                 ) : (
-                  <><Icon name="download" size={14} /> DOWNLOAD</>
+                  <><Icon name="download" size={14} /> {t('scholar.download')}</>
                 )}
               </button>
             </>
@@ -1390,7 +1082,7 @@ function MediaCard({ item: m, mediaIconName }: MediaCardProps) {
                 onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = "#163a2c"; }}
                 onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = "#1e4d3a"; }}
               >
-                OPEN LINK <Icon name="open_in_new" size={14} />
+                {t('scholar.openLink')} <Icon name="open_in_new" size={14} />
               </button>
             </a>
           )}
@@ -1409,79 +1101,114 @@ function MediaCard({ item: m, mediaIconName }: MediaCardProps) {
 ───────────────────────────────────────────── */
 const ScholarDetailPage: React.FC = () => {
   const navigate = useNavigate();
-  const { lang: siteLang } = useLang();
+    // We rename 'lang' to 'siteLang' and 'setLang' to 'setGlobalLang' to avoid crashing with the local state variables below
+  const { lang: siteLang, setLang: setGlobalLang, t, dbLanguages } = useLang(); 
   const { id: scholarIdStr } = useParams<{ id: string }>();
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   
   const focusParam = searchParams.get("focus");
   const langParam = searchParams.get("lang");
+  const tabParam = searchParams.get("tab");
 
   const scholarId = scholarIdStr ? parseInt(scholarIdStr, 10) : 1;
   
-  const initialLang = (langParam?.toUpperCase() === "EN" || langParam?.toUpperCase() === "AR" || langParam?.toUpperCase() === "FR") 
-    ? (langParam.toUpperCase() as Language) 
-    : (siteLang as Language);
+  // Safely determine the initial language: URL param > siteLang > "EN"
+  const urlLang = langParam?.toUpperCase();
+  const validLangs = dbLanguages.map(l => l.code.toUpperCase());
+  
+  const initialLang = (urlLang && validLangs.includes(urlLang)) 
+    ? urlLang 
+    : (validLangs.includes(siteLang) ? siteLang : "EN");
+
+  const VALID_TABS: TabId[] = ["works", "media", "relations", "more"];
+  const initialTab: TabId = (tabParam && VALID_TABS.includes(tabParam as TabId))
+    ? (tabParam as TabId)
+    : "works";
 
   const [lang, setLang] = useState<Language>(initialLang);
-  const [activeTab, setActiveTab] = useState<TabId>("works");
+  const [activeTab, setActiveTab] = useState<TabId>(initialTab);
   const [contributorsOpen, setContributorsOpen] = useState(true);
   const [shareHov, setShareHov] = useState(false);
   const [linkHov, setLinkHov] = useState(false);
   const [showAddWork, setShowAddWork] = useState(false);
   const [showAddMedia, setShowAddMedia] = useState(false);
   const [showAllRevisions, setShowAllRevisions] = useState(false);
+  const [showLangDropdown, setShowLangDropdown] = useState(false); // 👈 NEW
   const headerRef = useRef<HTMLDivElement>(null);
+  const langDropdownRef = useRef<HTMLDivElement>(null); // 👈 NEW
   const [collapsed, setCollapsed] = useState(false);
   const isMobile = useIsMobile();
   const { user, loading: authLoading } = useAuth();
   const currentUserId = user?.id; 
+  
+  const canContribute = user && !user.is_banned && user.allowed_to_contribute !== false;
+  
   const [toast, setToast] = useState<{ message: string; type: "success" | "error" } | null>(null);
 
-  const [s, setS] = useState<ScholarDetail | null>(null);
+  const checkContributionPermission = (): boolean => {
+    if (!user) {
+      setToast({ message: t("scholar.loginFirst"), type: "error" });
+      return false;
+    }
+    if (user.is_banned) {
+      setToast({ message: t("scholar.accountBanned"), type: "error" });
+      return false;
+    }
+    if (user.allowed_to_contribute === false) {
+      setToast({ message: t("scholar.privilegesRevoked"), type: "error" });
+      return false;
+    }
+    return true;
+  };
+
+  const [s, setS] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
+    useEffect(() => {
     if (langParam) {
       const upperLang = langParam.toUpperCase();
-      if (upperLang === "EN" || upperLang === "AR" || upperLang === "FR") {
+      // ✅ Check against the dynamic list of languages from the database, NOT hardcoded EN/AR/FR
+      const validLangs = dbLanguages.map(l => l.code.toUpperCase());
+      if (validLangs.includes(upperLang)) {
         setLang(upperLang as Language);
       }
     }
-  }, [langParam]);
+  }, [langParam, dbLanguages]);
 
+  // 👇 NEW: Closes the language dropdown when clicking outside of it
   useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (langDropdownRef.current && !langDropdownRef.current.contains(event.target as Node)) {
+        setShowLangDropdown(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, []);
+
+   useEffect(() => {
     if (authLoading) return;
 
     const fetchData = async () => {
       setIsLoading(true);
       setError(null);
       try {
-        let response = await scholarsApi.getById(scholarId, lang.toLowerCase());
-        setS(transformBackendToUI(response.data, lang, currentUserId));
+        // ✅ Just ONE request! The backend now safely returns the scholar 
+        // with a fallback version if the requested language doesn't exist.
+        const response = await scholarsApi.getById(scholarId, lang.toLowerCase());
+        setS(transformBackendToUI(response.data, lang, currentUserId, t));
       } catch (err: any) {
-        try {
-          let response = await scholarsApi.getById(scholarId, "en");
-          setS(transformBackendToUI(response.data, lang, currentUserId));
-        } catch (enErr: any) {
-          try {
-            let response = await scholarsApi.getById(scholarId, "ar");
-            setS(transformBackendToUI(response.data, lang, currentUserId));
-          } catch (arErr: any) {
-            try {
-              let response = await scholarsApi.getById(scholarId, "fr");
-              setS(transformBackendToUI(response.data, lang, currentUserId));
-            } catch (finalErr: any) {
-              setError("Scholar not found");
-            }
-          }
-        }
+        console.error("Failed to fetch scholar:", err);
+        setError(t("scholar.notFound"));
       } finally {
         setIsLoading(false);
       }
     };
     fetchData();
-  }, [scholarId, lang, langParam, authLoading, currentUserId]);
+  }, [scholarId, lang, langParam, authLoading, currentUserId, t]);
 
   useEffect(() => {
     if (!focusParam || !s) return;
@@ -1502,10 +1229,32 @@ const ScholarDetailPage: React.FC = () => {
           element.classList.remove("highlight-focus");
         }, 2500);
       }
+
+      const newParams = new URLSearchParams(searchParams);
+      newParams.delete("focus");
+      setSearchParams(newParams, { replace: true });
     }, 800);
 
     return () => clearTimeout(timer);
-  }, [activeTab, s, focusParam]);
+  }, [activeTab, s, focusParam, searchParams, setSearchParams]);
+
+  // ✅ SMART URL CORRECTION: Placed safely BEFORE any early returns!
+  useEffect(() => {
+    if (!s) return; 
+    
+    const hasAnyContent = Object.values(s.name || {}).some(n => n) || Object.values(s.biography || {}).some(b => b);
+    if (!hasAnyContent) return;
+
+    const requestedUpper = lang.toUpperCase();
+    if (!s.name[requestedUpper]) {
+      const firstAvailable = Object.keys(s.name).find(key => s.name[key])?.toLowerCase();
+      if (firstAvailable && firstAvailable !== langParam?.toLowerCase()) {
+        setSearchParams({ lang: firstAvailable, tab: activeTab }, { replace: true });
+        setLang(firstAvailable.toUpperCase());
+        setGlobalLang(firstAvailable);
+      }
+    }
+  }, [s, lang, langParam, activeTab, setSearchParams, setGlobalLang]);
 
   if (isLoading) {
     return <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", backgroundColor: "#fbf9f4" }}><Icon name="hourglass_empty" size={32} style={{ color: "#1e4d3a66" }} /></div>;
@@ -1515,19 +1264,36 @@ const ScholarDetailPage: React.FC = () => {
   }
   if (!s) return null;
 
-  const t = T[lang];
   const isRTL = lang === "AR";
   
-  const getName = (): string => s.name[lang] ?? s.name.EN ?? "";
-  const getSubtitle = (): string | undefined => s.subtitle[lang] ?? s.subtitle.EN;
+  // ✅ 1. Get ALL system languages
+  const allSystemLangs = [...dbLanguages];
 
-  // ✅ UPDATED: Check biography instead of overviewText/body
-  const hasLangContent = !!(s.name[lang] || s.biography[lang]);
+  // ✅ 2. Sort them: Put the languages that ACTUALLY EXIST for this scholar at the VERY TOP
+  const sortedAllLangs = allSystemLangs.sort((a, b) => {
+    const aExists = !!s.name[a.code.toUpperCase()];
+    const bExists = !!s.name[b.code.toUpperCase()];
+    
+    if (aExists && !bExists) return -1; // 'a' is available, 'b' is not -> 'a' goes first
+    if (!aExists && bExists) return 1;  // 'b' is available, 'a' is not -> 'b' goes first
+    return 0; // Keep original order for the rest
+  });
+
+  // ✅ 3. Get the name of the current language for display
+  const currentLangName = sortedAllLangs.find(l => l.code.toLowerCase() === lang.toLowerCase())?.name || lang;
+  
+  // ✅ Bulletproof fallback: Try requested lang, then try ANY available language
+  const getName = (): string => s.name[lang.toUpperCase()] || Object.values(s.name).find(n => n) || t('scholar.unknown');
+  const getSubtitle = (): string | undefined => s.subtitle[lang.toUpperCase()] || Object.values(s.subtitle).find(n => n);
+  const getBiography = (): string => s.biography[lang.toUpperCase()] || Object.values(s.biography).find(b => b) || "";
+
+  const hasAnyContent = Object.values(s.name || {}).some(n => n) || Object.values(s.biography || {}).some(b => b);
+  const hasLangContent = !!(s.name[lang.toUpperCase()] || s.biography[lang.toUpperCase()]);
   const hasBeenEdited = !!(s.lastUpdatedBy && s.lastUpdatedBy !== s.createdBy);
 
   const tabIds: TabId[] = ["works", "media", "relations", "more"];
-  const homeLabel: string = isRTL ? "الرئيسية" : lang === "FR" ? "Accueil" : "Home";
-  const scholarsLabel: string = isRTL ? "العلماء" : lang === "FR" ? "Érudits" : "Scholars";
+  const homeLabel = t('scholar.home');
+  const scholarsLabel = t('scholar.scholars');
   const mediaIconName = (type: "pdf" | "audio" | "video"): string => ({ pdf: "article", audio: "mic", video: "movie" }[type]);
   const iconBtnStyle = (hov: boolean): React.CSSProperties => ({ width: "36px", height: "36px", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", backgroundColor: hov ? "#F5F3EC" : "transparent", color: "#1e4d3a99", border: "none", cursor: "pointer", transition: "background 0.2s ease" });
 
@@ -1607,7 +1373,7 @@ const ScholarDetailPage: React.FC = () => {
                   <div style={{ display: "flex", alignItems: "baseline", gap: "12px", flexWrap: "wrap", marginBottom: "2px" }}>
                     <h1 style={{ fontFamily: "'Hanken Grotesk', sans-serif", fontWeight: 700, color: "#1e4d3a", margin: 0, fontSize: isMobile ? (collapsed ? "16px" : "20px") : (collapsed ? "20px" : "28px"), transition: "font-size 0.25s ease" }}>{getName()}</h1>
                     <div style={{ ...MONO, fontSize: "9px", color: "#1e4d3a99", letterSpacing: "0.18em", opacity: 0.8, display: collapsed ? "none" : "block" }}>
-                      {t.createdBy} <ProfileLink name={s.createdBy} url={s.createdByUrl} /> • {s.createdDate}
+                      {t('scholar.createdBy')} <ProfileLink name={s.createdBy} url={s.createdByUrl} /> • {s.createdDate}
                     </div>
                   </div>
                   <div style={{ overflow: "hidden", maxHeight: collapsed ? "0px" : (hasBeenEdited ? "60px" : "30px"), opacity: collapsed ? 0 : 1, transition: "max-height 0.35s cubic-bezier(0.4,0,0.2,1), opacity 0.25s ease" }}>
@@ -1616,7 +1382,7 @@ const ScholarDetailPage: React.FC = () => {
                     )}
                     {hasBeenEdited && (
                       <div style={{ ...MONO, fontSize: "9px", color: "#1e4d3a99", letterSpacing: "0.18em", opacity: 0.8 }}>
-                        {t.lastUpdated} <ProfileLink name={s.lastUpdatedBy!} url={s.lastUpdatedByUrl!} /> • {s.lastUpdatedDate}
+                        {t('scholar.lastUpdated')} <ProfileLink name={s.lastUpdatedBy!} url={s.lastUpdatedByUrl!} /> • {s.lastUpdatedDate}
                       </div>
                     )}
                   </div>
@@ -1628,10 +1394,13 @@ const ScholarDetailPage: React.FC = () => {
               <div style={{ display: "flex", gap: "4px", paddingTop: "4px", flexShrink: 0 }}>
                 <button 
                   onClick={async () => {
-                    const shareData = { title: getName(), text: `Check out ${getName()} on Islamic Scholars Database`, url: window.location.href };
+                    const shareData = { title: getName(), text: t('scholar.shareText').replace('{name}', getName()), url: window.location.href };
                     try {
                       if (navigator.share) { await navigator.share(shareData); } 
-                      else { await navigator.clipboard.writeText(window.location.href); alert('Link copied to clipboard!'); }
+                      else { 
+                        await navigator.clipboard.writeText(window.location.href); 
+                        setToast({ message: t('scholar.linkCopied'), type: 'success' });
+                      }
                     } catch (err:any) { if (err.name !== 'AbortError') console.error('Share failed:', err); }
                   }} 
                   title="Share" onMouseEnter={() => setShareHov(true)} onMouseLeave={() => setShareHov(false)} style={iconBtnStyle(shareHov)}
@@ -1642,12 +1411,7 @@ const ScholarDetailPage: React.FC = () => {
                   onClick={async () => {
                     try {
                       await navigator.clipboard.writeText(window.location.href);
-                      const btn = document.getElementById('copy-link-btn');
-                      if (btn) {
-                        const originalHTML = btn.innerHTML;
-                        btn.innerHTML = '<span class="material-symbols-outlined" style="font-size: 18px;">check</span>';
-                        setTimeout(() => { btn.innerHTML = originalHTML; }, 2000);
-                      }
+                      setToast({ message: t('scholar.linkCopied'), type: 'success' });
                     } catch (err) {
                       const input = document.createElement('input');
                       input.value = window.location.href;
@@ -1655,7 +1419,7 @@ const ScholarDetailPage: React.FC = () => {
                       input.select();
                       document.execCommand('copy');
                       document.body.removeChild(input);
-                      alert('Link copied to clipboard!');
+                      setToast({ message: t('scholar.linkCopied'), type: 'success' });
                     }
                   }} 
                   id="copy-link-btn" title="Copy link" onMouseEnter={() => setLinkHov(true)} onMouseLeave={() => setLinkHov(false)} style={iconBtnStyle(linkHov)}
@@ -1667,28 +1431,144 @@ const ScholarDetailPage: React.FC = () => {
           </div>
           
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: collapsed ? "4px" : "6px", paddingTop: collapsed ? "4px" : "6px", borderTop: "1px solid rgba(30,77,58,0.1)", transition: "margin-top 0.35s cubic-bezier(0.4,0,0.2,1), padding-top 0.35s cubic-bezier(0.4,0,0.2,1)", flexWrap: "wrap", gap: "10px" }}>
-            <div style={{ display: "flex", gap: "4px", padding: "4px 8px", backgroundColor: "rgba(30,77,58,0.05)", border: "1px solid rgba(30,77,58,0.1)", borderRadius: "999px", flexWrap: "wrap" }}>
-              {(["AR", "EN", "FR"] as Language[]).map((l) => {
-                const active = lang === l;
+                        <div 
+              ref={langDropdownRef}
+              style={{ display: "flex", gap: "4px", padding: "4px 8px", backgroundColor: "rgba(30,77,58,0.05)", border: "1px solid rgba(30,77,58,0.1)", borderRadius: "999px", flexWrap: "wrap", position: "relative" }}
+            >
+              {/* ✅ 1. Show the first 3 languages from the SORTED list (Available ones are at the top!) */}
+              {sortedAllLangs.slice(0, 3).map((dbLang) => {
+                const langCodeUpper = dbLang.code.toUpperCase() as Language;
+                const active = lang === langCodeUpper;
+                const isAvailable = !!s.name[langCodeUpper]; // Check if this lang actually has content
+                
                 return (
                   <button 
-                    key={l} 
+                    key={dbLang.language_id} 
                     onClick={() => {
-                      setLang(l);
-                      const params = new URLSearchParams(searchParams);
-                      params.set("lang", l.toLowerCase());
-                      navigate({ search: params.toString() }, { replace: true });
+                      setLang(langCodeUpper);
+                      setGlobalLang(dbLang.code);
+                      setSearchParams({ lang: dbLang.code, tab: activeTab }, { replace: true });
                     }} 
-                    style={{ ...MONO, fontSize: "10px", fontWeight: 700, letterSpacing: "0.08em", padding: isMobile ? "4px 9px" : "4px 12px", borderRadius: "999px", border: "1px solid", borderColor: active ? "#1e4d3a" : "rgba(30,77,58,0.25)", backgroundColor: active ? "#1e4d3a" : "transparent", color: active ? "#fff" : "#1e4d3a99", cursor: "pointer", transition: "all 0.2s ease" }}
+                    style={{ 
+                      ...MONO, 
+                      fontSize: "10px", 
+                      fontWeight: 700, 
+                      letterSpacing: "0.08em", 
+                      padding: isMobile ? "4px 9px" : "4px 12px", 
+                      borderRadius: "999px", 
+                      border: "1px solid", 
+                      // If it's not available, make it look slightly muted but still clickable
+                      borderColor: active ? "#1e4d3a" : (isAvailable ? "rgba(30,77,58,0.25)" : "rgba(30,77,58,0.10)"), 
+                      backgroundColor: active ? "#1e4d3a" : "transparent", 
+                      color: active ? "#fff" : (isAvailable ? "#1e4d3a99" : "#1e4d3a40"), 
+                      cursor: "pointer", 
+                      transition: "all 0.2s ease" 
+                    }}
+                    title={!isAvailable ? `No content in ${dbLang.name} yet. Will show available language.` : ""}
                   >
-                    {isMobile ? l : (l === "AR" ? "ARABIC" : l === "EN" ? "ENGLISH" : "FRENCH")}
+                    {isMobile ? dbLang.code.toUpperCase() : dbLang.name}
                   </button>
                 );
               })}
+
+              {/* ✅ 2. If there are MORE than 3 languages in the system, show the "•••" button */}
+              {sortedAllLangs.length > 3 && (
+                <>
+                  <button 
+                    onClick={() => setShowLangDropdown(!showLangDropdown)}
+                    style={{ 
+                      ...MONO, 
+                      fontSize: "14px", 
+                      fontWeight: 700, 
+                      letterSpacing: "0.08em", 
+                      padding: isMobile ? "4px 9px" : "4px 12px", 
+                      borderRadius: "999px", 
+                      border: "1px solid rgba(30,77,58,0.25)", 
+                      backgroundColor: "transparent", 
+                      color: "#1e4d3a99", 
+                      cursor: "pointer", 
+                      transition: "all 0.2s ease",
+                      display: "flex", 
+                      alignItems: "center", 
+                      justifyContent: "center"
+                    }}
+                    onMouseEnter={(e) => { e.currentTarget.style.color = "#1e4d3a"; e.currentTarget.style.backgroundColor = "rgba(30,77,58,0.05)"; }}
+                    onMouseLeave={(e) => { e.currentTarget.style.color = "#1e4d3a99"; e.currentTarget.style.backgroundColor = "transparent"; }}
+                    title="More languages"
+                  >
+                    •••
+                  </button>
+
+                  {/* ✅ 3. The Dropdown Menu (Shows ALL remaining languages, available ones still at the top) */}
+                  {showLangDropdown && (
+                    <div style={{
+                      position: "absolute",
+                      top: "calc(100% + 8px)",
+                      right: isRTL ? "auto" : "0",
+                      left: isRTL ? "0" : "auto",
+                      backgroundColor: "#fff",
+                      border: "1px solid rgba(30,77,58,0.1)",
+                      borderRadius: "12px",
+                      boxShadow: "0 10px 25px rgba(30,77,58,0.15)",
+                      padding: "8px",
+                      display: "flex",
+                      flexDirection: "column",
+                      gap: "4px",
+                      zIndex: 100,
+                      minWidth: "140px"
+                    }}>
+                      {sortedAllLangs.slice(3).map((dbLang) => {
+                        const langCodeUpper = dbLang.code.toUpperCase() as Language;
+                        const active = lang === langCodeUpper;
+                        const isAvailable = !!s.name[langCodeUpper];
+                        
+                        return (
+                          <button 
+                            key={dbLang.language_id} 
+                            onClick={() => {
+                              setLang(langCodeUpper);
+                              setGlobalLang(dbLang.code);
+                              setSearchParams({ lang: dbLang.code, tab: activeTab }, { replace: true });
+                              setShowLangDropdown(false);
+                            }} 
+                            style={{ 
+                              ...MONO, 
+                              fontSize: "11px", 
+                              fontWeight: 700, 
+                              letterSpacing: "0.05em", 
+                              padding: "8px 12px", 
+                              borderRadius: "8px", 
+                              border: "none", 
+                              backgroundColor: active ? "#1e4d3a" : "transparent", 
+                              color: active ? "#fff" : (isAvailable ? "#1e4d3a" : "#1e4d3a40"), 
+                              cursor: "pointer", 
+                              transition: "all 0.2s ease", 
+                              textAlign: isRTL ? "right" : "left",
+                              display: "flex",
+                              justifyContent: "space-between",
+                              alignItems: "center"
+                            }}
+                            onMouseEnter={(e) => { if (!active) e.currentTarget.style.backgroundColor = "#F5F3EC"; }}
+                            onMouseLeave={(e) => { if (!active) e.currentTarget.style.backgroundColor = "transparent"; }}
+                          >
+                            <span>{dbLang.name}</span>
+                            {/* Optional: Add a small dot to show it has content */}
+                            {isAvailable && <span style={{ width: 6, height: 6, borderRadius: "50%", backgroundColor: "#1e4d3a", marginLeft: 8 }} />}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
+                </>
+              )}
             </div>
             
             <button 
-              onClick={() => navigate(hasLangContent ? `/scholars/${s.id}/edit/${lang}` : `/scholars/${s.id}/submit/${lang}`)}
+              onClick={() => {
+                if (checkContributionPermission()) {
+                  navigate(hasLangContent ? `/scholars/${s.id}/edit/${lang.toLowerCase()}` : `/scholars/${s.id}/submit/${lang.toLowerCase()}`);
+                }
+              }}
               style={{ 
                 display: "inline-flex", alignItems: "center", gap: "8px", padding: isMobile ? "8px 14px" : "9px 18px",
                 border: "2px solid #1e4d3a", borderRadius: "8px", 
@@ -1709,21 +1589,19 @@ const ScholarDetailPage: React.FC = () => {
               }}
             >
               <Icon name={hasLangContent ? "edit_note" : "add_circle"} size={14} />
-              {hasLangContent ? (lang === "EN" ? "EDIT ENGLISH" : lang === "AR" ? "تعديل العربية" : "MODIFIER FRANÇAIS") : (lang === "EN" ? "ADD ENGLISH VERSION" : lang === "AR" ? "إضافة نسخة عربية" : "AJOUTER VERSION FRANÇAISE")}
+              {hasLangContent ? t('scholar.editBtn') : t('scholar.addVersionBtn')}
             </button>
           </div>
         </div>
       </header>
 
-            <main style={{ maxWidth: "1280px", margin: "0 auto", padding: isMobile ? "16px 16px 40px" : "24px 64px 60px" }}>
-        {!hasLangContent ? (
-          <EmptyLangState lang={lang} t={t} onContribute={() => navigate(`/scholars/${s.id}/submit/${lang}`)} />
+      <main style={{ maxWidth: "1280px", margin: "0 auto", padding: isMobile ? "16px 16px 40px" : "24px 64px 60px" }}>
+        {/* ✅ Only show empty state if the scholar has NO content in ANY language */}
+        {!hasAnyContent ? (
+          <EmptyLangState langName={currentLangName} t={t} onContribute={() => navigate(`/scholars/${s.id}/submit/${lang.toLowerCase()}`)} />
         ) : (
           <>
-            {/* ✅ WIKIPEDIA-STYLE LAYOUT: Card floats left, biography wraps around */}
             <div style={{ position: "relative", marginBottom: "64px" }}>
-              
-              {/* FLOATING SIDEBAR CARD */}
               <aside style={{ 
                 float: isMobile ? "none" : (isRTL ? "right" : "left"), 
                 width: isMobile ? "100%" : "300px", 
@@ -1743,16 +1621,16 @@ const ScholarDetailPage: React.FC = () => {
                   </div>
 
                   <div style={{ padding: isMobile ? "18px 18px 20px" : "20px 20px 24px" }}>
-                    <p style={{ ...MONO, fontSize: "9px", color: "#1e4d3a", letterSpacing: "0.2em", marginBottom: "12px", borderBottom: "1px solid rgba(30,77,58,0.1)", paddingBottom: "8px" }}>{t.atAGlance}</p>
+                    <p style={{ ...MONO, fontSize: "9px", color: "#1e4d3a", letterSpacing: "0.2em", marginBottom: "12px", borderBottom: "1px solid rgba(30,77,58,0.1)", paddingBottom: "8px" }}>{t('scholar.atAGlance')}</p>
                     <table style={{ width: "100%", borderCollapse: "collapse" }}>
                       <tbody>
                         {([
-                          [t.fullName, s.atAGlance.fullName],
-                          [t.born, s.atAGlance.born],
-                          [t.died, s.atAGlance.died],
-                          [t.century, s.atAGlance.century],
-                          [t.region, s.atAGlance.region],
-                          [t.discipline, s.atAGlance.discipline],
+                          [t('scholar.fullName'), s.atAGlance.fullName],
+                          [t('scholar.born'), s.atAGlance.born],
+                          [t('scholar.died'), s.atAGlance.died],
+                          [t('scholar.century'), s.atAGlance.century],
+                          [t('scholar.region'), s.atAGlance.region],
+                          [t('scholar.discipline'), s.atAGlance.discipline],
                         ] as [string, string][]).map(([label, value]) => (
                           <tr key={label} style={{ borderBottom: "1px solid #F5F3EC" }}>
                             <td style={{ ...MONO, padding: "8px 0", fontSize: "10px", color: "#1e4d3a99", fontWeight: 500, verticalAlign: "top" }}>{label}</td>
@@ -1765,16 +1643,16 @@ const ScholarDetailPage: React.FC = () => {
                     {s.contributors.length > 0 && (
                       <div style={{ marginTop: "20px", paddingTop: "16px", borderTop: "1px solid rgba(30,77,58,0.1)" }}>
                         <button onClick={() => setContributorsOpen(!contributorsOpen)} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", width: "100%", background: "none", border: "none", cursor: "pointer", padding: 0 }}>
-                          <span style={{ ...MONO, fontSize: "9px", color: "#1e4d3a", letterSpacing: "0.2em", display: "flex", alignItems: "center", gap: "4px" }}>{t.allContributors}<Icon name="expand_more" size={14} /></span>
-                          <span style={{ ...MONO, fontSize: "9px", color: "#1e4d3a", fontWeight: 700, backgroundColor: "rgba(30,77,58,0.05)", padding: "2px 8px", borderRadius: "4px" }}>{s.contributors.length} {t.contributors}</span>
+                          <span style={{ ...MONO, fontSize: "9px", color: "#1e4d3a", letterSpacing: "0.2em", display: "flex", alignItems: "center", gap: "4px" }}>{t('scholar.allContributors')}<Icon name="expand_more" size={14} /></span>
+                          <span style={{ ...MONO, fontSize: "9px", color: "#1e4d3a", fontWeight: 700, backgroundColor: "rgba(30,77,58,0.05)", padding: "2px 8px", borderRadius: "4px" }}>{s.contributors.length} {t('scholar.contributors')}</span>
                         </button>
                         {contributorsOpen && (
                           <div style={{ marginTop: "12px" }}>
                             <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "8px" }}>
-                              <span style={{ ...MONO, fontSize: "9px", color: "#1e4d3a66", letterSpacing: "0.08em" }}>{t.contributor}</span>
-                              <span style={{ ...MONO, fontSize: "9px", color: "#1e4d3a66", letterSpacing: "0.08em" }}>{t.contributions}</span>
+                              <span style={{ ...MONO, fontSize: "9px", color: "#1e4d3a66", letterSpacing: "0.08em" }}>{t('scholar.contributor')}</span>
+                              <span style={{ ...MONO, fontSize: "9px", color: "#1e4d3a66", letterSpacing: "0.08em" }}>{t('scholar.contributions')}</span>
                             </div>
-                            {s.contributors.map((c) => (
+                            {s.contributors.map((c: { name: string; profileUrl?: string; contributions: number }) => (
                               <div key={c.name} style={{ display: "flex", justifyContent: "space-between", padding: "5px 0", borderBottom: "1px solid #F5F3EC" }}>
                                 <ProfileLink name={c.name} url={c.profileUrl ?? "#"} />
                                 <span style={{ ...MONO, fontSize: "10px", color: "#1e4d3a", fontWeight: 700 }}>{c.contributions}</span>
@@ -1788,118 +1666,175 @@ const ScholarDetailPage: React.FC = () => {
                 </div>
               </aside>
 
-              {/* BIOGRAPHY CONTENT - wraps around the floated card */}
               <div>
-                <BiographyRenderer 
-                  content={s.biography[lang] || s.biography.EN || ""} 
-                  lang={lang.toLowerCase()} 
-                />
+                <BiographyRenderer content={getBiography()} lang={lang.toLowerCase()} />
               </div>
 
-              {/* Clear the float */}
               <div style={{ clear: "both" }} />
             </div>
 
-            {/* ✅ TABS SECTION (BELOW EVERYTHING) */}
             <div style={{ borderTop: "1px solid rgba(30,77,58,0.1)", paddingTop: isMobile ? "28px" : "48px" }}>
               <div style={{ display: "flex", borderBottom: "1.5px solid rgba(30,77,58,0.1)", marginBottom: isMobile ? "20px" : "32px", position: "sticky", top: "var(--header-h, 130px)", zIndex: 40, willChange: "transform", backgroundColor: "#fbf9f4", overflowX: "auto" }}>
-                {tabIds.map((id, i) => (<button key={id} onClick={() => setActiveTab(id)} className={`tab-btn${activeTab === id ? " active" : ""}`}>{t.tabs[i]}</button>))}
+                {tabIds.map((id) => (
+                  <button 
+                    key={id} 
+                    onClick={() => {
+                      setActiveTab(id);
+                      const newParams = new URLSearchParams(searchParams);
+                      newParams.set("tab", id);
+                      setSearchParams(newParams, { replace: true });
+                    }} 
+                    className={`tab-btn${activeTab === id ? " active" : ""}`}
+                  >
+                    {t(`scholar.tab.${id}`)}
+                  </button>
+                ))}
               </div>
 
+              {/* ✅ WORKS TAB */}
               {activeTab === "works" && (
                 <div>
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "24px", flexWrap: "wrap", gap: "12px" }}>
-                    <h2 style={{ fontFamily: "'Hanken Grotesk', sans-serif", fontSize: isMobile ? "19px" : "24px", fontWeight: 700, color: "#1e4d3a", margin: 0 }}>{t.bibliographyTitle}</h2>
-                    <HoverBtn onClick={() => setShowAddWork(true)}><Icon name="add_circle" size={14} />{t.addWork}</HoverBtn>
+                    <h2 style={{ fontFamily: "'Hanken Grotesk', sans-serif", fontSize: isMobile ? "19px" : "24px", fontWeight: 700, color: "#1e4d3a", margin: 0 }}>{t('scholar.bibliographyTitle')}</h2>
+                    <HoverBtn onClick={() => { if (checkContributionPermission()) setShowAddWork(true); }}>
+                      <Icon name="add_circle" size={14} />{t('scholar.addWork')}
+                    </HoverBtn>
                   </div>
-                  <div style={{ border: "1px solid rgba(30,77,58,0.1)", borderRadius: "16px", overflow: "hidden", backgroundColor: "#fff" }}>
-                    <div style={{ overflowX: "auto" }}>
-                    <table style={{ width: "100%", borderCollapse: "collapse", minWidth: isMobile ? "560px" : undefined }}>
-                      <thead><tr style={{ backgroundColor: "#F5F3EC", borderBottom: "1.5px solid rgba(30,77,58,0.1)" }}>{[t.colTitle, t.colYear, t.colFormat, t.colAccess].map((col) => (<th key={col} style={{ ...MONO, padding: "12px 16px", textAlign: "left", fontSize: "9px", color: "#1e4d3a99", letterSpacing: "0.1em", fontWeight: 700 }}>{col}</th>))}</tr></thead>
-                      <tbody>
-                        {s.works.map((w, i) => {
-                          return (
-                            <tr 
-                              key={w.work_id || i} 
-                              id={w.work_id ? `work-${w.work_id}` : undefined}
-                              className="row-hover" 
-                              style={{ borderBottom: "1px solid #F5F3EC", transition: "background 0.2s ease" }}
-                            >
-                              <td style={{ fontFamily: lang === "AR" ? "'Amiri', serif" : "'Hanken Grotesk', sans-serif", padding: "14px 16px", fontSize: "14px", fontWeight: 700, fontStyle: "italic", color: "#1e4d3a" }}>
-                                {w.title}
-                                {w.uploadedBy && (<div style={{ ...MONO, fontSize: "9px", fontStyle: "normal", fontWeight: 400, color: "#1e4d3a66", marginTop: "3px" }}>added by <ProfileLink name={w.uploadedBy} url={w.uploadedByUrl ?? "#"} /></div>)}
-                              </td>
-                              <td style={{ padding: "14px 16px", fontSize: "13px", color: "#1e4d3a99", ...SANS }}>{w.year}</td>
-                              <td style={{ padding: "14px 16px" }}><span style={{ ...MONO, fontSize: "9px", fontWeight: 700, padding: "3px 10px", borderRadius: "4px", backgroundColor: w.format === "BOOK" ? "rgba(30,77,58,0.08)" : "#F5F3EC", color: w.format === "BOOK" ? "#1e4d3a" : "#1e4d3a99" }}>{FORMAT_LABELS[lang][w.format].toUpperCase()}</span></td>
-                              <td style={{ padding: "14px 16px" }}>
-                                <WorkActions work={w} />
-                              </td>
-                            </tr>
-                          );
-                        })}
-                      </tbody>
-                    </table>
-                    </div>
-                    {s.works.length === 0 && (
-                      <div style={{ padding: "48px 32px", textAlign: "center", backgroundColor: "#F5F3EC" }}>
-                        <Icon name="menu_book" size={36} style={{ color: "#1e4d3a66" }} />
-                        <p style={{ color: "#1e4d3a99", fontSize: "14px", marginTop: "12px", ...SANS }}>No works added yet.</p>
-                        <button className="action-link" onClick={() => setShowAddWork(true)} style={{ marginTop: "8px" }}>Add the first work →</button>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              )}
-
-              {activeTab === "media" && (
-                <div>
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "28px", flexWrap: "wrap", gap: "12px" }}>
-                    <h2 style={{ fontFamily: "'Hanken Grotesk', sans-serif", fontSize: isMobile ? "19px" : "24px", fontWeight: 700, color: "#1e4d3a", margin: 0 }}>{t.mediaTitle}</h2>
-                    <HoverBtn onClick={() => setShowAddMedia(true)}><Icon name="add_circle" size={14} />{t.addMedia}</HoverBtn>
-                  </div>
-                  <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "repeat(3,1fr)", gap: isMobile ? "16px" : "20px" }}>
-                    {s.media.map((m, i) => (
-                      <div key={m.media_id || i} id={m.media_id ? `media-${m.media_id}` : undefined}>
-                        <MediaCard item={m} mediaIconName={mediaIconName} />
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {activeTab === "relations" && (
-                <div style={{ display: "flex", flexDirection: "column", gap: isMobile ? "20px" : "32px" }}>
-                  <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: isMobile ? "16px" : "20px" }}>
-                    {[ 
-                      { data: s.intellectualLineage, label: t.intellectualLineage, icon: "school", color: "#1e4d3a" }, 
-                      { data: s.notableDisciples, label: t.notableDisciples, icon: "groups", color: "#C9A84C" } 
-                    ].map(({ data, label, icon, color }) => (
-                      <div key={label} style={{ backgroundColor: "#F5F3EC", padding: isMobile ? "20px 18px" : "28px", borderRadius: "16px", border: "1px solid rgba(30,77,58,0.1)" }}>
-                        <h3 style={{ ...MONO, fontSize: "9px", color, letterSpacing: "0.15em", marginBottom: "24px", display: "flex", alignItems: "center", gap: "8px" }}><Icon name={icon} size={15} />{label}</h3>
-                        <div style={{ display: "flex", gap: "24px", flexWrap: "wrap" }}>
-                          {data.map((p) => (<a key={p.name} href={p.profileUrl ?? "#"} className="person-card" style={{ display: "flex", alignItems: "center", gap: "12px", textDecoration: "none" }}><div style={{ width: "44px", height: "44px", borderRadius: "50%", backgroundColor: p.color, display: "flex", alignItems: "center", justifyContent: "center", color: p.textColor, fontSize: "13px", fontWeight: 700, flexShrink: 0 }}>{p.initials}</div><div><p className="person-name" style={{ fontSize: "13px", fontWeight: 700, color: "#1e4d3a", margin: "0 0 2px", transition: "color 0.2s ease", ...SANS }}>{p.name}</p><p style={{ ...MONO, fontSize: "9px", color: "#1e4d3a66", letterSpacing: "0.08em", margin: 0 }}>{p.role}</p></div></a>))}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                  {s.relatedScholars.length > 0 && (
-                    <div>
-                      <h3 style={{ ...MONO, fontSize: "9px", color: "#1e4d3a99", letterSpacing: "0.12em", marginBottom: "16px" }}>{t.relatedByField}</h3>
-                      <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "repeat(3,1fr)", gap: "14px" }}>
-                        {s.relatedScholars.map((rs, i) => (<div key={i} className="card-hover" style={{ backgroundColor: "#fff", padding: "16px", borderRadius: "16px", border: "1px solid rgba(30,77,58,0.1)" }}><p style={{ ...MONO, fontSize: "9px", color: rs.labelColor, letterSpacing: "0.08em", marginBottom: "6px" }}>{rs.label}</p><p style={{ fontSize: "14px", fontWeight: 700, color: "#1e4d3a", marginBottom: "4px", fontFamily: "'Hanken Grotesk', sans-serif" }}>{rs.name}</p><p style={{ fontSize: "12px", color: "#1e4d3a99", fontStyle: "italic", margin: 0, ...SANS }}>{rs.description}</p></div>))}
+                  
+                  {/* ✅ SAFE CHECK: Prevents crashes if s.works is somehow undefined */}
+                  {(s.works?.length ?? 0) === 0 ? (
+                    <TabEmptyState 
+                      icon="menu_book" 
+                      message={t('scholar.emptyWorks')}
+                      actionLabel={t('scholar.addFirstWork')}
+                      onAction={() => setShowAddWork(true)}
+                      canAct={canContribute ?? undefined}
+                      isRTL={isRTL}
+                    />
+                  ) : (
+                    <div style={{ border: "1px solid rgba(30,77,58,0.1)", borderRadius: "16px", overflow: "hidden", backgroundColor: "#fff" }}>
+                      <div style={{ overflowX: "auto" }}>
+                        <table style={{ width: "100%", borderCollapse: "collapse", minWidth: isMobile ? "560px" : undefined }}>
+                          <thead><tr style={{ backgroundColor: "#F5F3EC", borderBottom: "1.5px solid rgba(30,77,58,0.1)" }}>{[t('scholar.colTitle'), t('scholar.colYear'), t('scholar.colFormat'), t('scholar.colAccess')].map((col) => (<th key={col} style={{ ...MONO, padding: "12px 16px", textAlign: "left", fontSize: "9px", color: "#1e4d3a99", letterSpacing: "0.1em", fontWeight: 700 }}>{col}</th>))}</tr></thead>
+                          <tbody>
+                            {s.works?.map((w: Work, i: number) => (
+                              <tr key={w.work_id || i} id={w.work_id ? `work-${w.work_id}` : undefined} className="row-hover" style={{ borderBottom: "1px solid #F5F3EC", transition: "background 0.2s ease" }}>
+                                <td style={{ fontFamily: lang === "AR" ? "'Amiri', serif" : "'Hanken Grotesk', sans-serif", padding: "14px 16px", fontSize: "14px", fontWeight: 700, fontStyle: "italic", color: "#1e4d3a" }}>
+                                  {w.title}
+                                  {w.uploadedBy && (<div style={{ ...MONO, fontSize: "9px", fontStyle: "normal", fontWeight: 400, color: "#1e4d3a66", marginTop: "3px" }}>{t('scholar.addedBy')} <ProfileLink name={w.uploadedBy} url={w.uploadedByUrl ?? "#"} /></div>)}
+                                </td>
+                                <td style={{ padding: "14px 16px", fontSize: "13px", color: "#1e4d3a99", ...SANS }}>{w.year}</td>
+                                <td style={{ padding: "14px 16px" }}><span style={{ ...MONO, fontSize: "9px", fontWeight: 700, padding: "3px 10px", borderRadius: "4px", backgroundColor: w.format === "BOOK" ? "rgba(30,77,58,0.08)" : "#F5F3EC", color: w.format === "BOOK" ? "#1e4d3a" : "#1e4d3a99" }}>{t(`scholar.format.${w.format}`)}</span></td>
+                                <td style={{ padding: "14px 16px" }}><WorkActions work={w} t={t} /></td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
                       </div>
                     </div>
                   )}
                 </div>
               )}
 
+              {/* ✅ MEDIA TAB */}
+              {activeTab === "media" && (
+                <div>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "28px", flexWrap: "wrap", gap: "12px" }}>
+                    <h2 style={{ fontFamily: "'Hanken Grotesk', sans-serif", fontSize: isMobile ? "19px" : "24px", fontWeight: 700, color: "#1e4d3a", margin: 0 }}>{t('scholar.mediaTitle')}</h2>
+                    <HoverBtn onClick={() => { if (checkContributionPermission()) setShowAddMedia(true); }}>
+                      <Icon name="add_circle" size={14} />{t('scholar.addMedia')}
+                    </HoverBtn>
+                  </div>
+                  
+                  {s.media.length === 0 ? (
+                    <TabEmptyState 
+                      icon="folder_open" 
+                      message={t('scholar.emptyMedia')}
+                      actionLabel={t('scholar.addFirstMedia')}
+                      onAction={() => setShowAddMedia(true)}
+                      canAct={canContribute ?? undefined}
+                      isRTL={isRTL}
+                    />
+                  ) : (
+                    <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "repeat(3,1fr)", gap: isMobile ? "16px" : "20px" }}>
+                      {s.media.map((m: MediaItem, i: number) => (
+                        <div key={m.media_id || i} id={m.media_id ? `media-${m.media_id}` : undefined}>
+                          <MediaCard item={m} mediaIconName={mediaIconName} t={t} />
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* ✅ RELATIONS TAB */}
+              {activeTab === "relations" && (
+                <div>
+                  {s.intellectualLineage.length === 0 && s.notableDisciples.length === 0 && s.relatedScholars.length === 0 ? (
+                    <TabEmptyState 
+                      icon="account_tree" 
+                      message={t('scholar.emptyRelations')}
+                      isRTL={isRTL}
+                    />
+                  ) : (
+                    <div style={{ display: "flex", flexDirection: "column", gap: isMobile ? "20px" : "32px" }}>
+                      <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: isMobile ? "16px" : "20px" }}>
+                        {[ 
+                          { data: s.intellectualLineage, label: t('scholar.intellectualLineage'), icon: "school", color: "#1e4d3a" }, 
+                          { data: s.notableDisciples, label: t('scholar.notableDisciples'), icon: "groups", color: "#C9A84C" } 
+                        ].map(({ data, label, icon, color }) => (
+                          data.length > 0 && (
+                            <div key={label} style={{ backgroundColor: "#F5F3EC", padding: isMobile ? "20px 18px" : "28px", borderRadius: "16px", border: "1px solid rgba(30,77,58,0.1)" }}>
+                              <h3 style={{ ...MONO, fontSize: "9px", color, letterSpacing: "0.15em", marginBottom: "24px", display: "flex", alignItems: "center", gap: "8px" }}><Icon name={icon} size={15} />{label}</h3>
+                              <div style={{ display: "flex", gap: "24px", flexWrap: "wrap" }}>
+                                {data.map((p: RelatedPerson) => (
+                                  <a key={p.name} href={p.profileUrl ?? "#"} className="person-card" style={{ display: "flex", alignItems: "center", gap: "12px", textDecoration: "none" }}>
+                                    <div style={{ width: "44px", height: "44px", borderRadius: "50%", backgroundColor: p.color, display: "flex", alignItems: "center", justifyContent: "center", color: p.textColor, fontSize: "13px", fontWeight: 700, flexShrink: 0 }}>{p.initials}</div>
+                                    <div>
+                                      <p className="person-name" style={{ fontSize: "13px", fontWeight: 700, color: "#1e4d3a", margin: "0 0 2px", transition: "color 0.2s ease", ...SANS }}>{p.name}</p>
+                                      <p style={{ ...MONO, fontSize: "9px", color: "#1e4d3a66", letterSpacing: "0.08em", margin: 0 }}>{p.role}</p>
+                                    </div>
+                                  </a>
+                                ))}
+                              </div>
+                            </div>
+                          )
+                        ))}
+                      </div>
+                      {s.relatedScholars.length > 0 && (
+                        <div>
+                          <h3 style={{ ...MONO, fontSize: "9px", color: "#1e4d3a99", letterSpacing: "0.12em", marginBottom: "16px" }}>{t('scholar.relatedByField')}</h3>
+                          <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "repeat(3,1fr)", gap: "14px" }}>
+                            {s.relatedScholars.map((rs: RelatedScholar, i: number) => (
+                              <div key={i} className="card-hover" style={{ backgroundColor: "#fff", padding: "16px", borderRadius: "16px", border: "1px solid rgba(30,77,58,0.1)" }}>
+                                <p style={{ ...MONO, fontSize: "9px", color: rs.labelColor, letterSpacing: "0.08em", marginBottom: "6px" }}>{rs.label}</p>
+                                <p style={{ fontSize: "14px", fontWeight: 700, color: "#1e4d3a", marginBottom: "4px", fontFamily: "'Hanken Grotesk', sans-serif" }}>{rs.name}</p>
+                                <p style={{ fontSize: "12px", color: "#1e4d3a99", fontStyle: "italic", margin: 0, ...SANS }}>{rs.description}</p>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* ✅ MORE / REFERENCES TAB */}
               {activeTab === "more" && (
                 <div style={{ display: "grid" }}>
-                  {s.academicReferences.length > 0 && (
+                  {/* ✅ SAFE CHECK: Prevents crashes if s.academicReferences is somehow undefined */}
+                  {(s.academicReferences?.length ?? 0) === 0 ? (
+                    <TabEmptyState 
+                      icon="library_books" 
+                      message={t('scholar.emptyReferences')}
+                      isRTL={isRTL}
+                    />
+                  ) : (
                     <div>
-                      <h3 style={{ ...MONO, fontSize: "9px", color: "#1e4d3a99", letterSpacing: "0.12em", marginBottom: "20px" }}>{t.academicReferences}</h3>
+                      <h3 style={{ ...MONO, fontSize: "9px", color: "#1e4d3a99", letterSpacing: "0.12em", marginBottom: "20px" }}>{t('scholar.academicReferences')}</h3>
                       <ol style={{ paddingLeft: "0", margin: 0, display: "flex", flexDirection: "column", gap: "16px", listStyle: "none" }}>
-                        {s.academicReferences.map((r, i) => (
+                        {s.academicReferences?.map((r: Reference, i: number) => (
                           <li key={i} style={{ padding: isMobile ? "14px 16px" : "16px 20px", backgroundColor: "#fff", border: "1px solid rgba(30,77,58,0.1)", borderRadius: "16px", display: "flex", flexDirection: "column", gap: "6px" }}>
                             <p style={{ fontFamily: "'Hanken Grotesk', sans-serif", fontSize: "14px", fontWeight: 600, color: "#1e4d3a", margin: 0 }}>{r.title}</p>
                             <p style={{ ...SANS, fontSize: "13px", color: "#1e4d3acc", lineHeight: 1.6, margin: 0 }}>{r.citation}</p>
@@ -1918,9 +1853,9 @@ const ScholarDetailPage: React.FC = () => {
 
               {s.recentRevisions.length > 0 && (
                 <section style={{ marginTop: isMobile ? "48px" : "80px", paddingTop: isMobile ? "28px" : "40px", borderTop: "1px solid rgba(30,77,58,0.1)" }}>
-                  <h3 style={{ ...MONO, fontSize: "9px", color: "#1e4d3a99", letterSpacing: "0.12em", marginBottom: "20px" }}>{t.recentRevisions}</h3>
+                  <h3 style={{ ...MONO, fontSize: "9px", color: "#1e4d3a99", letterSpacing: "0.12em", marginBottom: "20px" }}>{t('scholar.recentRevisions')}</h3>
                   <div style={{ maxWidth: "800px", display: "flex", flexDirection: "column", gap: "12px" }}>
-                    {s.recentRevisions.slice(0, showAllRevisions ? s.recentRevisions.length : 3).map((r, i) => (
+                    {s.recentRevisions.slice(0, showAllRevisions ? s.recentRevisions.length : 3).map((r: RecentRevision, i: number) => (
                       <div key={i} style={{ display: "flex", gap: "16px", padding: "10px 0", borderBottom: "1px solid #F5F3EC", ...SANS, flexWrap: "wrap" }}>
                         <span style={{ ...MONO, fontSize: "10px", color: "#1e4d3a66", minWidth: "80px" }}>{r.date}</span>
                         <ProfileLink name={r.author} url={r.authorUrl ?? "#"} />
@@ -1933,13 +1868,13 @@ const ScholarDetailPage: React.FC = () => {
                         onClick={() => setShowAllRevisions(!showAllRevisions)} 
                         style={{ marginTop: "8px", alignSelf: "flex-start" }}
                       >
-                        {showAllRevisions ? t.showLess : `${t.viewMore} (${s.recentRevisions.length - 3} more)`}
+                        {showAllRevisions ? t('scholar.showLess') : `${t('scholar.viewMore')} (+${s.recentRevisions.length - 3})`}
                       </button>
                     )}
                   </div>
                 </section>
               )}
-              <DiscussionSection lang={lang} t={t} scholarId={s.id} backendComments={s.comments} />
+              
             </div>
           </>
         )}

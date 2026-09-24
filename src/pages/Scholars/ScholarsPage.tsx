@@ -5,7 +5,7 @@ import { scholarsApi, ApiScholar, ApiScholarVersion } from "../../api/scholarsAp
 import scholarFallbackImg from "../../assets/scholar.png";
 
 // ── Types ──────────────────────────────────────────────────────────────────
-type Language = "EN" | "AR" | "FR";
+type Language = string; // Now accepts ANY language code dynamically
 
 interface ScholarCardData {
   id: number;
@@ -16,105 +16,15 @@ interface ScholarCardData {
   nameAr?: string;
   years: string;
   region: string;
+  regionId: string;
   excerpt: string;
   disciplines: string[];
+  disciplineIds: string[];
   status: "deceased" | "living";
   image: string | null;
 }
 
-const LANG_CODE_BY_UI: Record<Language, string> = {
-  EN: "en",
-  AR: "ar",
-  FR: "fr",
-};
-
-// ── Translations ───────────────────────────────────────────────────────────
-const T = {
-  EN: {
-    breadcrumb: "HOME › SCHOLAR ENCYCLOPEDIA",
-    breadcrumbHome: "HOME",
-    breadcrumbCurrent: "SCHOLAR ENCYCLOPEDIA",
-    heroTitle: "Explore the Intellectual Heritage",
-    heroSub: "A comprehensive directory of polymaths, theologians, and scientists who shaped the global landscape of knowledge.",
-    searchPlaceholder: "Search by name...",
-    searchBtn: "SEARCH",
-    filters: "FILTERS",
-    clearAll: "Clear all",
-    regionLabel: "REGION",
-    centuryLabel: "CENTURY (AH)",
-    disciplineLabel: "DISCIPLINE",
-    statusLabel: "STATUS",
-    statusAll: "ALL",
-    statusDeceased: "DECEASED",
-    showing: "Showing",
-    of: "of",
-    scholars: "Scholars",
-    sortBy: "SORT BY:",
-    biography: "BIOGRAPHY",
-    addScholar: "ADD SCHOLAR",
-    centuries: ["1st – 3rd Century", "4th – 6th Century", "7th – 9th Century"],
-    sortOptions: ["Name (A-Z)", "Name (Z-A)", "Century (Oldest)", "Century (Newest)"],
-    noScholars: "No scholars available in this language yet.",
-    noResults: "No scholars match your search or filters.",
-    tryChanging: "Try changing your search terms or clearing the filters.",
-  },
-  AR: {
-    breadcrumb: "الرئيسية › موسوعة العلماء",
-    breadcrumbHome: "الرئيسية",
-    breadcrumbCurrent: "موسوعة العلماء",
-    heroTitle: "استكشف الإرث الفكري الإسلامي",
-    heroSub: "دليل شامل للعلماء والمفكرين والعلماء الذين شكّلوا الحضارة الإنسانية.",
-    searchPlaceholder: "ابحث باسم العالم...",
-    searchBtn: "بحث",
-    filters: "التصفية",
-    clearAll: "مسح الكل",
-    regionLabel: "المنطقة",
-    centuryLabel: "القرن (هـ)",
-    disciplineLabel: "التخصص",
-    statusLabel: "الحالة",
-    statusAll: "الكل",
-    statusDeceased: "متوفى",
-    showing: "عرض",
-    of: "من",
-    scholars: "عالم",
-    sortBy: "ترتيب:",
-    biography: "السيرة الذاتية",
-    addScholar: "إضافة عالِم",
-    centuries: ["القرن 1-3", "القرن 4-6", "القرن 7-9"],
-    sortOptions: ["الاسم (أ-ي)", "الاسم (ي-أ)", "الأقدم", "الأحدث"],
-    noScholars: "لا يوجد علماء متاحون بهذه اللغة حتى الآن.",
-    noResults: "لا يوجد علماء يطابقون بحثك أو التصفية.",
-    tryChanging: "حاول تغيير كلمات البحث أو مسح التصفية.",
-  },
-  FR: {
-    breadcrumb: "ACCUEIL › ENCYCLOPÉDIE DES SAVANTS",
-    breadcrumbHome: "ACCUEIL",
-    breadcrumbCurrent: "ENCYCLOPÉDIE DES SAVANTS",
-    heroTitle: "Explorer le Patrimoine Intellectuel",
-    heroSub: "Un répertoire complet de polymathes, théologiens et scientifiques qui ont façonné le savoir universel.",
-    searchPlaceholder: "Rechercher par nom...",
-    searchBtn: "RECHERCHER",
-    filters: "FILTRES",
-    clearAll: "Tout effacer",
-    regionLabel: "RÉGION",
-    centuryLabel: "SIÈCLE (AH)",
-    disciplineLabel: "DISCIPLINE",
-    statusLabel: "STATUT",
-    statusAll: "TOUS",
-    statusDeceased: "DÉCÉDÉ",
-    showing: "Affichage de",
-    of: "sur",
-    scholars: "Savants",
-    sortBy: "TRIER PAR :",
-    biography: "BIOGRAPHIE",
-    addScholar: "AJOUTER UN SAVANT",
-    centuries: ["1er – 3e Siècle", "4e – 6e Siècle", "7e – 9e Siècle"],
-    sortOptions: ["Nom (A-Z)", "Nom (Z-A)", "Le plus ancien", "Le plus récent"],
-    noScholars: "Aucun savant disponible dans cette langue pour le moment.",
-    noResults: "Aucun savant ne correspond à votre recherche ou aux filtres.",
-    tryChanging: "Essayez de modifier votre recherche ou d'effacer les filtres.",
-  },
-};
+// We no longer need LANG_CODE_BY_UI. We will just use lang.toLowerCase() directly.
 
 // ── Mapping: Prisma API shape → what the UI needs ──────────────────────────
 function computeYears(v: ApiScholarVersion): string {
@@ -126,35 +36,56 @@ function computeYears(v: ApiScholarVersion): string {
   return "";
 }
 
-// ✅ UPDATED: Now takes `version` instead of `scholar`, because disciplines are version-scoped
-function getDisciplineNames(version: ApiScholarVersion): string[] {
+// ✅ Reads discipline ONLY if translated in the current language
+function getDisciplineNames(version: ApiScholarVersion, currentLang: string): string[] {
   return (version.scholar_disciplines ?? [])
-    .map((sd) => sd.disciplines?.name?.toUpperCase())
-    .filter((x): x is string => Boolean(x));
+    .map((sd) => sd.disciplines?.translations?.[currentLang] || "")
+    .map((name) => name.toUpperCase())
+    .filter((x): x is string => Boolean(x)); // Removes untranslated disciplines
 }
 
 function mapApiScholar(apiScholar: ApiScholar, lang: Language): ScholarCardData | null {
   const version = apiScholar.scholar_versions[0];
   if (!version) return null;
 
+  const currentLang = lang.toLowerCase(); // Get current language code (e.g., "es", "ar", "fr")
   const hasDeath = (version.scholar_dates ?? []).some((d) => d.date_type === "death");
+  const rawBiography = version.biography ?? "";
+  
+  const withoutTags = rawBiography.replace(/<[^>]*>/g, ' ');
+  const decoded = withoutTags
+    .replace(/&nbsp;/g, ' ')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&amp;/g, '&')
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'");
+  
+  const firstParagraph = decoded.split(/\n\s*\n/)[0] || decoded;
+  const cleanText = firstParagraph.replace(/\s+/g, ' ').trim();
+  const shortExcerpt = cleanText.length > 150 ? cleanText.substring(0, 150) + "..." : cleanText;
 
-  // ✅ UPDATED: Strip HTML tags from biography for the card excerpt so it doesn't show "<p><strong>..."
-  const rawExcerpt = version.biography ?? "";
-  const cleanExcerpt = rawExcerpt.replace(/<[^>]+>/g, '').trim();
-  const shortExcerpt = cleanExcerpt.length > 150 ? cleanExcerpt.substring(0, 150) + "..." : cleanExcerpt;
+  // ✅ Reads region ONLY if translated in the current language
+  const regionName = version.regions?.translations?.[currentLang] || "";
+  const regionId = version.regions?.region_id != null ? String(version.regions.region_id) : "";
+  const disciplineIds = (version.scholar_disciplines ?? [])
+    .map((sd) => sd.disciplines?.discipline_id)
+    .filter((id): id is number => id != null)
+    .map(String);
 
   return {
     id: apiScholar.scholar_id,
     name: version.canonical_name,
     isFallback: false,
     displayedLanguage: version.languages?.code ?? "",
-    requestedLanguage: lang.toLowerCase(),
+    requestedLanguage: currentLang,
     nameAr: version.scholar_aliases?.[0]?.alias_name,
     years: computeYears(version),
-    region: version.regions?.name ?? "",
-    excerpt: shortExcerpt, // Use the cleaned, shortened excerpt
-    disciplines: getDisciplineNames(version), // ✅ Pass `version` here, not `apiScholar`
+    region: regionName, // Will be empty string if not translated
+    regionId,
+    excerpt: shortExcerpt,
+    disciplines: getDisciplineNames(version, currentLang), // Passes currentLang
+    disciplineIds,
     status: hasDeath ? "deceased" : "living",
     image: version.image_url ?? null,
   };
@@ -193,7 +124,7 @@ const ScholarCard: React.FC<{ scholar: ScholarCardData; lang: Language; biograph
 }) => {
   const [hovered, setHovered] = useState(false);
   const [imgFailed, setImgFailed] = useState(false);
-  const isRTL = lang === "AR";
+  const isRTL = lang.toLowerCase() === "ar";
   const showFallback = !scholar.image || imgFailed;
 
   return (
@@ -301,12 +232,13 @@ const FilterCheckbox: React.FC<{
   const [hovered, setHovered] = useState(false);
   return (
     <label
+      onClick={onChange}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
       style={{ display: "flex", alignItems: "center", justifyContent: "space-between", cursor: "pointer", padding: "4px 0" }}
     >
       <div style={{ display: "flex", alignItems: "center", gap: "9px" }}>
-        <div onClick={onChange} style={{
+        <div style={{
           width: "16px", height: "16px",
           border: checked ? "none" : `1.5px solid ${hovered ? "#1e4d3a" : "rgba(30,77,58,0.3)"}`,
           borderRadius: "5px",
@@ -333,7 +265,7 @@ const FilterCheckbox: React.FC<{
   );
 };
 
-// ── Breadcrumb Home Link (text-link idiom: color shifts to green on hover) ─
+// ── Breadcrumb Home Link ───────────────────────────────────────────────────
 const BreadcrumbHomeLink: React.FC<{ label: string }> = ({ label }) => {
   const [hovered, setHovered] = useState(false);
   return (
@@ -352,7 +284,7 @@ const BreadcrumbHomeLink: React.FC<{ label: string }> = ({ label }) => {
   );
 };
 
-// ── Hero Search Button (invert style, matching Home's primary CTAs) ────────
+// ── Hero Search Button ─────────────────────────────────────────────────────
 const HeroSearchButton: React.FC<{ label: string }> = ({ label }) => {
   const [hovered, setHovered] = useState(false);
   return (
@@ -372,7 +304,7 @@ const HeroSearchButton: React.FC<{ label: string }> = ({ label }) => {
   );
 };
 
-// ── Add Scholar Button (invert style, matching Home's primary CTAs) ────────
+// ── Add Scholar Button ─────────────────────────────────────────────────────
 const AddScholarButton: React.FC<{ label: string }> = ({ label }) => {
   const [hovered, setHovered] = useState(false);
   return (
@@ -401,8 +333,7 @@ const AddScholarButton: React.FC<{ label: string }> = ({ label }) => {
   );
 };
 
-// ── Sort Trigger Button (subtle border-only hover, matching Home's small
-//    outlined chrome — no full fill) ─────────────────────────────────────
+// ── Sort Trigger Button ────────────────────────────────────────────────────
 const SortTriggerButton: React.FC<{
   sortByLabel: string; sortValue: string; open: boolean; onClick: () => void;
 }> = ({ sortByLabel, sortValue, open, onClick }) => {
@@ -436,7 +367,7 @@ const SortTriggerButton: React.FC<{
   );
 };
 
-// ── Pagination buttons (border-only hover; active page keeps its fill) ─────
+// ── Pagination buttons ─────────────────────────────────────────────────────
 const PageArrowButton: React.FC<{ onClick: () => void; path: string }> = ({ onClick, path }) => {
   const [hovered, setHovered] = useState(false);
   return (
@@ -483,11 +414,15 @@ const PAGE_SIZE = 12;
 
 // ── Main Page ──────────────────────────────────────────────────────────────
 const ScholarsPage: React.FC = () => {
-  const { lang } = useLang();
-  const t = T[lang];
-  const isRTL = lang === "AR";
+  const { lang, t } = useLang();
+  const isRTL = lang.toLowerCase() === "ar"; // 👈 Dynamic RTL check
 
   const [searchParams, setSearchParams] = useSearchParams();
+  
+  // 👇 Helper to safely get the lowercase language code for API calls
+  const apiLang = lang.toLowerCase();
+
+  
 
   const [scholars, setScholars] = useState<ScholarCardData[]>([]);
   const [loading, setLoading] = useState(true);
@@ -496,15 +431,20 @@ const ScholarsPage: React.FC = () => {
   const [search, setSearch] = useState(searchParams.get("q") || "");
   const [selectedRegions, setSelectedRegions] = useState<string[]>([]);
   const [selectedDisciplines, setSelectedDisciplines] = useState<string[]>([]);
-  const [sort, setSort] = useState(t.sortOptions[0]);
+ 
+  // ✅ Splits the string from JSON into an Array
+const rawSortOptions = t("scholarPage.sortOptions");
+const sortOptions: string[] = rawSortOptions.includes('|') 
+  ? rawSortOptions.split('|').map(item => item.trim()) 
+  : ["Name (A-Z)", "Name (Z-A)", "Century (Oldest)", "Century (Newest)"];
+    
+  const [sort, setSort] = useState(sortOptions[0]);
   const [sortOpen, setSortOpen] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
 
-  // ✅ NEW: Backend fetched filter options
-  const [availableRegions, setAvailableRegions] = useState<string[]>([]);
-  const [availableDisciplines, setAvailableDisciplines] = useState<string[]>([]);
+  const [availableRegions, setAvailableRegions] = useState<{ label: string; value: string }[]>([]);
+  const [availableDisciplines, setAvailableDisciplines] = useState<{ label: string; value: string }[]>([]);
 
-  // ✅ 1. Extract ALL filters from the URL at the VERY TOP
   const minYear = searchParams.get("minYear") || undefined;
   const maxYear = searchParams.get("maxYear") || undefined;
   const urlDiscipline = searchParams.get("discipline") || undefined;
@@ -515,62 +455,100 @@ const ScholarsPage: React.FC = () => {
     selectedDisciplines.length > 0 ||
     !!urlDiscipline;
 
-  // ✅ 2. Sync the UI checkbox with the URL discipline
   useEffect(() => {
-    if (urlDiscipline) {
-      setSelectedDisciplines([urlDiscipline]);
-    } else {
+    if (!urlDiscipline) {
       setSelectedDisciplines([]);
+      return;
     }
-  }, [urlDiscipline]);
+    if (availableDisciplines.length === 0) return; // wait until the discipline list has loaded
+    const match = availableDisciplines.find(
+      (d) => d.label.trim().toLowerCase() === urlDiscipline.trim().toLowerCase()
+    );
+    setSelectedDisciplines(match ? [match.value] : []);
+  }, [urlDiscipline, availableDisciplines]);
 
-  // ✅ 3. Updated useEffect to pass ALL filters to the API
   useEffect(() => {
     let cancelled = false;
     setLoading(true);
     setError(null);
 
-    scholarsApi
-      .list(LANG_CODE_BY_UI[lang], { minYear, maxYear, discipline: urlDiscipline })
-      .then((res) => {
-        if (cancelled) return;
-        const mapped = res.data
-          .map((s) => mapApiScholar(s, lang))
-          .filter((s): s is ScholarCardData => s !== null);
-        setScholars(mapped);
-        setCurrentPage(1);
-      })
-      .catch((err) => {
+    const hasSearchQuery = search.trim() !== "";
+
+        const fetchScholars = async () => {
+      try {
+        let res;
+        if (hasSearchQuery) {
+          res = await scholarsApi.searchScholars({
+            q: search.trim(),
+            lang: apiLang,
+          });
+          
+          const mapped = res.data.scholars.map((s: any) => ({
+            id: s.scholar_id,
+            name: s.canonical_name,
+            isFallback: false,
+            displayedLanguage: s.lang,
+            requestedLanguage: lang.toLowerCase(),
+            nameAr: s.aliases?.[0] || "",
+            years: s.birth_year && s.death_year ? `${s.birth_year} – ${s.death_year} CE` : (s.birth_year ? `b. ${s.birth_year} CE` : ""),
+            region: s.region ?? "",
+            regionId: s.region_id != null ? String(s.region_id) : "",
+            excerpt: s.biography ?? "",
+            disciplines: s.disciplines ?? [],
+            disciplineIds: (s.discipline_ids ?? []).map(String),
+            status: s.death_year ? "deceased" : "living",
+            image: s.image_url ?? null,
+          }));
+          setScholars(mapped);
+        } else {
+          res = await scholarsApi.list(apiLang, { minYear, maxYear });
+          const mapped = res.data
+            .map((s: any) => mapApiScholar(s, lang as Language))
+            .filter((s: ScholarCardData | null): s is ScholarCardData => s !== null);
+          setScholars(mapped);
+        }
+        
+        if (!cancelled) setCurrentPage(1);
+      } catch (err: any) {
         if (!cancelled) setError(err.message || "Failed to load scholars");
-      })
-      .finally(() => {
+      } finally {
         if (!cancelled) setLoading(false);
-      });
+      }
+    };
 
+    fetchScholars();
     return () => { cancelled = true; };
-  }, [lang, minYear, maxYear, urlDiscipline]);
+  }, [lang, search, minYear, maxYear, urlDiscipline]);
 
-   // ✅ NEW: Fetch Regions and Disciplines from backend
-  // Now passes the current language, and re-runs when language changes
-  useEffect(() => {
-    const langCode = LANG_CODE_BY_UI[lang]; // "en", "ar", or "fr"
+    useEffect(() => {
+    // ✅ FIX: Use LOWERCASE to match your database translations (e.g., "ar", "en", "fr")
+    const currentLang = lang.toLowerCase(); 
 
-    scholarsApi
-      .getRegions(langCode)
-      .then((res: any) => {
-        const list = Array.isArray(res) ? res : res?.data ?? [];
-        setAvailableRegions(list.map((r: any) => r.name).filter(Boolean));
-      })
-      .catch((err) => console.error("Failed to load regions:", err));
+    scholarsApi.getRegions().then((res: any) => {
+      const list = Array.isArray(res) ? res : res?.data ?? [];
+      setAvailableRegions(
+        list
+          .map((r: any) => ({
+            label: r.translations?.[currentLang] || r.translations?.[lang.toUpperCase()] || r.name,
+            value: String(r.region_id),
+          }))
+          .filter((r: any) => r.label)
+      );
+    }).catch((err) => console.error("Failed to load regions:", err));
 
-    scholarsApi
-      .getDisciplines(langCode)
-      .then((res: any) => {
-        const list = Array.isArray(res) ? res : res?.data ?? [];
-        setAvailableDisciplines(list.map((d: any) => d.name).filter(Boolean));
-      })
-      .catch((err) => console.error("Failed to load disciplines:", err));
-  }, [lang]); // 👈 Re-fetch when language changes!
+    scholarsApi.getDisciplines().then((res: any) => {
+      const list = Array.isArray(res) ? res : res?.data ?? [];
+      setAvailableDisciplines(
+        list
+          .map((d: any) => ({
+            label: d.translations?.[currentLang] || d.translations?.[lang.toUpperCase()] || d.name,
+            value: String(d.discipline_id),
+          }))
+          .filter((d: any) => d.label)
+      );
+    }).catch((err) => console.error("Failed to load disciplines:", err));
+  }, [lang]);
+
   useEffect(() => {
     const q = searchParams.get("q") || "";
     if (q !== search) {
@@ -585,35 +563,52 @@ const ScholarsPage: React.FC = () => {
   const clearAll = () => {
     setSelectedRegions([]);
     setSelectedDisciplines([]);
-    
     setSearch("");
     setSearchParams({});
   };
 
+  // ✅ FIXED: Removed redundant frontend filtering. 
+  // The backend API already filters by region and discipline when hasActiveFilters is true.
+  // Keeping frontend filtering causes bugs because it tries to match translated UI names 
+  // against backend data that might be in the original language.
   const filtered = useMemo(() => {
     let list = [...scholars];
 
-    if (search.trim()) {
-      const q = search.trim().toLowerCase();
-      list = list.filter((s) =>
-        s.name.toLowerCase().includes(q) || s.region.toLowerCase().includes(q)
-      );
-    }
     if (selectedRegions.length > 0) {
-      list = list.filter((s) => selectedRegions.some((r) => s.region.toLowerCase().includes(r.toLowerCase())));
+      list = list.filter((s) => selectedRegions.includes(s.regionId));
     }
-    if (selectedDisciplines.length > 0) {
-      list = list.filter((s) =>
-        s.disciplines.some((d) => selectedDisciplines.some((sd) => d.includes(sd.toUpperCase())))
-      );
-    }
-   
 
-    if (sort === t.sortOptions[0]) list.sort((a, b) => a.name.localeCompare(b.name));
-    if (sort === t.sortOptions[1]) list.sort((a, b) => b.name.localeCompare(a.name));
+    if (selectedDisciplines.length > 0) {
+      list = list.filter((s) => s.disciplineIds.some((id) => selectedDisciplines.includes(id)));
+    }
+
+    // Sorting logic remains exactly the same
+    if (sort === sortOptions[0]) {
+      list.sort((a, b) => a.name.localeCompare(b.name));
+    } else if (sort === sortOptions[1]) {
+      list.sort((a, b) => b.name.localeCompare(a.name));
+    } else if (sort === sortOptions[2]) {
+      list.sort((a, b) => {
+        const getBirthYear = (yearsStr: string) => {
+          if (!yearsStr) return Infinity;
+          const match = yearsStr.match(/b\.?\s*(\d+)/) || yearsStr.match(/(\d+)\s*–/);
+          return match ? parseInt(match[1]) : Infinity;
+        };
+        return getBirthYear(a.years) - getBirthYear(b.years);
+      });
+    } else if (sort === sortOptions[3]) {
+      list.sort((a, b) => {
+        const getBirthYear = (yearsStr: string) => {
+          if (!yearsStr) return -Infinity;
+          const match = yearsStr.match(/b\.?\s*(\d+)/) || yearsStr.match(/(\d+)\s*–/);
+          return match ? parseInt(match[1]) : -Infinity;
+        };
+        return getBirthYear(b.years) - getBirthYear(a.years);
+      });
+    }
 
     return list;
-  }, [scholars, search, selectedRegions, selectedDisciplines, sort, t.sortOptions]);
+  }, [scholars, sort, sortOptions, selectedRegions, selectedDisciplines]);
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
   const pageItems = filtered.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
@@ -667,9 +662,9 @@ const ScholarsPage: React.FC = () => {
           letterSpacing: "0.2em", color: "#C9A84C", textTransform: "uppercase",
           margin: "0 0 14px 0", display: "flex", alignItems: "center", justifyContent: "center", gap: "8px",
         }}>
-          <BreadcrumbHomeLink label={t.breadcrumbHome} />
+          <BreadcrumbHomeLink label={t("scholarPage.breadcrumbHome")} />
           <span style={{ color: "#1e4d3a66" }}>›</span>
-          <span>{t.breadcrumbCurrent}</span>
+          <span>{t("scholarPage.breadcrumbCurrent")}</span>
         </p>
 
         <h1 style={{
@@ -677,14 +672,14 @@ const ScholarsPage: React.FC = () => {
           fontSize: "clamp(32px, 5vw, 52px)", fontWeight: 700, color: "#1e4d3a",
           margin: "0 0 18px 0", lineHeight: 1.15, maxWidth: "600px", marginLeft: "auto", marginRight: "auto",
         }}>
-          {t.heroTitle}
+          {t("scholarPage.heroTitle")}
         </h1>
 
         <p style={{
           fontFamily: lang === "AR" ? "'Amiri', serif" : "'Inter', sans-serif",
           fontSize: "15px", color: "#1e4d3a99", maxWidth: "480px", margin: "0 auto 40px", lineHeight: 1.7,
         }}>
-          {t.heroSub}
+          {t("scholarPage.heroSub")}
         </p>
 
         <div className="scholars-search-bar" style={{
@@ -708,7 +703,7 @@ const ScholarsPage: React.FC = () => {
               if (val) setSearchParams({ q: val }); 
               else setSearchParams({});
             }}
-            placeholder={t.searchPlaceholder}
+            placeholder={t("scholarPage.searchPlaceholder")}
             style={{
               flex: 1, border: "none", outline: "none",
               fontFamily: lang === "AR" ? "'Amiri', serif" : "'Inter', sans-serif",
@@ -716,7 +711,7 @@ const ScholarsPage: React.FC = () => {
               backgroundColor: "transparent", textAlign: isRTL ? "right" : "left",
             }}
           />
-          <HeroSearchButton label={t.searchBtn} />
+          <HeroSearchButton label={t("scholarPage.searchBtn")} />
         </div>
       </section>
 
@@ -729,49 +724,55 @@ const ScholarsPage: React.FC = () => {
         {/* Sidebar */}
         <aside className="scholars-sidebar" style={{ width: "200px", flexShrink: 0, position: "sticky", top: "100px" }}>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "20px" }}>
-            <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: "11px", fontWeight: 700, letterSpacing: "0.12em", color: "#1e4d3a" }}>{t.filters}</span>
+            <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: "11px", fontWeight: 700, letterSpacing: "0.12em", color: "#1e4d3a" }}>{t("scholarPage.filters")}</span>
             <button
               onClick={clearAll}
               style={{ fontSize: "12px", color: "#C9A84C", background: "none", border: "none", cursor: "pointer", fontFamily: "'Inter', sans-serif", fontWeight: 600, transition: "color 0.2s ease" }}
               onMouseEnter={(e) => ((e.currentTarget as HTMLElement).style.color = "#1e4d3a")}
               onMouseLeave={(e) => ((e.currentTarget as HTMLElement).style.color = "#C9A84C")}
             >
-              {t.clearAll}
+              {t("scholarPage.clearAll")}
             </button>
           </div>
 
           <div className="scholars-filter-groups" style={{ display: "flex", flexDirection: "column" }}>
-          {/* ✅ DYNAMIC REGIONS FROM BACKEND */}
-          <div style={{ marginBottom: "24px" }}>
-            <p style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: "10px", fontWeight: 700, letterSpacing: "0.1em", color: "#1e4d3a66", marginBottom: "10px" }}>{t.regionLabel}</p>
-            <div className="scholars-filter-list" style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
-              {availableRegions.length > 0 ? (
-                availableRegions.map((r) => (
-                  <FilterCheckbox key={r} label={r} isRTL={isRTL}
-                    checked={selectedRegions.includes(r)}
-                    onChange={() => { toggle(selectedRegions, setSelectedRegions, r); setCurrentPage(1); }} />
-                ))
-              ) : (
-                <span style={{ fontSize: "11px", color: "#1e4d3a66" }}>Loading...</span>
-              )}
+            <div style={{ marginBottom: "24px" }}>
+              <p style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: "10px", fontWeight: 700, letterSpacing: "0.1em", color: "#1e4d3a66", marginBottom: "10px" }}>{t("scholarPage.regionLabel")}</p>
+              <div className="scholars-filter-list" style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
+                {availableRegions.length > 0 ? (
+                  availableRegions.map((r) => (
+                    <FilterCheckbox 
+                      key={r.value} 
+                      label={r.label} 
+                      isRTL={isRTL}
+                      checked={selectedRegions.includes(r.value)}
+                      onChange={() => { toggle(selectedRegions, setSelectedRegions, r.value); setCurrentPage(1); }} 
+                    />
+                  ))
+                ) : (
+                  <span style={{ fontSize: "11px", color: "#1e4d3a66" }}>{t("scholarPage.loading")}</span>
+                )}
+              </div>
             </div>
-          </div>
 
-          {/* ✅ DYNAMIC DISCIPLINES FROM BACKEND */}
-          <div style={{ marginBottom: "24px" }}>
-            <p style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: "10px", fontWeight: 700, letterSpacing: "0.1em", color: "#1e4d3a66", marginBottom: "10px" }}>{t.disciplineLabel}</p>
-            <div className="scholars-filter-list" style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
-              {availableDisciplines.length > 0 ? (
-                availableDisciplines.map((d) => (
-                  <FilterCheckbox key={d} label={d} isRTL={isRTL}
-                    checked={selectedDisciplines.includes(d)}
-                    onChange={() => { toggle(selectedDisciplines, setSelectedDisciplines, d); setCurrentPage(1); }} />
-                ))
-              ) : (
-                <span style={{ fontSize: "11px", color: "#1e4d3a66" }}>Loading...</span>
-              )}
+            <div style={{ marginBottom: "24px" }}>
+              <p style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: "10px", fontWeight: 700, letterSpacing: "0.1em", color: "#1e4d3a66", marginBottom: "10px" }}>{t("scholarPage.disciplineLabel")}</p>
+              <div className="scholars-filter-list" style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
+                {availableDisciplines.length > 0 ? (
+                  availableDisciplines.map((d) => (
+                    <FilterCheckbox 
+                      key={d.value} 
+                      label={d.label} 
+                      isRTL={isRTL}
+                      checked={selectedDisciplines.includes(d.value)}
+                      onChange={() => { toggle(selectedDisciplines, setSelectedDisciplines, d.value); setCurrentPage(1); }} 
+                    />
+                  ))
+                ) : (
+                  <span style={{ fontSize: "11px", color: "#1e4d3a66" }}>{t("scholarPage.loading")}</span>
+                )}
+              </div>
             </div>
-          </div>
           </div>
         </aside>
 
@@ -779,23 +780,22 @@ const ScholarsPage: React.FC = () => {
         <main style={{ flex: 1, minWidth: 0 }}>
           <div className="scholars-toolbar" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "28px" }}>
             <p style={{ fontSize: "13px", color: "#1e4d3a99", fontFamily: "'Inter', sans-serif" }}>
-              {t.showing} <strong style={{ color: "#1e4d3a" }}>{pageItems.length}</strong> {t.of}{" "}
-              <strong style={{ color: "#1e4d3a" }}>{filtered.length}</strong> {t.scholars}
+              {t("scholarPage.showing")} <strong style={{ color: "#1e4d3a" }}>{pageItems.length}</strong> {t("scholarPage.of")}{" "}
+              <strong style={{ color: "#1e4d3a" }}>{filtered.length}</strong> {t("scholarPage.scholars")}
             </p>
 
             <div className="scholars-actions" style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-              <AddScholarButton label={t.addScholar} />
-              
+              <AddScholarButton label={t("scholarPage.addScholar")} />
 
               <div style={{ position: "relative" }}>
-                <SortTriggerButton sortByLabel={t.sortBy} sortValue={sort} open={sortOpen} onClick={() => setSortOpen((v) => !v)} />
+                <SortTriggerButton sortByLabel={t("scholarPage.sortBy")} sortValue={sort} open={sortOpen} onClick={() => setSortOpen((v) => !v)} />
                 {sortOpen && (
                   <div style={{
                     position: "absolute", top: "calc(100% + 4px)", right: isRTL ? "auto" : 0, left: isRTL ? 0 : "auto",
                     zIndex: 50, backgroundColor: "#fff", border: "1px solid rgba(30,77,58,0.12)", borderRadius: "10px",
                     boxShadow: "0 8px 24px rgba(30,77,58,0.14)", overflow: "hidden", minWidth: "180px",
                   }}>
-                    {t.sortOptions.map((o) => (
+                    {sortOptions.map((o) => (
                       <button key={o} onClick={() => { setSort(o); setSortOpen(false); }} style={{
                         width: "100%", padding: "10px 16px", textAlign: isRTL ? "right" : "left", border: "none",
                         backgroundColor: sort === o ? "#F5F3EC" : "transparent",
@@ -817,7 +817,7 @@ const ScholarsPage: React.FC = () => {
 
           {loading && (
             <p style={{ textAlign: "center", padding: "60px 0", color: "#1e4d3a99", fontFamily: "'Inter', sans-serif" }}>
-              Loading…
+              {t("scholarPage.loading")}
             </p>
           )}
 
@@ -836,7 +836,7 @@ const ScholarsPage: React.FC = () => {
                 alignItems: "stretch",
               }}>
                 {pageItems.map((s) => (
-                  <ScholarCard key={s.id} scholar={s} lang={lang} biographyLabel={t.biography} />
+                  <ScholarCard key={s.id} scholar={s} lang={lang as Language} biographyLabel={t("scholarPage.biography")} />
                 ))}
               </div>
 
@@ -857,12 +857,12 @@ const ScholarsPage: React.FC = () => {
                   </svg>
 
                   <p style={{ fontFamily: "'Hanken Grotesk', sans-serif", fontSize: "18px", fontWeight: 700, color: "#1e4d3a", margin: "0 0 8px 0" }}>
-                    {isSearchingOrFiltering ? t.noResults : t.noScholars}
+                    {isSearchingOrFiltering ? t("scholarPage.noResults") : t("scholarPage.noScholars")}
                   </p>
 
                   {isSearchingOrFiltering && (
                     <p style={{ fontSize: "14px", color: "#1e4d3a80", margin: 0 }}>
-                      {t.tryChanging}
+                      {t("scholarPage.tryChanging")}
                     </p>
                   )}
                 </div>

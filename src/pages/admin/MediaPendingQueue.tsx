@@ -2,78 +2,26 @@ import React, { useState, useMemo, useEffect } from "react";
 import { useLang } from "../../context/LanguageContext";
 import adminApi from "../../api/adminApi";
 
-/* ------------------------------------------------------------------ */
-/*  Design tokens — Oulamnauna admin palette                          */
-/* ------------------------------------------------------------------ */
-const colors = {
-  creamLight: "#fcfaf5",
-  creamMid: "#f6efdc",
-  creamDark: "#e5d5a8",
-  forestGreen: "#0b4335",
-  amber: "#b8860b",
-  red: "#8b2c2c",
-};
-
-const fonts = {
-  headline: "'Hanken Grotesk', sans-serif",
-  body: "'Inter', sans-serif",
-  label: "'JetBrains Mono', monospace",
-};
-
-const cardStyle: React.CSSProperties = {
-  backgroundColor: colors.creamLight,
-  borderRadius: 12,
-  boxShadow: "0px 4px 20px rgba(11, 67, 53, 0.08)",
-  border: `1px solid ${colors.forestGreen}`,
-};
-
-const Icon: React.FC<{ name: string; size?: number; filled?: boolean }> = ({ name, size = 18, filled = false }) => (
-  <span className="material-symbols-outlined" style={{ fontSize: size, lineHeight: 1, fontVariationSettings: `'FILL' ${filled ? 1 : 0}, 'wght' 400, 'GRAD' 0, 'opsz' 24` }}>
-    {name}
-  </span>
-);
-
-const Avatar: React.FC<{ name: string; size?: number }> = ({ name, size = 28 }) => {
-  const initials = name.split(" ").map((p) => p[0]).slice(0, 2).join("").toUpperCase();
-  return (
-    <div style={{ width: size, height: size, borderRadius: "50%", backgroundColor: colors.creamMid, color: colors.forestGreen, border: `1px solid ${colors.forestGreen}`, display: "flex", alignItems: "center", justifyContent: "center", fontFamily: fonts.headline, fontWeight: 700, fontSize: size * 0.4, flexShrink: 0 }}>
-      {initials}
-    </div>
-  );
-};
-
-/* ------------------------------------------------------------------ */
-/*  Types                                                              */
-/* ------------------------------------------------------------------ */
 type MediaType = "PDF" | "AUDIO" | "VIDEO" | "LINK";
 type SourceType = "link" | "upload";
 type SortOption = "newest" | "oldest" | "title";
 
 interface PendingMedia {
   id: string; title: string; description: string; type: MediaType; sourceType: SourceType;
-  sourceUrl?: string; fileName?: string; fileSize?: string; scholarName: string; scholarId: string;
+  sourceUrl?: string; fileName?: string; fileSize?: string; scholarName: string; scholarId: string; languageCode: string;
   submittedBy: string; contributorId: string; date: string; submittedAt: Date;
   flagged: boolean; flagReason?: string; previewUrl?: string; stripped?: boolean;
 }
 
-const TYPE_META: Record<MediaType, { icon: string; color: string }> = {
-  PDF:   { icon: "picture_as_pdf", color: colors.creamMid },
-  AUDIO: { icon: "headphones",     color: colors.creamMid },
-  VIDEO: { icon: "movie",          color: colors.creamMid },
-  LINK:  { icon: "link",           color: colors.creamMid },
+const TYPE_META: Record<MediaType, { icon: string }> = {
+  PDF:   { icon: "picture_as_pdf" },
+  AUDIO: { icon: "headphones" },
+  VIDEO: { icon: "movie" },
+  LINK:  { icon: "link" },
 };
 
-function getStats(rows: PendingMedia[]) {
-  const total = rows.length;
-  const priority = rows.filter((r) => r.flagged).length;
-  return { total, priority, avgTime: "1h 40m" };
-}
-
-/* ------------------------------------------------------------------ */
-/*  Main Component                                                     */
-/* ------------------------------------------------------------------ */
 export default function MediaPendingQueue() {
-  const { t, lang } = useLang();
+  const { t, lang, dbLanguages } = useLang();
   const isRTL = lang === "AR";
 
   const [filterType, setFilterType] = useState<MediaType | "all">("all");
@@ -91,124 +39,94 @@ export default function MediaPendingQueue() {
   const [rejectTarget, setRejectTarget] = useState<PendingMedia | null>(null);
   const [rejectReason, setRejectReason] = useState("");
 
-  // ✅ Two-step Restrict flow (replaces the old single-step Ban modal)
   const [restrictTarget, setRestrictTarget] = useState<PendingMedia | null>(null);
   const [confirmAction, setConfirmAction] = useState<{ type: 'revoke' | 'ban', media: PendingMedia } | null>(null);
 
-  const stats = getStats(rows);
+  const [currentPage, setCurrentPage] = useState(1);
+  const ITEMS_PER_PAGE = 15;
 
-  const scholars = useMemo(() => {
-    const unique = [...new Set(rows.map((r) => r.scholarName))];
-    return unique.sort();
-  }, [rows]);
+  const scholars = useMemo(() => [...new Set(rows.map((r) => r.scholarName))].sort(), [rows]);
 
   const filtered = useMemo(() => {
     let result = [...rows];
     if (filterType !== "all") result = result.filter((m) => m.type === filterType);
     if (filterScholar !== "all") result = result.filter((m) => m.scholarName === filterScholar);
     result.sort((a, b) => {
-      switch (sortBy) {
-        case "newest": return b.submittedAt.getTime() - a.submittedAt.getTime();
-        case "oldest": return a.submittedAt.getTime() - b.submittedAt.getTime();
-        case "title":  return a.title.localeCompare(b.title);
-        default:       return 0;
-      }
+      if (sortBy === "newest") return b.submittedAt.getTime() - a.submittedAt.getTime();
+      if (sortBy === "oldest") return a.submittedAt.getTime() - b.submittedAt.getTime();
+      return a.title.localeCompare(b.title);
     });
     return result;
   }, [rows, filterType, filterScholar, sortBy]);
 
+  const totalPages = Math.ceil(filtered.length / ITEMS_PER_PAGE);
+  const paginatedMedia = useMemo(() => 
+    filtered.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE),
+  [filtered, currentPage]);
+
+  useEffect(() => { setCurrentPage(1); }, [filterType, filterScholar, sortBy]);
+
   const clearFilters = () => { setFilterType("all"); setFilterScholar("all"); setSortBy("newest"); };
   const hasActiveFilters = filterType !== "all" || filterScholar !== "all";
 
-  useEffect(() => {
-    fetchPendingMedia();
-  }, []);
+  const getLangName = (code: string) => {
+    const found = dbLanguages.find((l: any) => l.code.toLowerCase() === code.toLowerCase());
+    return found ? found.name : code.toUpperCase();
+  };
 
-   const fetchPendingMedia = async () => {
-    setIsLoading(true);
-    setError(null);
+  useEffect(() => { fetchPendingMedia(); }, []);
+
+  const fetchPendingMedia = async () => {
+    setIsLoading(true); setError(null);
     try {
       const response = await adminApi.media.getPending();
-      
       if (response.data.success && response.data.data) {
         const mappedData = response.data.data.map((item: any) => {
           const previewUrl = item.media_url || item.source_url || item.file_path || item.preview_url || item.url;
-
-          // ✅ 1. Force sourceType to 'link' if it's external, otherwise 'upload'
           const isExternal = item.source_type === 'external' || item.sourceType === 'external' || item.source_type === 'link';
           const sourceType: SourceType = isExternal ? 'link' : 'upload';
-
-          // ✅ 2. Smart Type Detection: Don't blindly trust file_type for links
           let type: MediaType = "PDF";
           if (isExternal) {
-            // For links, guess the type from the URL itself
-            if (previewUrl && (previewUrl.includes('youtube') || previewUrl.includes('vimeo') || previewUrl.includes('.mp4'))) {
-              type = "VIDEO";
-            } else if (previewUrl && previewUrl.includes('.mp3')) {
-              type = "AUDIO";
-            } else {
-              type = "LINK"; // Default for document/other links
-            }
+            if (previewUrl && (previewUrl.includes('youtube') || previewUrl.includes('vimeo') || previewUrl.includes('.mp4'))) type = "VIDEO";
+            else if (previewUrl && previewUrl.includes('.mp3')) type = "AUDIO";
+            else type = "LINK";
           } else {
-            // For actual uploaded files, trust the database file_type
             const fileType = (item.file_type || item.fileType || "pdf").toLowerCase();
             if (fileType === 'audio') type = "AUDIO";
             else if (fileType === 'video') type = "VIDEO";
             else type = "PDF";
           }
-
           return {
-            id: String(item.media_id ?? item.id),
-            title: item.title || "Untitled",
-            description: item.description || "",
-            type: type, // ✅ FIXED: Correct type based on logic above
-            sourceType: sourceType, // ✅ FIXED: Correct source type ('link' or 'upload')
-            sourceUrl: previewUrl,
-            fileName: item.file_name || item.fileName,
-            fileSize: item.file_size || item.fileSize,
-            
-            // ✅ KEPT EXACTLY AS YOU HAD IT (since you confirmed it works perfectly!)
+            id: String(item.media_id ?? item.id), title: item.title || "Untitled", description: item.description || "",
+            type, sourceType, sourceUrl: previewUrl, fileName: item.file_name || item.fileName, fileSize: item.file_size || item.fileSize,
             scholarName: item.scholar_versions?.canonical_name || "Unknown Scholar",
             scholarId: String(item.scholar_versions?.scholar_id ?? "unknown"),
-            
+            languageCode: item.scholar_versions?.languages?.code || "unknown",
             submittedBy: item.users?.username || "Unknown",
             contributorId: String(item.users?.id ?? item.uploaded_by ?? "unknown"),
             date: new Date(item.created_at || item.uploaded_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }),
             submittedAt: new Date(item.created_at || item.uploaded_at),
-            flagged: !!item.flagged || !!item.is_flagged,
-            flagReason: item.flag_reason || item.notes,
-            previewUrl: previewUrl,
-            stripped: !!item.stripped,
+            flagged: !!item.flagged || !!item.is_flagged, flagReason: item.flag_reason || item.notes, previewUrl, stripped: !!item.stripped,
           };
         });
         setRows(mappedData);
-      } else {
-        setError(response.data.message || "Failed to fetch media");
-      }
+      } else setError(response.data.message || "Failed to fetch media");
     } catch (err) {
       console.error("Error fetching pending media:", err);
       setError("An error occurred while fetching pending media.");
-    } finally {
-      setIsLoading(false);
-    }
+    } finally { setIsLoading(false); }
   };
 
-  const openReview = (m: PendingMedia) => {
-    setReviewTarget(m);
-    setApprovalError("");
-  };
-  
+  const openReview = (m: PendingMedia) => { setReviewTarget(m); setApprovalError(""); };
   const closeReview = () => { setReviewTarget(null); setApprovalError(""); };
 
-  // ✅ Approve now sends the optional notes as `reason`
   const confirmApprove = async () => {
     if (!approveTarget) return;
     try {
       await adminApi.media.approve(Number(approveTarget.id), approveReason || "Approved");
       setRows(prev => prev.filter(m => m.id !== approveTarget.id));
       if (reviewTarget?.id === approveTarget.id) closeReview();
-      setApproveTarget(null);
-      setApproveReason("");
+      setApproveTarget(null); setApproveReason("");
     } catch (err) {
       console.error("Approve failed:", err);
       alert(t("mediaQueue.errors.approve") || "Failed to approve media.");
@@ -216,264 +134,183 @@ export default function MediaPendingQueue() {
     }
   };
 
-  // ✅ Reject now requires a written reason
   const confirmReject = async () => {
     if (!rejectTarget) return;
-    if (!rejectReason.trim()) {
-      alert("Please provide a rejection reason");
-      return;
-    }
+    if (!rejectReason.trim()) { alert(t("mediaQueue.modal.rejectReasonPlaceholder") || "Please provide a rejection reason"); return; }
     try {
       await adminApi.media.reject(Number(rejectTarget.id), rejectReason);
       setRows(prev => prev.filter(m => m.id !== rejectTarget.id));
-      setRejectTarget(null);
-      setRejectReason("");
+      setRejectTarget(null); setRejectReason("");
     } catch (err) {
       console.error("Reject failed:", err);
       alert(t("mediaQueue.errors.reject") || "Failed to reject media.");
     }
   };
 
-  // ✅ Same pattern as NewScholarsQueue: restrict the user + auto-reject the media
   const executeRestrictionAndReject = async () => {
     if (!confirmAction) return;
     try {
       const { type, media } = confirmAction;
       const userId = parseInt(media.contributorId, 10);
-
-      if (isNaN(userId)) {
-        alert("Cannot restrict system-generated submissions.");
-        setConfirmAction(null);
-        setRestrictTarget(null);
-        return;
-      }
-
-      // 1. Restrict the user
-      if (type === 'revoke') {
-        await adminApi.users.toggleContribute(userId);
-      } else {
-        await adminApi.users.ban(userId);
-      }
-
-      // 2. Auto-reject the media submission
+      if (isNaN(userId)) { alert("Cannot restrict system-generated submissions."); setConfirmAction(null); setRestrictTarget(null); return; }
+      if (type === 'revoke') await adminApi.users.toggleContribute(userId); else await adminApi.users.ban(userId);
       const defaultReason = type === 'ban' ? "Contributor banned" : "Contribution access revoked";
       await adminApi.media.reject(Number(media.id), defaultReason);
-
-      // 3. Remove from UI and close modals
       setRows((prev) => prev.filter((row) => row.id !== media.id));
-      setConfirmAction(null);
-      setRestrictTarget(null);
+      setConfirmAction(null); setRestrictTarget(null);
     } catch (err) {
       console.error("Action failed:", err);
       alert("Failed to process action. Please try again.");
     }
   };
 
-  // ✅ Handlers for the Modal File Actions
   const handleModalView = async () => {
-    if (!reviewTarget) return;
+    if (!reviewTarget || !(reviewTarget.previewUrl || reviewTarget.sourceUrl)) return;
     const url = reviewTarget.previewUrl || reviewTarget.sourceUrl;
-    if (!url) return;
     try {
       const response = await fetch(url);
       const blob = await response.blob();
-      const correctType = reviewTarget.type === 'AUDIO' ? 'audio/mpeg' : 
-                          reviewTarget.type === 'VIDEO' ? 'video/mp4' : 
-                          'application/pdf';
-      const typedBlob = new Blob([blob], { type: correctType });
-      const blobUrl = URL.createObjectURL(typedBlob);
+      const correctType = reviewTarget.type === 'AUDIO' ? 'audio/mpeg' : reviewTarget.type === 'VIDEO' ? 'video/mp4' : 'application/pdf';
+      const blobUrl = URL.createObjectURL(new Blob([blob], { type: correctType }));
       window.open(blobUrl, '_blank');
       setTimeout(() => URL.revokeObjectURL(blobUrl), 60000);
-    } catch (error) {
-      window.open(url, '_blank');
-    }
+    } catch { window.open(url, '_blank'); }
   };
 
   const handleModalDownload = async () => {
-    if (!reviewTarget || reviewTarget.sourceType !== "upload") return;
+    if (!reviewTarget || reviewTarget.sourceType !== "upload" || !(reviewTarget.previewUrl || reviewTarget.sourceUrl)) return;
     const url = reviewTarget.previewUrl || reviewTarget.sourceUrl;
-    if (!url) return;
     try {
       const response = await fetch(url);
       const blob = await response.blob();
       const blobUrl = window.URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = blobUrl;
-      const filename = reviewTarget.fileName || reviewTarget.title || 'file.pdf';
-      link.download = filename;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
+      link.download = reviewTarget.fileName || reviewTarget.title || 'file.pdf';
+      document.body.appendChild(link); link.click(); document.body.removeChild(link);
       window.URL.revokeObjectURL(blobUrl);
-    } catch (error) {
-      window.open(url, '_blank');
-    }
+    } catch { window.open(url, '_blank'); }
   };
 
-  const thStyle: React.CSSProperties = { fontFamily: fonts.label, fontSize: 11, letterSpacing: "0.06em", fontWeight: 600, color: colors.forestGreen, textAlign: isRTL ? "right" : "left", padding: "12px 14px", borderBottom: `1px solid ${colors.forestGreen}`, textTransform: "uppercase", opacity: 0.8 };
-  const tdStyle: React.CSSProperties = { fontFamily: fonts.body, fontSize: 13, color: colors.forestGreen, padding: "14px", borderBottom: `1px solid ${colors.creamDark}`, textAlign: isRTL ? "right" : "left" };
-
-  const statItems = [
-    { icon: "perm_media", label: t("mediaQueue.stats.totalPending") || "Total Pending", value: stats.total.toString(), color: colors.forestGreen, filled: true },
-    { icon: "flag", label: t("mediaQueue.stats.priorityReviews") || "Priority Reviews", value: stats.priority.toString(), color: colors.red, filled: false, isPriority: true },
-    { icon: "schedule", label: t("mediaQueue.stats.avgTime") || "Avg Time", value: stats.avgTime, color: colors.forestGreen, filled: false },
-  ];
-
-  const selectStyle: React.CSSProperties = { border: "none", outline: "none", background: "transparent", fontFamily: fonts.body, fontSize: 13, color: colors.forestGreen, cursor: "pointer", minWidth: 140 };
-
-  // ✅ Table Action Button Styles
-  const actionBtnBase: React.CSSProperties = { width: 32, height: 32, display: "flex", alignItems: "center", justifyContent: "center", borderRadius: 6, cursor: "pointer", transition: "all 0.15s", border: `1px solid ${colors.forestGreen}` };
-  const viewBtnStyle: React.CSSProperties = { ...actionBtnBase, backgroundColor: "transparent", color: colors.forestGreen };
-  const approveBtnStyle: React.CSSProperties = { ...actionBtnBase, backgroundColor: colors.forestGreen, color: colors.creamLight };
-  const rejectBtnStyle: React.CSSProperties = { ...actionBtnBase, backgroundColor: "transparent", color: colors.red, borderColor: colors.red };
-  const stripBtnStyle: React.CSSProperties = { ...actionBtnBase, backgroundColor: "transparent", color: colors.forestGreen };
+  if (isLoading) return <div className="min-h-screen flex items-center justify-center bg-[#fbf9f4]"><span className="material-symbols-outlined text-[40px] text-[#1e4d3a]/40 animate-pulse">hourglass_empty</span></div>;
 
   return (
-    <div dir={isRTL ? "rtl" : "ltr"} style={{ fontFamily: fonts.body, color: colors.forestGreen, backgroundColor: colors.creamLight, minHeight: "100vh", padding: 24 }}>
-      <div style={{ maxWidth: 1280, margin: "0 auto" }}>
+    <div className="oulamauna-dashboard min-h-screen text-[#1e4d3a] antialiased font-['Inter']" dir={isRTL ? "rtl" : "ltr"}>
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&family=Source+Serif+4:wght@400;500;600;700&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap');
+        .oulamauna-dashboard { background: radial-gradient(circle at 8% 10%, rgba(201,168,76,0.055), transparent 24%), radial-gradient(circle at 92% 16%, rgba(79,145,132,0.06), transparent 25%), #fbf9f4; }
+        .oulamauna-dashboard * { box-sizing: border-box; }
+        .oulamauna-dashboard .serif-title { font-family: 'Source Serif 4', Georgia, serif; letter-spacing: -0.025em; }
+        .oulamauna-dashboard .mono-label { font-family: 'JetBrains Mono', monospace; letter-spacing: 0.06em; }
+        .oulamauna-dashboard .dashboard-card { background: rgba(251,249,244,0.96); border: 1px solid rgba(30,77,58,0.10); border-radius: 10px; box-shadow: 0 5px 18px rgba(30,77,58,0.055); transition: box-shadow 180ms ease; }
+        .oulamauna-dashboard .dashboard-card:hover { box-shadow: 0 9px 26px rgba(30,77,58,0.08); }
+        .oulamauna-dashboard ::selection { background: #C9A84C; color: #1e4d3a; }
+      `}</style>
 
-        {/* ── Page Header ── */}
-        <div style={{ marginBottom: 20 }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
-            <span style={{ fontFamily: fonts.label, fontSize: 11, letterSpacing: "0.08em", color: colors.forestGreen, opacity: 0.7 }}>ADMIN / MEDIA QUEUE</span>
+      <main className="max-w-[1450px] mx-auto px-3 md:px-5 xl:px-7 py-6 md:py-8">
+        <div className="mb-6">
+          <div className="flex items-center gap-2 mb-1">
+            <span className="mono-label text-[9px] uppercase font-bold text-[#1e4d3a]/60">ADMIN / MEDIA QUEUE</span>
           </div>
-          <h1 style={{ fontFamily: fonts.headline, fontSize: 28, fontWeight: 700, color: colors.forestGreen, margin: "0 0 6px" }}>{t("mediaQueue.title") || "Media Pending Queue"}</h1>
-          <p style={{ fontFamily: fonts.body, fontSize: 13, color: colors.forestGreen, opacity: 0.75, margin: 0 }}>{t("mediaQueue.subtitle") || "Review and approve pending media submissions."}</p>
+          <h1 className="serif-title text-[27px] md:text-[32px] leading-tight font-semibold text-[#082f27]">{t("mediaQueue.title") || "Media Pending Queue"}</h1>
+          <p className="text-[12px] text-[#1e4d3a]/60 mt-1">{t("mediaQueue.subtitle") || "Review and approve pending media submissions."}</p>
         </div>
 
-        {/* ── Stat Cards ── */}
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 14, marginBottom: 18 }}>
-          {statItems.map((s) => (
-            <div key={s.label} style={{ ...cardStyle, padding: 16 }}>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 12 }}>
-                <div style={{ width: 28, height: 28, borderRadius: 6, backgroundColor: colors.creamMid, color: colors.forestGreen, border: `1px solid ${colors.forestGreen}`, display: "flex", alignItems: "center", justifyContent: "center" }}>
-                  <Icon name={s.icon} size={16} />
-                </div>
+        <div className="dashboard-card p-4 mb-6">
+          <div className="flex flex-col md:flex-row md:items-center gap-4">
+            <div className="flex flex-1 flex-wrap gap-4">
+              <div className="flex-1 min-w-[150px]">
+                <label className="mono-label text-[9px] uppercase font-bold text-[#1e4d3a]/60 mb-1.5 block">{t("mediaQueue.filters.type") || "Media Type"}</label>
+                <select value={filterType} onChange={(e) => setFilterType(e.target.value as any)} className="w-full bg-[#fbf9f4] border border-[#1e4d3a]/15 rounded-[6px] px-3 py-2 text-[12px] font-medium text-[#1e4d3a] focus:outline-none focus:ring-2 focus:ring-[#1e4d3a]/20">
+                  <option value="all">{t("mediaQueue.filters.allTypes") || "All Types"}</option>
+                  <option value="PDF">{t("mediaQueue.type.pdf") || "PDF"}</option>
+                  <option value="AUDIO">{t("mediaQueue.type.audio") || "Audio"}</option>
+                  <option value="VIDEO">{t("mediaQueue.type.video") || "Video"}</option>
+                  <option value="LINK">{t("mediaQueue.type.link") || "Link"}</option>
+                </select>
               </div>
-              <p style={{ fontFamily: fonts.label, fontSize: 11, letterSpacing: "0.05em", color: colors.forestGreen, margin: "0 0 4px", opacity: 0.7 }}>{s.label}</p>
-              <p style={{ fontFamily: fonts.headline, fontSize: 24, fontWeight: 700, color: s.isPriority ? colors.red : colors.forestGreen, margin: "0 0 4px", lineHeight: 1 }}>{s.value}</p>
-            </div>
-          ))}
-        </div>
-
-        {/* ── Filter Bar ── */}
-        <div style={{ ...cardStyle, padding: 12, display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, flexWrap: "wrap", marginBottom: 18 }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 10, flex: 1, minWidth: 240, flexWrap: "wrap" }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 6, padding: "6px 10px", backgroundColor: colors.creamMid, border: `1px solid ${colors.forestGreen}`, borderRadius: 8 }}>
-              <select value={filterType} onChange={(e) => setFilterType(e.target.value as any)} style={selectStyle}>
-                <option value="all">{t("mediaQueue.filters.allTypes") || "All Types"}</option>
-                <option value="PDF">PDF</option>
-                <option value="AUDIO">Audio</option>
-                <option value="VIDEO">Video</option>
-                <option value="LINK">Link</option>
-              </select>
-              
-            </div>
-            <div style={{ display: "flex", alignItems: "center", gap: 6, padding: "6px 10px", backgroundColor: colors.creamMid, border: `1px solid ${colors.forestGreen}`, borderRadius: 8 }}>
-              <select value={filterScholar} onChange={(e) => setFilterScholar(e.target.value)} style={selectStyle}>
-                <option value="all">{t("mediaQueue.filters.allScholars") || "All Scholars"}</option>
-                {scholars.map((s) => <option key={s} value={s}>{s}</option>)}
-              </select>
-              
-            </div>
-            <div style={{ display: "flex", alignItems: "center", gap: 6, padding: "6px 10px", backgroundColor: colors.creamMid, border: `1px solid ${colors.forestGreen}`, borderRadius: 8 }}>
-              <select value={sortBy} onChange={(e) => setSortBy(e.target.value as any)} style={selectStyle}>
-                <option value="newest">{t("mediaQueue.sort.newest") || "Newest"}</option>
-                <option value="oldest">{t("mediaQueue.sort.oldest") || "Oldest"}</option>
-                <option value="title">{t("mediaQueue.sort.titleAZ") || "Title A-Z"}</option>
-              </select>
-              
+              <div className="flex-1 min-w-[150px]">
+                <label className="mono-label text-[9px] uppercase font-bold text-[#1e4d3a]/60 mb-1.5 block">{t("admin.common.scholar") || "Scholar"}</label>
+                <select value={filterScholar} onChange={(e) => setFilterScholar(e.target.value)} className="w-full bg-[#fbf9f4] border border-[#1e4d3a]/15 rounded-[6px] px-3 py-2 text-[12px] font-medium text-[#1e4d3a] focus:outline-none focus:ring-2 focus:ring-[#1e4d3a]/20">
+                  <option value="all">{t("mediaQueue.filters.allScholars") || "All Scholars"}</option>
+                  {scholars.map((s) => <option key={s} value={s}>{s}</option>)}
+                </select>
+              </div>
+              <div className="flex-1 min-w-[150px]">
+                <label className="mono-label text-[9px] uppercase font-bold text-[#1e4d3a]/60 mb-1.5 block">{t("admin.common.sortBy") || "Sort By"}</label>
+                <select value={sortBy} onChange={(e) => setSortBy(e.target.value as any)} className="w-full bg-[#fbf9f4] border border-[#1e4d3a]/15 rounded-[6px] px-3 py-2 text-[12px] font-medium text-[#1e4d3a] focus:outline-none focus:ring-2 focus:ring-[#1e4d3a]/20">
+                  <option value="newest">{t("mediaQueue.sort.newest") || "Newest"}</option>
+                  <option value="oldest">{t("mediaQueue.sort.oldest") || "Oldest"}</option>
+                  <option value="title">{t("mediaQueue.sort.titleAZ") || "Title A-Z"}</option>
+                </select>
+              </div>
             </div>
             {hasActiveFilters && (
-              <button onClick={clearFilters} style={{ display: "flex", alignItems: "center", gap: 4, padding: "6px 10px", backgroundColor: "transparent", border: `1px solid ${colors.red}`, borderRadius: 8, fontFamily: fonts.body, fontSize: 12, fontWeight: 500, color: colors.red, cursor: "pointer" }}>
-                <Icon name="close" size={14} /> Clear
+              <button onClick={clearFilters} className="flex items-center gap-1.5 px-3 py-2 rounded-[6px] border border-[#e96d5c] text-[#e96d5c] text-[11px] font-bold uppercase tracking-wide hover:bg-[#e96d5c]/5 transition-colors mt-5 md:mt-0 self-end md:self-auto cursor-pointer">
+                <span className="material-symbols-outlined text-[14px]">close</span> {t("admin.common.clear") || "Clear"}
               </button>
             )}
           </div>
         </div>
 
-        {/* ── Table ── */}
-        <section style={{ ...cardStyle, overflow: "hidden" }}>
-          <div style={{ padding: "14px 20px", borderBottom: `1px solid ${colors.forestGreen}`, display: "flex", justifyContent: "space-between", alignItems: "center", backgroundColor: colors.creamMid }}>
-            <h3 style={{ fontFamily: fonts.headline, fontSize: 16, fontWeight: 600, color: colors.forestGreen, margin: 0, display: "flex", alignItems: "center", gap: 8 }}>
-              <Icon name="perm_media" size={20} /> {t("mediaQueue.table.title") || "Pending Media"}
-            </h3>
-            <span style={{ fontFamily: fonts.label, fontSize: 11, padding: "4px 10px", borderRadius: 9999, backgroundColor: colors.creamLight, color: colors.forestGreen, border: `1px solid ${colors.forestGreen}` }}>
-              {t("mediaQueue.table.updated") || "Updated just now"}
-            </span>
-          </div>
-          
-          <div style={{ overflowX: "auto" }}>
-            <table style={{ width: "100%", borderCollapse: "collapse", minWidth: 900 }}>
-              <thead style={{ backgroundColor: colors.creamMid }}>
-                <tr>
-                  <th style={thStyle}>{t("mediaQueue.table.media") || "Media"}</th>
-                  <th style={thStyle}>{t("mediaQueue.table.type") || "Type"}</th>
-                  <th style={thStyle}>{t("mediaQueue.table.source") || "Source"}</th>
-                  <th style={thStyle}>{t("mediaQueue.table.scholar") || "Scholar"}</th>
-                  <th style={thStyle}>{t("mediaQueue.table.submitter") || "Submitter"}</th>
-                  <th style={thStyle}>{t("mediaQueue.table.submitted") || "Submitted"}</th>
-                  <th style={{ ...thStyle, textAlign: isRTL ? "left" : "right" }}>{t("mediaQueue.table.actions") || "Actions"}</th>
+        <div className="dashboard-card overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full text-left border-collapse">
+              <thead>
+                <tr className="border-b border-[#1e4d3a]/10 bg-[#1e4d3a]/[0.02]">
+                  <th className="mono-label text-[9px] uppercase font-bold text-[#1e4d3a]/60 px-5 py-3.5">{t("mediaQueue.table.media") || "Media"}</th>
+                  <th className="mono-label text-[9px] uppercase font-bold text-[#1e4d3a]/60 px-5 py-3.5">{t("mediaQueue.table.type") || "Type"}</th>
+                  <th className="mono-label text-[9px] uppercase font-bold text-[#1e4d3a]/60 px-5 py-3.5">{t("mediaQueue.table.source") || "Source"}</th>
+                  <th className="mono-label text-[9px] uppercase font-bold text-[#1e4d3a]/60 px-5 py-3.5">{t("mediaQueue.table.language") || "Language"}</th>
+                  <th className="mono-label text-[9px] uppercase font-bold text-[#1e4d3a]/60 px-5 py-3.5">{t("mediaQueue.table.scholar") || "Scholar"}</th>
+                  <th className="mono-label text-[9px] uppercase font-bold text-[#1e4d3a]/60 px-5 py-3.5">{t("mediaQueue.table.submitter") || "Submitter"}</th>
+                  <th className="mono-label text-[9px] uppercase font-bold text-[#1e4d3a]/60 px-5 py-3.5">{t("mediaQueue.table.submitted") || "Submitted"}</th>
+                  <th className="mono-label text-[9px] uppercase font-bold text-[#1e4d3a]/60 px-5 py-3.5 text-right">{t("mediaQueue.table.actions") || "Actions"}</th>
                 </tr>
               </thead>
-              <tbody>
-                {isLoading ? (
-                  <tr><td colSpan={7} style={{ padding: 40, textAlign: "center", color: colors.forestGreen }}><Icon name="hourglass_empty" size={48} /><p style={{ marginTop: 12 }}>Loading...</p></td></tr>
-                ) : error ? (
-                  <tr><td colSpan={7} style={{ padding: 40, textAlign: "center", color: colors.red }}><Icon name="error" size={48} /><p style={{ marginTop: 12 }}>{error}</p><button onClick={fetchPendingMedia} style={{ marginTop: 12, padding: "8px 16px", borderRadius: 6, border: `1px solid ${colors.forestGreen}`, backgroundColor: colors.creamLight, color: colors.forestGreen, cursor: "pointer" }}>Retry</button></td></tr>
-                ) : filtered.length === 0 ? (
-                  <tr><td colSpan={7} style={{ padding: 40, textAlign: "center", color: colors.forestGreen, opacity: 0.7 }}><Icon name="inbox" size={48} /><p style={{ marginTop: 12 }}>No media found.</p></td></tr>
+              <tbody className="divide-y divide-[#1e4d3a]/[0.06]">
+                {error ? (
+                  <tr><td colSpan={8} className="px-5 py-12 text-center text-[#e96d5c]"><span className="material-symbols-outlined text-[40px] mb-2 block mx-auto">error</span><p className="mt-2">{error}</p><button onClick={fetchPendingMedia} className="mt-4 px-4 py-2 rounded-[6px] border border-[#1e4d3a]/20 text-[#1e4d3a] text-[12px] font-bold uppercase tracking-wide hover:bg-[#1e4d3a]/5 transition-colors cursor-pointer">{t("common.retry") || "Retry"}</button></td></tr>
+                ) : paginatedMedia.length === 0 ? (
+                  <tr><td colSpan={8} className="px-5 py-12 text-center text-[12px] text-[#1e4d3a]/50"><span className="material-symbols-outlined text-[40px] mb-2 block mx-auto">inbox</span>{t("mediaQueue.table.empty") || "No media found."}</td></tr>
                 ) : (
-                  filtered.map((m) => {
+                  paginatedMedia.map((m) => {
                     const meta = TYPE_META[m.type];
                     return (
-                      <tr key={m.id} style={{ transition: "background-color 0.15s", opacity: m.stripped ? 0.5 : 1 }} onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = colors.creamMid)} onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "transparent")}>
-                        <td style={tdStyle}>
-                          <div style={{ display: "flex", alignItems: "flex-start", gap: 10 }}>
-                            <div style={{ width: 36, height: 36, borderRadius: 8, backgroundColor: meta.color, border: `1px solid ${colors.forestGreen}`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                              <Icon name={meta.icon} size={18} />
-                            </div>
+                      <tr key={m.id} className="hover:bg-[#1e4d3a]/[0.015] transition-colors" style={{ opacity: m.stripped ? 0.5 : 1 }}>
+                        <td className="px-5 py-3.5">
+                          <div className="flex items-start gap-3">
+                            <div className="w-9 h-9 rounded-[8px] bg-[#1e4d3a]/5 border border-[#1e4d3a]/10 flex items-center justify-center flex-shrink-0"><span className="material-symbols-outlined text-[18px] text-[#1e4d3a]">{meta.icon}</span></div>
                             <div>
-                              <p style={{ margin: 0, fontWeight: 600, fontFamily: fonts.headline, fontSize: 13, color: colors.forestGreen, textDecoration: m.stripped ? "line-through" : "none" }}>{m.title}</p>
-                              {m.flagged && <p style={{ margin: "3px 0 0", fontFamily: fonts.label, fontSize: 10, color: colors.red, fontWeight: 600, display: "flex", alignItems: "center", gap: 4 }}><Icon name="flag" size={12} /> {m.flagReason}</p>}
+                              <p className="text-[13px] font-semibold text-[#082f27]" style={{ textDecoration: m.stripped ? "line-through" : "none" }}>{m.title}</p>
+                              {m.flagged && <p className="mono-label text-[10px] text-[#e96d5c] font-bold flex items-center gap-1 mt-1"><span className="material-symbols-outlined text-[12px]">flag</span> {m.flagReason}</p>}
                             </div>
                           </div>
                         </td>
-                        <td style={tdStyle}><span style={{ fontFamily: fonts.label, fontSize: 10, fontWeight: 700, padding: "4px 10px", borderRadius: 9999, backgroundColor: colors.creamMid, color: colors.forestGreen, border: `1px solid ${colors.creamDark}` }}>{m.type}</span></td>
-                        <td style={tdStyle}>
+                        <td className="px-5 py-3.5"><span className="inline-flex items-center px-2 py-0.5 rounded-full bg-[#1e4d3a]/5 border border-[#1e4d3a]/10 mono-label text-[10px] font-bold text-[#1e4d3a]/70 uppercase tracking-wide">{m.type}</span></td>
+                        <td className="px-5 py-3.5">
                           {m.sourceType === "link" ? (
-                            <a href={m.sourceUrl} target="_blank" rel="noopener noreferrer" style={{ display: "inline-flex", alignItems: "center", gap: 4, fontFamily: fonts.body, fontSize: 12, color: colors.forestGreen, textDecoration: "none", fontWeight: 600 }}><Icon name="link" size={14} /> View Link</a>
+                            <a href={m.sourceUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-[12px] font-semibold text-[#1e4d3a] hover:text-[#C9A84C] transition-colors"><span className="material-symbols-outlined text-[14px]">link</span> {t("mediaQueue.source.link") || "View Link"}</a>
                           ) : (
-                            <div><p style={{ margin: 0, display: "flex", alignItems: "center", gap: 4, fontFamily: fonts.body, fontSize: 12, color: colors.forestGreen, fontWeight: 600 }}><Icon name="upload_file" size={14} /> {m.fileName || "No file"}</p></div>
+                            <div className="flex items-center gap-1 text-[12px] font-semibold text-[#1e4d3a]"><span className="material-symbols-outlined text-[14px]">upload_file</span> {m.fileName || "No file"}</div>
                           )}
                         </td>
-                        <td style={tdStyle}><span style={{ fontFamily: fonts.body, fontSize: 13, fontWeight: 500 }}>{m.scholarName}</span></td>
-                        <td style={tdStyle}>
-                          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                            <Avatar name={m.submittedBy} size={28} />
-                            <span style={{ fontFamily: fonts.body, fontSize: 13 }}>{m.submittedBy}</span>
+                        <td className="px-5 py-3.5 text-[13px] font-medium text-[#1e4d3a]">{getLangName(m.languageCode)}</td>
+                        <td className="px-5 py-3.5 text-[13px] font-medium text-[#1e4d3a]">{m.scholarName}</td>
+                        <td className="px-5 py-3.5">
+                          <div className="flex items-center gap-2">
+                            <div className="w-7 h-7 rounded-full bg-[#C9A84C]/10 border border-[#C9A84C]/20 flex items-center justify-center text-[#C9A84C] font-['Source_Serif_4'] font-bold text-[10px] flex-shrink-0">{m.submittedBy.split(" ").map((p) => p[0]).slice(0, 2).join("").toUpperCase()}</div>
+                            <span className="text-[12px] font-medium text-[#1e4d3a]" style={{ textDecoration: m.stripped ? "line-through" : "none" }}>{m.submittedBy}</span>
                           </div>
                         </td>
-                        <td style={{ ...tdStyle, fontFamily: fonts.label, fontSize: 12 }}>{m.date}</td>
-
-                        {/* ✅ 4 Buttons (View, Approve, Reject, Restrict) */}
-                        <td style={{ ...tdStyle, textAlign: isRTL ? "left" : "right" }}>
-                          <div style={{ display: "flex", justifyContent: isRTL ? "flex-start" : "flex-end", gap: 6 }}>
-                            <button onClick={() => openReview(m)} title="View Details" style={viewBtnStyle} onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = colors.creamMid; }} onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = "transparent"; }}>
-                              <Icon name="visibility" size={18} />
-                            </button>
-                            <button onClick={() => { setApproveTarget(m); setApproveReason(""); }} title="Approve" style={approveBtnStyle} onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = "#285b4b"; }} onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = colors.forestGreen; }}>
-                              <Icon name="check" size={18} filled />
-                            </button>
-                            <button onClick={() => { setRejectTarget(m); setRejectReason(""); }} title="Reject" style={rejectBtnStyle} onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = colors.red; e.currentTarget.style.color = colors.creamLight; }} onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = "transparent"; e.currentTarget.style.color = colors.red; }}>
-                              <Icon name="close" size={18} />
-                            </button>
-                            <button onClick={() => setRestrictTarget(m)} title="Restrict User & Reject"
-                              style={{ width: 32, height: 32, display: "flex", alignItems: "center", justifyContent: "center", backgroundColor: "transparent", border: `1px solid ${colors.amber}`, borderRadius: 6, color: colors.amber, cursor: "pointer" }}
-                              onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = colors.amber; e.currentTarget.style.color = colors.creamLight; }}
-                              onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = "transparent"; e.currentTarget.style.color = colors.amber; }}>
-                              <Icon name="shield_person" size={18} />
-                            </button>
+                        <td className="px-5 py-3.5 mono-label text-[11px] text-[#1e4d3a]/70">{m.date}</td>
+                        <td className="px-5 py-3.5 text-right">
+                          <div className="flex items-center justify-end gap-2">
+                            <button onClick={() => openReview(m)} title="View Details" className="w-8 h-8 flex items-center justify-center rounded-[6px] border border-[#1e4d3a]/20 text-[#1e4d3a] hover:bg-[#1e4d3a] hover:text-white transition-colors cursor-pointer"><span className="material-symbols-outlined text-[18px]">visibility</span></button>
+                            <button onClick={() => { setApproveTarget(m); setApproveReason(""); }} title="Approve" className="w-8 h-8 flex items-center justify-center rounded-[6px] bg-[#1e4d3a] border border-[#1e4d3a] text-white hover:bg-[#1e4d3a]/90 transition-colors cursor-pointer"><span className="material-symbols-outlined text-[18px]" style={{ fontVariationSettings: "'FILL' 1, 'wght' 400" }}>check</span></button>
+                            <button onClick={() => { setRejectTarget(m); setRejectReason(""); }} title="Reject" className="w-8 h-8 flex items-center justify-center rounded-[6px] border border-[#e96d5c] text-[#e96d5c] hover:bg-[#e96d5c] hover:text-white transition-colors cursor-pointer"><span className="material-symbols-outlined text-[18px]">close</span></button>
+                            <button onClick={() => setRestrictTarget(m)} title="Restrict User & Reject" className="w-8 h-8 flex items-center justify-center rounded-[6px] border border-[#C9A84C] text-[#C9A84C] hover:bg-[#C9A84C] hover:text-white transition-colors cursor-pointer"><span className="material-symbols-outlined text-[18px]">shield_person</span></button>
                           </div>
                         </td>
                       </tr>
@@ -483,209 +320,159 @@ export default function MediaPendingQueue() {
               </tbody>
             </table>
           </div>
-        </section>
 
-        {/* ─ Review Modal ── */}
+          {totalPages > 1 && (
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 px-5 py-4 border-t border-[#1e4d3a]/10 bg-[#1e4d3a]/[0.01]">
+              <div className="text-[11px] text-[#1e4d3a]/60 mono-label">
+                {t("admin.common.showing") || "Showing"} {(currentPage - 1) * ITEMS_PER_PAGE + 1}–{Math.min(currentPage * ITEMS_PER_PAGE, filtered.length)} {t("admin.common.of") || "of"} {filtered.length}
+              </div>
+              <div className="flex items-center gap-2">
+                <button onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))} disabled={currentPage === 1} className="flex items-center justify-center w-8 h-8 rounded-[6px] border border-[#1e4d3a]/20 text-[#1e4d3a] disabled:opacity-30 disabled:cursor-not-allowed hover:bg-[#1e4d3a] hover:text-white transition-colors cursor-pointer">
+                  <span className="material-symbols-outlined text-[18px]">{isRTL ? 'arrow_forward' : 'arrow_back'}</span>
+                </button>
+                {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                  let pageNum;
+                  if (totalPages <= 5) pageNum = i + 1;
+                  else if (currentPage <= 3) pageNum = i + 1;
+                  else if (currentPage >= totalPages - 2) pageNum = totalPages - 4 + i;
+                  else pageNum = currentPage - 2 + i;
+                  return (
+                    <button key={pageNum} onClick={() => setCurrentPage(pageNum)} className={`w-8 h-8 rounded-[6px] text-[11px] font-bold mono-label transition-colors cursor-pointer ${currentPage === pageNum ? 'bg-[#1e4d3a] text-white' : 'border border-[#1e4d3a]/20 text-[#1e4d3a] hover:bg-[#1e4d3a]/10'}`}>
+                      {pageNum}
+                    </button>
+                  );
+                })}
+                <button onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))} disabled={currentPage === totalPages} className="flex items-center justify-center w-8 h-8 rounded-[6px] border border-[#1e4d3a]/20 text-[#1e4d3a] disabled:opacity-30 disabled:cursor-not-allowed hover:bg-[#1e4d3a] hover:text-white transition-colors cursor-pointer">
+                  <span className="material-symbols-outlined text-[18px]">{isRTL ? 'arrow_back' : 'arrow_forward'}</span>
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Review Modal */}
         {reviewTarget && (
-          <div style={{ position: "fixed", inset: 0, backgroundColor: "rgba(11, 67, 53, 0.6)", zIndex: 100, display: "flex", alignItems: "center", justifyContent: "center", backdropFilter: "blur(4px)", padding: 20 }} onClick={closeReview}>
-            <div style={{ ...cardStyle, backgroundColor: colors.creamLight, width: "95vw", maxWidth: 560, maxHeight: "85vh", display: "flex", flexDirection: "column", overflow: "hidden", boxShadow: "0 20px 60px rgba(0,0,0,0.2)" }} onClick={(e) => e.stopPropagation()}>
-              
-              <div style={{ padding: "16px 24px", borderBottom: `1px solid ${colors.forestGreen}`, display: "flex", justifyContent: "space-between", alignItems: "center", backgroundColor: colors.creamMid }}>
-                <h3 style={{ fontFamily: fonts.headline, fontSize: 18, fontWeight: 700, color: colors.forestGreen, margin: 0, display: "flex", alignItems: "center", gap: 10 }}>
-                  <Icon name="fact_check" size={22} /> {t("mediaQueue.review.title") || "Review Media"}
-                </h3>
-                <button onClick={closeReview} style={{ background: "none", border: "none", cursor: "pointer", color: colors.forestGreen, padding: 4, borderRadius: 6, display: "flex", alignItems: "center" }}>
-                  <Icon name="close" size={22} />
-                </button>
-              </div>
-
-              <div style={{ flex: 1, overflow: "hidden", display: "flex" }}>
-                <div style={{ flex: 1, padding: 24, overflowY: "auto", display: "flex", flexDirection: "column", gap: 20, backgroundColor: colors.creamLight }}>
-
-                  <div style={{ paddingBottom: 16, borderBottom: `1px solid ${colors.creamDark}` }}>
-                    <h4 style={{ fontFamily: fonts.label, fontSize: 11, fontWeight: 700, letterSpacing: "0.06em", textTransform: "uppercase", color: colors.forestGreen, margin: "0 0 12px", opacity: 0.8 }}>Details</h4>
-                    {[
-                      { label: "Title", value: reviewTarget.title, bold: true },
-                      ...(reviewTarget.description ? [{ label: "Description", value: reviewTarget.description }] : []),
-                      { label: "Scholar", value: reviewTarget.scholarName },
-                      { label: "Type", value: reviewTarget.type },
-                      { label: "Submitted By", value: `${reviewTarget.submittedBy} (${reviewTarget.date})` },
-                      ...(reviewTarget.fileName ? [{ label: "File Name", value: reviewTarget.fileName }] : []),
-                    ].map((row, i) => (
-                      <div key={i} style={{ display: "flex", gap: 8, fontSize: 13, marginBottom: 6, paddingBottom: 6, borderBottom: i < 4 ? `1px solid ${colors.creamMid}` : "none" }}>
-                        <span style={{ fontWeight: 600, color: colors.forestGreen, opacity: 0.7, minWidth: 100, flexShrink: 0 }}>{row.label}:</span>
-                        <span style={{ color: colors.forestGreen, fontWeight: row.bold ? 600 : 400 }}>{row.value}</span>
-                      </div>
-                    ))}
-                  </div>
-
-                  {/* ✅ File Actions Section inside Modal */}
-                  <div style={{ paddingBottom: 16, borderBottom: `1px solid ${colors.creamDark}` }}>
-                    <h4 style={{ fontFamily: fonts.label, fontSize: 11, fontWeight: 700, letterSpacing: "0.06em", textTransform: "uppercase", color: colors.forestGreen, margin: "0 0 12px", opacity: 0.8 }}>File Actions</h4>
-                    <div style={{ display: "flex", gap: 10 }}>
-                      {reviewTarget.sourceType === "upload" ? (
-                        <>
-                          <button onClick={handleModalView} style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 6, padding: "10px", borderRadius: 6, border: `1px solid ${colors.forestGreen}`, backgroundColor: "transparent", color: colors.forestGreen, fontFamily: fonts.label, fontSize: 11, fontWeight: 700, letterSpacing: "0.08em", cursor: "pointer" }} onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = colors.forestGreen; e.currentTarget.style.color = colors.creamLight; }} onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = "transparent"; e.currentTarget.style.color = colors.forestGreen; }}>
-                            <Icon name="visibility" size={16} /> VIEW FILE
-                          </button>
-                          <button onClick={handleModalDownload} style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 6, padding: "10px", borderRadius: 6, border: "none", backgroundColor: colors.forestGreen, color: colors.creamLight, fontFamily: fonts.label, fontSize: 11, fontWeight: 700, letterSpacing: "0.08em", cursor: "pointer" }} onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = "#285b4b"; }} onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = colors.forestGreen; }}>
-                            <Icon name="download" size={16} /> DOWNLOAD
-                          </button>
-                        </>
-                      ) : (
-                        <a href={reviewTarget.sourceUrl || reviewTarget.previewUrl} target="_blank" rel="noopener noreferrer" style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 6, padding: "10px", borderRadius: 6, border: "none", backgroundColor: colors.forestGreen, color: colors.creamLight, fontFamily: fonts.label, fontSize: 11, fontWeight: 700, letterSpacing: "0.08em", cursor: "pointer", textDecoration: "none" }} onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = "#285b4b"; }} onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = colors.forestGreen; }}>
-                          <Icon name="open_in_new" size={16} /> OPEN LINK
-                        </a>
-                      )}
-                    </div>
-                  </div>
-
-                  {approvalError && (
-                    <div style={{ fontSize: 12, color: colors.red, fontWeight: 600, display: "flex", alignItems: "center", gap: 6, padding: "10px", backgroundColor: "rgba(139,44,44,0.06)", borderRadius: 6 }}>
-                      <Icon name="error" size={16} /> {approvalError}
-                    </div>
-                  )}
-
-                  <div style={{ display: "flex", gap: 10, alignItems: "center", marginTop: "auto", paddingTop: 16, borderTop: `1px solid ${colors.creamDark}` }}>
-                    <button onClick={() => { setRejectTarget(reviewTarget); setRejectReason(""); closeReview(); }} style={{ padding: "10px 20px", borderRadius: 8, cursor: "pointer", border: `1px solid ${colors.forestGreen}`, backgroundColor: "transparent", color: colors.forestGreen, fontFamily: fonts.body, fontSize: 13, fontWeight: 600, display: "flex", alignItems: "center", gap: 6 }}>
-                      <Icon name="cancel" size={16} /> Reject
-                    </button>
-                    <div style={{ flex: 1 }} />
-                    <button onClick={() => { setApproveTarget(reviewTarget); setApproveReason(""); closeReview(); }} style={{ padding: "10px 24px", borderRadius: 8, cursor: "pointer", border: "none", backgroundColor: colors.forestGreen, color: colors.creamLight, fontFamily: fonts.body, fontSize: 13, fontWeight: 700, display: "flex", alignItems: "center", gap: 6 }}>
-                      <Icon name="check_circle" size={16} filled /> Approve
-                    </button>
-                  </div>
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#082f27]/40 backdrop-blur-sm" onClick={closeReview}>
+            <div className="dashboard-card w-full max-w-lg p-6 relative" onClick={(e) => e.stopPropagation()}>
+              <button onClick={closeReview} className={`absolute top-4 ${isRTL ? 'left-4' : 'right-4'} p-1.5 rounded-full hover:bg-[#1e4d3a]/10 transition-colors cursor-pointer`}><span className="material-symbols-outlined text-[20px] text-[#1e4d3a]">close</span></button>
+              <h3 className="serif-title text-[20px] font-semibold text-[#082f27] mb-4 flex items-center gap-2"><span className="material-symbols-outlined text-[22px]">fact_check</span> {t("mediaQueue.review.title") || "Review Media"}</h3>
+              <div className="space-y-4 mb-6">
+                <div><p className="mono-label text-[9px] uppercase font-bold text-[#1e4d3a]/60 mb-1">{t("mediaQueue.review.label.title") || "Title"}</p><p className="text-[14px] font-semibold text-[#082f27]">{reviewTarget.title}</p></div>
+                {reviewTarget.description && <div><p className="mono-label text-[9px] uppercase font-bold text-[#1e4d3a]/60 mb-1">{t("mediaQueue.review.label.description") || "Description"}</p><p className="text-[13px] text-[#1e4d3a]/80 leading-relaxed">{reviewTarget.description}</p></div>}
+                <div className="grid grid-cols-2 gap-4">
+                  <div><p className="mono-label text-[9px] uppercase font-bold text-[#1e4d3a]/60 mb-1">{t("mediaQueue.review.label.scholar") || "Scholar"}</p><p className="text-[13px] font-medium text-[#1e4d3a]">{reviewTarget.scholarName}</p></div>
+                  <div><p className="mono-label text-[9px] uppercase font-bold text-[#1e4d3a]/60 mb-1">{t("mediaQueue.review.label.type") || "Type"}</p><p className="text-[13px] font-medium text-[#1e4d3a]">{reviewTarget.type}</p></div>
+                  <div><p className="mono-label text-[9px] uppercase font-bold text-[#1e4d3a]/60 mb-1">{t("mediaQueue.review.label.submittedBy") || "Submitted By"}</p><p className="text-[13px] font-medium text-[#1e4d3a]">{reviewTarget.submittedBy} ({reviewTarget.date})</p></div>
+                  {reviewTarget.fileName && <div><p className="mono-label text-[9px] uppercase font-bold text-[#1e4d3a]/60 mb-1">{t("mediaQueue.review.label.fileName") || "File Name"}</p><p className="text-[13px] font-medium text-[#1e4d3a]">{reviewTarget.fileName}</p></div>}
                 </div>
+              </div>
+              <div className="mb-6 p-4 bg-[#1e4d3a]/[0.02] rounded-[8px]">
+                <p className="mono-label text-[9px] uppercase font-bold text-[#1e4d3a]/60 mb-3">{t("mediaQueue.review.fileActions") || "File Actions"}</p>
+                {reviewTarget.sourceType === "upload" ? (
+                  <div className="flex gap-3">
+                    <button onClick={handleModalView} className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-[6px] border border-[#1e4d3a]/20 text-[#1e4d3a] text-[11px] font-bold uppercase tracking-wide hover:bg-[#1e4d3a] hover:text-white transition-colors cursor-pointer"><span className="material-symbols-outlined text-[16px]">visibility</span> {t("mediaQueue.review.viewFile") || "VIEW FILE"}</button>
+                    <button onClick={handleModalDownload} className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-[6px] bg-[#1e4d3a] text-white text-[11px] font-bold uppercase tracking-wide hover:bg-[#1e4d3a]/90 transition-colors cursor-pointer"><span className="material-symbols-outlined text-[16px]">download</span> {t("mediaQueue.review.download") || "DOWNLOAD"}</button>
+                  </div>
+                ) : (
+                  <a href={reviewTarget.sourceUrl || reviewTarget.previewUrl} target="_blank" rel="noopener noreferrer" className="flex items-center justify-center gap-2 w-full py-2.5 rounded-[6px] bg-[#1e4d3a] text-white text-[11px] font-bold uppercase tracking-wide hover:bg-[#1e4d3a]/90 transition-colors cursor-pointer"><span className="material-symbols-outlined text-[16px]">open_in_new</span> {t("mediaQueue.review.openLink") || "OPEN LINK"}</a>
+                )}
+              </div>
+              {approvalError && <div className="flex items-center gap-2 p-3 rounded-[6px] bg-[#e96d5c]/10 text-[#e96d5c] text-[12px] font-semibold mb-4"><span className="material-symbols-outlined text-[16px]">error</span> {approvalError}</div>}
+              <div className="flex gap-3 justify-end">
+                <button onClick={() => { setRejectTarget(reviewTarget); setRejectReason(""); closeReview(); }} className="px-5 py-2 rounded-[6px] border border-[#e96d5c] text-[#e96d5c] text-[12px] font-bold uppercase tracking-wide hover:bg-[#e96d5c] hover:text-white transition-colors cursor-pointer">{t("mediaQueue.actions.reject") || "Reject"}</button>
+                <button onClick={() => { setApproveTarget(reviewTarget); setApproveReason(""); closeReview(); }} className="px-5 py-2 rounded-[6px] bg-[#1e4d3a] text-white text-[12px] font-bold uppercase tracking-wide hover:bg-[#1e4d3a]/90 transition-colors cursor-pointer">{t("mediaQueue.actions.approve") || "Approve"}</button>
               </div>
             </div>
           </div>
         )}
 
-        {/* ─ Approve Confirmation Modal ── */}
+        {/* Approve Modal */}
         {approveTarget && (
-          <div style={{ position: "fixed", inset: 0, backgroundColor: "rgba(11, 67, 53, 0.5)", zIndex: 100, display: "flex", alignItems: "center", justifyContent: "center", backdropFilter: "blur(4px)" }} onClick={() => { setApproveTarget(null); setApproveReason(""); }}>
-            <div style={{ ...cardStyle, backgroundColor: colors.creamLight, width: 440, maxWidth: "90vw", padding: 32, boxShadow: "0 20px 60px rgba(0,0,0,0.18)" }} onClick={(e) => e.stopPropagation()}>
-              <div style={{ width: 56, height: 56, borderRadius: "50%", backgroundColor: colors.forestGreen, color: colors.creamLight, display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 20, border: `1px solid ${colors.forestGreen}` }}><Icon name="check_circle" size={28} filled /></div>
-              <h2 style={{ fontFamily: fonts.headline, fontSize: 20, fontWeight: 700, color: colors.forestGreen, marginBottom: 12 }}>Approve Submission</h2>
-              <p style={{ fontFamily: fonts.body, fontSize: 14, color: colors.forestGreen, lineHeight: 1.6, marginBottom: 16, opacity: 0.8 }}>Are you sure you want to approve "{approveTarget.title}"?</p>
-              <div style={{ marginBottom: 24 }}>
-                <label style={{ fontFamily: fonts.label, fontSize: 11, letterSpacing: "0.06em", fontWeight: 600, color: colors.forestGreen, display: "block", marginBottom: 6 }}>APPROVAL NOTES (Optional)</label>
-                <textarea value={approveReason} onChange={(e) => setApproveReason(e.target.value)} placeholder="Add any notes about this approval..." style={{ width: "100%", padding: 12, borderRadius: 8, border: `1px solid ${colors.forestGreen}`, fontFamily: fonts.body, fontSize: 13, color: colors.forestGreen, backgroundColor: colors.creamLight, outline: "none", resize: "vertical", minHeight: 80 }} />
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#082f27]/40 backdrop-blur-sm" onClick={() => { setApproveTarget(null); setApproveReason(""); }}>
+            <div className="dashboard-card w-full max-w-md p-6 relative" onClick={(e) => e.stopPropagation()}>
+              <button onClick={() => { setApproveTarget(null); setApproveReason(""); }} className={`absolute top-4 ${isRTL ? 'left-4' : 'right-4'} p-1.5 rounded-full hover:bg-[#1e4d3a]/10 transition-colors cursor-pointer`}><span className="material-symbols-outlined text-[20px] text-[#1e4d3a]">close</span></button>
+              <div className="w-14 h-14 rounded-full bg-[#1e4d3a] text-white flex items-center justify-center mb-5"><span className="material-symbols-outlined text-[28px]" style={{ fontVariationSettings: "'FILL' 1, 'wght' 400" }}>check_circle</span></div>
+              <h3 className="serif-title text-[20px] font-semibold text-[#082f27] mb-2">{t("mediaQueue.modal.approveTitle") || "Approve Submission"}</h3>
+              <p className="text-[13px] text-[#1e4d3a]/80 leading-relaxed mb-6">{(t("mediaQueue.modal.approveBody") || "Are you sure you want to approve \"{title}\"?").replace("{title}", approveTarget.title)}</p>
+              <div className="mb-6">
+                <label className="mono-label text-[9px] uppercase font-bold text-[#1e4d3a]/60 mb-1.5 block">{t("mediaQueue.modal.approveNotesLabel") || "APPROVAL NOTES (Optional)"}</label>
+                <textarea value={approveReason} onChange={(e) => setApproveReason(e.target.value)} placeholder={t("mediaQueue.modal.approveNotesPlaceholder") || "Add any notes about this approval..."} className="w-full bg-[#fbf9f4] border border-[#1e4d3a]/15 rounded-[6px] px-3 py-2 text-[12px] font-medium text-[#1e4d3a] focus:outline-none focus:ring-2 focus:ring-[#1e4d3a]/20 min-h-[80px] resize-y" />
               </div>
-              <div style={{ display: "flex", gap: 12, justifyContent: "flex-end" }}>
-                <button onClick={() => { setApproveTarget(null); setApproveReason(""); }} style={{ padding: "10px 24px", borderRadius: 8, cursor: "pointer", border: `1px solid ${colors.forestGreen}`, backgroundColor: colors.creamLight, fontFamily: fonts.body, fontSize: 13, fontWeight: 600, color: colors.forestGreen }}>Cancel</button>
-                <button onClick={confirmApprove} style={{ padding: "10px 24px", borderRadius: 8, cursor: "pointer", border: "none", backgroundColor: colors.forestGreen, color: colors.creamLight, fontFamily: fonts.body, fontSize: 13, fontWeight: 700 }}>Confirm Approve</button>
+              <div className="flex gap-3 justify-end">
+                <button onClick={() => { setApproveTarget(null); setApproveReason(""); }} className="px-5 py-2 rounded-[6px] border border-[#1e4d3a]/20 text-[#1e4d3a] text-[12px] font-bold uppercase tracking-wide hover:bg-[#1e4d3a]/5 transition-colors cursor-pointer">{t("mediaQueue.modal.cancel") || "Cancel"}</button>
+                <button onClick={confirmApprove} className="px-5 py-2 rounded-[6px] bg-[#1e4d3a] text-white text-[12px] font-bold uppercase tracking-wide hover:bg-[#1e4d3a]/90 transition-colors cursor-pointer">{t("mediaQueue.modal.confirmApprove") || "Confirm Approve"}</button>
               </div>
             </div>
           </div>
         )}
 
-        {/* ─ Reject Confirmation Modal ── */}
+        {/* Reject Modal */}
         {rejectTarget && (
-          <div style={{ position: "fixed", inset: 0, backgroundColor: "rgba(11, 67, 53, 0.5)", zIndex: 100, display: "flex", alignItems: "center", justifyContent: "center", backdropFilter: "blur(4px)" }} onClick={() => { setRejectTarget(null); setRejectReason(""); }}>
-            <div style={{ ...cardStyle, backgroundColor: colors.creamLight, width: 440, maxWidth: "90vw", padding: 32, boxShadow: "0 20px 60px rgba(0,0,0,0.18)" }} onClick={(e) => e.stopPropagation()}>
-              <div style={{ width: 56, height: 56, borderRadius: "50%", backgroundColor: colors.red, color: colors.creamLight, display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 20, border: `1px solid ${colors.red}` }}><Icon name="cancel" size={28} filled /></div>
-              <h2 style={{ fontFamily: fonts.headline, fontSize: 20, fontWeight: 700, color: colors.forestGreen, marginBottom: 12 }}>Reject Submission</h2>
-              <p style={{ fontFamily: fonts.body, fontSize: 14, color: colors.forestGreen, lineHeight: 1.6, marginBottom: 16, opacity: 0.8 }}>Are you sure you want to reject "{rejectTarget.title}"?</p>
-              <div style={{ marginBottom: 24 }}>
-                <label style={{ fontFamily: fonts.label, fontSize: 11, letterSpacing: "0.06em", fontWeight: 600, color: colors.forestGreen, display: "block", marginBottom: 6 }}>REJECTION REASON *</label>
-                <textarea value={rejectReason} onChange={(e) => setRejectReason(e.target.value)} placeholder="Please explain why this submission is being rejected..." style={{ width: "100%", padding: 12, borderRadius: 8, border: `1px solid ${colors.forestGreen}`, fontFamily: fonts.body, fontSize: 13, color: colors.forestGreen, backgroundColor: colors.creamLight, outline: "none", resize: "vertical", minHeight: 80 }} />
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#082f27]/40 backdrop-blur-sm" onClick={() => { setRejectTarget(null); setRejectReason(""); }}>
+            <div className="dashboard-card w-full max-w-md p-6 relative" onClick={(e) => e.stopPropagation()}>
+              <button onClick={() => { setRejectTarget(null); setRejectReason(""); }} className={`absolute top-4 ${isRTL ? 'left-4' : 'right-4'} p-1.5 rounded-full hover:bg-[#1e4d3a]/10 transition-colors cursor-pointer`}><span className="material-symbols-outlined text-[20px] text-[#1e4d3a]">close</span></button>
+              <div className="w-14 h-14 rounded-full bg-[#e96d5c] text-white flex items-center justify-center mb-5"><span className="material-symbols-outlined text-[28px]" style={{ fontVariationSettings: "'FILL' 1, 'wght' 400" }}>cancel</span></div>
+              <h3 className="serif-title text-[20px] font-semibold text-[#082f27] mb-2">{t("mediaQueue.modal.rejectTitle") || "Reject Submission"}</h3>
+              <p className="text-[13px] text-[#1e4d3a]/80 leading-relaxed mb-6">{(t("mediaQueue.modal.rejectBody") || "Are you sure you want to reject \"{title}\"?").replace("{title}", rejectTarget.title)}</p>
+              <div className="mb-6">
+                <label className="mono-label text-[9px] uppercase font-bold text-[#1e4d3a]/60 mb-1.5 block">{t("mediaQueue.modal.rejectReasonLabel") || "REJECTION REASON *"}</label>
+                <textarea value={rejectReason} onChange={(e) => setRejectReason(e.target.value)} placeholder={t("mediaQueue.modal.rejectReasonPlaceholder") || "Please explain why this submission is being rejected..."} className="w-full bg-[#fbf9f4] border border-[#1e4d3a]/15 rounded-[6px] px-3 py-2 text-[12px] font-medium text-[#1e4d3a] focus:outline-none focus:ring-2 focus:ring-[#1e4d3a]/20 min-h-[80px] resize-y" />
               </div>
-              <div style={{ display: "flex", gap: 12, justifyContent: "flex-end" }}>
-                <button onClick={() => { setRejectTarget(null); setRejectReason(""); }} style={{ padding: "10px 24px", borderRadius: 8, cursor: "pointer", border: `1px solid ${colors.forestGreen}`, backgroundColor: colors.creamLight, fontFamily: fonts.body, fontSize: 13, fontWeight: 600, color: colors.forestGreen }}>Cancel</button>
-                <button onClick={confirmReject} style={{ padding: "10px 24px", borderRadius: 8, cursor: "pointer", border: "none", backgroundColor: colors.red, color: colors.creamLight, fontFamily: fonts.body, fontSize: 13, fontWeight: 700 }}>Confirm Reject</button>
+              <div className="flex gap-3 justify-end">
+                <button onClick={() => { setRejectTarget(null); setRejectReason(""); }} className="px-5 py-2 rounded-[6px] border border-[#1e4d3a]/20 text-[#1e4d3a] text-[12px] font-bold uppercase tracking-wide hover:bg-[#1e4d3a]/5 transition-colors cursor-pointer">{t("mediaQueue.modal.cancel") || "Cancel"}</button>
+                <button onClick={confirmReject} className="px-5 py-2 rounded-[6px] bg-[#e96d5c] text-white text-[12px] font-bold uppercase tracking-wide hover:bg-[#e96d5c]/90 transition-colors cursor-pointer">{t("mediaQueue.modal.confirm") || "Confirm Reject"}</button>
               </div>
             </div>
           </div>
         )}
 
-        {/* ── Step 1: Choose Action Modal ── */}
+        {/* Restrict Modal Step 1 */}
         {restrictTarget && !confirmAction && (
-          <div style={{ position: "fixed", inset: 0, backgroundColor: "rgba(11, 67, 53, 0.6)", zIndex: 100, display: "flex", alignItems: "center", justifyContent: "center", backdropFilter: "blur(4px)", padding: 20 }} onClick={() => setRestrictTarget(null)}>
-            <div style={{ ...cardStyle, backgroundColor: colors.creamLight, width: 520, maxWidth: "90vw", padding: 32, boxShadow: "0 20px 60px rgba(0,0,0,0.25)" }} onClick={(e) => e.stopPropagation()}>
-
-              <div style={{ display: "flex", alignItems: "center", gap: 16, marginBottom: 24 }}>
-                <Avatar name={restrictTarget.submittedBy} size={56} />
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#082f27]/40 backdrop-blur-sm" onClick={() => setRestrictTarget(null)}>
+            <div className="dashboard-card w-full max-w-lg p-6 relative" onClick={(e) => e.stopPropagation()}>
+              <button onClick={() => setRestrictTarget(null)} className={`absolute top-4 ${isRTL ? 'left-4' : 'right-4'} p-1.5 rounded-full hover:bg-[#1e4d3a]/10 transition-colors cursor-pointer`}><span className="material-symbols-outlined text-[20px] text-[#1e4d3a]">close</span></button>
+              <div className="flex items-center gap-4 mb-6">
+                <div className="w-14 h-14 rounded-full bg-[#C9A84C]/10 border border-[#C9A84C]/20 flex items-center justify-center text-[#C9A84C] font-['Source_Serif_4'] font-bold text-[20px] flex-shrink-0">{restrictTarget.submittedBy.split(" ").map((p) => p[0]).slice(0, 2).join("").toUpperCase()}</div>
                 <div>
-                  <h2 style={{ fontFamily: fonts.headline, fontSize: 20, fontWeight: 700, color: colors.forestGreen, margin: 0 }}>Restrict User</h2>
-                  <p style={{ fontFamily: fonts.body, fontSize: 13, color: colors.forestGreen, opacity: 0.7, margin: "4px 0 0" }}>{restrictTarget.submittedBy} submitted "{restrictTarget.title}"</p>
+                  <h3 className="serif-title text-[20px] font-semibold text-[#082f27]">{t("mediaQueue.restrict.title") || "Restrict User"}</h3>
+                  <p className="text-[12px] text-[#1e4d3a]/60 mt-1">{restrictTarget.submittedBy} {t("mediaQueue.restrict.submitted") || "submitted"} "{restrictTarget.title}"</p>
                 </div>
               </div>
-
-              <p style={{ fontFamily: fonts.body, fontSize: 14, color: colors.forestGreen, lineHeight: 1.6, marginBottom: 24 }}>
-                Choose an action. This will automatically <b>reject</b> this media submission as well.
-              </p>
-
-              <div style={{ display: "flex", flexDirection: "column", gap: 12, marginBottom: 24 }}>
-                <button onClick={() => setConfirmAction({ type: 'revoke', media: restrictTarget })}
-                  style={{ display: "flex", alignItems: "flex-start", gap: 16, padding: 16, borderRadius: 8, border: `1px solid ${colors.amber}`, backgroundColor: "rgba(184, 134, 11, 0.05)", cursor: "pointer", textAlign: "left", transition: "background 0.2s" }}
-                  onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = "rgba(184, 134, 11, 0.1)"; }}
-                  onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = "rgba(184, 134, 11, 0.05)"; }}>
-                  <div style={{ width: 32, height: 32, borderRadius: "50%", backgroundColor: colors.amber, color: colors.creamLight, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                    <Icon name="person_off" size={18} />
-                  </div>
-                  <div>
-                    <p style={{ fontFamily: fonts.headline, fontSize: 14, fontWeight: 700, color: colors.forestGreen, margin: "0 0 4px" }}>Revoke Contribution Access</p>
-                    <p style={{ fontFamily: fonts.body, fontSize: 12, color: colors.forestGreen, opacity: 0.7, margin: 0, lineHeight: 1.5 }}>They can still log in, but cannot submit new content. (Recommended for low-quality submissions)</p>
-                  </div>
+              <p className="text-[13px] text-[#1e4d3a]/80 leading-relaxed mb-6">{t("mediaQueue.restrict.desc") || "Choose an action. This will automatically reject this media submission as well."}</p>
+              <div className="space-y-3 mb-6">
+                <button onClick={() => setConfirmAction({ type: 'revoke', media: restrictTarget })} className="w-full flex items-start gap-4 p-4 rounded-[8px] border border-[#C9A84C]/30 bg-[#C9A84C]/[0.05] hover:bg-[#C9A84C]/10 transition-colors cursor-pointer text-left">
+                  <div className="w-8 h-8 rounded-full bg-[#C9A84C] text-white flex items-center justify-center flex-shrink-0 mt-0.5"><span className="material-symbols-outlined text-[18px]">person_off</span></div>
+                  <div><p className="text-[13px] font-semibold text-[#082f27] mb-1">{t("mediaQueue.restrict.revoke") || "Revoke Contribution Access"}</p><p className="text-[11px] text-[#1e4d3a]/60 leading-relaxed">{t("mediaQueue.restrict.revokeDesc") || "They can still log in, but cannot submit new content. (Recommended for low-quality submissions)"}</p></div>
                 </button>
-
-                <button onClick={() => setConfirmAction({ type: 'ban', media: restrictTarget })}
-                  style={{ display: "flex", alignItems: "flex-start", gap: 16, padding: 16, borderRadius: 8, border: `1px solid ${colors.red}`, backgroundColor: "rgba(139, 44, 44, 0.05)", cursor: "pointer", textAlign: "left", transition: "background 0.2s" }}
-                  onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = "rgba(139, 44, 44, 0.1)"; }}
-                  onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = "rgba(139, 44, 44, 0.05)"; }}>
-                  <div style={{ width: 32, height: 32, borderRadius: "50%", backgroundColor: colors.red, color: colors.creamLight, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                    <Icon name="block" size={18} />
-                  </div>
-                  <div>
-                    <p style={{ fontFamily: fonts.headline, fontSize: 14, fontWeight: 700, color: colors.forestGreen, margin: "0 0 4px" }}>Ban Account Completely</p>
-                    <p style={{ fontFamily: fonts.body, fontSize: 12, color: colors.forestGreen, opacity: 0.7, margin: 0, lineHeight: 1.5 }}>They will be completely locked out of the platform. (Use for spam, abuse, or severe violations)</p>
-                  </div>
+                <button onClick={() => setConfirmAction({ type: 'ban', media: restrictTarget })} className="w-full flex items-start gap-4 p-4 rounded-[8px] border border-[#e96d5c]/30 bg-[#e96d5c]/[0.05] hover:bg-[#e96d5c]/10 transition-colors cursor-pointer text-left">
+                  <div className="w-8 h-8 rounded-full bg-[#e96d5c] text-white flex items-center justify-center flex-shrink-0 mt-0.5"><span className="material-symbols-outlined text-[18px]">block</span></div>
+                  <div><p className="text-[13px] font-semibold text-[#082f27] mb-1">{t("mediaQueue.restrict.ban") || "Ban Account Completely"}</p><p className="text-[11px] text-[#1e4d3a]/60 leading-relaxed">{t("mediaQueue.restrict.banDesc") || "They will be completely locked out of the platform. (Use for spam, abuse, or severe violations)"}</p></div>
                 </button>
               </div>
-
-              <div style={{ display: "flex", justifyContent: "flex-end" }}>
-                <button onClick={() => setRestrictTarget(null)} style={{ padding: "10px 24px", borderRadius: 8, cursor: "pointer", border: `1px solid ${colors.forestGreen}`, backgroundColor: colors.creamLight, fontFamily: fonts.body, fontSize: 13, fontWeight: 600, color: colors.forestGreen }}>
-                  Cancel
-                </button>
-              </div>
+              <div className="flex justify-end"><button onClick={() => setRestrictTarget(null)} className="px-5 py-2 rounded-[6px] border border-[#1e4d3a]/20 text-[#1e4d3a] text-[12px] font-bold uppercase tracking-wide hover:bg-[#1e4d3a]/5 transition-colors cursor-pointer">{t("mediaQueue.modal.cancel") || "Cancel"}</button></div>
             </div>
           </div>
         )}
 
-        {/* ── Step 2: Final Confirmation Modal ── */}
+        {/* Restrict Modal Step 2 */}
         {confirmAction && (
-          <div style={{ position: "fixed", inset: 0, backgroundColor: "rgba(11, 67, 53, 0.6)", zIndex: 101, display: "flex", alignItems: "center", justifyContent: "center", backdropFilter: "blur(4px)", padding: 20 }} onClick={() => setConfirmAction(null)}>
-            <div style={{ ...cardStyle, backgroundColor: colors.creamLight, width: 440, maxWidth: "90vw", padding: 32, boxShadow: "0 20px 60px rgba(0,0,0,0.25)" }} onClick={(e) => e.stopPropagation()}>
-
-              <div style={{ width: 56, height: 56, borderRadius: "50%", backgroundColor: confirmAction.type === 'ban' ? colors.red : colors.amber, color: colors.creamLight, display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 20, border: `1px solid ${confirmAction.type === 'ban' ? colors.red : colors.amber}` }}>
-                <Icon name={confirmAction.type === 'ban' ? "block" : "person_off"} size={28} filled />
-              </div>
-
-              <h2 style={{ fontFamily: fonts.headline, fontSize: 20, fontWeight: 700, color: colors.forestGreen, marginBottom: 12 }}>
-                Confirm {confirmAction.type === 'ban' ? 'Ban' : 'Revocation'}
-              </h2>
-
-              <p style={{ fontFamily: fonts.body, fontSize: 14, color: colors.forestGreen, lineHeight: 1.6, marginBottom: 24, opacity: 0.8 }}>
-                This will <b>{confirmAction.type === 'ban' ? 'BAN' : 'REVOKE CONTRIBUTION ACCESS FOR'} {confirmAction.media.submittedBy}</b>
-                <br/>and automatically <b>REJECT</b> the media "{confirmAction.media.title}".
-                <br/><br/>
-                <b style={{ color: colors.red }}>This action cannot be undone from this screen.</b>
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#082f27]/40 backdrop-blur-sm" onClick={() => setConfirmAction(null)}>
+            <div className="dashboard-card w-full max-w-md p-6 relative" onClick={(e) => e.stopPropagation()}>
+              <div className={`w-14 h-14 rounded-full flex items-center justify-center mb-5 ${confirmAction.type === 'ban' ? 'bg-[#e96d5c] text-white' : 'bg-[#C9A84C] text-white'}`}><span className="material-symbols-outlined text-[28px]" style={{ fontVariationSettings: "'FILL' 1, 'wght' 400" }}>{confirmAction.type === 'ban' ? "block" : "person_off"}</span></div>
+              <h3 className="serif-title text-[20px] font-semibold text-[#082f27] mb-3">{confirmAction.type === 'ban' ? (t("mediaQueue.restrict.confirmBanTitle") || "Confirm Ban") : (t("mediaQueue.restrict.confirmRevokeTitle") || "Confirm Revocation")}</h3>
+              <p className="text-[13px] text-[#1e4d3a]/80 leading-relaxed mb-6">
+                {t("mediaQueue.restrict.confirmDescPrefix") || "This will"} <strong>{confirmAction.type === 'ban' ? (t("mediaQueue.restrict.banAction") || "BAN") : (t("mediaQueue.restrict.revokeAction") || "REVOKE CONTRIBUTION ACCESS FOR")}</strong> {confirmAction.media.submittedBy}
+                <br/>{t("mediaQueue.restrict.confirmDescAndReject") || "and automatically REJECT the media"} "{confirmAction.media.title}".
+                <br/><br/><strong className="text-[#e96d5c]">{t("mediaQueue.restrict.confirmDescWarning") || "This action cannot be undone from this screen."}</strong>
               </p>
-
-              <div style={{ display: "flex", gap: 12, justifyContent: "flex-end" }}>
-                <button onClick={() => setConfirmAction(null)} style={{ padding: "10px 24px", borderRadius: 8, cursor: "pointer", border: `1px solid ${colors.forestGreen}`, backgroundColor: colors.creamLight, fontFamily: fonts.body, fontSize: 13, fontWeight: 600, color: colors.forestGreen }}>
-                  Go Back
-                </button>
-                <button onClick={executeRestrictionAndReject} style={{ padding: "10px 24px", borderRadius: 8, cursor: "pointer", border: "none", backgroundColor: confirmAction.type === 'ban' ? colors.red : colors.amber, color: colors.creamLight, fontFamily: fonts.body, fontSize: 13, fontWeight: 700 }}>
-                  Confirm & Reject
-                </button>
+              <div className="flex gap-3 justify-end">
+                <button onClick={() => setConfirmAction(null)} className="px-5 py-2 rounded-[6px] border border-[#1e4d3a]/20 text-[#1e4d3a] text-[12px] font-bold uppercase tracking-wide hover:bg-[#1e4d3a]/5 transition-colors cursor-pointer">{t("mediaQueue.restrict.goBack") || "Go Back"}</button>
+                <button onClick={executeRestrictionAndReject} className={`px-5 py-2 rounded-[6px] text-white text-[12px] font-bold uppercase tracking-wide transition-colors cursor-pointer ${confirmAction.type === 'ban' ? 'bg-[#e96d5c] hover:bg-[#e96d5c]/90' : 'bg-[#C9A84C] hover:bg-[#C9A84C]/90'}`}>{t("mediaQueue.restrict.confirmButton") || "Confirm & Reject"}</button>
               </div>
             </div>
           </div>
         )}
-
-      </div>
+      </main>
     </div>
   );
 }

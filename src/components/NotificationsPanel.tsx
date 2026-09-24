@@ -2,7 +2,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { notificationApi, Notification } from "../api/notificationApi";
-import { useAuth } from "../context/AuthContext";
 import { useLang } from "../context/LanguageContext";
 
 const formatTimeAgo = (dateString: string) => {
@@ -42,10 +41,11 @@ const getNotificationIcon = (type?: string) => {
 interface NotificationsPanelProps {
   isOpen: boolean;
   onClose: () => void;
+  isRTL?: boolean; // ✅ Added isRTL prop
 }
 
-const NotificationsPanel: React.FC<NotificationsPanelProps> = ({ isOpen, onClose }) => {
-  const { lang, t } = useLang(); // Now using the dynamic t() function
+const NotificationsPanel: React.FC<NotificationsPanelProps> = ({ isOpen, onClose, isRTL = false }) => {
+  const { t } = useLang();
   const navigate = useNavigate();
   const panelRef = useRef<HTMLDivElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
@@ -77,6 +77,7 @@ const NotificationsPanel: React.FC<NotificationsPanelProps> = ({ isOpen, onClose
         unread_only: currentFilter === "unread",
         page: currentPage,
         limit: LIMIT,
+        scope: "public",
       });
 
       if (response.data.success) {
@@ -125,39 +126,82 @@ const NotificationsPanel: React.FC<NotificationsPanelProps> = ({ isOpen, onClose
     onClose();
 
     if (notification.type?.includes("REJECTED")) {
-      navigate("/dashboard/submissions?status=rejected");
+      const entity = notification.related_entity || "";
+      let highlightId = "";
+
+      if (entity.includes("work:")) {
+        highlightId = entity.split(",").find((p) => p.startsWith("work:"))?.split(":")[1] || "";
+      } else if (entity.includes("media:")) {
+        highlightId = entity.split(",").find((p) => p.startsWith("media:"))?.split(":")[1] || "";
+      } else if (entity.includes("version:")) {
+        highlightId = entity.split(",").find((p) => p.startsWith("version:"))?.split(":")[1] || "";
+      }
+
+      const highlightParam = highlightId ? `&highlight=${highlightId}` : "";
+
+      if (notification.type === "WORK_REJECTED") {
+        navigate(`/dashboard?tab=works&status=REJECTED${highlightParam}`);
+      } else if (notification.type === "MEDIA_REJECTED") {
+        navigate(`/dashboard?tab=media&status=REJECTED${highlightParam}`);
+      } else {
+        navigate(`/dashboard?tab=submissions&status=REJECTED${highlightParam}`);
+      }
       return;
     }
 
-    // Fix: Use optional chaining for related_entity
-    const entity = (notification as any).related_entity;
+    const entity = notification.related_entity;
     if (!entity) return;
 
-    let baseUrl = "";
-    let focusValue = "";
+    let targetUrl = "";
 
-    if (entity.startsWith("scholar_")) {
-      const parts = entity.split("_");
-      baseUrl = `/scholars/${parts[1]}`;
-      if (parts[2] === "media" || parts[2] === "image") focusValue = `media-${parts[3]}`;
-      else if (parts[2] === "work" || parts[2] === "book") focusValue = `work-${parts[3]}`;
-      else if (parts[2] === "reference") focusValue = `reference-${parts[3]}`;
+    if (entity.startsWith("forum_post:") || entity.startsWith("post:")) {
+      const parts = entity.split(",");
+      const postId = parts[0].split(":")[1];
+      const hasComment = parts.length > 1 && parts[1].includes("comment:");
+
+      if (hasComment) {
+        const commentId = parts[1].split(":")[1];
+        targetUrl = `/forum/${postId}?highlight=${commentId}`;
+      } else {
+        targetUrl = `/admin/discussions?postId=${postId}`;
+      }
+    } else if (entity.includes("scholar:") && !entity.startsWith("scholar_version:")) {
+      const parts = entity.split(",");
+      const scholarId = parts.find((p) => p.startsWith("scholar:"))?.split(":")[1] || "1";
+      const langParam = parts.find((p) => p.startsWith("lang:"))?.split(":")[1] || "en";
+
+      let focus = "";
+      if (entity.includes("work:")) {
+        const workId = parts.find((p) => p.startsWith("work:"))?.split(":")[1];
+        focus = `work-${workId}`;
+      } else if (entity.includes("media:")) {
+        const mediaId = parts.find((p) => p.startsWith("media:"))?.split(":")[1];
+        focus = `media-${mediaId}`;
+      } else if (entity.includes("version:")) {
+        const versionId = parts.find((p) => p.startsWith("version:"))?.split(":")[1];
+        focus = `version-${versionId}`;
+      }
+
+      targetUrl = `/scholars/${scholarId}?lang=${langParam}${focus ? `&focus=${focus}` : ""}`;
+    } else if (entity.startsWith("scholar_version:")) {
+      const scholarId = entity.split(":")[1];
+      if (notification.type === "NEW_SCHOLAR_SUBMISSION") {
+        targetUrl = `/admin/pending/scholars/${scholarId}`;
+      } else if (notification.type === "EDIT_PROPOSAL") {
+        targetUrl = `/admin/pending/edits/${scholarId}`;
+      } else {
+        targetUrl = `/scholars/${scholarId}`;
+      }
     } else if (entity.startsWith("submission_")) {
-      baseUrl = `/admin/submissions/${entity.split("_")[1]}`;
+      targetUrl = `/admin/submissions/${entity.split("_")[1]}`;
     } else if (entity.startsWith("report_")) {
-      baseUrl = `/admin/reports/${entity.split("_")[1]}`;
+      targetUrl = `/admin/reports/${entity.split("_")[1]}`;
     } else {
-      const parts = entity.split("_");
-      baseUrl = `/${parts[0]}s/${parts[1]}`;
+      const parts = entity.split(":");
+      targetUrl = `/${parts[0]}s/${parts[1]}`;
     }
 
-    const currentSearchParams = new URLSearchParams(window.location.search);
-    const currentLang = currentSearchParams.get("lang") || "en";
-    const finalUrl = new URL(baseUrl, window.location.origin);
-    finalUrl.searchParams.set("lang", currentLang);
-    if (focusValue) finalUrl.searchParams.set("focus", focusValue);
-
-    navigate(finalUrl.pathname + finalUrl.search);
+    navigate(targetUrl);
   };
 
   const handleLoadMore = () => {
@@ -178,8 +222,12 @@ const NotificationsPanel: React.FC<NotificationsPanelProps> = ({ isOpen, onClose
       <div className="fixed inset-0 z-40" onClick={onClose} />
       <div
         ref={panelRef}
-        className="fixed top-16 right-4 md:right-8 z-50 w-[92vw] max-w-[380px] bg-white rounded-2xl shadow-2xl border border-[#C9A84C]/20 overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200"
+        // ✅ Updated positioning: left-4/md:left-8 for RTL, right-4/md:right-8 for LTR
+        className={`fixed top-16 z-50 w-[92vw] max-w-[380px] bg-white rounded-2xl shadow-2xl border border-[#C9A84C]/20 overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200 ${
+          isRTL ? "left-4 md:left-8" : "right-4 md:right-8"
+        }`}
         style={{ maxHeight: "calc(100vh - 90px)" }}
+        dir={isRTL ? "rtl" : "ltr"} // ✅ Added dir attribute for proper text flow
       >
         <style>{`
           @import url('https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap');
@@ -197,13 +245,14 @@ const NotificationsPanel: React.FC<NotificationsPanelProps> = ({ isOpen, onClose
             </button>
 
             {showMenu && (
-              <div className="absolute right-0 mt-2 w-60 bg-white rounded-xl shadow-lg border border-[#C9A84C]/20 py-1.5 z-50">
-                <button onClick={handleMarkAllAsRead} className="w-full px-4 py-2.5 text-left hover:bg-[#F5F3EC] flex items-center gap-3 transition-colors">
+              // ✅ Updated dropdown positioning: left-0 for RTL, right-0 for LTR
+              <div className={`absolute mt-2 w-60 bg-white rounded-xl shadow-lg border border-[#C9A84C]/20 py-1.5 z-50 ${isRTL ? 'left-0' : 'right-0'}`}>
+                <button onClick={handleMarkAllAsRead} className="w-full px-4 py-2.5 text-start hover:bg-[#F5F3EC] flex items-center gap-3 transition-colors">
                   <span className="material-symbols-outlined text-[#1e4d3a]" style={{ fontSize: '18px' }}>done_all</span>
                   <span className="text-sm font-medium text-[#1e4d3a]">{t('notifications.markAllRead')}</span>
                 </button>
                 <div className="border-t border-[#C9A84C]/10 my-1"></div>
-                <button onClick={handleViewAll} className="w-full px-4 py-2.5 text-left hover:bg-[#F5F3EC] flex items-center gap-3 transition-colors">
+                <button onClick={handleViewAll} className="w-full px-4 py-2.5 text-start hover:bg-[#F5F3EC] flex items-center gap-3 transition-colors">
                   <span className="material-symbols-outlined text-[#1e4d3a]" style={{ fontSize: '18px' }}>open_in_new</span>
                   <span className="text-sm font-medium text-[#1e4d3a]">{t('notifications.viewAll')}</span>
                 </button>

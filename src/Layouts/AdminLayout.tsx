@@ -1,28 +1,26 @@
 import { useState } from "react";
 import { Outlet, useLocation } from "react-router-dom";
-import Sidebar from "../components/admin/AdminSidebar"; // ✅ Fixed import path
+import Sidebar from "../components/admin/AdminSidebar";
 import AdminNavbar from "../components/admin/AdminNavbar";
-import { useLang } from "../context/LanguageContext"; // ✅ Adjust path if needed
+import { useLang } from "../context/LanguageContext";
 
+// ✅ PERFECTLY MATCHES YOUR ADMIN SIDEBAR STRUCTURE
 const PAGE_KEYS: Record<string, string> = {
-  "/admin":                       "navbar.dashboard",
-  "/admin/scholars":              "sidebar.allScholars",
-  "/admin/scholars/new":          "sidebar.addScholar",
-  "/admin/pending/scholars":      "sidebar.pendingProfiles",
-  "/admin/pending/edits":         "sidebar.workEdits",
-  "/admin/pending/works":         "sidebar.pendingWorks",
-  "/admin/pending/media":         "sidebar.mediaVerification",
-  "/admin/rejected":              "sidebar.rejected",
-  "/admin/disciplines":           "sidebar.disciplines",
-  "/admin/blog":                  "sidebar.allPosts",
-  "/admin/blog/reported":         "sidebar.reported",
-  "/admin/users/contributors":    "sidebar.contributors",
-  "/admin/users/banned":          "sidebar.bannedUsers",
-  "/admin/reports":               "sidebar.reports",
-  "/admin/notifications":         "sidebar.notifications",
-  "/admin/settings/translation":  "sidebar.translation",
-  "/admin/settings/regions":      "sidebar.regions",
-  "/admin/settings/backups":      "sidebar.backups",
+  "/admin/dashboard":              "admin.sidebar.dashboard",
+  "/admin/scholars":               "admin.sidebar.allScholars",
+  "/admin/works":                  "admin.sidebar.allWorks",
+  "/admin/media":                  "admin.sidebar.allMedia",
+  "/admin/pending/scholars":       "admin.sidebar.pendingNewScholars",
+  "/admin/pending/edits":          "admin.sidebar.pendingScholarEdits",
+  "/admin/pending/works":          "admin.sidebar.pendingWorks",
+  "/admin/pending/media":          "admin.sidebar.mediaVerification",
+  "/admin/disciplines":            "admin.sidebar.disciplines",
+  "/admin/regions":                "admin.sidebar.regions",
+  "/admin/discussions":            "admin.sidebar.allDiscussions",
+  "/admin/discussions/categories": "admin.sidebar.discussionCategories",
+  "/admin/users":                  "admin.sidebar.userManagement",
+  "/admin/reports":                "admin.sidebar.reports",
+  "/admin/contactus":              "admin.sidebar.contactUs",
 };
 
 export default function AdminLayout() {
@@ -30,10 +28,10 @@ export default function AdminLayout() {
   const { lang } = useLang();
   const isRTL = lang === "AR";
 
-  // ✅ 1. ADD STATE TO TRACK SIDEBAR COLLAPSE
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
-  const titleKey = PAGE_KEYS[pathname] ?? "navbar.dashboard";
+  // ✅ Falls back to dashboard title if the exact path isn't in the list
+  const titleKey = PAGE_KEYS[pathname] ?? "admin.sidebar.dashboard";
 
   return (
     <div
@@ -41,31 +39,34 @@ export default function AdminLayout() {
       style={{
         display: "flex",
         height: "100vh",
+        width: "100vw",
         overflow: "hidden",
+        backgroundColor: "#fbf9f4",
       }}
     >
-      {/* ✅ 2. PASS PROPS TO SIDEBAR */}
+      {/* Sidebar */}
       <Sidebar 
         collapsed={sidebarCollapsed} 
         onToggle={() => setSidebarCollapsed(!sidebarCollapsed)} 
       />
       
+      {/* Main Content Area */}
       <div
         style={{
-          // ✅ 3. DYNAMIC MARGIN BASED ON COLLAPSED STATE
           marginLeft: isRTL ? 0 : (sidebarCollapsed ? 72 : 248),
           marginRight: isRTL ? (sidebarCollapsed ? 72 : 248) : 0,
           flex: 1,
           display: "flex",
           flexDirection: "column",
           height: "100vh",
+          width: "100%",
           overflow: "hidden",
-          // ✅ 4. SMOOTH ANIMATION WHEN TOGGLING
           transition: "margin-left 0.3s ease, margin-right 0.3s ease", 
         }}
       >
         <AdminNavbar pageTitleKey={titleKey} />
-        <main style={{ flex: 1, overflowY: "auto", padding: "32px" }}>
+        
+        <main style={{ flex: 1, overflowY: "auto", padding: 0, margin: 0, width: "100%" }}>
           <Outlet />
         </main>
       </div>

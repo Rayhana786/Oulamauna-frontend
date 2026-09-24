@@ -1,88 +1,14 @@
 import React, { useState, useMemo, useEffect } from "react";
-import { useNavigate } from "react-router-dom"; // ✅ Add useNavigate here
+import { useNavigate } from "react-router-dom";
 import { useLang } from "../../context/LanguageContext";
 import { adminApi, User } from "../../api/adminApi";
 
 /* ------------------------------------------------------------------ */
-/*  Design tokens — Oulamnauna admin palette                          */
-/* ------------------------------------------------------------------ */
-const colors = {
-  creamLight: "#fcfaf5",
-  creamMid: "#f6efdc",
-  creamDark: "#e5d5a8",
-  forestGreen: "#0b4335",
-  amber: "#b8860b",
-  red: "#8b2c2c",
-};
-
-const fonts = {
-  headline: "'Hanken Grotesk', sans-serif",
-  body: "'Inter', sans-serif",
-  label: "'JetBrains Mono', monospace",
-};
-
-const cardStyle: React.CSSProperties = {
-  backgroundColor: colors.creamLight,
-  borderRadius: 12,
-  boxShadow: "0px 4px 20px rgba(11, 67, 53, 0.08)",
-  border: `1px solid ${colors.forestGreen}`,
-};
-
-/* ------------------------------------------------------------------ */
-/*  Reusable UI Components                                             */
-/* ------------------------------------------------------------------ */
-const Icon: React.FC<{ name: string; size?: number; filled?: boolean }> = ({
-  name,
-  size = 18,
-  filled = false,
-}) => (
-  <span
-    className="material-symbols-outlined"
-    style={{
-      fontSize: size,
-      lineHeight: 1,
-      fontVariationSettings: `'FILL' ${filled ? 1 : 0}, 'wght' 400, 'GRAD' 0, 'opsz' 24`,
-    }}
-  >
-    {name}
-  </span>
-);
-
-const Avatar: React.FC<{ name: string; size?: number }> = ({ name, size = 28 }) => {
-  const initials = (name || "?")
-    .split(" ")
-    .map((p) => p[0])
-    .slice(0, 2)
-    .join("")
-    .toUpperCase();
-  return (
-    <div
-      style={{
-        width: size,
-        height: size,
-        borderRadius: "50%",
-        backgroundColor: colors.creamMid,
-        color: colors.forestGreen,
-        border: `1px solid ${colors.forestGreen}`,
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        fontFamily: fonts.headline,
-        fontWeight: 700,
-        fontSize: size * 0.4,
-        flexShrink: 0,
-      }}
-    >
-      {initials}
-    </div>
-  );
-};
-
-/* ------------------------------------------------------------------ */
-/*  Profile-like User Details Modal with Contributions & Posts         */
+/*  Profile-like User Details Modal                                    */
 /* ------------------------------------------------------------------ */
 function UserDetailsModal({ user, onClose }: { user: User; onClose: () => void }) {
   const navigate = useNavigate();
+  const { t } = useLang();
   const [activity, setActivity] = useState<{ contributions: any[]; posts: any[]; loading: boolean }>({ 
     contributions: [], posts: [], loading: true 
   });
@@ -109,134 +35,152 @@ function UserDetailsModal({ user, onClose }: { user: User; onClose: () => void }
   }, [user.id]);
 
   return (
-    <div style={{ position: "fixed", inset: 0, backgroundColor: "rgba(11, 67, 53, 0.6)", zIndex: 100, display: "flex", alignItems: "center", justifyContent: "center", backdropFilter: "blur(4px)", padding: 20 }} onClick={onClose}>
-      <div style={{ ...cardStyle, backgroundColor: colors.creamLight, width: 650, maxWidth: "95vw", maxHeight: "90vh", overflowY: "auto", boxShadow: "0 20px 60px rgba(0,0,0,0.25)", position: "relative" }} onClick={(e) => e.stopPropagation()}>
-        
-        {/* Close Button */}
-        <button onClick={onClose} style={{ position: "absolute", top: 16, right: 16, background: "none", border: "none", cursor: "pointer", color: colors.forestGreen, opacity: 0.6, zIndex: 10 }}>
-          <Icon name="close" size={24} />
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#082f27]/40 backdrop-blur-sm" onClick={onClose}>
+      <div className="dashboard-card w-full max-w-3xl max-h-[90vh] overflow-y-auto relative rounded-2xl shadow-2xl" onClick={(e) => e.stopPropagation()}>
+        <button onClick={onClose} className="p-1.5 rounded-full hover:bg-[#1e4d3a]/10 transition-colors cursor-pointer absolute top-4 right-4 text-[#1e4d3a]">
+          <span className="material-symbols-outlined text-[24px]">close</span>
         </button>
 
-        {/* Profile Header */}
-        <div style={{ padding: 32, borderBottom: `1px solid ${colors.creamDark}`, display: "flex", flexDirection: "column", alignItems: "center", textAlign: "center", gap: 16 }}>
+        <div className="p-8 border-b border-[#1e4d3a]/10 flex flex-col items-center text-center gap-4">
           {user.profile_picture ? (
-            <img src={user.profile_picture} alt={user.username} style={{ width: 96, height: 96, borderRadius: "50%", objectFit: "cover", border: `3px solid ${colors.forestGreen}` }} />
+            <img src={user.profile_picture} alt={user.username} className="w-24 h-24 rounded-full object-cover border-2 border-[#1e4d3a]/10" />
           ) : (
-            <Avatar name={user.name || user.username} size={96} />
+            <div className="w-24 h-24 rounded-full bg-[#f6efdc] text-[#1e4d3a] border-2 border-[#1e4d3a]/10 flex items-center justify-center font-['Source_Serif_4'] font-bold text-3xl flex-shrink-0">
+              {(user.name || user.username || "?").split(" ").map((p: string) => p[0]).slice(0, 2).join("").toUpperCase()}
+            </div>
           )}
           
           <div>
-            <h2 style={{ fontFamily: fonts.headline, fontSize: 24, fontWeight: 700, color: colors.forestGreen, margin: 0 }}>
+            <h2 className="font-['Source_Serif_4'] text-2xl font-bold text-[#082f27]">
               {user.name || user.username}
             </h2>
-            <p style={{ fontFamily: fonts.body, fontSize: 14, color: colors.forestGreen, opacity: 0.7, margin: "4px 0 0" }}>@{user.username}</p>
+            <p className="text-[14px] text-[#1e4d3a]/60 mt-1">@{user.username}</p>
           </div>
 
-          <div style={{ display: "flex", gap: 8, flexWrap: "wrap", justifyContent: "center" }}>
+          <div className="flex gap-2 flex-wrap justify-center">
             {user.role?.toLowerCase() === "admin" && (
-              <span style={{ padding: "4px 12px", borderRadius: 9999, backgroundColor: colors.amber, border: `1px solid ${colors.amber}`, color: colors.creamLight, fontFamily: fonts.label, fontSize: 11, fontWeight: 700, display: "flex", alignItems: "center", gap: 4 }}>
-                <Icon name="shield_person" size={14} /> Admin
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#C9A84C] border border-[#C9A84C] text-white mono-label text-[11px] font-bold">
+                <span className="material-symbols-outlined text-[14px]">shield_person</span> {t("userManagement.roles.admin") || "Admin"}
               </span>
             )}
-            {(user.contributorBadge || user.allowed_to_contribute) && (
-              <span style={{ padding: "4px 12px", borderRadius: 9999, backgroundColor: colors.creamMid, border: `1px solid ${colors.forestGreen}`, color: colors.forestGreen, fontFamily: fonts.label, fontSize: 11, fontWeight: 600, display: "flex", alignItems: "center", gap: 4 }}>
-                <Icon name="how_to_reg" size={14} filled /> Contributor
+            {user.contributorBadge && (
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#1e4d3a]/5 border border-[#1e4d3a]/10 text-[#1e4d3a] mono-label text-[11px] font-semibold">
+                <span className="material-symbols-outlined text-[14px]" style={{ fontVariationSettings: "'FILL' 1" }}>how_to_reg</span> {t("userManagement.roles.contributor") || "Contributor"}
               </span>
             )}
             {user.is_banned && (
-              <span style={{ padding: "4px 12px", borderRadius: 9999, backgroundColor: colors.red, border: `1px solid ${colors.red}`, color: colors.creamLight, fontFamily: fonts.label, fontSize: 11, fontWeight: 700, display: "flex", alignItems: "center", gap: 4 }}>
-                <Icon name="block" size={14} /> Banned
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#e96d5c] border border-[#e96d5c] text-white mono-label text-[11px] font-bold">
+                <span className="material-symbols-outlined text-[14px]">block</span> {t("userManagement.table.banned") || "Banned"}
               </span>
             )}
-            {user.role?.toLowerCase() !== "admin" && !user.contributorBadge && !user.allowed_to_contribute && !user.is_banned && (
-              <span style={{ padding: "4px 12px", borderRadius: 9999, backgroundColor: colors.creamMid, border: `1px solid ${colors.forestGreen}`, color: colors.forestGreen, fontFamily: fonts.label, fontSize: 11, fontWeight: 600, display: "flex", alignItems: "center", gap: 4 }}>
-                User
+            {user.role?.toLowerCase() !== "admin" && !user.contributorBadge && !user.is_banned && (
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#1e4d3a]/5 border border-[#1e4d3a]/10 text-[#1e4d3a] mono-label text-[11px] font-semibold">
+                {t("userManagement.roles.user") || "User"}
               </span>
             )}
           </div>
         </div>
 
-        {/* Profile Info & Activity */}
-        <div style={{ padding: 32, display: "flex", flexDirection: "column", gap: 32 }}>
-          
-          {/* Details Grid */}
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
-            <div style={{ backgroundColor: colors.creamMid, padding: 16, borderRadius: 8 }}>
-              <p style={{ fontFamily: fonts.label, fontSize: 10, color: colors.forestGreen, opacity: 0.7, margin: "0 0 4px", textTransform: "uppercase" }}>Email</p>
-              <p style={{ fontFamily: fonts.body, fontSize: 14, color: colors.forestGreen, fontWeight: 600, margin: 0, wordBreak: "break-all" }}>{user.email}</p>
+        <div className="p-8 flex flex-col gap-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="bg-[#f6efdc] p-4 rounded-[8px]">
+              <p className="mono-label text-[10px] text-[#1e4d3a]/60 mb-1 uppercase">{t("userManagement.modal.details.email") || "Email"}</p>
+              <p className="text-[14px] text-[#082f27] font-semibold break-all">{user.email}</p>
             </div>
-            <div style={{ backgroundColor: colors.creamMid, padding: 16, borderRadius: 8 }}>
-              <p style={{ fontFamily: fonts.label, fontSize: 10, color: colors.forestGreen, opacity: 0.7, margin: "0 0 4px", textTransform: "uppercase" }}>User ID</p>
-              <p style={{ fontFamily: fonts.body, fontSize: 14, color: colors.forestGreen, fontWeight: 600, margin: 0 }}>#{user.id}</p>
+            <div className="bg-[#f6efdc] p-4 rounded-[8px]">
+              <p className="mono-label text-[10px] text-[#1e4d3a]/60 mb-1 uppercase">{t("userManagement.modal.details.userId") || "User ID"}</p>
+              <p className="text-[14px] text-[#082f27] font-semibold">#{user.id}</p>
             </div>
-            <div style={{ backgroundColor: colors.creamMid, padding: 16, borderRadius: 8 }}>
-              <p style={{ fontFamily: fonts.label, fontSize: 10, color: colors.forestGreen, opacity: 0.7, margin: "0 0 4px", textTransform: "uppercase" }}>Account Status</p>
-              <p style={{ fontFamily: fonts.body, fontSize: 14, color: user.is_banned ? colors.red : colors.forestGreen, fontWeight: 600, margin: 0, display: "flex", alignItems: "center", gap: 6 }}>
-                <span style={{ width: 8, height: 8, borderRadius: "50%", backgroundColor: user.is_banned ? colors.red : colors.forestGreen }} />
-                {user.is_banned ? "Banned" : "Active"}
-              </p>
+            <div className="bg-[#f6efdc] p-4 rounded-[8px]">
+              <p className="mono-label text-[10px] text-[#1e4d3a]/60 mb-1 uppercase">{t("userManagement.modal.details.accountStatus") || "Account Status"}</p>
+              {user.is_banned ? (
+                <p className="text-[14px] font-semibold flex items-center gap-2 text-[#e96d5c]">
+                  <span className="w-2 h-2 rounded-full bg-[#e96d5c]" />
+                  {t("userManagement.table.banned") || "Banned"}
+                </p>
+              ) : !user.is_active ? (
+                <p className="text-[14px] font-semibold flex items-center gap-2 text-gray-600">
+                  <span className="w-2 h-2 rounded-full bg-gray-400" />
+                  {t("userManagement.table.inactive") || "Inactive"}
+                </p>
+              ) : (
+                <p className="text-[14px] font-semibold flex items-center gap-2 text-[#082f27]">
+                  <span className="w-2 h-2 rounded-full bg-[#1e4d3a]" />
+                  {t("userManagement.table.active") || "Active"}
+                </p>
+              )}
             </div>
-            <div style={{ backgroundColor: colors.creamMid, padding: 16, borderRadius: 8 }}>
-              <p style={{ fontFamily: fonts.label, fontSize: 10, color: colors.forestGreen, opacity: 0.7, margin: "0 0 4px", textTransform: "uppercase" }}>Joined</p>
-              <p style={{ fontFamily: fonts.body, fontSize: 14, color: colors.forestGreen, fontWeight: 600, margin: 0 }}>
+            <div className="bg-[#f6efdc] p-4 rounded-[8px]">
+              <p className="mono-label text-[10px] text-[#1e4d3a]/60 mb-1 uppercase">{t("userManagement.modal.details.joined") || "Joined"}</p>
+              <p className="text-[14px] text-[#082f27] font-semibold">
                 {new Date(user.created_at).toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" })}
               </p>
             </div>
           </div>
 
-          {/* Bio Section */}
           {user.bio && (
             <div>
-              <h3 style={{ fontFamily: fonts.label, fontSize: 11, letterSpacing: "0.08em", color: colors.forestGreen, opacity: 0.7, marginBottom: 8, textTransform: "uppercase", display: "flex", alignItems: "center", gap: 6 }}>
-                <Icon name="person" size={14} /> About
+              <h3 className="mono-label text-[11px] tracking-wider text-[#1e4d3a]/60 mb-2 uppercase flex items-center gap-1.5">
+                <span className="material-symbols-outlined text-[14px]">person</span> {t("userManagement.modal.details.about") || "About"}
               </h3>
-              <p style={{ fontFamily: fonts.body, fontSize: 14, color: colors.forestGreen, lineHeight: 1.6, margin: 0, whiteSpace: "pre-wrap", backgroundColor: colors.creamMid, padding: 16, borderRadius: 8 }}>
+              <p className="text-[14px] text-[#1e4d3a] leading-relaxed whitespace-pre-wrap bg-[#f6efdc] p-4 rounded-[8px]">
                 {user.bio}
               </p>
             </div>
           )}
 
-          {/* Contributions Section */}
           <div>
-            <h3 style={{ fontFamily: fonts.label, fontSize: 11, letterSpacing: "0.08em", color: colors.forestGreen, opacity: 0.7, marginBottom: 12, textTransform: "uppercase", display: "flex", alignItems: "center", gap: 6 }}>
-              <Icon name="history_edu" size={14} /> Contributions ({activity.loading ? "..." : activity.contributions.length})
+            <h3 className="mono-label text-[11px] tracking-wider text-[#1e4d3a]/60 mb-3 uppercase flex items-center gap-1.5">
+              <span className="material-symbols-outlined text-[14px]">history_edu</span> {t("userManagement.modal.details.contributions") || "Contributions"} ({activity.loading ? "..." : activity.contributions.length})
             </h3>
             {activity.loading ? (
-              <div style={{ textAlign: "center", padding: 20, opacity: 0.5 }}><Icon name="hourglass_empty" size={24} /></div>
+              <div className="text-center py-5 opacity-50"><span className="material-symbols-outlined text-[24px] animate-pulse text-[#1e4d3a]/40">hourglass_empty</span></div>
             ) : activity.contributions.length === 0 ? (
-              <p style={{ fontFamily: fonts.body, fontSize: 13, color: colors.forestGreen, opacity: 0.6, fontStyle: "italic" }}>No contributions yet.</p>
+              <p className="text-[13px] text-[#1e4d3a]/60 italic">{t("userManagement.modal.details.noContributions") || "No contributions yet."}</p>
             ) : (
-              <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+              <div className="flex flex-col gap-2">
                 {activity.contributions.map((c: any, i: number) => {
-                  // Determine navigation link based on contribution type
+                  console.log("Contribution Data:", c);
+
                   let link = "#";
-                  if (c.scholar_id && c.lang) {
-                    link = `/admin/scholars/${c.scholar_id}/${c.lang}`;
-                  }
                   
+                  // 1. Get the ID and Language
+                  const itemId = c.version_id || c.versionId || c.work_id || c.workId || c.media_id || c.mediaId || c.id;
+                  const langCode = c.lang || c.language;
+                  
+                  // 2. Get the type
+                  const itemType = (c.type || "").toLowerCase();
+
+                  // 3. Build the link based on type
+                  if (itemId) {
+                    if (itemType.includes("work")) {
+                      link = `/admin/works?workId=${itemId}`;
+                    } else if (itemType.includes("media")) {
+                      link = `/admin/media?mediaId=${itemId}`;
+                    } else {
+                      // Scholar keeps the old correct route with language
+                      link = langCode ? `/admin/scholars/${itemId}/${langCode}` : `/admin/scholars/${itemId}`;
+                    }
+                  }
+
                   return (
                     <div 
                       key={i} 
-                      onClick={() => link !== "#" && navigate(link)}
-                      style={{ 
-                        padding: 12, 
-                        backgroundColor: colors.creamMid, 
-                        borderRadius: 8, 
-                        border: `1px solid ${colors.creamDark}`,
-                        cursor: link !== "#" ? "pointer" : "default",
-                        display: "flex",
-                        justifyContent: "space-between",
-                        alignItems: "center",
-                        transition: "background-color 0.2s ease"
+                      onClick={() => {
+                        if (link !== "#") {
+                          console.log("Navigating to:", link);
+                          navigate(link);
+                        }
                       }}
-                      onMouseEnter={(e) => { if(link !== "#") e.currentTarget.style.backgroundColor = colors.creamDark; }}
-                      onMouseLeave={(e) => { if(link !== "#") e.currentTarget.style.backgroundColor = colors.creamMid; }}
+                      className={`p-3.5 bg-[#fbf9f4] rounded-xl border border-[#1e4d3a]/10 flex justify-between items-center transition-colors ${
+                        link !== "#" ? "cursor-pointer hover:bg-[#f6efdc]" : "cursor-default opacity-50"
+                      }`}
                     >
                       <div>
-                        <p style={{ fontFamily: fonts.label, fontSize: 9, color: colors.forestGreen, opacity: 0.7, textTransform: "uppercase", margin: "0 0 4px" }}>{c.type || "Item"}</p>
-                        <p style={{ fontFamily: fonts.headline, fontSize: 13, fontWeight: 600, color: colors.forestGreen, margin: 0 }}>{c.title}</p>
+                        <p className="mono-label text-[9px] text-[#1e4d3a]/60 uppercase mb-1">{c.type || "Item"}</p>
+                        <p className="font-['Source_Serif_4'] text-[13px] font-semibold text-[#082f27]">{c.title}</p>
                       </div>
-                      {link !== "#" && <Icon name="arrow_forward" size={16} style={{ opacity: 0.5 }} />}
+                      {link !== "#" && <span className="material-symbols-outlined text-[16px] text-[#1e4d3a]/50">arrow_forward</span>}
                     </div>
                   );
                 })}
@@ -244,62 +188,46 @@ function UserDetailsModal({ user, onClose }: { user: User; onClose: () => void }
             )}
           </div>
 
-          {/* Forum Posts Section */}
           <div>
-            <h3 style={{ fontFamily: fonts.label, fontSize: 11, letterSpacing: "0.08em", color: colors.forestGreen, opacity: 0.7, marginBottom: 12, textTransform: "uppercase", display: "flex", alignItems: "center", gap: 6 }}>
-              <Icon name="forum" size={14} /> Forum Posts ({activity.loading ? "..." : activity.posts.length})
+            <h3 className="mono-label text-[11px] tracking-wider text-[#1e4d3a]/60 mb-3 uppercase flex items-center gap-1.5">
+              <span className="material-symbols-outlined text-[14px]">forum</span> {t("userManagement.modal.details.forumPosts") || "Forum Posts"} ({activity.loading ? "..." : activity.posts.length})
             </h3>
             {activity.loading ? (
-              <div style={{ textAlign: "center", padding: 20, opacity: 0.5 }}><Icon name="hourglass_empty" size={24} /></div>
+              <div className="text-center py-5 opacity-50"><span className="material-symbols-outlined text-[24px] animate-pulse text-[#1e4d3a]/40">hourglass_empty</span></div>
             ) : activity.posts.length === 0 ? (
-              <p style={{ fontFamily: fonts.body, fontSize: 13, color: colors.forestGreen, opacity: 0.6, fontStyle: "italic" }}>No forum posts yet.</p>
+              <p className="text-[13px] text-[#1e4d3a]/60 italic">{t("userManagement.modal.details.noForumPosts") || "No forum posts yet."}</p>
             ) : (
-              <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+              <div className="flex flex-col gap-2">
                 {activity.posts.map((p: any, i: number) => {
-                  const link = `/admin/post/${p.post_id}`;
+                  const link = `/admin/discussions?postId=${p.post_id}`;
                   return (
                     <div 
                       key={i} 
                       onClick={() => navigate(link)}
-                      style={{ 
-                        padding: 12, 
-                        backgroundColor: colors.creamMid, 
-                        borderRadius: 8, 
-                        border: `1px solid ${colors.creamDark}`,
-                        cursor: "pointer",
-                        display: "flex",
-                        justifyContent: "space-between",
-                        alignItems: "center",
-                        transition: "background-color 0.2s ease"
-                      }}
-                      onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = colors.creamDark; }}
-                      onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = colors.creamMid; }}
+                      className="p-3.5 bg-[#fbf9f4] rounded-xl border border-[#1e4d3a]/10 flex justify-between items-center cursor-pointer transition-colors hover:bg-[#f6efdc]"
                     >
                       <div>
-                        <p style={{ fontFamily: fonts.headline, fontSize: 13, fontWeight: 600, color: colors.forestGreen, margin: "0 0 4px" }}>{p.title}</p>
-                        <p style={{ fontFamily: fonts.body, fontSize: 11, color: colors.forestGreen, opacity: 0.7, margin: 0 }}>{p.category || "General"} • {new Date(p.created_at).toLocaleDateString()}</p>
+                        <p className="font-['Source_Serif_4'] text-[13px] font-semibold text-[#082f27] mb-1">{p.title}</p>
+                        <p className="text-[11px] text-[#1e4d3a]/60">{p.category || "General"} • {new Date(p.created_at).toLocaleDateString()}</p>
                       </div>
-                      <Icon name="arrow_forward" size={16} style={{ opacity: 0.5 }} />
+                      <span className="material-symbols-outlined text-[16px] text-[#1e4d3a]/50">arrow_forward</span>
                     </div>
                   );
                 })}
               </div>
             )}
           </div>
-
         </div>
       </div>
     </div>
   );
 }
-/* ------------------------------------------------------------------ */
-/*  Types                                                              */
-/* ------------------------------------------------------------------ */
-type FilterTab = "all" | "contributors" | "banned";
 
 /* ------------------------------------------------------------------ */
 /*  Main Component                                                     */
 /* ------------------------------------------------------------------ */
+type FilterTab = "all" | "contributors" | "banned";
+
 export default function UserManagement() {
   const { t, lang } = useLang();
   const isRTL = lang === "AR";
@@ -311,7 +239,10 @@ export default function UserManagement() {
   const [roleFilter, setRoleFilter] = useState<string>("all");
   const [busyId, setBusyId] = useState<number | null>(null);
 
-  // ✅ Modal states
+  // ✅ Pagination State
+  const [currentPage, setCurrentPage] = useState(1);
+  const ITEMS_PER_PAGE = 15;
+
   const [banTarget, setBanTarget] = useState<User | null>(null);
   const [viewTarget, setViewTarget] = useState<User | null>(null);
 
@@ -320,8 +251,6 @@ export default function UserManagement() {
       setIsLoading(true);
       try {
         const res = await adminApi.users.getAll();
-        
-        // ✅ FIX: Read 'users' array and ensure it's actually an array
         if (res.data?.success && Array.isArray(res.data.users)) {
           setUsers(res.data.users);
         } else {
@@ -336,6 +265,10 @@ export default function UserManagement() {
     fetchUsers();
   }, []);
 
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [activeTab, roleFilter, search]);
+
   const roles = useMemo(() => {
     const set = new Set(users.map((u) => u.role).filter(Boolean));
     return Array.from(set);
@@ -343,13 +276,13 @@ export default function UserManagement() {
 
   const filtered = useMemo(() => {
     let result = [...users];
-    if (activeTab === "contributors") result = result.filter((u) => u.allowed_to_contribute);
+    if (activeTab === "contributors") result = result.filter((u) => u.contributorBadge); // ✅ Now uses contributorBadge
     if (activeTab === "banned") result = result.filter((u) => u.is_banned);
     if (roleFilter !== "all") result = result.filter((u) => u.role === roleFilter);
     if (search.trim()) {
       const q = search.trim().toLowerCase();
       result = result.filter(
-        (u) => u.username?.toLowerCase().includes(q) || u.email?.toLowerCase().includes(q)
+        (u) => u.username?.toLowerCase().includes(q) || u.email?.toLowerCase().includes(q) || (u.name && u.name.toLowerCase().includes(q))
       );
     }
     return result;
@@ -358,7 +291,7 @@ export default function UserManagement() {
   const stats = useMemo(
     () => ({
       total: users.length,
-      contributors: users.filter((u) => u.allowed_to_contribute).length,
+      contributors: users.filter((u) => u.contributorBadge).length, // ✅ Now uses contributorBadge
       banned: users.filter((u) => u.is_banned).length,
       admins: users.filter((u) => u.role?.toLowerCase() === "admin").length,
     }),
@@ -373,13 +306,12 @@ export default function UserManagement() {
 
   const hasActiveFilters = activeTab !== "all" || roleFilter !== "all" || search.trim() !== "";
 
-  // ✅ Handlers
   const handleToggleContribute = async (user: User) => {
     setBusyId(user.id);
     try {
       await adminApi.users.toggleContribute(user.id);
       setUsers((prev) =>
-        prev.map((u) => (u.id === user.id ? { ...u, allowed_to_contribute: !u.allowed_to_contribute } : u))
+        prev.map((u) => (u.id === user.id ? { ...u, contributorBadge: !u.contributorBadge } : u)) // ✅ Now toggles contributorBadge
       );
     } catch (error) {
       console.error("Failed to update contributor status:", error);
@@ -417,107 +349,78 @@ export default function UserManagement() {
     }
   };
 
-  const thStyle: React.CSSProperties = {
-    fontFamily: fonts.label,
-    fontSize: 11,
-    letterSpacing: "0.06em",
-    fontWeight: 600,
-    color: colors.forestGreen,
-    textAlign: isRTL ? "right" : "left",
-    padding: "12px 14px",
-    borderBottom: `1px solid ${colors.forestGreen}`,
-    textTransform: "uppercase",
-    opacity: 0.8,
-  };
-
-  const tdStyle: React.CSSProperties = {
-    fontFamily: fonts.body,
-    fontSize: 13,
-    color: colors.forestGreen,
-    padding: "14px",
-    borderBottom: `1px solid ${colors.creamDark}`,
-    textAlign: isRTL ? "right" : "left",
-  };
+  const totalPages = Math.ceil(filtered.length / ITEMS_PER_PAGE);
+  const paginatedUsers = filtered.slice(
+    (currentPage - 1) * ITEMS_PER_PAGE,
+    currentPage * ITEMS_PER_PAGE
+  );
 
   const tabs: { key: FilterTab; icon: string; label: string; count: number }[] = [
-    { key: "all", icon: "group", label: "All Users", count: stats.total },
-    { key: "contributors", icon: "how_to_reg", label: "Contributors", count: stats.contributors },
-    { key: "banned", icon: "block", label: "Banned", count: stats.banned },
+    { key: "all", icon: "group", label: t("userManagement.tabs.all") || "All Users", count: stats.total },
+    { key: "contributors", icon: "how_to_reg", label: t("userManagement.tabs.contributors") || "Contributors", count: stats.contributors },
+    { key: "banned", icon: "block", label: t("userManagement.tabs.banned") || "Banned", count: stats.banned },
   ];
 
   const statItems = [
-    { icon: "group", label: "Total Users", value: stats.total.toString(), delta: "All registered accounts" },
-    { icon: "how_to_reg", label: "Contributors", value: stats.contributors.toString(), delta: "Allowed to contribute" },
-    { icon: "block", label: "Banned Users", value: stats.banned.toString(), delta: "Restricted accounts", isOverdue: true },
-    { icon: "shield_person", label: "Admins", value: stats.admins.toString(), delta: "Administrator role" },
+    { icon: "group", label: t("userManagement.stats.totalUsers") || "Total Users", value: stats.total.toString(), delta: t("userManagement.stats.totalUsersDesc") || "All registered accounts" },
+    { icon: "how_to_reg", label: t("userManagement.stats.contributors") || "Contributors", value: stats.contributors.toString(), delta: t("userManagement.stats.contributorsDesc") || "Allowed to contribute" },
+    { icon: "block", label: t("userManagement.stats.bannedUsers") || "Banned Users", value: stats.banned.toString(), delta: t("userManagement.stats.bannedUsersDesc") || "Restricted accounts", isOverdue: true },
+    { icon: "shield_person", label: t("userManagement.stats.admins") || "Admins", value: stats.admins.toString(), delta: t("userManagement.stats.adminsDesc") || "Administrator role" },
   ];
 
   if (isLoading) {
     return (
-      <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", backgroundColor: colors.creamLight, color: colors.forestGreen }}>
-        <Icon name="hourglass_empty" size={32} />
+      <div className="min-h-screen flex items-center justify-center bg-[#fbf9f4]">
+        <span className="material-symbols-outlined text-[40px] text-[#1e4d3a]/40 animate-pulse">hourglass_empty</span>
       </div>
     );
   }
 
   return (
-    <div dir={isRTL ? "rtl" : "ltr"} style={{ fontFamily: fonts.body, color: colors.forestGreen, backgroundColor: colors.creamLight, minHeight: "100vh", padding: 24 }}>
-      <div style={{ maxWidth: 1280, margin: "0 auto" }}>
+    <div className="oulamauna-dashboard min-h-screen text-[#1e4d3a] antialiased font-['Inter']" dir={isRTL ? "rtl" : "ltr"}>
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&family=Source+Serif+4:wght@400;500;600;700&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap');
+        .oulamauna-dashboard { background: radial-gradient(circle at 8% 10%, rgba(201,168,76,0.055), transparent 24%), radial-gradient(circle at 92% 16%, rgba(79,145,132,0.06), transparent 25%), #fbf9f4; }
+        .oulamauna-dashboard * { box-sizing: border-box; }
+        .oulamauna-dashboard .serif-title { font-family: 'Source Serif 4', Georgia, serif; letter-spacing: -0.025em; }
+        .oulamauna-dashboard .mono-label { font-family: 'JetBrains Mono', monospace; letter-spacing: 0.06em; }
+        .oulamauna-dashboard .dashboard-card { background: rgba(251,249,244,0.96); border: 1px solid rgba(30,77,58,0.10); border-radius: 10px; box-shadow: 0 5px 18px rgba(30,77,58,0.055); transition: box-shadow 180ms ease; }
+        .oulamauna-dashboard .dashboard-card:hover { box-shadow: 0 9px 26px rgba(30,77,58,0.08); }
+        .oulamauna-dashboard ::selection { background: #C9A84C; color: #1e4d3a; }
+      `}</style>
 
-        {/* ─ Page Header ── */}
-        <div style={{ marginBottom: 20 }}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 18, flexWrap: "wrap", gap: 12 }}>
+      <main className="max-w-[1450px] mx-auto px-3 md:px-5 xl:px-7 py-6 md:py-8">
+        <div className="mb-6">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-4">
             <div>
-              <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
-                <span style={{ fontFamily: fonts.label, fontSize: 11, letterSpacing: "0.08em", color: colors.forestGreen, opacity: 0.7 }}>
-                  ADMIN / USER MANAGEMENT
-                </span>
+              <div className="flex items-center gap-2 mb-1">
+                <span className="mono-label text-[9px] uppercase font-bold text-[#1e4d3a]/60">ADMIN / USER MANAGEMENT</span>
               </div>
-              <h1 style={{ fontFamily: fonts.headline, fontSize: 28, fontWeight: 700, color: colors.forestGreen, margin: 0, lineHeight: 1.1 }}>
+              <h1 className="serif-title text-[27px] md:text-[32px] leading-tight font-semibold text-[#082f27]">
                 {t("userManagement.title") || "User Management"}
               </h1>
-              <p style={{ fontFamily: fonts.body, fontSize: 13, color: colors.forestGreen, opacity: 0.75, margin: "6px 0 0" }}>
+              <p className="text-[12px] text-[#1e4d3a]/60 mt-1">
                 {t("userManagement.subtitle") || "View every account, manage contributor access, and handle bans in one place."}
               </p>
             </div>
           </div>
 
-          {/* ── Filter Tabs + Search Bar ── */}
-          <div style={{ ...cardStyle, padding: 12, display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+          <div className="dashboard-card p-3 mb-6 flex flex-col md:flex-row justify-between items-center gap-3">
+            <div className="flex items-center gap-1.5 overflow-x-auto pb-1 md:pb-0 w-full md:w-auto">
               {tabs.map((tab) => {
                 const isActive = activeTab === tab.key;
                 return (
                   <button
                     key={tab.key}
                     onClick={() => setActiveTab(tab.key)}
-                    style={{
-                      display: "flex",
-                      alignItems: "center",
-                      gap: 6,
-                      padding: "7px 12px",
-                      borderRadius: 8,
-                      border: `1px solid ${colors.forestGreen}`,
-                      backgroundColor: isActive ? colors.forestGreen : "transparent",
-                      color: isActive ? colors.creamLight : colors.forestGreen,
-                      fontFamily: fonts.body,
-                      fontSize: 13,
-                      fontWeight: 600,
-                      cursor: "pointer",
-                    }}
+                    className={`flex items-center gap-1.5 px-3 py-2 rounded-[8px] border border-[#1e4d3a] transition-colors flex-shrink-0 ${
+                      isActive ? "bg-[#1e4d3a] text-white" : "bg-transparent text-[#1e4d3a] hover:bg-[#1e4d3a]/5"
+                    }`}
                   >
-                    <Icon name={tab.icon} size={15} filled={isActive} />
-                    {tab.label}
-                    <span
-                      style={{
-                        fontFamily: fonts.label,
-                        fontSize: 10,
-                        padding: "1px 6px",
-                        borderRadius: 9999,
-                        backgroundColor: isActive ? colors.creamLight : colors.creamMid,
-                        color: colors.forestGreen,
-                      }}
-                    >
+                    <span className="material-symbols-outlined text-[15px]" style={{ fontVariationSettings: isActive ? "'FILL' 1" : "'FILL' 0" }}>{tab.icon}</span>
+                    <span className="text-[13px] font-semibold">{tab.label}</span>
+                    <span className={`mono-label text-[10px] px-1.5 py-0.5 rounded-full ${isActive ? "bg-white text-[#1e4d3a]" : "bg-[#f6efdc] text-[#1e4d3a]"}`}>
                       {tab.count}
                     </span>
                   </button>
@@ -525,188 +428,196 @@ export default function UserManagement() {
               })}
             </div>
 
-            <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
-              <div style={{ display: "flex", alignItems: "center", gap: 6, padding: "6px 10px", backgroundColor: colors.creamMid, border: `1px solid ${colors.forestGreen}`, borderRadius: 8 }}>
-                <Icon name="search" size={15} />
+            <div className="flex items-center gap-2.5 flex-wrap w-full md:w-auto justify-end">
+              <div className="flex items-center gap-2 px-3 py-2 bg-[#f6efdc] border border-[#1e4d3a]/15 rounded-[8px] flex-1 md:flex-none">
+                <span className="material-symbols-outlined text-[15px] text-[#1e4d3a]">search</span>
                 <input
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
-                  placeholder="Search name or email"
-                  style={{ border: "none", outline: "none", background: "transparent", fontFamily: fonts.body, fontSize: 13, color: colors.forestGreen, width: 170 }}
+                  placeholder={t("userManagement.searchPlaceholder") || "Search name or email"}
+                  className="border-none outline-none bg-transparent font-['Inter'] text-[13px] text-[#1e4d3a] w-full md:w-40"
                 />
               </div>
 
               {roles.length > 0 && (
-                <div style={{ display: "flex", alignItems: "center", gap: 6, padding: "6px 10px", backgroundColor: colors.creamMid, border: `1px solid ${colors.forestGreen}`, borderRadius: 8, cursor: "pointer" }}>
+                <div className="flex items-center gap-2 px-3 py-2 bg-[#f6efdc] border border-[#1e4d3a]/15 rounded-[8px] cursor-pointer">
                   <select
                     value={roleFilter}
                     onChange={(e) => setRoleFilter(e.target.value)}
-                    style={{ border: "none", outline: "none", background: "transparent", fontFamily: fonts.body, fontSize: 13, color: colors.forestGreen, cursor: "pointer", minWidth: 110 }}
+                    className="border-none outline-none bg-transparent font-['Inter'] text-[13px] text-[#1e4d3a] cursor-pointer min-w-[100px]"
                   >
-                    <option value="all">All Roles</option>
-                    {roles.map((r) => (
-                      <option key={r} value={r}>{r}</option>
-                    ))}
+                    <option value="all">{t("userManagement.roles.all") || "All Roles"}</option>
+                    {roles.map((r) => {
+                      const roleKey = r.toLowerCase();
+                      return (
+                        <option key={r} value={r}>
+                          {t(`userManagement.roles.${roleKey}`) || r}
+                        </option>
+                      );
+                    })}
                   </select>
                 </div>
               )}
 
               {hasActiveFilters && (
-                <button onClick={clearFilters} style={{ display: "flex", alignItems: "center", gap: 4, padding: "6px 10px", backgroundColor: "transparent", border: `1px solid ${colors.red}`, borderRadius: 8, fontFamily: fonts.body, fontSize: 12, fontWeight: 500, color: colors.red, cursor: "pointer" }}>
-                  <Icon name="close" size={14} /> Clear
+                <button onClick={clearFilters} className="flex items-center gap-1 px-2.5 py-2 bg-transparent border border-[#e96d5c] rounded-[8px] text-[#e96d5c] text-[12px] font-semibold hover:bg-[#e96d5c]/5 transition-colors cursor-pointer">
+                  <span className="material-symbols-outlined text-[14px]">close</span> {t("userManagement.clear") || "Clear"}
                 </button>
               )}
             </div>
           </div>
         </div>
 
-        {/* ── Stat Cards ── */}
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 14, marginBottom: 18 }}>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
           {statItems.map((s) => (
-            <div key={s.label} style={{ ...cardStyle, padding: 16 }}>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 12 }}>
-                <div style={{ width: 28, height: 28, borderRadius: 6, backgroundColor: colors.creamMid, color: colors.forestGreen, border: `1px solid ${colors.forestGreen}`, display: "flex", alignItems: "center", justifyContent: "center" }}>
-                  <Icon name={s.icon} size={16} />
+            <div key={s.label} className="dashboard-card p-4">
+              <div className="flex justify-between items-start mb-3">
+                <div className="w-7 h-7 rounded-[6px] bg-[#f6efdc] text-[#1e4d3a] border border-[#1e4d3a]/10 flex items-center justify-center">
+                  <span className="material-symbols-outlined text-[16px]">{s.icon}</span>
                 </div>
               </div>
-              <p style={{ fontFamily: fonts.label, fontSize: 11, letterSpacing: "0.05em", color: colors.forestGreen, margin: "0 0 4px", opacity: 0.7 }}>{s.label}</p>
-              <p style={{ fontFamily: fonts.headline, fontSize: 24, fontWeight: 700, color: (s as any).isOverdue ? colors.red : colors.forestGreen, margin: "0 0 4px", lineHeight: 1 }}>{s.value}</p>
-              <p style={{ fontFamily: fonts.body, fontSize: 11, color: colors.forestGreen, margin: 0, opacity: 0.7 }}>{s.delta}</p>
+              <p className="mono-label text-[11px] text-[#1e4d3a]/60 mb-1">{s.label}</p>
+              <p className={`font-['Source_Serif_4'] text-2xl font-bold leading-none mb-1 ${(s as any).isOverdue ? "text-[#e96d5c]" : "text-[#082f27]"}`}>{s.value}</p>
+              <p className="text-[11px] text-[#1e4d3a]/60">{s.delta}</p>
             </div>
           ))}
         </div>
 
-        {/* ── Table View ── */}
-        <section style={{ ...cardStyle, overflow: "hidden" }}>
-          <div style={{ overflowX: "auto" }}>
-            <table style={{ width: "100%", borderCollapse: "collapse" }}>
-              <thead style={{ backgroundColor: colors.creamMid }}>
-                <tr>
-                  <th style={thStyle}>User</th>
-                  <th style={thStyle}>Role</th>
-                  <th style={thStyle}>Contributor</th>
-                  <th style={thStyle}>Status</th>
-                  <th style={{ ...thStyle, textAlign: isRTL ? "left" : "right" }}>Actions</th>
+        <div className="dashboard-card overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full text-left border-collapse">
+              <thead>
+                <tr className="border-b border-[#1e4d3a]/10 bg-[#1e4d3a]/[0.02]">
+                  <th className="mono-label text-[9px] uppercase font-bold text-[#1e4d3a]/60 px-5 py-3.5">{t("userManagement.table.user") || "User"}</th>
+                  <th className="mono-label text-[9px] uppercase font-bold text-[#1e4d3a]/60 px-5 py-3.5">{t("userManagement.table.role") || "Role"}</th>
+                  <th className="mono-label text-[9px] uppercase font-bold text-[#1e4d3a]/60 px-5 py-3.5">{t("userManagement.table.contributor") || "Contributor"}</th>
+                  <th className="mono-label text-[9px] uppercase font-bold text-[#1e4d3a]/60 px-5 py-3.5">{t("userManagement.table.strikes") || "Strikes"}</th>
+                  <th className="mono-label text-[9px] uppercase font-bold text-[#1e4d3a]/60 px-5 py-3.5">{t("userManagement.table.status") || "Status"}</th>
+                  <th className="mono-label text-[9px] uppercase font-bold text-[#1e4d3a]/60 px-5 py-3.5 text-right">{t("userManagement.table.actions") || "Actions"}</th>
                 </tr>
               </thead>
-              <tbody>
-                {filtered.length === 0 ? (
+              <tbody className="divide-y divide-[#1e4d3a]/[0.06]">
+                {paginatedUsers.length === 0 ? (
                   <tr>
-                    <td colSpan={5} style={{ padding: 40, textAlign: "center", color: colors.forestGreen, opacity: 0.7 }}>
-                      <Icon name="person_search" size={48} />
-                      <p style={{ fontFamily: fonts.body, fontSize: 14, marginTop: 12 }}>No users found matching your filters.</p>
+                    <td colSpan={6} className="px-5 py-12 text-center text-[#1e4d3a]/50">
+                      <span className="material-symbols-outlined text-[40px] mb-2 block mx-auto">person_search</span>
+                      <p className="text-[14px]">{t("userManagement.table.noUsers") || "No users found matching your filters."}</p>
                     </td>
                   </tr>
                 ) : (
-                  filtered.map((u) => {
+                  paginatedUsers.map((u) => {
                     const busy = busyId === u.id;
                     return (
-                      <tr
-                        key={u.id}
-                        style={{ cursor: "default", transition: "background-color 0.15s" }}
-                        onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = colors.creamMid)}
-                        onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "transparent")}
-                      >
-                        <td style={tdStyle}>
-                          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                            {/* ✅ UPDATED: Show real profile picture if it exists */}
+                      <tr key={u.id} className="hover:bg-[#1e4d3a]/[0.015] transition-colors">
+                        <td className="px-5 py-3.5">
+                          <div className="flex items-center gap-3">
                             {u.profile_picture ? (
-                              <img src={u.profile_picture} alt={u.username} style={{ width: 36, height: 36, borderRadius: "50%", objectFit: "cover", border: `1px solid ${colors.forestGreen}`, flexShrink: 0 }} />
+                              <img src={u.profile_picture} alt={u.username} className="w-9 h-9 rounded-full object-cover border-2 border-[#1e4d3a]/10 flex-shrink-0" />
                             ) : (
-                              <Avatar name={u.name || u.username} size={36} />
+                              <div className="w-9 h-9 rounded-full bg-[#f6efdc] text-[#1e4d3a] border-2 border-[#1e4d3a]/10 flex items-center justify-center font-['Source_Serif_4'] font-bold text-[14px] flex-shrink-0">
+                                {(u.name || u.username || "?").split(" ").map((p: string) => p[0]).slice(0, 2).join("").toUpperCase()}
+                              </div>
                             )}
                             <div>
-                              <p style={{ margin: 0, fontWeight: 600, fontFamily: fonts.headline, fontSize: 13, color: colors.forestGreen }}>{u.name || u.username}</p>
-                              <p style={{ margin: "2px 0 0", fontFamily: fonts.body, fontSize: 12, color: colors.forestGreen, opacity: 0.7 }}>{u.email}</p>
+                              <p className="font-['Source_Serif_4'] text-[13px] font-semibold text-[#082f27]">{u.name || u.username}</p>
+                              <p className="text-[12px] text-[#1e4d3a]/60">{u.email}</p>
                             </div>
                           </div>
                         </td>
-                                                <td style={tdStyle}>
-                          {u.contributorBadge || u.allowed_to_contribute ? (
-                            <span style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "4px 12px", borderRadius: 9999, backgroundColor: colors.creamMid, border: `1px solid ${colors.forestGreen}`, color: colors.forestGreen, fontFamily: fonts.label, fontSize: 11, fontWeight: 600 }}>
-                              <Icon name="how_to_reg" size={14} filled /> Contributor
+                        <td className="px-5 py-3.5">
+                          {u.role?.toLowerCase() === "admin" ? (
+                            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[#C9A84C] border border-[#C9A84C] text-white mono-label text-[10px] font-bold">
+                              <span className="material-symbols-outlined text-[12px]">shield_person</span> {t("userManagement.roles.admin") || "Admin"}
                             </span>
-                          ) : u.role?.toLowerCase() === "admin" ? (
-                            <span style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "4px 12px", borderRadius: 9999, backgroundColor: colors.amber, border: `1px solid ${colors.amber}`, color: colors.creamLight, fontFamily: fonts.label, fontSize: 11, fontWeight: 700 }}>
-                              <Icon name="shield_person" size={14} /> Admin
+                          ) : u.contributorBadge ? (
+                            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[#1e4d3a]/5 border border-[#1e4d3a]/10 text-[#1e4d3a] mono-label text-[10px] font-semibold">
+                              <span className="material-symbols-outlined text-[12px]" style={{ fontVariationSettings: "'FILL' 1" }}>how_to_reg</span> {t("userManagement.roles.contributor") || "Contributor"}
                             </span>
                           ) : (
-                            <span style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "4px 12px", borderRadius: 9999, backgroundColor: colors.creamMid, border: `1px solid ${colors.forestGreen}`, color: colors.forestGreen, fontFamily: fonts.label, fontSize: 11, fontWeight: 600 }}>
-                              User
+                            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[#1e4d3a]/5 border border-[#1e4d3a]/10 text-[#1e4d3a] mono-label text-[10px] font-semibold">
+                              {t("userManagement.roles.user") || "User"}
                             </span>
                           )}
                         </td>
-                        <td style={tdStyle}>
+                        <td className="px-5 py-3.5">
                           <button
                             onClick={() => handleToggleContribute(u)}
                             disabled={busy}
-                            title={u.allowed_to_contribute ? "Click to revoke contributor access" : "Click to grant contributor access"}
-                            style={{
-                              display: "flex",
-                              alignItems: "center",
-                              gap: 6,
-                              padding: "4px 10px",
-                              borderRadius: 9999,
-                              border: `1px solid ${u.allowed_to_contribute ? colors.forestGreen : colors.creamDark}`,
-                              backgroundColor: u.allowed_to_contribute ? colors.forestGreen : "transparent",
-                              color: u.allowed_to_contribute ? colors.creamLight : colors.forestGreen,
-                              fontFamily: fonts.body,
-                              fontSize: 12,
-                              fontWeight: 600,
-                              cursor: busy ? "wait" : "pointer",
-                              opacity: busy ? 0.6 : 1,
-                            }}
+                            title={u.allowed_to_contribute ? (t("userManagement.table.revokeContributor") || "Click to revoke contributor access") : (t("userManagement.table.grantContributor") || "Click to grant contributor access")}
+                            className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full border transition-colors text-[11px] font-semibold ${
+                              u.allowed_to_contribute 
+                                ? "bg-[#1e4d3a] border-[#1e4d3a] text-white" 
+                                : "bg-transparent border-[#1e4d3a]/15 text-[#1e4d3a] hover:bg-[#1e4d3a]/5"
+                            } ${busy ? "opacity-60 cursor-wait" : "cursor-pointer"}`}
                           >
-                            <Icon name={u.allowed_to_contribute ? "toggle_on" : "toggle_off"} size={17} filled={u.allowed_to_contribute} />
-                            {u.allowed_to_contribute ? "Allowed" : "Not allowed"}
+                            <span className="material-symbols-outlined text-[15px]" style={{ fontVariationSettings: u.allowed_to_contribute ? "'FILL' 1" : "'FILL' 0" }}>
+                              {u.allowed_to_contribute ? "toggle_on" : "toggle_off"}
+                            </span>
+                            {u.allowed_to_contribute ? (t("userManagement.table.allowed") || "Allowed") : (t("userManagement.table.notAllowed") || "Not allowed")}
                           </button>
                         </td>
-                        <td style={tdStyle}>
-                          <span
-                            style={{
-                              display: "inline-flex",
-                              alignItems: "center",
-                              gap: 4,
-                              padding: "3px 10px",
-                              borderRadius: 9999,
-                              backgroundColor: u.is_banned ? "rgba(139, 44, 44, 0.1)" : "rgba(11, 67, 53, 0.08)",
-                              border: `1px solid ${u.is_banned ? colors.red : colors.forestGreen}`,
-                              color: u.is_banned ? colors.red : colors.forestGreen,
-                              fontFamily: fonts.label,
-                              fontSize: 11,
-                            }}
-                          >
-                            <span style={{ width: 6, height: 6, borderRadius: "50%", backgroundColor: u.is_banned ? colors.red : colors.forestGreen }} />
-                            {u.is_banned ? "Banned" : "Active"}
-                          </span>
+                        <td className="px-5 py-3.5">
+                          {(() => {
+                            const strikes = u.strike_count || 0;
+                            const isHighRisk = strikes >= 3;
+                            const isWarning = strikes > 0 && strikes < 3;
+                            return (
+                              <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full border mono-label text-[10px] font-bold ${
+                                isHighRisk ? "bg-[#e96d5c]/10 border-[#e96d5c] text-[#e96d5c]" : 
+                                isWarning ? "bg-[#C9A84C]/10 border-[#C9A84C] text-[#C9A84C]" : 
+                                "bg-[#1e4d3a]/5 border-[#1e4d3a]/10 text-[#1e4d3a]"
+                              }`}>
+                                {isHighRisk && <span className="material-symbols-outlined text-[12px]" style={{ fontVariationSettings: "'FILL' 1" }}>warning</span>}
+                                {strikes} {strikes === 1 ? (t("userManagement.table.strike") || "Strike") : (t("userManagement.table.strikes") || "Strikes")}
+                              </span>
+                            );
+                          })()}
                         </td>
-                        <td style={{ ...tdStyle, textAlign: isRTL ? "left" : "right" }}>
-                          <div style={{ display: "flex", justifyContent: isRTL ? "flex-start" : "flex-end", gap: 6 }}>
+                        <td className="px-5 py-3.5">
+                          {u.is_banned ? (
+                            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full border mono-label text-[10px] font-semibold bg-[#e96d5c]/10 border-[#e96d5c] text-[#e96d5c]">
+                              <span className="w-1.5 h-1.5 rounded-full bg-[#e96d5c]" />
+                              {t("userManagement.table.banned") || "Banned"}
+                            </span>
+                          ) : !u.is_active ? (
+                            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full border mono-label text-[10px] font-semibold bg-gray-100 border-gray-300 text-gray-600">
+                              <span className="w-1.5 h-1.5 rounded-full bg-gray-400" />
+                              {t("userManagement.table.inactive") || "Inactive"}
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full border mono-label text-[10px] font-semibold bg-[#1e4d3a]/5 border-[#1e4d3a]/10 text-[#1e4d3a]">
+                              <span className="w-1.5 h-1.5 rounded-full bg-[#1e4d3a]" />
+                              {t("userManagement.table.active") || "Active"}
+                            </span>
+                          )}
+                        </td>
+                        <td className="px-5 py-3.5 text-right">
+                          <div className="flex items-center justify-end gap-2">
                             <button
                               onClick={() => setViewTarget(u)}
-                              title="View details"
-                              style={{ width: 32, height: 32, display: "flex", alignItems: "center", justifyContent: "center", backgroundColor: "transparent", border: `1px solid ${colors.forestGreen}`, borderRadius: 6, color: colors.forestGreen, cursor: "pointer" }}
+                              title={t("userManagement.table.viewDetails") || "View details"}
+                              className="w-8 h-8 flex items-center justify-center rounded-[6px] border border-[#1e4d3a]/20 text-[#1e4d3a] hover:bg-[#1e4d3a] hover:text-white transition-colors cursor-pointer"
                             >
-                              <Icon name="visibility" size={18} />
+                              <span className="material-symbols-outlined text-[18px]">visibility</span>
                             </button>
 
                             {u.is_banned ? (
                               <button
                                 onClick={() => handleUnban(u)}
                                 disabled={busy}
-                                title="Unban user"
-                                style={{ width: 32, height: 32, display: "flex", alignItems: "center", justifyContent: "center", backgroundColor: colors.forestGreen, border: `1px solid ${colors.forestGreen}`, borderRadius: 6, color: colors.creamLight, cursor: busy ? "wait" : "pointer", opacity: busy ? 0.6 : 1 }}
+                                title={t("userManagement.table.unbanUser") || "Unban user"}
+                                className="w-8 h-8 flex items-center justify-center rounded-[6px] bg-[#1e4d3a] border border-[#1e4d3a] text-white hover:bg-[#1e4d3a]/90 transition-colors disabled:opacity-60 disabled:cursor-wait cursor-pointer"
                               >
-                                <Icon name="lock_open" size={18} filled />
+                                <span className="material-symbols-outlined text-[18px]" style={{ fontVariationSettings: "'FILL' 1" }}>lock_open</span>
                               </button>
                             ) : (
                               <button
                                 onClick={() => setBanTarget(u)}
                                 disabled={busy}
-                                title="Ban user"
-                                style={{ width: 32, height: 32, display: "flex", alignItems: "center", justifyContent: "center", backgroundColor: "transparent", border: `1px solid ${colors.red}`, borderRadius: 6, color: colors.red, cursor: busy ? "wait" : "pointer", opacity: busy ? 0.6 : 1 }}
+                                title={t("userManagement.table.banUser") || "Ban user"}
+                                className="w-8 h-8 flex items-center justify-center rounded-[6px] border border-[#e96d5c] text-[#e96d5c] hover:bg-[#e96d5c] hover:text-white transition-colors disabled:opacity-60 disabled:cursor-wait cursor-pointer"
                               >
-                                <Icon name="block" size={18} />
+                                <span className="material-symbols-outlined text-[18px]">block</span>
                               </button>
                             )}
                           </div>
@@ -719,50 +630,69 @@ export default function UserManagement() {
             </table>
           </div>
 
-          {/* ── Pagination ─ */}
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "12px 14px", borderTop: `1px solid ${colors.forestGreen}`, backgroundColor: colors.creamMid }}>
-            <span style={{ fontFamily: fonts.label, fontSize: 11, color: colors.forestGreen, opacity: 0.8 }}>
-              Showing 1-{Math.min(10, filtered.length)} of {filtered.length}
-            </span>
-            <div style={{ display: "flex", gap: 4 }}>
-              <button style={{ padding: "4px 10px", border: `1px solid ${colors.forestGreen}`, borderRadius: 6, backgroundColor: colors.creamLight, color: colors.forestGreen, fontFamily: fonts.body, fontSize: 12, cursor: "pointer", display: "flex", alignItems: "center" }}>
-                <Icon name="chevron_left" size={16} />
-              </button>
-              <button style={{ padding: "4px 10px", border: `1px solid ${colors.forestGreen}`, borderRadius: 6, backgroundColor: colors.forestGreen, color: colors.creamLight, fontFamily: fonts.body, fontSize: 12, cursor: "pointer" }}>1</button>
-              {filtered.length > 10 && <button style={{ padding: "4px 10px", border: `1px solid ${colors.forestGreen}`, borderRadius: 6, backgroundColor: colors.creamLight, color: colors.forestGreen, fontFamily: fonts.body, fontSize: 12, cursor: "pointer" }}>2</button>}
-              <button style={{ padding: "4px 10px", border: `1px solid ${colors.forestGreen}`, borderRadius: 6, backgroundColor: colors.creamLight, color: colors.forestGreen, fontFamily: fonts.body, fontSize: 12, cursor: "pointer", display: "flex", alignItems: "center" }}>
-                <Icon name="chevron_right" size={16} />
-              </button>
-            </div>
-          </div>
-        </section>
-
-        {/* ── Ban Confirmation Modal ── */}
-        {banTarget && (
-          <div style={{ position: "fixed", inset: 0, backgroundColor: "rgba(11, 67, 53, 0.5)", zIndex: 100, display: "flex", alignItems: "center", justifyContent: "center", backdropFilter: "blur(4px)" }} onClick={() => setBanTarget(null)}>
-            <div style={{ ...cardStyle, backgroundColor: colors.creamLight, width: 440, maxWidth: "90vw", padding: 32, boxShadow: "0 20px 60px rgba(0,0,0,0.18)" }} onClick={(e) => e.stopPropagation()}>
-              <div style={{ width: 56, height: 56, borderRadius: "50%", backgroundColor: colors.red, color: colors.creamLight, display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 20, border: `1px solid ${colors.red}` }}>
-                <Icon name="block" size={28} filled />
+          {totalPages > 1 && (
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 px-5 py-4 border-t border-[#1e4d3a]/10 bg-[#1e4d3a]/[0.01]">
+              <div className="text-[11px] text-[#1e4d3a]/60 mono-label">
+                {t("admin.common.showing") || "Showing"} {(currentPage - 1) * ITEMS_PER_PAGE + 1}–{Math.min(currentPage * ITEMS_PER_PAGE, filtered.length)} {t("admin.common.of") || "of"} {filtered.length}
               </div>
-              <h2 style={{ fontFamily: fonts.headline, fontSize: 20, fontWeight: 700, color: colors.forestGreen, marginBottom: 12 }}>Ban User</h2>
-              <p style={{ fontFamily: fonts.body, fontSize: 14, color: colors.forestGreen, lineHeight: 1.6, marginBottom: 28, opacity: 0.8 }}>
-                Are you sure you want to ban <b>{banTarget.username}</b> ({banTarget.email})? They will lose access to their account.
-                <br /><b style={{ color: colors.red }}>You can unban them later from this page.</b>
+              <div className="flex items-center gap-2">
+                <button onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))} disabled={currentPage === 1} className="flex items-center justify-center w-8 h-8 rounded-[6px] border border-[#1e4d3a]/20 text-[#1e4d3a] disabled:opacity-30 disabled:cursor-not-allowed hover:bg-[#1e4d3a] hover:text-white transition-colors cursor-pointer">
+                  <span className="material-symbols-outlined text-[18px]">{isRTL ? 'arrow_forward' : 'arrow_back'}</span>
+                </button>
+                {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                  let pageNum;
+                  if (totalPages <= 5) pageNum = i + 1;
+                  else if (currentPage <= 3) pageNum = i + 1;
+                  else if (currentPage >= totalPages - 2) pageNum = totalPages - 4 + i;
+                  else pageNum = currentPage - 2 + i;
+                  return (
+                    <button key={pageNum} onClick={() => setCurrentPage(pageNum)} className={`w-8 h-8 rounded-[6px] text-[11px] font-bold mono-label transition-colors cursor-pointer ${currentPage === pageNum ? 'bg-[#1e4d3a] text-white' : 'border border-[#1e4d3a]/20 text-[#1e4d3a] hover:bg-[#1e4d3a]/10'}`}>
+                      {pageNum}
+                    </button>
+                  );
+                })}
+                <button onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))} disabled={currentPage === totalPages} className="flex items-center justify-center w-8 h-8 rounded-[6px] border border-[#1e4d3a]/20 text-[#1e4d3a] disabled:opacity-30 disabled:cursor-not-allowed hover:bg-[#1e4d3a] hover:text-white transition-colors cursor-pointer">
+                  <span className="material-symbols-outlined text-[18px]">{isRTL ? 'arrow_back' : 'arrow_forward'}</span>
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {banTarget && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#082f27]/40 backdrop-blur-sm" onClick={() => setBanTarget(null)}>
+            <div className="dashboard-card w-full max-w-md p-6 relative" onClick={(e) => e.stopPropagation()}>
+              <button onClick={() => setBanTarget(null)} className="absolute top-4 right-4 p-1.5 rounded-full hover:bg-[#1e4d3a]/10 transition-colors cursor-pointer text-[#1e4d3a]">
+                <span className="material-symbols-outlined text-[20px]">close</span>
+              </button>
+              <div className="w-14 h-14 rounded-full bg-[#e96d5c] text-white flex items-center justify-center mb-5">
+                <span className="material-symbols-outlined text-[28px]" style={{ fontVariationSettings: "'FILL' 1" }}>block</span>
+              </div>
+              <h2 className="serif-title text-[20px] font-semibold text-[#082f27] mb-3">{t("userManagement.modal.banTitle") || "Ban User"}</h2>
+              <p className="text-[13px] text-[#1e4d3a]/80 leading-relaxed mb-6">
+                {(t("userManagement.modal.banMessage") || "Are you sure you want to ban {username} ({email})? They will lose access to their account.")
+                  .replace("{username}", banTarget.username)
+                  .replace("{email}", banTarget.email)}
+                <br /><br />
+                <strong className="text-[#e96d5c]">{t("userManagement.modal.banWarning") || "You can unban them later from this page."}</strong>
               </p>
-              <div style={{ display: "flex", gap: 12, justifyContent: "flex-end" }}>
-                <button onClick={() => setBanTarget(null)} style={{ padding: "10px 24px", borderRadius: 8, cursor: "pointer", border: `1px solid ${colors.forestGreen}`, backgroundColor: colors.creamLight, fontFamily: fonts.body, fontSize: 13, fontWeight: 600, color: colors.forestGreen }}>Cancel</button>
-                <button onClick={confirmBan} style={{ padding: "10px 24px", borderRadius: 8, cursor: "pointer", border: `1px solid ${colors.red}`, backgroundColor: colors.red, fontFamily: fonts.body, fontSize: 13, fontWeight: 700, color: colors.creamLight }}>Confirm Ban</button>
+              <div className="flex gap-3 justify-end">
+                <button onClick={() => setBanTarget(null)} className="px-5 py-2 rounded-[6px] border border-[#1e4d3a]/20 text-[#1e4d3a] text-[12px] font-bold uppercase tracking-wide hover:bg-[#1e4d3a]/5 transition-colors cursor-pointer">
+                  {t("userManagement.modal.cancel") || "Cancel"}
+                </button>
+                <button onClick={confirmBan} className="px-5 py-2 rounded-[6px] bg-[#e96d5c] border border-[#e96d5c] text-white text-[12px] font-bold uppercase tracking-wide hover:bg-[#e96d5c]/90 transition-colors cursor-pointer">
+                  {t("userManagement.modal.confirmBan") || "Confirm Ban"}
+                </button>
               </div>
             </div>
           </div>
         )}
 
-        {/* ── Comprehensive View Details Modal ── */}
         {viewTarget && (
           <UserDetailsModal user={viewTarget} onClose={() => setViewTarget(null)} />
         )}
 
-      </div>
+      </main>
     </div>
   );
 }

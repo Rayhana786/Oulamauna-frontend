@@ -3,7 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import { useLang } from "../../context/LanguageContext"; 
 import libraryImg from "../../assets/library2.jpg";
-import oulamaunaLogo from '../../assets/logo.png';
+import oulamaunaLogo from '../../assets/tlogo2.png';
 import axios from "axios";
 
 const Register: React.FC = () => {
@@ -143,30 +143,9 @@ const Register: React.FC = () => {
             </p>
           </div>
 
-          {/* Google Sign Up */}
-          <button
-            type="button"
-            className="w-full flex items-center justify-center gap-3 px-4 py-3.5 border border-[#1e4d3a]/30 rounded-lg bg-white text-[#1e4d3a] font-medium hover:bg-[#1e4d3a]/10 hover:border-[#1e4d3a]/50 transition-all duration-200 mb-6"
-            style={{ fontFamily: "'Inter', sans-serif" }}
-          >
-            <svg className="w-5 h-5" viewBox="0 0 24 24">
-              <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.51h5.92c-.25 1.31-.98 2.42-2.08 3.17v2.7h3.36c1.97-1.81 3.1-4.48 3.1-7.63z"/>
-              <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.36-2.7c-.93.62-2.12 1-3.92 1-3.01 0-5.57-2.03-6.48-4.75H2.18v2.97C4.07 20.1 7.72 23 12 23z"/>
-              <path fill="#FBBC05" d="M5.52 14.59C5.07 13.4 4.82 12.12 4.82 11s.25-2.4.7-3.59H2.18C1.43 9.1 1 10.02 1 11s.43 1.9 1.18 2.59z"/>
-              <path fill="#EA4335" d="M12 4.75c1.7 0 3.24.59 4.45 1.73l3.32-3.32C17.46 1.4 14.88 0 12 0 7.72 0 4.07 2.9 2.18 7.09l3.34 2.97C6.43 6.78 8.99 4.75 12 4.75z"/>
-            </svg>
-            {t("register.google")}
-          </button>
+          
 
-          {/* Divider */}
-          <div className="relative mb-6">
-            <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-[#1e4d3a]/20"></div>
-            </div>
-            <div className="relative flex justify-center text-sm">
-              <span className="px-4 bg-[#fbf9f4] text-[#1e4d3a]/60" style={{ fontFamily: "'Inter', sans-serif" }}>{t("register.or")}</span>
-            </div>
-          </div>
+          
 
           {/* Form */}
           <form onSubmit={handleSubmit} className="space-y-5">

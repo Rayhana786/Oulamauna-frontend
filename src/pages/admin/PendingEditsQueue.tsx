@@ -4,87 +4,14 @@ import { useLang } from "../../context/LanguageContext";
 import { adminApi } from "../../api/adminApi";
 
 /* ------------------------------------------------------------------ */
-/*  Design tokens — Oulamnauna admin palette                          */
-/* ------------------------------------------------------------------ */
-const colors = {
-  creamLight: "#fcfaf5",
-  creamMid: "#f6efdc",
-  creamDark: "#e5d5a8",
-  forestGreen: "#0b4335",
-  amber: "#b8860b",
-  red: "#8b2c2c",
-};
-
-const fonts = {
-  headline: "'Hanken Grotesk', sans-serif",
-  body: "'Inter', sans-serif",
-  label: "'JetBrains Mono', monospace",
-};
-
-const cardStyle: React.CSSProperties = {
-  backgroundColor: colors.creamLight,
-  borderRadius: 12,
-  boxShadow: "0px 4px 20px rgba(11, 67, 53, 0.08)",
-  border: `1px solid ${colors.forestGreen}`,
-};
-
-/* ------------------------------------------------------------------ */
-/*  Reusable UI Components                                             */
-/* ------------------------------------------------------------------ */
-const Icon: React.FC<{ name: string; size?: number; filled?: boolean }> = ({
-  name,
-  size = 18,
-  filled = false,
-}) => (
-  <span
-    className="material-symbols-outlined"
-    style={{
-      fontSize: size,
-      lineHeight: 1,
-      fontVariationSettings: `'FILL' ${filled ? 1 : 0}, 'wght' 400, 'GRAD' 0, 'opsz' 24`,
-    }}
-  >
-    {name}
-  </span>
-);
-
-const Avatar: React.FC<{ name: string; size?: number }> = ({ name, size = 36 }) => {
-  const initials = name.split(" ").map((p) => p[0]).slice(0, 2).join("").toUpperCase();
-  return (
-    <div
-      style={{
-        width: size,
-        height: size,
-        borderRadius: "50%",
-        backgroundColor: colors.creamMid,
-        color: colors.forestGreen,
-        border: `1px solid ${colors.forestGreen}`,
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        fontFamily: fonts.headline,
-        fontWeight: 700,
-        fontSize: size * 0.4,
-        flexShrink: 0,
-      }}
-    >
-      {initials}
-    </div>
-  );
-};
-
-/* ------------------------------------------------------------------ */
 /*  Types                                                              */
 /* ------------------------------------------------------------------ */
-type LangCode = "EN" | "AR" | "FR";
-type SortOption = "newest" | "oldest" | "name";
-
 interface ScholarSubmission {
   id: string;
   name: string;
-  language: LangCode;
+  languageCode: string; // ✅ Dynamic string instead of hardcoded enum
   editor: string;
-  editorId: number | null; // ✅ Changed to number for API
+  editorId: number | null;
   originalContributor: string;
   date: string;
   discipline: string;
@@ -112,7 +39,7 @@ interface BackendEditedVersion {
 const transformEditedVersions = (edits: BackendEditedVersion[]): ScholarSubmission[] => {
   return edits.map((item) => {
     const v = item.proposed;
-    const langCode = (v.languages?.code?.toUpperCase() || "EN") as LangCode;
+    const languageCode = v.languages?.code || "unknown";
 
     let disciplineNames: string[] = [];
     if (v.scholar_disciplines) {
@@ -121,21 +48,15 @@ const transformEditedVersions = (edits: BackendEditedVersion[]): ScholarSubmissi
         .filter(Boolean) as string[];
     }
 
-    const discipline = disciplineNames.length > 0 
-      ? disciplineNames.join(", ") 
-      : "Pending Review";
-
     return {
       id: v.version_id.toString(),
       name: v.canonical_name,
-      language: langCode,
+      languageCode: languageCode,
       editor: v.users?.username || "Unknown",
-      editorId: v.created_by || null, // ✅ Changed to number
+      editorId: v.created_by || null,
       originalContributor: item.current?.users?.username || v.users?.username || "Unknown",
-      date: new Date(v.created_at).toLocaleDateString("en-US", {
-        month: "short", day: "numeric", year: "numeric",
-      }),
-      discipline: discipline,
+      date: new Date(v.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }),
+      discipline: disciplineNames.length > 0 ? disciplineNames.join(", ") : "Pending Review",
       submittedAt: new Date(v.created_at),
     };
   });
@@ -146,18 +67,15 @@ const transformEditedVersions = (edits: BackendEditedVersion[]): ScholarSubmissi
 /* ------------------------------------------------------------------ */
 export default function PendingEditsQueue() {
   const navigate = useNavigate();
-  const { t, lang } = useLang();
-  const isRTL = lang === "AR";
+  const { t, lang, dbLanguages } = useLang(); // ✅ Added dbLanguages
+  const isRTL = lang === "AR" || lang === "ar";
 
-  const [filterLanguage, setFilterLanguage] = useState<LangCode | "all">("all");
-  const [sortBy, setSortBy] = useState<SortOption>("newest");
+  const [filterLanguage, setFilterLanguage] = useState<string>("all");
+  const [sortBy, setSortBy] = useState<"newest" | "oldest" | "name">("newest");
   const [rows, setRows] = useState<ScholarSubmission[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [stats, setStats] = useState({
-    total: 0, overdue: 0, newToday: 0, thisWeek: 0, avgTime: "0h 0m",
-  });
   
-  // ✅ Modal States
+  // Modal States
   const [approveReason, setApproveReason] = useState("");
   const [rejectReason, setRejectReason] = useState("");
   const [restrictTarget, setRestrictTarget] = useState<ScholarSubmission | null>(null);
@@ -169,22 +87,9 @@ export default function PendingEditsQueue() {
     const fetchData = async () => {
       setIsLoading(true);
       try {
-        const [editsRes, statsRes] = await Promise.all([
-          adminApi.scholars.getPendingEdited(),
-          adminApi.scholars.getDashboardStats(),
-        ]);
-
+        const [editsRes] = await Promise.all([adminApi.scholars.getPendingEdited()]);
         if (editsRes.data?.success && editsRes.data.data) {
           setRows(transformEditedVersions(editsRes.data.data));
-        }
-        if (statsRes.data?.success && statsRes.data.data) {
-          setStats({
-            total: statsRes.data.data.total_pending,
-            overdue: statsRes.data.data.overdue,
-            newToday: statsRes.data.data.new_today,
-            thisWeek: statsRes.data.data.this_week,
-            avgTime: statsRes.data.data.avg_review_time || "0h 0m",
-          });
         }
       } catch (error) {
         console.error("Failed to fetch pending edits:", error);
@@ -195,9 +100,20 @@ export default function PendingEditsQueue() {
     fetchData();
   }, []);
 
+  // ✅ Dynamic language resolution for filter dropdown
+  const uniqueLanguages = useMemo(() => {
+    const codes = Array.from(new Set(rows.map(r => r.languageCode).filter(Boolean)));
+    return codes.map(code => {
+      const found = dbLanguages.find((l: any) => l.code.toLowerCase() === code.toLowerCase());
+      return { code, name: found ? found.name : code.toUpperCase() };
+    });
+  }, [rows, dbLanguages]);
+
   const filtered = useMemo(() => {
     let result = [...rows];
-    if (filterLanguage !== "all") result = result.filter((s) => s.language === filterLanguage);
+    if (filterLanguage !== "all") {
+      result = result.filter((s) => s.languageCode.toLowerCase() === filterLanguage.toLowerCase());
+    }
     
     result.sort((a, b) => {
       switch (sortBy) {
@@ -211,10 +127,9 @@ export default function PendingEditsQueue() {
   }, [rows, filterLanguage, sortBy]);
 
   const goToReview = (s: ScholarSubmission) => {
-    navigate(`/admin/pending/edits/${s.id}?lang=${s.language}`);
+    navigate(`/admin/pending/edits/${s.id}?lang=${s.languageCode}`);
   };
 
-  // ✅ UPDATED: Approve Handler (Sends reason)
   const handleApprove = async (id: string) => {
     try {
       await adminApi.scholars.approve(Number(id), { reason: approveReason || "Approved" });
@@ -227,12 +142,8 @@ export default function PendingEditsQueue() {
     }
   };
 
-  // ✅ UPDATED: Reject Handler (Requires reason)
   const handleReject = async (id: string) => {
-    if (!rejectReason.trim()) {
-      alert("Please provide a rejection reason");
-      return;
-    }
+    if (!rejectReason.trim()) { alert("Please provide a rejection reason"); return; }
     try {
       await adminApi.scholars.reject(Number(id), rejectReason);
       setRows((prev) => prev.filter((r) => r.id !== id));
@@ -244,7 +155,6 @@ export default function PendingEditsQueue() {
     }
   };
 
-  // ✅ NEW: Restrict User + Auto-Reject Handler
   const executeRestrictionAndReject = async () => {
     if (!confirmAction) return;
     try {
@@ -254,223 +164,171 @@ export default function PendingEditsQueue() {
 
       if (!userId) {
         alert("Cannot restrict system-generated submissions.");
-        setConfirmAction(null);
-        setRestrictTarget(null);
-        return;
+        setConfirmAction(null); setRestrictTarget(null); return;
       }
 
-      // 1. Restrict the User
-      if (type === 'revoke') {
-        await adminApi.users.toggleContribute(userId);
-      } else {
-        await adminApi.users.ban(userId);
-      }
+      if (type === 'revoke') await adminApi.users.toggleContribute(userId);
+      else await adminApi.users.ban(userId);
 
-      // 2. Automatically Reject the Scholar Edit
       const defaultReason = type === 'ban' ? "Contributor banned" : "Contribution access revoked";
       await adminApi.scholars.reject(scholarId, defaultReason);
 
-      // 3. Remove from UI and close modals
       setRows((prev) => prev.filter((r) => r.id !== target.id));
-      setConfirmAction(null);
-      setRestrictTarget(null);
+      setConfirmAction(null); setRestrictTarget(null);
     } catch (err) {
       console.error("Action failed:", err);
       alert("Failed to process action. Please try again.");
     }
   };
 
-  const clearFilters = () => {
-    setFilterLanguage("all");
-    setSortBy("newest");
-  };
-
+  const clearFilters = () => { setFilterLanguage("all"); setSortBy("newest"); };
   const hasActiveFilters = filterLanguage !== "all";
 
-  const getLangName = (code: LangCode) => {
-    switch (code) {
-      case "EN": return "English";
-      case "AR": return "Arabic";
-      case "FR": return "French";
-    }
+  const getLangName = (code: string) => {
+    const found = dbLanguages.find((l: any) => l.code.toLowerCase() === code.toLowerCase());
+    return found ? found.name : code.toUpperCase();
   };
 
-  const getLangColor = (code: LangCode) => {
-    switch (code) {
-      case "AR": return colors.amber;
-      case "FR": return "#4a7fcb";
-      default: return colors.forestGreen;
-    }
-  };
-
-  const thStyle: React.CSSProperties = {
-    fontFamily: fonts.label,
-    fontSize: 11,
-    letterSpacing: "0.06em",
-    fontWeight: 600,
-    color: colors.forestGreen,
-    textAlign: isRTL ? "right" : "left",
-    padding: "12px 14px",
-    borderBottom: `1px solid ${colors.forestGreen}`,
-    textTransform: "uppercase",
-    opacity: 0.8,
-  };
-
-  const tdStyle: React.CSSProperties = {
-    fontFamily: fonts.body,
-    fontSize: 13,
-    color: colors.forestGreen,
-    padding: "14px",
-    borderBottom: `1px solid ${colors.creamDark}`,
-    textAlign: isRTL ? "right" : "left",
+  const getLangColor = (code: string) => {
+    const lower = code.toLowerCase();
+    if (lower === 'ar') return "#C9A84C";
+    if (lower === 'fr') return "#3d6b96";
+    return "#1e4d3a";
   };
 
   if (isLoading) {
     return (
-      <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", backgroundColor: colors.creamLight, color: colors.forestGreen }}>
-        <Icon name="hourglass_empty" size={32} />
+      <div className="min-h-screen flex items-center justify-center bg-[#fbf9f4]">
+        <span className="material-symbols-outlined text-[40px] text-[#1e4d3a]/40 animate-pulse">hourglass_empty</span>
       </div>
     );
   }
 
   return (
-    <div dir={isRTL ? "rtl" : "ltr"} style={{ fontFamily: fonts.body, color: colors.forestGreen, backgroundColor: colors.creamLight, minHeight: "100vh", padding: 24 }}>
-      <div style={{ maxWidth: 1280, margin: "0 auto" }}>
+    <div className="oulamauna-dashboard min-h-screen text-[#1e4d3a] antialiased font-['Inter']" dir={isRTL ? "rtl" : "ltr"}>
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&family=Source+Serif+4:wght@400;500;600;700&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap');
+        .oulamauna-dashboard { background: radial-gradient(circle at 8% 10%, rgba(201,168,76,0.055), transparent 24%), radial-gradient(circle at 92% 16%, rgba(79,145,132,0.06), transparent 25%), #fbf9f4; }
+        .oulamauna-dashboard * { box-sizing: border-box; }
+        .oulamauna-dashboard .serif-title { font-family: 'Source Serif 4', Georgia, serif; letter-spacing: -0.025em; }
+        .oulamauna-dashboard .mono-label { font-family: 'JetBrains Mono', monospace; letter-spacing: 0.06em; }
+        .oulamauna-dashboard .dashboard-card { background: rgba(251,249,244,0.96); border: 1px solid rgba(30,77,58,0.10); border-radius: 10px; box-shadow: 0 5px 18px rgba(30,77,58,0.055); transition: box-shadow 180ms ease; }
+        .oulamauna-dashboard .dashboard-card:hover { box-shadow: 0 9px 26px rgba(30,77,58,0.08); }
+        .oulamauna-dashboard ::selection { background: #C9A84C; color: #1e4d3a; }
+      `}</style>
 
-        {/* ── Page Header ── */}
-        <div style={{ marginBottom: 20 }}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 18, flexWrap: "wrap", gap: 12 }}>
+      <main className="max-w-[1450px] mx-auto px-3 md:px-5 xl:px-7 py-6 md:py-8">
+        <div className="mb-6">
+          <div className="flex flex-col md:flex-row md:items-start justify-between gap-4 mb-4">
             <div>
-              <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
-                <span style={{ fontFamily: fonts.label, fontSize: 11, letterSpacing: "0.08em", color: colors.forestGreen, opacity: 0.7 }}>
-                  ADMIN / PENDING EDITS
-                </span>
+              <div className="flex items-center gap-2 mb-1">
+                <span className="mono-label text-[9px] uppercase font-bold text-[#1e4d3a]/60">ADMIN / PENDING EDITS</span>
               </div>
-              <h1 style={{ fontFamily: fonts.headline, fontSize: 28, fontWeight: 700, color: colors.forestGreen, margin: 0, lineHeight: 1.1 }}>
-                Pending Edits Queue
+              <h1 className="serif-title text-[27px] md:text-[32px] leading-tight font-semibold text-[#082f27]">
+                {t("admin.pendingEdits.title") || "Pending Edits Queue"}
               </h1>
-              <p style={{ fontFamily: fonts.body, fontSize: 13, color: colors.forestGreen, opacity: 0.75, margin: "6px 0 0" }}>
-                Review and approve scholar edit submissions.
+              <p className="text-[12px] text-[#1e4d3a]/60 mt-1">
+                {t("admin.pendingEdits.subtitle") || "Review and approve scholar edit submissions."}
               </p>
             </div>
           </div>
 
-          {/* ── Filter Bar ── */}
-          <div style={{ ...cardStyle, padding: 12, display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 10, flex: 1, minWidth: 240, flexWrap: "wrap" }}>
-              <div style={{ display: "flex", alignItems: "center", gap: 6, padding: "6px 10px", backgroundColor: colors.creamMid, border: `1px solid ${colors.forestGreen}`, borderRadius: 8, cursor: "pointer" }}>
-                <select 
-                  value={filterLanguage} 
-                  onChange={(e) => setFilterLanguage(e.target.value as any)} 
-                  style={{ border: "none", outline: "none", background: "transparent", fontFamily: fonts.body, fontSize: 13, color: colors.forestGreen, cursor: "pointer", minWidth: 120 }}
-                >
-                  <option value="all">All Languages</option>
-                  <option value="EN">English</option>
-                  <option value="AR">Arabic</option>
-                  <option value="FR">French</option>
-                </select>
+          <div className="dashboard-card p-4 mb-6">
+            <div className="flex flex-col md:flex-row md:items-center gap-4">
+              <div className="flex flex-1 flex-wrap gap-4">
+                <div className="flex-1 min-w-[150px]">
+                  <label className="mono-label text-[9px] uppercase font-bold text-[#1e4d3a]/60 mb-1.5 block">{t("admin.common.language") || "Language"}</label>
+                  <select value={filterLanguage} onChange={(e) => setFilterLanguage(e.target.value)} className="w-full bg-[#fbf9f4] border border-[#1e4d3a]/15 rounded-[6px] px-3 py-2 text-[12px] font-medium text-[#1e4d3a] focus:outline-none focus:ring-2 focus:ring-[#1e4d3a]/20">
+                    <option value="all">{t("admin.common.all") || "All"}</option>
+                    {uniqueLanguages.map(l => <option key={l.code} value={l.code}>{l.name}</option>)}
+                  </select>
+                </div>
+                <div className="flex-1 min-w-[150px]">
+                  <label className="mono-label text-[9px] uppercase font-bold text-[#1e4d3a]/60 mb-1.5 block">{t("admin.common.sortBy") || "Sort By"}</label>
+                  <select value={sortBy} onChange={(e) => setSortBy(e.target.value as any)} className="w-full bg-[#fbf9f4] border border-[#1e4d3a]/15 rounded-[6px] px-3 py-2 text-[12px] font-medium text-[#1e4d3a] focus:outline-none focus:ring-2 focus:ring-[#1e4d3a]/20">
+                    <option value="newest">{t("admin.common.newestFirst") || "Newest First"}</option>
+                    <option value="oldest">{t("admin.common.oldestFirst") || "Oldest First"}</option>
+                    <option value="name">{t("admin.common.nameAZ") || "Name (A-Z)"}</option>
+                  </select>
+                </div>
               </div>
-
-              <div style={{ display: "flex", alignItems: "center", gap: 6, padding: "6px 10px", backgroundColor: colors.creamMid, border: `1px solid ${colors.forestGreen}`, borderRadius: 8, cursor: "pointer" }}>
-                <select 
-                  value={sortBy} 
-                  onChange={(e) => setSortBy(e.target.value as any)} 
-                  style={{ border: "none", outline: "none", background: "transparent", fontFamily: fonts.body, fontSize: 13, color: colors.forestGreen, cursor: "pointer", minWidth: 120 }}
-                >
-                  <option value="newest">Newest First</option>
-                  <option value="oldest">Oldest First</option>
-                  <option value="name">Name A-Z</option>
-                </select>
-              </div>
-
               {hasActiveFilters && (
-                <button 
-                  onClick={clearFilters} 
-                  style={{ display: "flex", alignItems: "center", gap: 4, padding: "6px 10px", backgroundColor: "transparent", border: `1px solid ${colors.red}`, borderRadius: 8, fontFamily: fonts.body, fontSize: 12, fontWeight: 500, color: colors.red, cursor: "pointer" }}
-                >
-                  <Icon name="close" size={14} /> Clear
+                <button onClick={clearFilters} className="flex items-center gap-1.5 px-3 py-2 rounded-[6px] border border-[#e96d5c] text-[#e96d5c] text-[11px] font-bold uppercase tracking-wide hover:bg-[#e96d5c]/5 transition-colors mt-5 md:mt-0 self-end md:self-auto cursor-pointer">
+                  <span className="material-symbols-outlined text-[14px]">close</span> {t("admin.common.clear") || "Clear"}
                 </button>
               )}
             </div>
           </div>
         </div>
 
-        {/* ── Table View ── */}
-        <section style={{ ...cardStyle, overflow: "hidden" }}>
-          <div style={{ overflowX: "auto" }}>
-            <table style={{ width: "100%", borderCollapse: "collapse" }}>
-              <thead style={{ backgroundColor: colors.creamMid }}>
-                <tr>
-                  <th style={thStyle}>Scholar</th>
-                  <th style={thStyle}>Language</th> 
-                  <th style={thStyle}>Editor</th>
-                  <th style={thStyle}>Submitted</th>
-                  <th style={{ ...thStyle, textAlign: isRTL ? "left" : "right" }}>Actions</th>
+        <section className="dashboard-card overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full text-left border-collapse">
+              <thead>
+                <tr className="border-b border-[#1e4d3a]/10 bg-[#1e4d3a]/[0.02]">
+                  <th className="mono-label text-[9px] uppercase font-bold text-[#1e4d3a]/60 px-5 py-3.5">{t("admin.pendingEdits.table.scholar") || "Scholar"}</th>
+                  <th className="mono-label text-[9px] uppercase font-bold text-[#1e4d3a]/60 px-5 py-3.5">{t("admin.pendingEdits.table.language") || "Language"}</th>
+                  <th className="mono-label text-[9px] uppercase font-bold text-[#1e4d3a]/60 px-5 py-3.5">{t("admin.pendingEdits.table.editor") || "Editor"}</th>
+                  <th className="mono-label text-[9px] uppercase font-bold text-[#1e4d3a]/60 px-5 py-3.5">{t("admin.pendingEdits.table.submitted") || "Submitted"}</th>
+                  <th className="mono-label text-[9px] uppercase font-bold text-[#1e4d3a]/60 px-5 py-3.5 text-right">{t("admin.pendingEdits.table.actions") || "Actions"}</th>
                 </tr>
               </thead>
-              <tbody>
+              <tbody className="divide-y divide-[#1e4d3a]/[0.06]">
                 {filtered.length === 0 ? (
                   <tr>
-                    <td colSpan={5} style={{ padding: 40, textAlign: "center", color: colors.forestGreen, opacity: 0.7 }}>
-                      <Icon name="inbox" size={48} />
-                      <p style={{ fontFamily: fonts.body, fontSize: 14, marginTop: 12 }}>No edits found matching your filters.</p>
+                    <td colSpan={5} className="px-5 py-12 text-center text-[12px] text-[#1e4d3a]/50">
+                      <span className="material-symbols-outlined text-[40px] mb-2 block mx-auto">inbox</span>
+                      {t("admin.pendingEdits.noEdits") || "No edits found matching your filters."}
                     </td>
                   </tr>
                 ) : (
                   filtered.map((s) => {
-                    const langColor = getLangColor(s.language);
+                    const langColor = getLangColor(s.languageCode);
                     return (
-                      <tr 
-                        key={s.id}
-                        style={{ cursor: "pointer", transition: "background-color 0.15s", backgroundColor: "transparent" }} 
-                        onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = colors.creamMid)}
-                        onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "transparent")}
-                      >
-                        <td style={tdStyle}>
-                          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                            <Avatar name={s.name} size={36} />
+                      <tr key={s.id} className="hover:bg-[#1e4d3a]/[0.015] transition-colors cursor-pointer">
+                        <td className="px-5 py-3.5">
+                          <div className="flex items-center gap-3">
+                            <div className="w-9 h-9 rounded-full bg-[#1e4d3a]/[0.05] border border-[#1e4d3a]/10 flex items-center justify-center text-[#1e4d3a] font-['Source_Serif_4'] font-bold text-[14px] flex-shrink-0">
+                              {s.name.charAt(0).toUpperCase()}
+                            </div>
                             <div>
-                              <p style={{ margin: 0, fontWeight: 600, fontFamily: fonts.headline, fontSize: 13, color: colors.forestGreen }}>{s.name}</p>
-                              <div style={{ display: "inline-flex", alignItems: "center", gap: 4, padding: "2px 8px", borderRadius: 9999, backgroundColor: colors.creamLight, border: `1px solid ${colors.creamDark}`, marginTop: 4 }}>
-                                <Icon name="person" size={12} />
-                                <span style={{ fontFamily: fonts.label, fontSize: 10, color: colors.forestGreen, opacity: 0.8 }}>{s.originalContributor}</span>
+                              <p className="text-[13px] font-semibold text-[#082f27]">{s.name}</p>
+                              <div className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-[#fbf9f4] border border-[#1e4d3a]/10 mt-1">
+                                <span className="material-symbols-outlined text-[12px] text-[#1e4d3a]/60">person</span>
+                                <span className="mono-label text-[9px] text-[#1e4d3a]/70">{s.originalContributor}</span>
                               </div>
                             </div>
                           </div>
                         </td>
-
-                        <td style={tdStyle}>
-                          <div style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "4px 10px", borderRadius: 9999, backgroundColor: colors.creamMid, border: `1px solid ${langColor}` }}>
-                            <span style={{ width: 6, height: 6, borderRadius: "50%", backgroundColor: langColor }} />
-                            <span style={{ fontFamily: fonts.label, fontSize: 11, color: colors.forestGreen, fontWeight: 600, letterSpacing: "0.02em" }}>{getLangName(s.language)}</span>
+                        <td className="px-5 py-3.5">
+                          <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[#1e4d3a]/5 border border-[#1e4d3a]/10">
+                            <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: langColor }} />
+                            <span className="mono-label text-[10px] font-bold text-[#1e4d3a]/70 uppercase tracking-wide">{getLangName(s.languageCode)}</span>
                           </div>
                         </td>
-
-                        <td style={tdStyle}>
-                          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                            <Avatar name={s.editor} size={28} />
-                            <span style={{ fontFamily: fonts.body, fontSize: 13, color: colors.forestGreen }}>{s.editor}</span>
+                        <td className="px-5 py-3.5">
+                          <div className="flex items-center gap-2">
+                            <div className="w-7 h-7 rounded-full bg-[#C9A84C]/10 border border-[#C9A84C]/20 flex items-center justify-center text-[#C9A84C] font-['Source_Serif_4'] font-bold text-[10px] flex-shrink-0">
+                              {s.editor.split(" ").map((p) => p[0]).slice(0, 2).join("").toUpperCase()}
+                            </div>
+                            <span className="text-[12px] font-medium text-[#1e4d3a]">{s.editor}</span>
                           </div>
                         </td>
-
-                        <td style={{ ...tdStyle, fontFamily: fonts.label, fontSize: 12, color: colors.forestGreen }}>{s.date}</td>
-
-                        <td style={{ ...tdStyle, textAlign: isRTL ? "left" : "right" }}>
-                          <div style={{ display: "flex", justifyContent: isRTL ? "flex-start" : "flex-end", gap: 6 }}>
-                            <button onClick={(e) => { e.stopPropagation(); goToReview(s); }} title="Review" style={{ width: 32, height: 32, display: "flex", alignItems: "center", justifyContent: "center", backgroundColor: "transparent", border: `1px solid ${colors.forestGreen}`, borderRadius: 6, color: colors.forestGreen, cursor: "pointer" }}>
-                              <Icon name="visibility" size={18} />
+                        <td className="px-5 py-3.5 mono-label text-[11px] text-[#1e4d3a]/70">{s.date}</td>
+                        <td className="px-5 py-3.5 text-right">
+                          <div className="flex items-center justify-end gap-2">
+                            <button onClick={(e) => { e.stopPropagation(); goToReview(s); }} title="Review" className="w-8 h-8 flex items-center justify-center rounded-[6px] border border-[#1e4d3a]/20 text-[#1e4d3a] hover:bg-[#1e4d3a] hover:text-white transition-colors cursor-pointer">
+                              <span className="material-symbols-outlined text-[18px]">visibility</span>
                             </button>
-                            <button onClick={(e) => { e.stopPropagation(); setApproveTarget(s); }} title="Approve" style={{ width: 32, height: 32, display: "flex", alignItems: "center", justifyContent: "center", backgroundColor: colors.forestGreen, border: `1px solid ${colors.forestGreen}`, borderRadius: 6, color: colors.creamLight, cursor: "pointer" }}>
-                              <Icon name="check" size={18} filled />
+                            <button onClick={(e) => { e.stopPropagation(); setApproveTarget(s); }} title="Approve" className="w-8 h-8 flex items-center justify-center rounded-[6px] bg-[#1e4d3a] border border-[#1e4d3a] text-white hover:bg-[#1e4d3a]/90 transition-colors cursor-pointer">
+                              <span className="material-symbols-outlined text-[18px]" style={{ fontVariationSettings: "'FILL' 1, 'wght' 400" }}>check</span>
                             </button>
-                            <button onClick={(e) => { e.stopPropagation(); setRejectTarget(s); }} title="Reject" style={{ width: 32, height: 32, display: "flex", alignItems: "center", justifyContent: "center", backgroundColor: "transparent", border: `1px solid ${colors.red}`, borderRadius: 6, color: colors.red, cursor: "pointer" }}>
-                              <Icon name="close" size={18} />
+                            <button onClick={(e) => { e.stopPropagation(); setRejectTarget(s); }} title="Reject" className="w-8 h-8 flex items-center justify-center rounded-[6px] border border-[#e96d5c] text-[#e96d5c] hover:bg-[#e96d5c] hover:text-white transition-colors cursor-pointer">
+                              <span className="material-symbols-outlined text-[18px]">close</span>
                             </button>
-                            {/* ✅ UPDATED: Restrict Button (Amber) */}
-                            <button onClick={(e) => { e.stopPropagation(); setRestrictTarget(s); }} title="Restrict User" style={{ width: 32, height: 32, display: "flex", alignItems: "center", justifyContent: "center", backgroundColor: "transparent", border: `1px solid ${colors.amber}`, borderRadius: 6, color: colors.amber, cursor: "pointer" }}
-                              onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = colors.amber; e.currentTarget.style.color = colors.creamLight; }}
-                              onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = "transparent"; e.currentTarget.style.color = colors.amber; }}>
-                              <Icon name="shield_person" size={18} />
+                            <button onClick={(e) => { e.stopPropagation(); setRestrictTarget(s); }} title="Restrict User" className="w-8 h-8 flex items-center justify-center rounded-[6px] border border-[#C9A84C] text-[#C9A84C] hover:bg-[#C9A84C] hover:text-white transition-colors cursor-pointer">
+                              <span className="material-symbols-outlined text-[18px]">shield_person</span>
                             </button>
                           </div>
                         </td>
@@ -481,161 +339,144 @@ export default function PendingEditsQueue() {
               </tbody>
             </table>
           </div>
-
-          {/* ── Pagination ── */}
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "12px 14px", borderTop: `1px solid ${colors.forestGreen}`, backgroundColor: colors.creamMid }}>
-            <span style={{ fontFamily: fonts.label, fontSize: 11, color: colors.forestGreen, opacity: 0.8 }}>
-              Showing 1-{Math.min(10, filtered.length)} of {filtered.length}
-            </span>
-            <div style={{ display: "flex", gap: 4 }}>
-              <button style={{ padding: "4px 10px", border: `1px solid ${colors.forestGreen}`, borderRadius: 6, backgroundColor: colors.creamLight, color: colors.forestGreen, fontFamily: fonts.body, fontSize: 12, cursor: "pointer", display: "flex", alignItems: "center" }}>
-                <Icon name="chevron_left" size={16} />
-              </button>
-              <button style={{ padding: "4px 10px", border: `1px solid ${colors.forestGreen}`, borderRadius: 6, backgroundColor: colors.forestGreen, color: colors.creamLight, fontFamily: fonts.body, fontSize: 12, cursor: "pointer" }}>1</button>
-              {filtered.length > 10 && <button style={{ padding: "4px 10px", border: `1px solid ${colors.forestGreen}`, borderRadius: 6, backgroundColor: colors.creamLight, color: colors.forestGreen, fontFamily: fonts.body, fontSize: 12, cursor: "pointer" }}>2</button>}
-              <button style={{ padding: "4px 10px", border: `1px solid ${colors.forestGreen}`, borderRadius: 6, backgroundColor: colors.creamLight, color: colors.forestGreen, fontFamily: fonts.body, fontSize: 12, cursor: "pointer", display: "flex", alignItems: "center" }}>
-                <Icon name="chevron_right" size={16} />
-              </button>
-            </div>
-          </div>
         </section>
 
-        {/* ── Step 1: Choose Restrict Action Modal ── */}
+        {/* ── Modals (Translated) ── */}
         {restrictTarget && !confirmAction && (
-          <div style={{ position: "fixed", inset: 0, backgroundColor: "rgba(11, 67, 53, 0.6)", zIndex: 100, display: "flex", alignItems: "center", justifyContent: "center", backdropFilter: "blur(4px)", padding: 20 }} onClick={() => setRestrictTarget(null)}>
-            <div style={{ ...cardStyle, backgroundColor: colors.creamLight, width: 520, maxWidth: "90vw", padding: 32, boxShadow: "0 20px 60px rgba(0,0,0,0.25)" }} onClick={(e) => e.stopPropagation()}>
-              <div style={{ display: "flex", alignItems: "center", gap: 16, marginBottom: 24 }}>
-                <Avatar name={restrictTarget.editor} size={56} />
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#082f27]/40 backdrop-blur-sm" onClick={() => setRestrictTarget(null)}>
+            <div className="dashboard-card w-full max-w-lg p-6 relative" onClick={(e) => e.stopPropagation()}>
+              <button onClick={() => setRestrictTarget(null)} className={`absolute top-4 ${isRTL ? 'left-4' : 'right-4'} p-1.5 rounded-full hover:bg-[#1e4d3a]/10 transition-colors cursor-pointer`}>
+                <span className="material-symbols-outlined text-[20px] text-[#1e4d3a]">close</span>
+              </button>
+              <div className="flex items-center gap-4 mb-6">
+                <div className="w-14 h-14 rounded-full bg-[#C9A84C]/10 border border-[#C9A84C]/20 flex items-center justify-center text-[#C9A84C] font-['Source_Serif_4'] font-bold text-[20px] flex-shrink-0">
+                  {restrictTarget.editor.split(" ").map((p) => p[0]).slice(0, 2).join("").toUpperCase()}
+                </div>
                 <div>
-                  <h2 style={{ fontFamily: fonts.headline, fontSize: 20, fontWeight: 700, color: colors.forestGreen, margin: 0 }}>Restrict User</h2>
-                  <p style={{ fontFamily: fonts.body, fontSize: 13, color: colors.forestGreen, opacity: 0.7, margin: "4px 0 0" }}>{restrictTarget.editor} edited "{restrictTarget.name}"</p>
+                  <h3 className="serif-title text-[20px] font-semibold text-[#082f27]">{t("admin.pendingEdits.modal.restrict.title") || "Restrict User"}</h3>
+                  <p className="text-[12px] text-[#1e4d3a]/60 mt-1">{restrictTarget.editor} {isRTL ? "عدّل" : "edited"} "{restrictTarget.name}"</p>
                 </div>
               </div>
-
-              <p style={{ fontFamily: fonts.body, fontSize: 14, color: colors.forestGreen, lineHeight: 1.6, marginBottom: 24 }}>
-                Choose an action. This will automatically <b>reject</b> this edit submission as well.
+              <p className="text-[13px] text-[#1e4d3a]/80 leading-relaxed mb-6">
+                {t("admin.pendingEdits.modal.restrict.desc") || "Choose an action. This will automatically reject this edit submission as well."}
               </p>
-
-              <div style={{ display: "flex", flexDirection: "column", gap: 12, marginBottom: 24 }}>
-                <button onClick={() => setConfirmAction({ type: 'revoke', target: restrictTarget })} style={{ display: "flex", alignItems: "flex-start", gap: 16, padding: 16, borderRadius: 8, border: `1px solid ${colors.amber}`, backgroundColor: "rgba(184, 134, 11, 0.05)", cursor: "pointer", textAlign: "left", transition: "background 0.2s" }} onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = "rgba(184, 134, 11, 0.1)"; }} onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = "rgba(184, 134, 11, 0.05)"; }}>
-                  <div style={{ width: 32, height: 32, borderRadius: "50%", backgroundColor: colors.amber, color: colors.creamLight, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}><Icon name="person_off" size={18} /></div>
+              <div className="space-y-3 mb-6">
+                <button onClick={() => setConfirmAction({ type: 'revoke', target: restrictTarget })} className="w-full flex items-start gap-4 p-4 rounded-[8px] border border-[#C9A84C]/30 bg-[#C9A84C]/[0.05] hover:bg-[#C9A84C]/10 transition-colors cursor-pointer text-left">
+                  <div className="w-8 h-8 rounded-full bg-[#C9A84C] text-white flex items-center justify-center flex-shrink-0 mt-0.5"><span className="material-symbols-outlined text-[18px]">person_off</span></div>
                   <div>
-                    <p style={{ fontFamily: fonts.headline, fontSize: 14, fontWeight: 700, color: colors.forestGreen, margin: "0 0 4px" }}>Revoke Contribution Access</p>
-                    <p style={{ fontFamily: fonts.body, fontSize: 12, color: colors.forestGreen, opacity: 0.7, margin: 0, lineHeight: 1.5 }}>They can still log in, but cannot submit new edits. (Recommended for low-quality edits)</p>
+                    <p className="text-[13px] font-semibold text-[#082f27] mb-1">{t("admin.pendingEdits.modal.restrict.revoke") || "Revoke Contribution Access"}</p>
+                    <p className="text-[11px] text-[#1e4d3a]/60 leading-relaxed">{t("admin.pendingEdits.modal.restrict.revokeDesc") || "They can still log in, but cannot submit new edits. (Recommended for low-quality edits)"}</p>
                   </div>
                 </button>
-
-                <button onClick={() => setConfirmAction({ type: 'ban', target: restrictTarget })} style={{ display: "flex", alignItems: "flex-start", gap: 16, padding: 16, borderRadius: 8, border: `1px solid ${colors.red}`, backgroundColor: "rgba(139, 44, 44, 0.05)", cursor: "pointer", textAlign: "left", transition: "background 0.2s" }} onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = "rgba(139, 44, 44, 0.1)"; }} onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = "rgba(139, 44, 44, 0.05)"; }}>
-                  <div style={{ width: 32, height: 32, borderRadius: "50%", backgroundColor: colors.red, color: colors.creamLight, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}><Icon name="block" size={18} /></div>
+                <button onClick={() => setConfirmAction({ type: 'ban', target: restrictTarget })} className="w-full flex items-start gap-4 p-4 rounded-[8px] border border-[#e96d5c]/30 bg-[#e96d5c]/[0.05] hover:bg-[#e96d5c]/10 transition-colors cursor-pointer text-left">
+                  <div className="w-8 h-8 rounded-full bg-[#e96d5c] text-white flex items-center justify-center flex-shrink-0 mt-0.5"><span className="material-symbols-outlined text-[18px]">block</span></div>
                   <div>
-                    <p style={{ fontFamily: fonts.headline, fontSize: 14, fontWeight: 700, color: colors.forestGreen, margin: "0 0 4px" }}>Ban Account Completely</p>
-                    <p style={{ fontFamily: fonts.body, fontSize: 12, color: colors.forestGreen, opacity: 0.7, margin: 0, lineHeight: 1.5 }}>They will be completely locked out of the platform. (Use for spam, abuse, or severe violations)</p>
+                    <p className="text-[13px] font-semibold text-[#082f27] mb-1">{t("admin.pendingEdits.modal.restrict.ban") || "Ban Account Completely"}</p>
+                    <p className="text-[11px] text-[#1e4d3a]/60 leading-relaxed">{t("admin.pendingEdits.modal.restrict.banDesc") || "They will be completely locked out of the platform. (Use for spam, abuse, or severe violations)"}</p>
                   </div>
                 </button>
               </div>
-
-              <div style={{ display: "flex", justifyContent: "flex-end" }}>
-                <button onClick={() => setRestrictTarget(null)} style={{ padding: "10px 24px", borderRadius: 8, cursor: "pointer", border: `1px solid ${colors.forestGreen}`, backgroundColor: colors.creamLight, fontFamily: fonts.body, fontSize: 13, fontWeight: 600, color: colors.forestGreen }}>Cancel</button>
+              <div className="flex justify-end">
+                <button onClick={() => setRestrictTarget(null)} className="px-5 py-2 rounded-[6px] border border-[#1e4d3a]/20 text-[#1e4d3a] text-[12px] font-bold uppercase tracking-wide hover:bg-[#1e4d3a]/5 transition-colors cursor-pointer">
+                  {t("admin.common.cancel") || "Cancel"}
+                </button>
               </div>
             </div>
           </div>
         )}
 
-        {/* ── Step 2: Final Confirmation Modal ── */}
         {confirmAction && (
-          <div style={{ position: "fixed", inset: 0, backgroundColor: "rgba(11, 67, 53, 0.6)", zIndex: 101, display: "flex", alignItems: "center", justifyContent: "center", backdropFilter: "blur(4px)", padding: 20 }} onClick={() => setConfirmAction(null)}>
-            <div style={{ ...cardStyle, backgroundColor: colors.creamLight, width: 440, maxWidth: "90vw", padding: 32, boxShadow: "0 20px 60px rgba(0,0,0,0.25)" }} onClick={(e) => e.stopPropagation()}>
-              <div style={{ width: 56, height: 56, borderRadius: "50%", backgroundColor: confirmAction.type === 'ban' ? colors.red : colors.amber, color: colors.creamLight, display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 20, border: `1px solid ${confirmAction.type === 'ban' ? colors.red : colors.amber}` }}>
-                <Icon name={confirmAction.type === 'ban' ? "block" : "person_off"} size={28} filled />
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#082f27]/40 backdrop-blur-sm" onClick={() => setConfirmAction(null)}>
+            <div className="dashboard-card w-full max-w-md p-6 relative" onClick={(e) => e.stopPropagation()}>
+              <div className={`w-14 h-14 rounded-full flex items-center justify-center mb-5 ${confirmAction.type === 'ban' ? 'bg-[#e96d5c] text-white' : 'bg-[#C9A84C] text-white'}`}>
+                <span className="material-symbols-outlined text-[28px]" style={{ fontVariationSettings: "'FILL' 1, 'wght' 400" }}>{confirmAction.type === 'ban' ? "block" : "person_off"}</span>
               </div>
-              <h2 style={{ fontFamily: fonts.headline, fontSize: 20, fontWeight: 700, color: colors.forestGreen, marginBottom: 12 }}>Confirm {confirmAction.type === 'ban' ? 'Ban' : 'Revocation'}</h2>
-              <p style={{ fontFamily: fonts.body, fontSize: 14, color: colors.forestGreen, lineHeight: 1.6, marginBottom: 24, opacity: 0.8 }}>
-                This will <b>{confirmAction.type === 'ban' ? 'BAN' : 'REVOKE CONTRIBUTION ACCESS FOR'} {confirmAction.target.editor}</b> <br/>and automatically <b>REJECT</b> the edit for "{confirmAction.target.name}".<br/><br/><b style={{ color: colors.red }}>This action cannot be undone from this screen.</b>
+              <h3 className="serif-title text-[20px] font-semibold text-[#082f27] mb-3">{t("admin.pendingEdits.modal.confirm.title") || "Confirm Action"}</h3>
+              <p className="text-[13px] text-[#1e4d3a]/80 leading-relaxed mb-6">
+                {t("admin.pendingEdits.modal.confirm.desc") || "This will"} <strong>{confirmAction.type === 'ban' ? (t("admin.pendingEdits.modal.confirm.ban") || "BAN") : (t("admin.pendingEdits.modal.confirm.revoke") || "REVOKE CONTRIBUTION ACCESS FOR")}</strong> {confirmAction.target.editor} {t("admin.pendingEdits.modal.confirm.andReject") || "and automatically REJECT the edit for"} "{confirmAction.target.name}".
+                <br/><br/><strong className="text-[#e96d5c]">{t("admin.pendingEdits.modal.confirm.warning") || "This action cannot be undone from this screen."}</strong>
               </p>
-              <div style={{ display: "flex", gap: 12, justifyContent: "flex-end" }}>
-                <button onClick={() => setConfirmAction(null)} style={{ padding: "10px 24px", borderRadius: 8, cursor: "pointer", border: `1px solid ${colors.forestGreen}`, backgroundColor: colors.creamLight, fontFamily: fonts.body, fontSize: 13, fontWeight: 600, color: colors.forestGreen }}>Go Back</button>
-                <button onClick={executeRestrictionAndReject} style={{ padding: "10px 24px", borderRadius: 8, cursor: "pointer", border: "none", backgroundColor: confirmAction.type === 'ban' ? colors.red : colors.amber, color: colors.creamLight, fontFamily: fonts.body, fontSize: 13, fontWeight: 700 }}>Confirm & Reject</button>
+              <div className="flex gap-3 justify-end">
+                <button onClick={() => setConfirmAction(null)} className="px-5 py-2 rounded-[6px] border border-[#1e4d3a]/20 text-[#1e4d3a] text-[12px] font-bold uppercase tracking-wide hover:bg-[#1e4d3a]/5 transition-colors cursor-pointer">
+                  {t("admin.common.goBack") || "Go Back"}
+                </button>
+                <button onClick={executeRestrictionAndReject} className={`px-5 py-2 rounded-[6px] text-white text-[12px] font-bold uppercase tracking-wide transition-colors cursor-pointer ${confirmAction.type === 'ban' ? 'bg-[#e96d5c] hover:bg-[#e96d5c]/90' : 'bg-[#C9A84C] hover:bg-[#C9A84C]/90'}`}>
+                  {t("admin.pendingEdits.modal.confirm.button") || "Confirm & Reject"}
+                </button>
               </div>
             </div>
           </div>
         )}
 
-        {/* ── Approve Confirmation Modal ── */}
         {approveTarget && (
-          <div style={{ position: "fixed", inset: 0, backgroundColor: "rgba(11, 67, 53, 0.5)", zIndex: 100, display: "flex", alignItems: "center", justifyContent: "center", backdropFilter: "blur(4px)" }} onClick={() => { setApproveTarget(null); setApproveReason(""); }}>
-            <div style={{ ...cardStyle, backgroundColor: colors.creamLight, width: 500, maxWidth: "90vw", padding: 32, boxShadow: "0 20px 60px rgba(0,0,0,0.18)" }} onClick={(e) => e.stopPropagation()}>
-              <div style={{ width: 56, height: 56, borderRadius: "50%", backgroundColor: colors.forestGreen, color: colors.creamLight, display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 20, border: `1px solid ${colors.forestGreen}` }}>
-                <Icon name="check_circle" size={28} filled />
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#082f27]/40 backdrop-blur-sm" onClick={() => { setApproveTarget(null); setApproveReason(""); }}>
+            <div className="dashboard-card w-full max-w-lg p-6 relative" onClick={(e) => e.stopPropagation()}>
+              <button onClick={() => { setApproveTarget(null); setApproveReason(""); }} className={`absolute top-4 ${isRTL ? 'left-4' : 'right-4'} p-1.5 rounded-full hover:bg-[#1e4d3a]/10 transition-colors cursor-pointer`}>
+                <span className="material-symbols-outlined text-[20px] text-[#1e4d3a]">close</span>
+              </button>
+              <div className="w-14 h-14 rounded-full bg-[#1e4d3a] text-white flex items-center justify-center mb-5">
+                <span className="material-symbols-outlined text-[28px]" style={{ fontVariationSettings: "'FILL' 1, 'wght' 400" }}>check_circle</span>
               </div>
-              <h2 style={{ fontFamily: fonts.headline, fontSize: 20, fontWeight: 700, color: colors.forestGreen, marginBottom: 16 }}>Approve Edit?</h2>
-              
-              <div style={{ backgroundColor: colors.creamMid, padding: 16, borderRadius: 8, marginBottom: 20 }}>
-                <p style={{ margin: "0 0 8px", fontFamily: fonts.headline, fontSize: 16, fontWeight: 600, color: colors.forestGreen }}>{approveTarget.name}</p>
-                <p style={{ margin: "0 0 4px", fontFamily: fonts.body, fontSize: 13, color: colors.forestGreen }}><strong>Language:</strong> {getLangName(approveTarget.language)}</p>
-                <p style={{ margin: "0 0 4px", fontFamily: fonts.body, fontSize: 13, color: colors.forestGreen }}><strong>Edited by:</strong> {approveTarget.editor}</p>
-                <p style={{ margin: "0 0 4px", fontFamily: fonts.body, fontSize: 13, color: colors.forestGreen }}><strong>Date:</strong> {approveTarget.date}</p>
-                <p style={{ margin: 0, fontFamily: fonts.body, fontSize: 13, color: colors.forestGreen }}><strong>Discipline:</strong> {approveTarget.discipline}</p>
+              <h3 className="serif-title text-[20px] font-semibold text-[#082f27] mb-4">{t("admin.pendingEdits.modal.approve.title") || "Approve Edit?"}</h3>
+              <div className="bg-[#1e4d3a]/[0.03] p-4 rounded-[8px] mb-5 space-y-2">
+                <p className="text-[14px] font-semibold text-[#082f27]">{approveTarget.name}</p>
+                <p className="text-[12px] text-[#1e4d3a]/70"><strong>{t("admin.common.language") || "Language"}:</strong> {getLangName(approveTarget.languageCode)}</p>
+                <p className="text-[12px] text-[#1e4d3a]/70"><strong>{isRTL ? "عدّل بواسطة:" : "Edited by:"}</strong> {approveTarget.editor}</p>
+                <p className="text-[12px] text-[#1e4d3a]/70"><strong>{isRTL ? "التاريخ:" : "Date:"}</strong> {approveTarget.date}</p>
+                <p className="text-[12px] text-[#1e4d3a]/70"><strong>{isRTL ? "التخصص:" : "Discipline:"}</strong> {approveTarget.discipline}</p>
               </div>
-
-              {/* ✅ ADDED: Approval Notes Field */}
-              <div style={{ marginBottom: 24 }}>
-                <label style={{ fontFamily: fonts.label, fontSize: 11, letterSpacing: "0.06em", fontWeight: 600, color: colors.forestGreen, display: "block", marginBottom: 6 }}>APPROVAL NOTES (Optional)</label>
-                <textarea 
-                  value={approveReason} 
-                  onChange={(e) => setApproveReason(e.target.value)}
-                  placeholder="Add any notes about this approval..."
-                  style={{ width: "100%", padding: 12, borderRadius: 8, border: `1px solid ${colors.forestGreen}`, fontFamily: fonts.body, fontSize: 13, color: colors.forestGreen, backgroundColor: colors.creamLight, outline: "none", resize: "vertical", minHeight: 80 }}
-                />
+              <div className="mb-6">
+                <label className="mono-label text-[9px] uppercase font-bold text-[#1e4d3a]/60 mb-1.5 block">{t("admin.pendingEdits.modal.approve.notes") || "APPROVAL NOTES (Optional)"}</label>
+                <textarea value={approveReason} onChange={(e) => setApproveReason(e.target.value)} placeholder={t("admin.pendingEdits.modal.approve.notesPlaceholder") || "Add any notes about this approval..."} className="w-full bg-[#fbf9f4] border border-[#1e4d3a]/15 rounded-[6px] px-3 py-2 text-[12px] font-medium text-[#1e4d3a] focus:outline-none focus:ring-2 focus:ring-[#1e4d3a]/20 min-h-[80px] resize-y" />
               </div>
-              
-              <p style={{ fontFamily: fonts.body, fontSize: 14, color: colors.forestGreen, marginBottom: 24, lineHeight: 1.6 }}>
-                This will publish the edited scholar to the portal. This action cannot be undone.
+              <p className="text-[13px] text-[#1e4d3a]/80 leading-relaxed mb-6">
+                {t("admin.pendingEdits.modal.approve.desc") || "This will publish the edited scholar to the portal. This action cannot be undone."}
               </p>
-              
-              <div style={{ display: "flex", gap: 12, justifyContent: "flex-end" }}>
-                <button onClick={() => { setApproveTarget(null); setApproveReason(""); }} style={{ padding: "10px 24px", borderRadius: 8, cursor: "pointer", border: `1px solid ${colors.forestGreen}`, backgroundColor: colors.creamLight, fontFamily: fonts.body, fontSize: 13, fontWeight: 600, color: colors.forestGreen }}>Cancel</button>
-                <button onClick={() => handleApprove(approveTarget.id)} style={{ padding: "10px 24px", borderRadius: 8, cursor: "pointer", border: "none", backgroundColor: colors.forestGreen, color: colors.creamLight, fontFamily: fonts.body, fontSize: 13, fontWeight: 700 }}>Confirm Approval</button>
+              <div className="flex gap-3 justify-end">
+                <button onClick={() => { setApproveTarget(null); setApproveReason(""); }} className="px-5 py-2 rounded-[6px] border border-[#1e4d3a]/20 text-[#1e4d3a] text-[12px] font-bold uppercase tracking-wide hover:bg-[#1e4d3a]/5 transition-colors cursor-pointer">
+                  {t("admin.common.cancel") || "Cancel"}
+                </button>
+                <button onClick={() => handleApprove(approveTarget.id)} className="px-5 py-2 rounded-[6px] bg-[#1e4d3a] text-white text-[12px] font-bold uppercase tracking-wide hover:bg-[#1e4d3a]/90 transition-colors cursor-pointer">
+                  {t("admin.pendingEdits.modal.approve.confirm") || "Confirm Approval"}
+                </button>
               </div>
             </div>
           </div>
         )}
 
-        {/* ── Reject Confirmation Modal ── */}
         {rejectTarget && (
-          <div style={{ position: "fixed", inset: 0, backgroundColor: "rgba(11, 67, 53, 0.5)", zIndex: 100, display: "flex", alignItems: "center", justifyContent: "center", backdropFilter: "blur(4px)" }} onClick={() => { setRejectTarget(null); setRejectReason(""); }}>
-            <div style={{ ...cardStyle, backgroundColor: colors.creamLight, width: 500, maxWidth: "90vw", padding: 32, boxShadow: "0 20px 60px rgba(0,0,0,0.18)" }} onClick={(e) => e.stopPropagation()}>
-              <div style={{ width: 56, height: 56, borderRadius: "50%", backgroundColor: colors.red, color: colors.creamLight, display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 20, border: `1px solid ${colors.red}` }}>
-                <Icon name="cancel" size={28} filled />
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#082f27]/40 backdrop-blur-sm" onClick={() => { setRejectTarget(null); setRejectReason(""); }}>
+            <div className="dashboard-card w-full max-w-lg p-6 relative" onClick={(e) => e.stopPropagation()}>
+              <button onClick={() => { setRejectTarget(null); setRejectReason(""); }} className={`absolute top-4 ${isRTL ? 'left-4' : 'right-4'} p-1.5 rounded-full hover:bg-[#1e4d3a]/10 transition-colors cursor-pointer`}>
+                <span className="material-symbols-outlined text-[20px] text-[#1e4d3a]">close</span>
+              </button>
+              <div className="w-14 h-14 rounded-full bg-[#e96d5c] text-white flex items-center justify-center mb-5">
+                <span className="material-symbols-outlined text-[28px]" style={{ fontVariationSettings: "'FILL' 1, 'wght' 400" }}>cancel</span>
               </div>
-              <h2 style={{ fontFamily: fonts.headline, fontSize: 20, fontWeight: 700, color: colors.forestGreen, marginBottom: 16 }}>Reject Edit?</h2>
-              
-              <div style={{ backgroundColor: colors.creamMid, padding: 16, borderRadius: 8, marginBottom: 24 }}>
-                <p style={{ margin: "0 0 8px", fontFamily: fonts.headline, fontSize: 16, fontWeight: 600, color: colors.forestGreen }}>{rejectTarget.name}</p>
-                <p style={{ margin: "0 0 4px", fontFamily: fonts.body, fontSize: 13, color: colors.forestGreen }}><strong>Language:</strong> {getLangName(rejectTarget.language)}</p>
-                <p style={{ margin: "0 0 4px", fontFamily: fonts.body, fontSize: 13, color: colors.forestGreen }}><strong>Edited by:</strong> {rejectTarget.editor}</p>
-                <p style={{ margin: "0 0 4px", fontFamily: fonts.body, fontSize: 13, color: colors.forestGreen }}><strong>Date:</strong> {rejectTarget.date}</p>
-                <p style={{ margin: 0, fontFamily: fonts.body, fontSize: 13, color: colors.forestGreen }}><strong>Discipline:</strong> {rejectTarget.discipline}</p>
+              <h3 className="serif-title text-[20px] font-semibold text-[#082f27] mb-4">{t("admin.pendingEdits.modal.reject.title") || "Reject Edit?"}</h3>
+              <div className="bg-[#1e4d3a]/[0.03] p-4 rounded-[8px] mb-5 space-y-2">
+                <p className="text-[14px] font-semibold text-[#082f27]">{rejectTarget.name}</p>
+                <p className="text-[12px] text-[#1e4d3a]/70"><strong>{t("admin.common.language") || "Language"}:</strong> {getLangName(rejectTarget.languageCode)}</p>
+                <p className="text-[12px] text-[#1e4d3a]/70"><strong>{isRTL ? "عدّل بواسطة:" : "Edited by:"}</strong> {rejectTarget.editor}</p>
+                <p className="text-[12px] text-[#1e4d3a]/70"><strong>{isRTL ? "التاريخ:" : "Date:"}</strong> {rejectTarget.date}</p>
+                <p className="text-[12px] text-[#1e4d3a]/70"><strong>{isRTL ? "التخصص:" : "Discipline:"}</strong> {rejectTarget.discipline}</p>
               </div>
-              
-              <div style={{ marginBottom: 24 }}>
-                <label style={{ display: "block", fontFamily: fonts.label, fontSize: 11, color: colors.forestGreen, marginBottom: 6, letterSpacing: "0.05em" }}>REJECTION REASON *</label>
-                <textarea
-                  value={rejectReason}
-                  onChange={(e) => setRejectReason(e.target.value)}
-                  placeholder="Please provide a reason for rejection..."
-                  style={{ width: "100%", padding: "10px 12px", borderRadius: 8, border: `1px solid ${rejectReason.trim() ? colors.forestGreen : colors.creamDark}`, backgroundColor: colors.creamLight, fontFamily: fonts.body, fontSize: 13, color: colors.forestGreen, outline: "none", resize: "vertical", minHeight: "80px" }}
-                />
+              <div className="mb-6">
+                <label className="mono-label text-[9px] uppercase font-bold text-[#1e4d3a]/60 mb-1.5 block">{t("admin.pendingEdits.modal.reject.reason") || "REJECTION REASON *"}</label>
+                <textarea value={rejectReason} onChange={(e) => setRejectReason(e.target.value)} placeholder={t("admin.pendingEdits.modal.reject.reasonPlaceholder") || "Please provide a reason for rejection..."} className="w-full bg-[#fbf9f4] border border-[#1e4d3a]/15 rounded-[6px] px-3 py-2 text-[12px] font-medium text-[#1e4d3a] focus:outline-none focus:ring-2 focus:ring-[#1e4d3a]/20 min-h-[80px] resize-y" />
               </div>
-              
-              <div style={{ display: "flex", gap: 12, justifyContent: "flex-end" }}>
-                <button onClick={() => { setRejectTarget(null); setRejectReason(""); }} style={{ padding: "10px 24px", borderRadius: 8, cursor: "pointer", border: `1px solid ${colors.forestGreen}`, backgroundColor: colors.creamLight, fontFamily: fonts.body, fontSize: 13, fontWeight: 600, color: colors.forestGreen }}>Cancel</button>
-                <button onClick={() => handleReject(rejectTarget.id)} disabled={!rejectReason.trim()} style={{ padding: "10px 24px", borderRadius: 8, cursor: rejectReason.trim() ? "pointer" : "not-allowed", border: "none", backgroundColor: rejectReason.trim() ? colors.red : colors.creamDark, color: colors.creamLight, fontFamily: fonts.body, fontSize: 13, fontWeight: 700, opacity: rejectReason.trim() ? 1 : 0.6 }}>Confirm Rejection</button>
+              <div className="flex gap-3 justify-end">
+                <button onClick={() => { setRejectTarget(null); setRejectReason(""); }} className="px-5 py-2 rounded-[6px] border border-[#1e4d3a]/20 text-[#1e4d3a] text-[12px] font-bold uppercase tracking-wide hover:bg-[#1e4d3a]/5 transition-colors cursor-pointer">
+                  {t("admin.common.cancel") || "Cancel"}
+                </button>
+                <button onClick={() => handleReject(rejectTarget.id)} disabled={!rejectReason.trim()} className={`px-5 py-2 rounded-[6px] text-white text-[12px] font-bold uppercase tracking-wide transition-colors ${rejectReason.trim() ? 'bg-[#e96d5c] hover:bg-[#e96d5c]/90 cursor-pointer' : 'bg-[#1e4d3a]/20 cursor-not-allowed'}`}>
+                  {t("admin.pendingEdits.modal.reject.confirm") || "Confirm Rejection"}
+                </button>
               </div>
             </div>
           </div>
         )}
-
-      </div>
+      </main>
     </div>
   );
 }

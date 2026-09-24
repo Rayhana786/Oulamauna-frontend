@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { Link, useSearchParams, useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import { useLang } from "../../context/LanguageContext";
-import logo from "../../assets/logo.png";
+import logo from "../../assets/tlogo2.png";
 // --- Design System ---
 const colors = { creamLight: "#fcfaf5", creamMid: "#f6efdc", forestGreen: "#0b4335", amber: "#b8860b", red: "#8b2c2c" };
 const GREEN = colors.forestGreen; const GOLD = colors.amber; const BG = colors.creamLight; const CARD_BG = colors.creamLight; const BORDER = colors.creamMid; const MUTED = "rgba(11, 67, 53, 0.6)"; const RED = colors.red;

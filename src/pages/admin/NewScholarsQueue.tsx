@@ -3,86 +3,12 @@ import { useNavigate } from "react-router-dom";
 import { useLang } from "../../context/LanguageContext";
 import { adminApi } from "../../api/adminApi";
 
-/* ------------------------------------------------------------------ */
-/*  Design tokens — Oulamnauna admin palette                          */
-/* ------------------------------------------------------------------ */
-const colors = {
-  creamLight: "#fcfaf5",
-  creamMid: "#f6efdc",
-  creamDark: "#e5d5a8",
-  forestGreen: "#0b4335",
-  amber: "#b8860b",
-  red: "#8b2c2c",
-};
-
-const fonts = {
-  headline: "'Hanken Grotesk', sans-serif",
-  body: "'Inter', sans-serif",
-  label: "'JetBrains Mono', monospace",
-};
-
-const cardStyle: React.CSSProperties = {
-  backgroundColor: colors.creamLight,
-  borderRadius: 12,
-  boxShadow: "0px 4px 20px rgba(11, 67, 53, 0.08)",
-  border: `1px solid ${colors.forestGreen}`,
-};
-
-/* ------------------------------------------------------------------ */
-/*  Reusable UI Components                                             */
-/* ------------------------------------------------------------------ */
-const Icon: React.FC<{ name: string; size?: number; filled?: boolean }> = ({
-  name,
-  size = 18,
-  filled = false,
-}) => (
-  <span
-    className="material-symbols-outlined"
-    style={{
-      fontSize: size,
-      lineHeight: 1,
-      fontVariationSettings: `'FILL' ${filled ? 1 : 0}, 'wght' 400, 'GRAD' 0, 'opsz' 24`,
-    }}
-  >
-    {name}
-  </span>
-);
-
-const Avatar: React.FC<{ name: string; size?: number }> = ({ name, size = 28 }) => {
-  const initials = name.split(" ").map((p) => p[0]).slice(0, 2).join("").toUpperCase();
-  return (
-    <div
-      style={{
-        width: size,
-        height: size,
-        borderRadius: "50%",
-        backgroundColor: colors.creamMid,
-        color: colors.forestGreen,
-        border: `1px solid ${colors.forestGreen}`,
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        fontFamily: fonts.headline,
-        fontWeight: 700,
-        fontSize: size * 0.4,
-        flexShrink: 0,
-      }}
-    >
-      {initials}
-    </div>
-  );
-};
-
-/* ------------------------------------------------------------------ */
-/*  Types                                                              */
-/* ------------------------------------------------------------------ */
-type LangCode = "EN" | "AR" | "FR";
 type SortOption = "newest" | "oldest" | "name";
 
 interface ScholarSubmission {
   id: string;
   name: string;
-  language: LangCode;
+  language: string;
   submittedBy: string;
   contributorId: string;
   date: string;
@@ -102,23 +28,14 @@ interface BackendScholarVersion {
   }>;
 }
 
-/* ------------------------------------------------------------------ */
-/*  Helper: Transform Backend Data                                     */
-/* ------------------------------------------------------------------ */
-const transformVersions = (versions: BackendScholarVersion[]): ScholarSubmission[] => {
+const transformVersions = (versions: BackendScholarVersion[], dbLanguages: any[]): ScholarSubmission[] => {
   return versions.map((v) => {
-    const langCode = (v.languages?.code?.toUpperCase() || "EN") as LangCode;
-
+    const langCode = v.languages?.code || "unknown";
     let disciplineNames: string[] = [];
     if (v.scholar_disciplines) {
-      disciplineNames = v.scholar_disciplines
-        .map((sd) => sd.disciplines?.name)
-        .filter(Boolean) as string[];
+      disciplineNames = v.scholar_disciplines.map((sd) => sd.disciplines?.name).filter(Boolean) as string[];
     }
-
-    const discipline = disciplineNames.length > 0 
-      ? disciplineNames.join(", ") 
-      : "Pending Review";
+    const discipline = disciplineNames.length > 0 ? disciplineNames.join(", ") : "Pending Review";
 
     return {
       id: v.version_id.toString(),
@@ -126,59 +43,42 @@ const transformVersions = (versions: BackendScholarVersion[]): ScholarSubmission
       language: langCode,
       submittedBy: v.users?.username || "Unknown",
       contributorId: v.created_by ? `user_${v.created_by}` : "system",
-      date: new Date(v.created_at).toLocaleDateString("en-US", {
-        month: "short", day: "numeric", year: "numeric",
-      }),
+      date: new Date(v.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }),
       discipline: discipline,
       submittedAt: new Date(v.created_at),
     };
   });
 };
 
-/* ------------------------------------------------------------------ */
-/*  Main Component                                                     */
-/* ------------------------------------------------------------------ */
 export default function NewScholarsQueue() {
   const navigate = useNavigate();
-  const { t, lang } = useLang();
-  const isRTL = lang === "AR";
+  const { lang, t, dbLanguages } = useLang();
+  const isRTL = lang === "AR" || lang === "ar";
 
-  const [filterLanguage, setFilterLanguage] = useState<LangCode | "all">("all");
+  const [filterLanguage, setFilterLanguage] = useState<string>("all");
   const [sortBy, setSortBy] = useState<SortOption>("newest");
   const [rows, setRows] = useState<ScholarSubmission[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [stats, setStats] = useState({
-    total: 0, overdue: 0, newToday: 0, thisWeek: 0, avgTime: "0h 0m",
-  });
-  
-  // ✅ Modal States
+
+  // Modal States
   const [restrictTarget, setRestrictTarget] = useState<ScholarSubmission | null>(null);
   const [confirmAction, setConfirmAction] = useState<{ type: 'revoke' | 'ban', scholar: ScholarSubmission } | null>(null);
   const [approveTarget, setApproveTarget] = useState<ScholarSubmission | null>(null);
-  const [approveReason, setApproveReason] = useState(""); // ✅ ADDED
+  const [approveReason, setApproveReason] = useState("");
   const [rejectTarget, setRejectTarget] = useState<ScholarSubmission | null>(null);
   const [rejectReason, setRejectReason] = useState("");
+
+  // Pagination
+  const [currentPage, setCurrentPage] = useState(1);
+  const ITEMS_PER_PAGE = 15;
 
   useEffect(() => {
     const fetchData = async () => {
       setIsLoading(true);
       try {
-        const [submissionsRes, statsRes] = await Promise.all([
-          adminApi.scholars.getPendingCreated(),
-          adminApi.scholars.getDashboardStats(),
-        ]);
-
+        const [submissionsRes] = await Promise.all([adminApi.scholars.getPendingCreated()]);
         if (submissionsRes.data?.success && submissionsRes.data.data) {
-          setRows(transformVersions(submissionsRes.data.data));
-        }
-        if (statsRes.data?.success && statsRes.data.data) {
-          setStats({
-            total: statsRes.data.data.total_pending,
-            overdue: statsRes.data.data.overdue,
-            newToday: statsRes.data.data.new_today,
-            thisWeek: statsRes.data.data.this_week,
-            avgTime: statsRes.data.data.avg_review_time || "0h 0m",
-          });
+          setRows(transformVersions(submissionsRes.data.data, dbLanguages));
         }
       } catch (error) {
         console.error("Failed to fetch pending scholars:", error);
@@ -187,11 +87,21 @@ export default function NewScholarsQueue() {
       }
     };
     fetchData();
-  }, []);
+  }, [dbLanguages]);
+
+  const uniqueLanguages = useMemo(() => {
+    const codes = Array.from(new Set(rows.map(r => r.language).filter(Boolean)));
+    return codes.map(code => {
+      const found = dbLanguages.find((l: any) => l.code.toLowerCase() === code.toLowerCase());
+      return { code, name: found ? found.name : code.toUpperCase() };
+    });
+  }, [rows, dbLanguages]);
 
   const filtered = useMemo(() => {
     let result = [...rows];
-    if (filterLanguage !== "all") result = result.filter((s) => s.language === filterLanguage);
+    if (filterLanguage !== "all") {
+      result = result.filter((s) => s.language.toLowerCase() === filterLanguage.toLowerCase());
+    }
     
     result.sort((a, b) => {
       switch (sortBy) {
@@ -204,18 +114,26 @@ export default function NewScholarsQueue() {
     return result;
   }, [rows, filterLanguage, sortBy]);
 
+  const totalPages = Math.ceil(filtered.length / ITEMS_PER_PAGE);
+  const paginatedRows = filtered.slice(
+    (currentPage - 1) * ITEMS_PER_PAGE,
+    currentPage * ITEMS_PER_PAGE
+  );
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [filterLanguage, sortBy]);
+
   const goToReview = (s: ScholarSubmission) => {
     navigate(`/admin/pending/scholars/${s.id}?lang=${s.language}`);
   };
 
-  // ✅ Updated Handlers
   const handleApprove = async (id: string) => {
     try {
-      // ✅ Frontend now sends the typed reason (or defaults to "Approved")
       await adminApi.scholars.approve(Number(id), { reason: approveReason || "Approved" });
       setRows((prev) => prev.filter((r) => r.id !== id));
       setApproveTarget(null);
-      setApproveReason(""); // ✅ Clear state after success
+      setApproveReason("");
     } catch (error) {
       console.error("Failed to approve:", error);
       alert("Failed to approve scholar. Please try again.");
@@ -238,13 +156,10 @@ export default function NewScholarsQueue() {
     }
   };
 
-  // ✅ New Combined Handler: Restrict User + Auto-Reject Scholar
   const executeRestrictionAndReject = async () => {
     if (!confirmAction) return;
     try {
       const { type, scholar } = confirmAction;
-      
-      // Extract numeric user ID (e.g., "user_123" -> 123)
       const userIdStr = scholar.contributorId.replace('user_', '');
       const userId = parseInt(userIdStr, 10);
       const scholarId = Number(scholar.id);
@@ -256,18 +171,15 @@ export default function NewScholarsQueue() {
         return;
       }
 
-      // 1. Restrict the User
       if (type === 'revoke') {
         await adminApi.users.toggleContribute(userId);
       } else {
         await adminApi.users.ban(userId);
       }
 
-      // 2. Automatically Reject the Scholar Submission
       const defaultReason = type === 'ban' ? "Contributor banned" : "Contribution access revoked";
       await adminApi.scholars.reject(scholarId, defaultReason);
 
-      // 3. Remove from UI and close modals
       setRows((prev) => prev.filter((row) => row.id !== scholar.id));
       setConfirmAction(null);
       setRestrictTarget(null);
@@ -282,183 +194,136 @@ export default function NewScholarsQueue() {
     setSortBy("newest");
   };
 
-  const hasActiveFilters = filterLanguage !== "all";
+  const hasActiveFilters = filterLanguage !== "all" || sortBy !== "newest";
 
-  const getLangName = (code: LangCode) => {
-    switch (code) {
-      case "EN": return t("reviewQueue.lang.en") || "English";
-      case "AR": return t("reviewQueue.lang.ar") || "Arabic";
-      case "FR": return t("reviewQueue.lang.fr") || "French";
-    }
+  const getLangName = (code: string) => {
+    const found = dbLanguages.find((l: any) => l.code.toLowerCase() === code.toLowerCase());
+    return found ? found.name : code.toUpperCase();
   };
-
-  const thStyle: React.CSSProperties = {
-    fontFamily: fonts.label, fontSize: 11, letterSpacing: "0.06em", fontWeight: 600,
-    color: colors.forestGreen, textAlign: isRTL ? "right" : "left",
-    padding: "12px 14px", borderBottom: `1px solid ${colors.forestGreen}`,
-    textTransform: "uppercase", opacity: 0.8,
-  };
-
-  const tdStyle: React.CSSProperties = {
-    fontFamily: fonts.body, fontSize: 13, color: colors.forestGreen,
-    padding: "14px", borderBottom: `1px solid ${colors.creamDark}`,
-    textAlign: isRTL ? "right" : "left",
-  };
-
-  const statItems = [
-    { icon: "pending_actions", label: "Total Pending", value: stats.total.toString(), delta: "Awaiting action", filled: true },
-    { icon: "priority_high", label: "Overdue (>3 days)", value: stats.overdue.toString(), delta: "Requires attention", filled: false, isOverdue: true },
-    { icon: "schedule", label: "Avg. Review Time", value: stats.avgTime, delta: "Target: < 24h", filled: false },
-    { icon: "calendar_today", label: "This Week", value: stats.thisWeek.toString(), delta: "Last 7 days", filled: false },
-  ];
 
   if (isLoading) {
     return (
-      <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", backgroundColor: colors.creamLight, color: colors.forestGreen }}>
-        <Icon name="hourglass_empty" size={32} />
+      <div className="min-h-screen flex items-center justify-center bg-[#fbf9f4]">
+        <span className="material-symbols-outlined text-[40px] text-[#1e4d3a]/40 animate-pulse">hourglass_empty</span>
       </div>
     );
   }
 
   return (
-    <div dir={isRTL ? "rtl" : "ltr"} style={{ fontFamily: fonts.body, color: colors.forestGreen, backgroundColor: colors.creamLight, minHeight: "100vh", padding: 24 }}>
-      <div style={{ maxWidth: 1280, margin: "0 auto" }}>
+    <div className="oulamauna-dashboard min-h-screen text-[#1e4d3a] antialiased font-['Inter']" dir={isRTL ? "rtl" : "ltr"}>
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&family=Source+Serif+4:wght@400;500;600;700&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap');
+        .oulamauna-dashboard { background: radial-gradient(circle at 8% 10%, rgba(201,168,76,0.055), transparent 24%), radial-gradient(circle at 92% 16%, rgba(79,145,132,0.06), transparent 25%), #fbf9f4; }
+        .oulamauna-dashboard * { box-sizing: border-box; }
+        .oulamauna-dashboard .serif-title { font-family: 'Source Serif 4', Georgia, serif; letter-spacing: -0.025em; }
+        .oulamauna-dashboard .mono-label { font-family: 'JetBrains Mono', monospace; letter-spacing: 0.06em; }
+        .oulamauna-dashboard .dashboard-card { background: rgba(251,249,244,0.96); border: 1px solid rgba(30,77,58,0.10); border-radius: 10px; box-shadow: 0 5px 18px rgba(30,77,58,0.055); transition: box-shadow 180ms ease; }
+        .oulamauna-dashboard .dashboard-card:hover { box-shadow: 0 9px 26px rgba(30,77,58,0.08); }
+        .oulamauna-dashboard ::selection { background: #C9A84C; color: #1e4d3a; }
+      `}</style>
 
-        {/* ─ Page Header ── */}
-        <div style={{ marginBottom: 20 }}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 18, flexWrap: "wrap", gap: 12 }}>
-            <div>
-              <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
-                <span style={{ fontFamily: fonts.label, fontSize: 11, letterSpacing: "0.08em", color: colors.forestGreen, opacity: 0.7 }}>
-                  ADMIN / NEW SCHOLARS QUEUE
-                </span>
-              </div>
-              <h1 style={{ fontFamily: fonts.headline, fontSize: 28, fontWeight: 700, color: colors.forestGreen, margin: 0, lineHeight: 1.1 }}>
-                {t("reviewQueue.title") || "New Scholars Queue"}
-              </h1>
-              <p style={{ fontFamily: fonts.body, fontSize: 13, color: colors.forestGreen, opacity: 0.75, margin: "6px 0 0" }}>
-                {t("reviewQueue.subtitle") || "Review and approve new scholar submissions for the portal."}
-              </p>
-            </div>
+      <main className="max-w-[1450px] mx-auto px-3 md:px-5 xl:px-7 py-6 md:py-8">
+        <header className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
+          <div>
+            <div className="mono-label text-[9px] uppercase font-bold text-[#C9A84C] mb-1">{t("adminDashboard.title")}</div>
+            <h1 className="serif-title text-[27px] md:text-[32px] leading-tight font-semibold text-[#082f27]">{t("admin.scholars.new.title") || "New Scholars Queue"}</h1>
+            <p className="text-[12px] text-[#1e4d3a]/60 mt-1">{t("admin.scholars.new.subtitle") || "Review newly submitted scholar profiles before they go live on the archive."}</p>
           </div>
+        </header>
 
-          {/* ── Filter Bar ── */}
-          <div style={{ ...cardStyle, padding: 12, display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 10, flex: 1, minWidth: 240, flexWrap: "wrap" }}>
-              <div style={{ display: "flex", alignItems: "center", gap: 6, padding: "6px 10px", backgroundColor: colors.creamMid, border: `1px solid ${colors.forestGreen}`, borderRadius: 8, cursor: "pointer" }}>
-                <select value={filterLanguage} onChange={(e) => setFilterLanguage(e.target.value as any)} style={{ border: "none", outline: "none", background: "transparent", fontFamily: fonts.body, fontSize: 13, color: colors.forestGreen, cursor: "pointer", minWidth: 120 }}>
-                  <option value="all">All Languages</option>
-                  <option value="EN">English</option>
-                  <option value="AR">Arabic</option>
-                  <option value="FR">French</option>
+        <div className="dashboard-card p-4 mb-6">
+          <div className="flex flex-col md:flex-row md:items-center gap-4">
+            <div className="flex flex-1 flex-wrap gap-4">
+              <div className="flex-1 min-w-[150px]">
+                <label className="mono-label text-[9px] uppercase font-bold text-[#1e4d3a]/60 mb-1.5 block">{t("admin.common.language") || "Language"}</label>
+                <select value={filterLanguage} onChange={(e) => setFilterLanguage(e.target.value)} className="w-full bg-[#fbf9f4] border border-[#1e4d3a]/15 rounded-[6px] px-3 py-2 text-[12px] font-medium text-[#1e4d3a] focus:outline-none focus:ring-2 focus:ring-[#1e4d3a]/20">
+                  <option value="all">{t("admin.common.all") || "All"}</option>
+                  {uniqueLanguages.map(l => <option key={l.code} value={l.code}>{l.name}</option>)}
                 </select>
               </div>
-
-              <div style={{ display: "flex", alignItems: "center", gap: 6, padding: "6px 10px", backgroundColor: colors.creamMid, border: `1px solid ${colors.forestGreen}`, borderRadius: 8, cursor: "pointer" }}>
-                <select value={sortBy} onChange={(e) => setSortBy(e.target.value as any)} style={{ border: "none", outline: "none", background: "transparent", fontFamily: fonts.body, fontSize: 13, color: colors.forestGreen, cursor: "pointer", minWidth: 120 }}>
-                  <option value="newest">Newest First</option>
-                  <option value="oldest">Oldest First</option>
-                  <option value="name">Name A-Z</option>
+              <div className="flex-1 min-w-[150px]">
+                <label className="mono-label text-[9px] uppercase font-bold text-[#1e4d3a]/60 mb-1.5 block">{t("admin.common.sortBy") || "Sort By"}</label>
+                <select value={sortBy} onChange={(e) => setSortBy(e.target.value as SortOption)} className="w-full bg-[#fbf9f4] border border-[#1e4d3a]/15 rounded-[6px] px-3 py-2 text-[12px] font-medium text-[#1e4d3a] focus:outline-none focus:ring-2 focus:ring-[#1e4d3a]/20">
+                  <option value="newest">{t("admin.common.newestFirst") || "Newest First"}</option>
+                  <option value="oldest">{t("admin.common.oldestFirst") || "Oldest First"}</option>
+                  <option value="name">{t("admin.common.nameAZ") || "Name (A-Z)"}</option>
                 </select>
               </div>
-
-              {hasActiveFilters && (
-                <button onClick={clearFilters} style={{ display: "flex", alignItems: "center", gap: 4, padding: "6px 10px", backgroundColor: "transparent", border: `1px solid ${colors.red}`, borderRadius: 8, fontFamily: fonts.body, fontSize: 12, fontWeight: 500, color: colors.red, cursor: "pointer" }}>
-                  <Icon name="close" size={14} /> Clear
-                </button>
-              )}
             </div>
+            {hasActiveFilters && (
+              <button onClick={clearFilters} className="flex items-center gap-1.5 px-3 py-2 rounded-[6px] border border-[#e96d5c] text-[#e96d5c] text-[11px] font-bold uppercase tracking-wide hover:bg-[#e96d5c]/5 transition-colors mt-5 md:mt-0 self-end md:self-auto cursor-pointer">
+                <span className="material-symbols-outlined text-[14px]">close</span>
+                {t("admin.common.clear") || "Clear"}
+              </button>
+            )}
           </div>
         </div>
 
-        {/* ── Stat Cards ── */}
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 14, marginBottom: 18 }}>
-          {statItems.map((s) => (
-            <div key={s.label} style={{ ...cardStyle, padding: 16 }}>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 12 }}>
-                <div style={{ width: 28, height: 28, borderRadius: 6, backgroundColor: colors.creamMid, color: colors.forestGreen, border: `1px solid ${colors.forestGreen}`, display: "flex", alignItems: "center", justifyContent: "center" }}>
-                  <Icon name={s.icon} size={16} />
-                </div>
-                <Icon name="more_horiz" size={16} />
-              </div>
-              <p style={{ fontFamily: fonts.label, fontSize: 11, letterSpacing: "0.05em", color: colors.forestGreen, margin: "0 0 4px", opacity: 0.7 }}>{s.label}</p>
-              <p style={{ fontFamily: fonts.headline, fontSize: 24, fontWeight: 700, color: s.isOverdue ? colors.red : colors.forestGreen, margin: "0 0 4px", lineHeight: 1 }}>{s.value}</p>
-              <p style={{ fontFamily: fonts.body, fontSize: 11, color: colors.forestGreen, margin: 0, opacity: 0.7 }}>{s.delta}</p>
-            </div>
-          ))}
-        </div>
-
-        {/* ── Table View ── */}
-        <section style={{ ...cardStyle, overflow: "hidden" }}>
-          <div style={{ overflowX: "auto" }}>
-            <table style={{ width: "100%", borderCollapse: "collapse" }}>
-              <thead style={{ backgroundColor: colors.creamMid }}>
-                <tr>
-                  <th style={thStyle}>Scholar</th>
-                  <th style={thStyle}>Submitter</th>
-                  <th style={thStyle}>Submitted</th>
-                  <th style={{ ...thStyle, textAlign: isRTL ? "left" : "right" }}>Actions</th>
+        <div className="dashboard-card overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full text-left border-collapse">
+              <thead>
+                <tr className="border-b border-[#1e4d3a]/10 bg-[#1e4d3a]/[0.02]">
+                  <th className="mono-label text-[9px] uppercase font-bold text-[#1e4d3a]/60 px-5 py-3.5">{t("admin.scholars.new.table.scholar") || "Scholar"}</th>
+                  <th className="mono-label text-[9px] uppercase font-bold text-[#1e4d3a]/60 px-5 py-3.5">{t("admin.scholars.new.table.submitter") || "Submitter"}</th>
+                  <th className="mono-label text-[9px] uppercase font-bold text-[#1e4d3a]/60 px-5 py-3.5">{t("admin.scholars.new.table.submitted") || "Submitted"}</th>
+                  <th className="mono-label text-[9px] uppercase font-bold text-[#1e4d3a]/60 px-5 py-3.5 text-right">{t("admin.scholars.new.table.actions") || "Actions"}</th>
                 </tr>
               </thead>
-              <tbody>
-                {filtered.length === 0 ? (
+              <tbody className="divide-y divide-[#1e4d3a]/[0.06]">
+                {paginatedRows.length === 0 ? (
                   <tr>
-                    <td colSpan={4} style={{ padding: 40, textAlign: "center", color: colors.forestGreen, opacity: 0.7 }}>
-                      <Icon name="inbox" size={48} />
-                      <p style={{ fontFamily: fonts.body, fontSize: 14, marginTop: 12 }}>No submissions found matching your filters.</p>
+                    <td colSpan={4} className="px-5 py-12 text-center text-[12px] text-[#1e4d3a]/50">
+                      <span className="material-symbols-outlined text-[40px] mb-2 block mx-auto">inbox</span>
+                      {t("admin.scholars.new.empty") || "No submissions found matching your filters."}
                     </td>
                   </tr>
                 ) : (
-                  filtered.map((s) => {
-                    const langColor = s.language === "AR" ? colors.amber : s.language === "FR" ? "#4a7fcb" : colors.forestGreen;
+                  paginatedRows.map((s) => {
+                    const langColor = s.language.toLowerCase() === 'ar' ? "#C9A84C" : s.language.toLowerCase() === 'fr' ? "#3d6b96" : "#1e4d3a";
                     return (
-                      <tr key={s.id} style={{ cursor: "pointer", transition: "background-color 0.15s" }}
-                        onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = colors.creamMid)}
-                        onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "transparent")}>
-                        <td style={tdStyle}>
-                          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                            <div style={{ width: 36, height: 36, borderRadius: "50%", backgroundColor: colors.creamMid, border: `1px solid ${colors.forestGreen}`, display: "flex", alignItems: "center", justifyContent: "center", fontFamily: fonts.headline, fontWeight: 700, fontSize: 14, color: colors.forestGreen, flexShrink: 0 }}>
+                      <tr key={s.id} className="hover:bg-[#1e4d3a]/[0.015] transition-colors">
+                        <td className="px-5 py-3.5">
+                          <div className="flex items-center gap-3">
+                            <div className="w-9 h-9 rounded-full bg-[#1e4d3a]/[0.05] border border-[#1e4d3a]/10 flex items-center justify-center text-[#1e4d3a] font-['Source_Serif_4'] font-bold text-[14px] flex-shrink-0">
                               {s.name.charAt(0).toUpperCase()}
                             </div>
                             <div>
-                              <p style={{ margin: 0, fontWeight: 600, fontFamily: fonts.headline, fontSize: 13, color: colors.forestGreen }}>{s.name}</p>
-                              <div style={{ display: "inline-flex", alignItems: "center", gap: 4, padding: "2px 8px", borderRadius: 9999, backgroundColor: colors.creamLight, border: `1px solid ${colors.creamDark}`, marginTop: 4 }}>
-                                <span style={{ width: 6, height: 6, borderRadius: "50%", backgroundColor: langColor }} />
-                                <span style={{ fontFamily: fonts.label, fontSize: 10, color: colors.forestGreen, opacity: 0.8 }}>{getLangName(s.language)}</span>
+                              <p className="text-[13px] font-semibold text-[#082f27]">{s.name}</p>
+                              <div className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-[#fbf9f4] border border-[#1e4d3a]/10 mt-1">
+                                <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: langColor }} />
+                                <span className="mono-label text-[9px] text-[#1e4d3a]/70">{getLangName(s.language)}</span>
                               </div>
                             </div>
                           </div>
                         </td>
-                        <td style={tdStyle}>
-                          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                            <Avatar name={s.submittedBy} size={28} />
-                            <span style={{ fontFamily: fonts.body, fontSize: 13, color: colors.forestGreen }}>{s.submittedBy}</span>
+                        <td className="px-5 py-3.5">
+                          <div className="flex items-center gap-2">
+                            <div className="w-7 h-7 rounded-full bg-[#C9A84C]/10 border border-[#C9A84C]/20 flex items-center justify-center text-[#C9A84C] font-['Source_Serif_4'] font-bold text-[10px] flex-shrink-0">
+                              {s.submittedBy.split(" ").map((p) => p[0]).slice(0, 2).join("").toUpperCase()}
+                            </div>
+                            <span className="text-[12px] font-medium text-[#1e4d3a]">{s.submittedBy}</span>
                           </div>
                         </td>
-                        <td style={{ ...tdStyle, fontFamily: fonts.label, fontSize: 12, color: colors.forestGreen }}>{s.date}</td>
-                        <td style={{ ...tdStyle, textAlign: isRTL ? "left" : "right" }}>
-                          <div style={{ display: "flex", justifyContent: isRTL ? "flex-start" : "flex-end", gap: 6 }}>
+                        <td className="px-5 py-3.5 mono-label text-[11px] text-[#1e4d3a]/70">{s.date}</td>
+                        <td className="px-5 py-3.5 text-right">
+                          <div className="flex items-center justify-end gap-2">
                             <button onClick={(e) => { e.stopPropagation(); goToReview(s); }} title="Review"
-                              style={{ width: 32, height: 32, display: "flex", alignItems: "center", justifyContent: "center", backgroundColor: "transparent", border: `1px solid ${colors.forestGreen}`, borderRadius: 6, color: colors.forestGreen, cursor: "pointer" }}>
-                              <Icon name="visibility" size={18} />
+                              className="w-8 h-8 flex items-center justify-center rounded-[6px] border border-[#1e4d3a]/20 text-[#1e4d3a] hover:bg-[#1e4d3a] hover:text-white transition-colors cursor-pointer">
+                              <span className="material-symbols-outlined text-[18px]">visibility</span>
                             </button>
-                            
                             <button onClick={(e) => { e.stopPropagation(); setApproveTarget(s); }} title="Approve"
-                              style={{ width: 32, height: 32, display: "flex", alignItems: "center", justifyContent: "center", backgroundColor: colors.forestGreen, border: `1px solid ${colors.forestGreen}`, borderRadius: 6, color: colors.creamLight, cursor: "pointer" }}>
-                              <Icon name="check" size={18} filled />
+                              className="w-8 h-8 flex items-center justify-center rounded-[6px] bg-[#1e4d3a] border border-[#1e4d3a] text-white hover:bg-[#1e4d3a]/90 transition-colors cursor-pointer">
+                              <span className="material-symbols-outlined text-[18px]" style={{ fontVariationSettings: "'FILL' 1, 'wght' 400" }}>check</span>
                             </button>
-                            
                             <button onClick={(e) => { e.stopPropagation(); setRejectTarget(s); }} title="Reject"
-                              style={{ width: 32, height: 32, display: "flex", alignItems: "center", justifyContent: "center", backgroundColor: "transparent", border: `1px solid ${colors.red}`, borderRadius: 6, color: colors.red, cursor: "pointer" }}>
-                              <Icon name="close" size={18} />
+                              className="w-8 h-8 flex items-center justify-center rounded-[6px] border border-[#e96d5c] text-[#e96d5c] hover:bg-[#e96d5c] hover:text-white transition-colors cursor-pointer">
+                              <span className="material-symbols-outlined text-[18px]">close</span>
                             </button>
-                            
-                            {/* ✅ UPDATED: Restrict Button (Amber) */}
                             <button onClick={(e) => { e.stopPropagation(); setRestrictTarget(s); }} title="Restrict User & Reject"
-                              style={{ width: 32, height: 32, display: "flex", alignItems: "center", justifyContent: "center", backgroundColor: "transparent", border: `1px solid ${colors.amber}`, borderRadius: 6, color: colors.amber, cursor: "pointer" }}
-                              onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = colors.amber; e.currentTarget.style.color = colors.creamLight; }}
-                              onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = "transparent"; e.currentTarget.style.color = colors.amber; }}>
-                              <Icon name="shield_person" size={18} />
+                              className="w-8 h-8 flex items-center justify-center rounded-[6px] border border-[#C9A84C] text-[#C9A84C] hover:bg-[#C9A84C] hover:text-white transition-colors cursor-pointer">
+                              <span className="material-symbols-outlined text-[18px]">shield_person</span>
                             </button>
                           </div>
                         </td>
@@ -470,197 +335,194 @@ export default function NewScholarsQueue() {
             </table>
           </div>
 
-          {/* ── Pagination ─ */}
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "12px 14px", borderTop: `1px solid ${colors.forestGreen}`, backgroundColor: colors.creamMid }}>
-            <span style={{ fontFamily: fonts.label, fontSize: 11, color: colors.forestGreen, opacity: 0.8 }}>
-              Showing 1-{Math.min(10, filtered.length)} of {filtered.length}
-            </span>
-            <div style={{ display: "flex", gap: 4 }}>
-              <button style={{ padding: "4px 10px", border: `1px solid ${colors.forestGreen}`, borderRadius: 6, backgroundColor: colors.creamLight, color: colors.forestGreen, fontFamily: fonts.body, fontSize: 12, cursor: "pointer", display: "flex", alignItems: "center" }}>
-                <Icon name="chevron_left" size={16} />
-              </button>
-              <button style={{ padding: "4px 10px", border: `1px solid ${colors.forestGreen}`, borderRadius: 6, backgroundColor: colors.forestGreen, color: colors.creamLight, fontFamily: fonts.body, fontSize: 12, cursor: "pointer" }}>1</button>
-              {filtered.length > 10 && <button style={{ padding: "4px 10px", border: `1px solid ${colors.forestGreen}`, borderRadius: 6, backgroundColor: colors.creamLight, color: colors.forestGreen, fontFamily: fonts.body, fontSize: 12, cursor: "pointer" }}>2</button>}
-              <button style={{ padding: "4px 10px", border: `1px solid ${colors.forestGreen}`, borderRadius: 6, backgroundColor: colors.creamLight, color: colors.forestGreen, fontFamily: fonts.body, fontSize: 12, cursor: "pointer", display: "flex", alignItems: "center" }}>
-                <Icon name="chevron_right" size={16} />
-              </button>
+          {/* Pagination Footer */}
+          {totalPages > 1 && (
+            <div className="flex items-center justify-between px-5 py-4 border-t border-[#1e4d3a]/10 bg-[#1e4d3a]/[0.01]">
+              <div className="text-[11px] text-[#1e4d3a]/60 mono-label">
+                {t("admin.common.showing") || "Showing"} {(currentPage - 1) * ITEMS_PER_PAGE + 1}–{Math.min(currentPage * ITEMS_PER_PAGE, filtered.length)} {t("admin.common.of") || "of"} {filtered.length}
+              </div>
+              <div className="flex items-center gap-2">
+                <button onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))} disabled={currentPage === 1}
+                  className="flex items-center justify-center w-8 h-8 rounded-[6px] border border-[#1e4d3a]/20 text-[#1e4d3a] disabled:opacity-30 disabled:cursor-not-allowed hover:bg-[#1e4d3a] hover:text-white transition-colors cursor-pointer">
+                  <span className="material-symbols-outlined text-[18px]">{isRTL ? 'arrow_forward' : 'arrow_back'}</span>
+                </button>
+                {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                  let pageNum;
+                  if (totalPages <= 5) pageNum = i + 1;
+                  else if (currentPage <= 3) pageNum = i + 1;
+                  else if (currentPage >= totalPages - 2) pageNum = totalPages - 4 + i;
+                  else pageNum = currentPage - 2 + i;
+                  return (
+                    <button key={pageNum} onClick={() => setCurrentPage(pageNum)}
+                      className={`w-8 h-8 rounded-[6px] text-[11px] font-bold mono-label transition-colors cursor-pointer ${currentPage === pageNum ? 'bg-[#1e4d3a] text-white' : 'border border-[#1e4d3a]/20 text-[#1e4d3a] hover:bg-[#1e4d3a]/10'}`}>
+                      {pageNum}
+                    </button>
+                  );
+                })}
+                <button onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))} disabled={currentPage === totalPages}
+                  className="flex items-center justify-center w-8 h-8 rounded-[6px] border border-[#1e4d3a]/20 text-[#1e4d3a] disabled:opacity-30 disabled:cursor-not-allowed hover:bg-[#1e4d3a] hover:text-white transition-colors cursor-pointer">
+                  <span className="material-symbols-outlined text-[18px]">{isRTL ? 'arrow_back' : 'arrow_forward'}</span>
+                </button>
+              </div>
             </div>
-          </div>
-        </section>
+          )}
+        </div>
 
-        {/* ── Step 1: Choose Action Modal ── */}
+        {/* ── Modals ── */}
         {restrictTarget && !confirmAction && (
-          <div style={{ position: "fixed", inset: 0, backgroundColor: "rgba(11, 67, 53, 0.6)", zIndex: 100, display: "flex", alignItems: "center", justifyContent: "center", backdropFilter: "blur(4px)", padding: 20 }} onClick={() => setRestrictTarget(null)}>
-            <div style={{ ...cardStyle, backgroundColor: colors.creamLight, width: 520, maxWidth: "90vw", padding: 32, boxShadow: "0 20px 60px rgba(0,0,0,0.25)" }} onClick={(e) => e.stopPropagation()}>
-              
-              <div style={{ display: "flex", alignItems: "center", gap: 16, marginBottom: 24 }}>
-                <Avatar name={restrictTarget.submittedBy} size={56} />
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#082f27]/40 backdrop-blur-sm" onClick={() => setRestrictTarget(null)}>
+            <div className="dashboard-card w-full max-w-lg p-6 relative" onClick={(e) => e.stopPropagation()}>
+              <button onClick={() => setRestrictTarget(null)} className={`absolute top-4 ${isRTL ? 'left-4' : 'right-4'} p-1.5 rounded-full hover:bg-[#1e4d3a]/10 transition-colors cursor-pointer`}>
+                <span className="material-symbols-outlined text-[20px] text-[#1e4d3a]">close</span>
+              </button>
+              <div className="flex items-center gap-4 mb-6">
+                <div className="w-14 h-14 rounded-full bg-[#C9A84C]/10 border border-[#C9A84C]/20 flex items-center justify-center text-[#C9A84C] font-['Source_Serif_4'] font-bold text-[20px] flex-shrink-0">
+                  {restrictTarget.submittedBy.split(" ").map((p) => p[0]).slice(0, 2).join("").toUpperCase()}
+                </div>
                 <div>
-                  <h2 style={{ fontFamily: fonts.headline, fontSize: 20, fontWeight: 700, color: colors.forestGreen, margin: 0 }}>Restrict User</h2>
-                  <p style={{ fontFamily: fonts.body, fontSize: 13, color: colors.forestGreen, opacity: 0.7, margin: "4px 0 0" }}>{restrictTarget.submittedBy} submitted "{restrictTarget.name}"</p>
+                  <h3 className="serif-title text-[20px] font-semibold text-[#082f27]">{t("admin.scholars.new.modal.restrict.title") || "Restrict User"}</h3>
+                  <p className="text-[12px] text-[#1e4d3a]/60 mt-1">{restrictTarget.submittedBy} submitted "{restrictTarget.name}"</p>
                 </div>
               </div>
-
-              <p style={{ fontFamily: fonts.body, fontSize: 14, color: colors.forestGreen, lineHeight: 1.6, marginBottom: 24 }}>
-                Choose an action. This will automatically <b>reject</b> this scholar submission as well.
+              <p className="text-[13px] text-[#1e4d3a]/80 leading-relaxed mb-6">
+                {t("admin.scholars.new.modal.restrict.desc") || "Choose an action. This will automatically reject this scholar submission as well."}
               </p>
-
-              <div style={{ display: "flex", flexDirection: "column", gap: 12, marginBottom: 24 }}>
-                {/* Option 1: Revoke */}
-                <button 
-                  onClick={() => setConfirmAction({ type: 'revoke', scholar: restrictTarget })}
-                  style={{ display: "flex", alignItems: "flex-start", gap: 16, padding: 16, borderRadius: 8, border: `1px solid ${colors.amber}`, backgroundColor: "rgba(184, 134, 11, 0.05)", cursor: "pointer", textAlign: "left", transition: "background 0.2s" }}
-                  onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = "rgba(184, 134, 11, 0.1)"; }}
-                  onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = "rgba(184, 134, 11, 0.05)"; }}
-                >
-                  <div style={{ width: 32, height: 32, borderRadius: "50%", backgroundColor: colors.amber, color: colors.creamLight, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                    <Icon name="person_off" size={18} />
+              <div className="space-y-3 mb-6">
+                <button onClick={() => setConfirmAction({ type: 'revoke', scholar: restrictTarget })}
+                  className="w-full flex items-start gap-4 p-4 rounded-[8px] border border-[#C9A84C]/30 bg-[#C9A84C]/[0.05] hover:bg-[#C9A84C]/10 transition-colors cursor-pointer text-left">
+                  <div className="w-8 h-8 rounded-full bg-[#C9A84C] text-white flex items-center justify-center flex-shrink-0 mt-0.5">
+                    <span className="material-symbols-outlined text-[18px]">person_off</span>
                   </div>
                   <div>
-                    <p style={{ fontFamily: fonts.headline, fontSize: 14, fontWeight: 700, color: colors.forestGreen, margin: "0 0 4px" }}>Revoke Contribution Access</p>
-                    <p style={{ fontFamily: fonts.body, fontSize: 12, color: colors.forestGreen, opacity: 0.7, margin: 0, lineHeight: 1.5 }}>They can still log in, but cannot submit new content. (Recommended for low-quality submissions)</p>
+                    <p className="text-[13px] font-semibold text-[#082f27] mb-1">{t("admin.scholars.new.modal.restrict.revoke") || "Revoke Contribution Access"}</p>
+                    <p className="text-[11px] text-[#1e4d3a]/60 leading-relaxed">{t("admin.scholars.new.modal.restrict.revokeDesc") || "They can still log in, but cannot submit new content. (Recommended for low-quality submissions)"}</p>
                   </div>
                 </button>
-
-                {/* Option 2: Ban */}
-                <button 
-                  onClick={() => setConfirmAction({ type: 'ban', scholar: restrictTarget })}
-                  style={{ display: "flex", alignItems: "flex-start", gap: 16, padding: 16, borderRadius: 8, border: `1px solid ${colors.red}`, backgroundColor: "rgba(139, 44, 44, 0.05)", cursor: "pointer", textAlign: "left", transition: "background 0.2s" }}
-                  onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = "rgba(139, 44, 44, 0.1)"; }}
-                  onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = "rgba(139, 44, 44, 0.05)"; }}
-                >
-                  <div style={{ width: 32, height: 32, borderRadius: "50%", backgroundColor: colors.red, color: colors.creamLight, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                    <Icon name="block" size={18} />
+                <button onClick={() => setConfirmAction({ type: 'ban', scholar: restrictTarget })}
+                  className="w-full flex items-start gap-4 p-4 rounded-[8px] border border-[#e96d5c]/30 bg-[#e96d5c]/[0.05] hover:bg-[#e96d5c]/10 transition-colors cursor-pointer text-left">
+                  <div className="w-8 h-8 rounded-full bg-[#e96d5c] text-white flex items-center justify-center flex-shrink-0 mt-0.5">
+                    <span className="material-symbols-outlined text-[18px]">block</span>
                   </div>
                   <div>
-                    <p style={{ fontFamily: fonts.headline, fontSize: 14, fontWeight: 700, color: colors.forestGreen, margin: "0 0 4px" }}>Ban Account Completely</p>
-                    <p style={{ fontFamily: fonts.body, fontSize: 12, color: colors.forestGreen, opacity: 0.7, margin: 0, lineHeight: 1.5 }}>They will be completely locked out of the platform. (Use for spam, abuse, or severe violations)</p>
+                    <p className="text-[13px] font-semibold text-[#082f27] mb-1">{t("admin.scholars.new.modal.restrict.ban") || "Ban Account Completely"}</p>
+                    <p className="text-[11px] text-[#1e4d3a]/60 leading-relaxed">{t("admin.scholars.new.modal.restrict.banDesc") || "They will be completely locked out of the platform. (Use for spam, abuse, or severe violations)"}</p>
                   </div>
                 </button>
               </div>
-
-              <div style={{ display: "flex", justifyContent: "flex-end" }}>
-                <button onClick={() => setRestrictTarget(null)} style={{ padding: "10px 24px", borderRadius: 8, cursor: "pointer", border: `1px solid ${colors.forestGreen}`, backgroundColor: colors.creamLight, fontFamily: fonts.body, fontSize: 13, fontWeight: 600, color: colors.forestGreen }}>
-                  Cancel
+              <div className="flex justify-end">
+                <button onClick={() => setRestrictTarget(null)} className="px-5 py-2 rounded-[6px] border border-[#1e4d3a]/20 text-[#1e4d3a] text-[12px] font-bold uppercase tracking-wide hover:bg-[#1e4d3a]/5 transition-colors cursor-pointer">
+                  {t("admin.common.cancel") || "Cancel"}
                 </button>
               </div>
             </div>
           </div>
         )}
 
-        {/* ── Step 2: Final Confirmation Modal ── */}
         {confirmAction && (
-          <div style={{ position: "fixed", inset: 0, backgroundColor: "rgba(11, 67, 53, 0.6)", zIndex: 101, display: "flex", alignItems: "center", justifyContent: "center", backdropFilter: "blur(4px)", padding: 20 }} onClick={() => setConfirmAction(null)}>
-            <div style={{ ...cardStyle, backgroundColor: colors.creamLight, width: 440, maxWidth: "90vw", padding: 32, boxShadow: "0 20px 60px rgba(0,0,0,0.25)" }} onClick={(e) => e.stopPropagation()}>
-              
-              <div style={{ width: 56, height: 56, borderRadius: "50%", backgroundColor: confirmAction.type === 'ban' ? colors.red : colors.amber, color: colors.creamLight, display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 20, border: `1px solid ${confirmAction.type === 'ban' ? colors.red : colors.amber}` }}>
-                <Icon name={confirmAction.type === 'ban' ? "block" : "person_off"} size={28} filled />
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#082f27]/40 backdrop-blur-sm" onClick={() => setConfirmAction(null)}>
+            <div className="dashboard-card w-full max-w-md p-6 relative" onClick={(e) => e.stopPropagation()}>
+              <div className={`w-14 h-14 rounded-full flex items-center justify-center mb-5 ${confirmAction.type === 'ban' ? 'bg-[#e96d5c] text-white' : 'bg-[#C9A84C] text-white'}`}>
+                <span className="material-symbols-outlined text-[28px]" style={{ fontVariationSettings: "'FILL' 1, 'wght' 400" }}>
+                  {confirmAction.type === 'ban' ? "block" : "person_off"}
+                </span>
               </div>
-              
-              <h2 style={{ fontFamily: fonts.headline, fontSize: 20, fontWeight: 700, color: colors.forestGreen, marginBottom: 12 }}>
-                Confirm {confirmAction.type === 'ban' ? 'Ban' : 'Revocation'}
-              </h2>
-              
-              <p style={{ fontFamily: fonts.body, fontSize: 14, color: colors.forestGreen, lineHeight: 1.6, marginBottom: 24, opacity: 0.8 }}>
-                This will <b>{confirmAction.type === 'ban' ? 'BAN' : 'REVOKE CONTRIBUTION ACCESS FOR'} {confirmAction.scholar.submittedBy}</b> 
-                <br/>and automatically <b>REJECT</b> the scholar "{confirmAction.scholar.name}".
+              <h3 className="serif-title text-[20px] font-semibold text-[#082f27] mb-3">
+                {t("admin.scholars.new.modal.confirm.title") || "Confirm Action"}
+              </h3>
+              <p className="text-[13px] text-[#1e4d3a]/80 leading-relaxed mb-6">
+                {t("admin.scholars.new.modal.confirm.desc") || "This will"} <strong>{confirmAction.type === 'ban' ? (t("admin.scholars.new.modal.confirm.ban") || "BAN") : (t("admin.scholars.new.modal.confirm.revoke") || "REVOKE CONTRIBUTION ACCESS FOR")}</strong> {confirmAction.scholar.submittedBy} {t("admin.scholars.new.modal.confirm.andReject") || "and automatically REJECT the scholar"} "{confirmAction.scholar.name}".
                 <br/><br/>
-                <b style={{ color: colors.red }}>This action cannot be undone from this screen.</b>
+                <strong className="text-[#e96d5c]">{t("admin.scholars.new.modal.confirm.warning") || "This action cannot be undone from this screen."}</strong>
               </p>
-              
-              <div style={{ display: "flex", gap: 12, justifyContent: "flex-end" }}>
-                <button onClick={() => setConfirmAction(null)} style={{ padding: "10px 24px", borderRadius: 8, cursor: "pointer", border: `1px solid ${colors.forestGreen}`, backgroundColor: colors.creamLight, fontFamily: fonts.body, fontSize: 13, fontWeight: 600, color: colors.forestGreen }}>
-                  Go Back
+              <div className="flex gap-3 justify-end">
+                <button onClick={() => setConfirmAction(null)} className="px-5 py-2 rounded-[6px] border border-[#1e4d3a]/20 text-[#1e4d3a] text-[12px] font-bold uppercase tracking-wide hover:bg-[#1e4d3a]/5 transition-colors cursor-pointer">
+                  {t("admin.common.goBack") || "Go Back"}
                 </button>
-                <button onClick={executeRestrictionAndReject} style={{ padding: "10px 24px", borderRadius: 8, cursor: "pointer", border: "none", backgroundColor: confirmAction.type === 'ban' ? colors.red : colors.amber, color: colors.creamLight, fontFamily: fonts.body, fontSize: 13, fontWeight: 700 }}>
-                  Confirm & Reject
+                <button onClick={executeRestrictionAndReject} className={`px-5 py-2 rounded-[6px] text-white text-[12px] font-bold uppercase tracking-wide transition-colors cursor-pointer ${confirmAction.type === 'ban' ? 'bg-[#e96d5c] hover:bg-[#e96d5c]/90' : 'bg-[#C9A84C] hover:bg-[#C9A84C]/90'}`}>
+                  {t("admin.scholars.new.modal.confirm.button") || "Confirm & Reject"}
                 </button>
               </div>
-
             </div>
           </div>
         )}
 
-        {/* ── Approve Confirmation Modal ── */}
         {approveTarget && (
-          <div style={{ position: "fixed", inset: 0, backgroundColor: "rgba(11, 67, 53, 0.5)", zIndex: 100, display: "flex", alignItems: "center", justifyContent: "center", backdropFilter: "blur(4px)" }} onClick={() => { setApproveTarget(null); setApproveReason(""); }}>
-            <div style={{ ...cardStyle, backgroundColor: colors.creamLight, width: 500, maxWidth: "90vw", padding: 32, boxShadow: "0 20px 60px rgba(0,0,0,0.18)" }} onClick={(e) => e.stopPropagation()}>
-              <div style={{ width: 56, height: 56, borderRadius: "50%", backgroundColor: colors.forestGreen, color: colors.creamLight, display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 20, border: `1px solid ${colors.forestGreen}` }}>
-                <Icon name="check_circle" size={28} filled />
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#082f27]/40 backdrop-blur-sm" onClick={() => { setApproveTarget(null); setApproveReason(""); }}>
+            <div className="dashboard-card w-full max-w-lg p-6 relative" onClick={(e) => e.stopPropagation()}>
+              <button onClick={() => { setApproveTarget(null); setApproveReason(""); }} className={`absolute top-4 ${isRTL ? 'left-4' : 'right-4'} p-1.5 rounded-full hover:bg-[#1e4d3a]/10 transition-colors cursor-pointer`}>
+                <span className="material-symbols-outlined text-[20px] text-[#1e4d3a]">close</span>
+              </button>
+              <div className="w-14 h-14 rounded-full bg-[#1e4d3a] text-white flex items-center justify-center mb-5">
+                <span className="material-symbols-outlined text-[28px]" style={{ fontVariationSettings: "'FILL' 1, 'wght' 400" }}>check_circle</span>
               </div>
-              <h2 style={{ fontFamily: fonts.headline, fontSize: 20, fontWeight: 700, color: colors.forestGreen, marginBottom: 16 }}>Approve Scholar?</h2>
-              
-              <div style={{ backgroundColor: colors.creamMid, padding: 16, borderRadius: 8, marginBottom: 20 }}>
-                <p style={{ margin: "0 0 8px", fontFamily: fonts.headline, fontSize: 16, fontWeight: 600, color: colors.forestGreen }}>{approveTarget.name}</p>
-                <p style={{ margin: "0 0 4px", fontFamily: fonts.body, fontSize: 13, color: colors.forestGreen }}><strong>Language:</strong> {getLangName(approveTarget.language)}</p>
-                <p style={{ margin: "0 0 4px", fontFamily: fonts.body, fontSize: 13, color: colors.forestGreen }}><strong>Submitted by:</strong> {approveTarget.submittedBy}</p>
-                <p style={{ margin: "0 0 4px", fontFamily: fonts.body, fontSize: 13, color: colors.forestGreen }}><strong>Date:</strong> {approveTarget.date}</p>
-                <p style={{ margin: 0, fontFamily: fonts.body, fontSize: 13, color: colors.forestGreen }}><strong>Discipline:</strong> {approveTarget.discipline}</p>
+              <h3 className="serif-title text-[20px] font-semibold text-[#082f27] mb-4">{t("admin.scholars.new.modal.approve.title") || "Approve Scholar?"}</h3>
+              <div className="bg-[#1e4d3a]/[0.03] p-4 rounded-[8px] mb-5 space-y-2">
+                <p className="text-[14px] font-semibold text-[#082f27]">{approveTarget.name}</p>
+                <p className="text-[12px] text-[#1e4d3a]/70"><strong>{t("admin.common.language") || "Language"}:</strong> {getLangName(approveTarget.language)}</p>
+                <p className="text-[12px] text-[#1e4d3a]/70"><strong>{t("admin.scholars.new.table.submitter") || "Submitted by"}:</strong> {approveTarget.submittedBy}</p>
+                <p className="text-[12px] text-[#1e4d3a]/70"><strong>{t("admin.scholars.new.table.submitted") || "Date"}:</strong> {approveTarget.date}</p>
+                <p className="text-[12px] text-[#1e4d3a]/70"><strong>{t("admin.scholars.new.table.discipline") || "Discipline"}:</strong> {approveTarget.discipline}</p>
               </div>
-              
-              {/* ✅ ADDED: Approval Notes Field */}
-              <div style={{ marginBottom: 24 }}>
-                <label style={{ fontFamily: fonts.label, fontSize: 11, letterSpacing: "0.06em", fontWeight: 600, color: colors.forestGreen, display: "block", marginBottom: 6 }}>APPROVAL NOTES (Optional)</label>
+              <div className="mb-6">
+                <label className="mono-label text-[9px] uppercase font-bold text-[#1e4d3a]/60 mb-1.5 block">{t("admin.scholars.new.modal.approve.notes") || "Approval Notes (Optional)"}</label>
                 <textarea 
                   value={approveReason} 
                   onChange={(e) => setApproveReason(e.target.value)}
-                  placeholder="Add any notes about this approval..."
-                  style={{ width: "100%", padding: 12, borderRadius: 8, border: `1px solid ${colors.forestGreen}`, fontFamily: fonts.body, fontSize: 13, color: colors.forestGreen, backgroundColor: colors.creamLight, outline: "none", resize: "vertical", minHeight: 80 }}
+                  placeholder={t("admin.scholars.new.modal.approve.notesPlaceholder") || "Add any notes about this approval..."}
+                  className="w-full bg-[#fbf9f4] border border-[#1e4d3a]/15 rounded-[6px] px-3 py-2 text-[12px] font-medium text-[#1e4d3a] focus:outline-none focus:ring-2 focus:ring-[#1e4d3a]/20 min-h-[80px] resize-y"
                 />
               </div>
-              
-              <div style={{ display: "flex", gap: 12, justifyContent: "flex-end" }}>
-                <button onClick={() => { setApproveTarget(null); setApproveReason(""); }} style={{ padding: "10px 24px", borderRadius: 8, cursor: "pointer", border: `1px solid ${colors.forestGreen}`, backgroundColor: colors.creamLight, fontFamily: fonts.body, fontSize: 13, fontWeight: 600, color: colors.forestGreen }}>
-                  Cancel
+              <div className="flex gap-3 justify-end">
+                <button onClick={() => { setApproveTarget(null); setApproveReason(""); }} className="px-5 py-2 rounded-[6px] border border-[#1e4d3a]/20 text-[#1e4d3a] text-[12px] font-bold uppercase tracking-wide hover:bg-[#1e4d3a]/5 transition-colors cursor-pointer">
+                  {t("admin.common.cancel") || "Cancel"}
                 </button>
-                <button onClick={() => handleApprove(approveTarget.id)} style={{ padding: "10px 24px", borderRadius: 8, cursor: "pointer", border: "none", backgroundColor: colors.forestGreen, color: colors.creamLight, fontFamily: fonts.body, fontSize: 13, fontWeight: 700 }}>
-                  Confirm Approval
+                <button onClick={() => handleApprove(approveTarget.id)} className="px-5 py-2 rounded-[6px] bg-[#1e4d3a] text-white text-[12px] font-bold uppercase tracking-wide hover:bg-[#1e4d3a]/90 transition-colors cursor-pointer">
+                  {t("admin.scholars.new.modal.approve.confirm") || "Confirm Approval"}
                 </button>
               </div>
             </div>
           </div>
         )}
 
-        {/* ── Reject Confirmation Modal ── */}
         {rejectTarget && (
-          <div style={{ position: "fixed", inset: 0, backgroundColor: "rgba(11, 67, 53, 0.5)", zIndex: 100, display: "flex", alignItems: "center", justifyContent: "center", backdropFilter: "blur(4px)" }} onClick={() => { setRejectTarget(null); setRejectReason(""); }}>
-            <div style={{ ...cardStyle, backgroundColor: colors.creamLight, width: 500, maxWidth: "90vw", padding: 32, boxShadow: "0 20px 60px rgba(0,0,0,0.18)" }} onClick={(e) => e.stopPropagation()}>
-              <div style={{ width: 56, height: 56, borderRadius: "50%", backgroundColor: colors.red, color: colors.creamLight, display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 20, border: `1px solid ${colors.red}` }}>
-                <Icon name="cancel" size={28} filled />
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#082f27]/40 backdrop-blur-sm" onClick={() => { setRejectTarget(null); setRejectReason(""); }}>
+            <div className="dashboard-card w-full max-w-lg p-6 relative" onClick={(e) => e.stopPropagation()}>
+              <button onClick={() => { setRejectTarget(null); setRejectReason(""); }} className={`absolute top-4 ${isRTL ? 'left-4' : 'right-4'} p-1.5 rounded-full hover:bg-[#1e4d3a]/10 transition-colors cursor-pointer`}>
+                <span className="material-symbols-outlined text-[20px] text-[#1e4d3a]">close</span>
+              </button>
+              <div className="w-14 h-14 rounded-full bg-[#e96d5c] text-white flex items-center justify-center mb-5">
+                <span className="material-symbols-outlined text-[28px]" style={{ fontVariationSettings: "'FILL' 1, 'wght' 400" }}>cancel</span>
               </div>
-              <h2 style={{ fontFamily: fonts.headline, fontSize: 20, fontWeight: 700, color: colors.forestGreen, marginBottom: 16 }}>Reject Scholar?</h2>
-              
-              <div style={{ backgroundColor: colors.creamMid, padding: 16, borderRadius: 8, marginBottom: 24 }}>
-                <p style={{ margin: "0 0 8px", fontFamily: fonts.headline, fontSize: 16, fontWeight: 600, color: colors.forestGreen }}>{rejectTarget.name}</p>
-                <p style={{ margin: "0 0 4px", fontFamily: fonts.body, fontSize: 13, color: colors.forestGreen }}><strong>Language:</strong> {getLangName(rejectTarget.language)}</p>
-                <p style={{ margin: "0 0 4px", fontFamily: fonts.body, fontSize: 13, color: colors.forestGreen }}><strong>Submitted by:</strong> {rejectTarget.submittedBy}</p>
-                <p style={{ margin: "0 0 4px", fontFamily: fonts.body, fontSize: 13, color: colors.forestGreen }}><strong>Date:</strong> {rejectTarget.date}</p>
-                <p style={{ margin: 0, fontFamily: fonts.body, fontSize: 13, color: colors.forestGreen }}><strong>Discipline:</strong> {rejectTarget.discipline}</p>
+              <h3 className="serif-title text-[20px] font-semibold text-[#082f27] mb-4">{t("admin.scholars.new.modal.reject.title") || "Reject Scholar?"}</h3>
+              <div className="bg-[#1e4d3a]/[0.03] p-4 rounded-[8px] mb-5 space-y-2">
+                <p className="text-[14px] font-semibold text-[#082f27]">{rejectTarget.name}</p>
+                <p className="text-[12px] text-[#1e4d3a]/70"><strong>{t("admin.common.language") || "Language"}:</strong> {getLangName(rejectTarget.language)}</p>
+                <p className="text-[12px] text-[#1e4d3a]/70"><strong>{t("admin.scholars.new.table.submitter") || "Submitted by"}:</strong> {rejectTarget.submittedBy}</p>
+                <p className="text-[12px] text-[#1e4d3a]/70"><strong>{t("admin.scholars.new.table.submitted") || "Date"}:</strong> {rejectTarget.date}</p>
+                <p className="text-[12px] text-[#1e4d3a]/70"><strong>{t("admin.scholars.new.table.discipline") || "Discipline"}:</strong> {rejectTarget.discipline}</p>
               </div>
-              
-              <div style={{ marginBottom: 24 }}>
-                <label style={{ fontFamily: fonts.label, fontSize: 11, letterSpacing: "0.06em", fontWeight: 600, color: colors.forestGreen, display: "block", marginBottom: 6 }}>REJECTION REASON *</label>
+              <div className="mb-6">
+                <label className="mono-label text-[9px] uppercase font-bold text-[#1e4d3a]/60 mb-1.5 block">{t("admin.scholars.new.modal.reject.reason") || "Rejection Reason *"}</label>
                 <textarea 
                   value={rejectReason} 
                   onChange={(e) => setRejectReason(e.target.value)}
-                  placeholder="Please explain why this submission is being rejected..."
-                  style={{ width: "100%", padding: 12, borderRadius: 8, border: `1px solid ${colors.forestGreen}`, fontFamily: fonts.body, fontSize: 13, color: colors.forestGreen, backgroundColor: colors.creamLight, outline: "none", resize: "vertical", minHeight: 80 }}
+                  placeholder={t("admin.scholars.new.modal.reject.reasonPlaceholder") || "Please explain why this submission is being rejected..."}
+                  className="w-full bg-[#fbf9f4] border border-[#1e4d3a]/15 rounded-[6px] px-3 py-2 text-[12px] font-medium text-[#1e4d3a] focus:outline-none focus:ring-2 focus:ring-[#1e4d3a]/20 min-h-[80px] resize-y"
                 />
               </div>
-              
-              <div style={{ display: "flex", gap: 12, justifyContent: "flex-end" }}>
-                <button onClick={() => { setRejectTarget(null); setRejectReason(""); }} style={{ padding: "10px 24px", borderRadius: 8, cursor: "pointer", border: `1px solid ${colors.forestGreen}`, backgroundColor: colors.creamLight, fontFamily: fonts.body, fontSize: 13, fontWeight: 600, color: colors.forestGreen }}>
-                  Cancel
+              <div className="flex gap-3 justify-end">
+                <button onClick={() => { setRejectTarget(null); setRejectReason(""); }} className="px-5 py-2 rounded-[6px] border border-[#1e4d3a]/20 text-[#1e4d3a] text-[12px] font-bold uppercase tracking-wide hover:bg-[#1e4d3a]/5 transition-colors cursor-pointer">
+                  {t("admin.common.cancel") || "Cancel"}
                 </button>
-                <button onClick={() => handleReject(rejectTarget.id)} style={{ padding: "10px 24px", borderRadius: 8, cursor: "pointer", border: "none", backgroundColor: colors.red, color: colors.creamLight, fontFamily: fonts.body, fontSize: 13, fontWeight: 700 }}>
-                  Confirm Rejection
+                <button onClick={() => handleReject(rejectTarget.id)} className="px-5 py-2 rounded-[6px] bg-[#e96d5c] text-white text-[12px] font-bold uppercase tracking-wide hover:bg-[#e96d5c]/90 transition-colors cursor-pointer">
+                  {t("admin.scholars.new.modal.reject.confirm") || "Confirm Rejection"}
                 </button>
               </div>
             </div>
           </div>
         )}
 
-      </div>
+      </main>
     </div>
   );
 }

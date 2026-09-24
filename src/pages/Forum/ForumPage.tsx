@@ -62,6 +62,12 @@ const Forum: React.FC = () => {
   const { lang, t } = useLang();
   const { user } = useAuth();
   const isAdmin = user?.role_name === "admin";
+  
+  // ✅ NEW: Helper to check if the POST author is an admin
+  const isAuthorAdmin = (author: any) => {
+    return author?.roles?.role_name === "admin";
+  };
+
   const location = useLocation();
   const isRTL = lang === "AR";
   const currentLangCode = lang.toLowerCase();
@@ -73,28 +79,86 @@ const Forum: React.FC = () => {
   const [hasMore, setHasMore] = useState(true);
   const limit = 6;
 
-  const [filter, setFilter] = useState<FilterMode>({ type: "all" });
-  const [sortMode, setSortMode] = useState<SortMode>("recent");
-  const [searchQuery, setSearchQuery] = useState("");
+  // ✅ Persist filter, sort, and search across refreshes
+  const [filter, setFilter] = useState<FilterMode>(() => {
+    try {
+      const saved = localStorage.getItem('forumFilter');
+      if (saved) return JSON.parse(saved);
+    } catch {}
+    return { type: "all" };
+  });
+  
+  const [sortMode, setSortMode] = useState<SortMode>(() => {
+    try {
+      const saved = localStorage.getItem('forumSortMode');
+      if (saved) return saved as SortMode;
+    } catch {}
+    return "recent";
+  });
 
-  const [isComposerOpen, setIsComposerOpen] = useState(false);
-  const [composerCategoryId, setComposerCategoryId] = useState<number | "">("");
-  const [composerTitle, setComposerTitle] = useState("");
-  const [composerContent, setComposerContent] = useState("");
+  const [searchQuery, setSearchQuery] = useState(() => {
+    try {
+      return localStorage.getItem('forumSearchQuery') || "";
+    } catch {
+      return "";
+    }
+  });
+
+  // ✅ Load composer state from localStorage on mount
+  const [isComposerOpen, setIsComposerOpen] = useState(() => {
+    try {
+      return localStorage.getItem('forumComposerOpen') === 'true';
+    } catch {
+      return false;
+    }
+  });
+  
+  const [composerCategoryId, setComposerCategoryId] = useState<number | "">(() => {
+    try {
+      return localStorage.getItem('forumComposerCategory') || "";
+    } catch {
+      return "";
+    }
+  });
+  
+  const [composerTitle, setComposerTitle] = useState(() => {
+    try {
+      return localStorage.getItem('forumComposerTitle') || "";
+    } catch {
+      return "";
+    }
+  });
+  
+  const [composerContent, setComposerContent] = useState(() => {
+    try {
+      return localStorage.getItem('forumComposerContent') || "";
+    } catch {
+      return "";
+    }
+  });  // ✅ Save composer state to localStorage
+  useEffect(() => { localStorage.setItem('forumComposerOpen', String(isComposerOpen)); }, [isComposerOpen]);
+  useEffect(() => { localStorage.setItem('forumComposerCategory', String(composerCategoryId)); }, [composerCategoryId]);
+  useEffect(() => { localStorage.setItem('forumComposerTitle', composerTitle); }, [composerTitle]);
+  useEffect(() => { localStorage.setItem('forumComposerContent', composerContent); }, [composerContent]);
 
   const [reportModal, setReportModal] = useState<{ isOpen: boolean; postId: number | null; reason: string }>({
     isOpen: false, postId: null, reason: "",
   });
 
+  // ✅ NEW: Toast state for notifications
+  const [toast, setToast] = useState<{ message: string; type: "success" | "error" } | null>(null);
+
+  
   useEffect(() => {
     const fetchCategories = async () => {
-      try {
-        const res = await forumApi.categories.getAll();
-        if (res.data.success && res.data.data) setCategories(res.data.data);
-      } catch (err) { console.error("Failed to fetch categories", err); }
+      // ✅ Pass the current language to the API
+      const response = await forumApi.categories.getAll(lang); 
+      if (response.data.success) {
+        setCategories(response.data.data);
+      }
     };
     fetchCategories();
-  }, []);
+  }, [lang]); // ✅ Re-fetches categories if the user changes the language
 
   const fetchPosts = async (pageNum: number, append: boolean = false) => {
     try {
@@ -113,38 +177,67 @@ const Forum: React.FC = () => {
 
   useEffect(() => { setPage(1); fetchPosts(1, false); }, [filter]);
 
-  useEffect(() => {
-    if (!isComposerOpen) return;
-    document.body.style.overflow = "hidden";
-    const onKeyDown = (e: KeyboardEvent) => { if (e.key === "Escape") setIsComposerOpen(false); };
-    window.addEventListener("keydown", onKeyDown);
-    return () => { document.body.style.overflow = ""; window.removeEventListener("keydown", onKeyDown); };
-  }, [isComposerOpen]);
+  // ✅ Save state to localStorage whenever it changes
+  useEffect(() => { localStorage.setItem('forumFilter', JSON.stringify(filter)); }, [filter]);
+  useEffect(() => { localStorage.setItem('forumSortMode', sortMode); }, [sortMode]);
+  useEffect(() => { localStorage.setItem('forumSearchQuery', searchQuery); }, [searchQuery]);
 
   const openComposer = () => {
+    // ✅ NEW: Check if user is logged in BEFORE opening composer
+    if (!user) {
+      setToast({ message: t("forum.loginToPost"), type: "error" });
+      return; 
+    }
     setComposerCategoryId(filter.type === "category" ? filter.id : "");
     setComposerTitle(""); setComposerContent(""); setIsComposerOpen(true);
   };
-  const closeComposer = () => setIsComposerOpen(false);
+  
+  const closeComposer = () => {
+    setIsComposerOpen(false);
+    // ✅ Clear saved composer data when closing
+    localStorage.removeItem('forumComposerCategory');
+    localStorage.removeItem('forumComposerTitle');
+    localStorage.removeItem('forumComposerContent');
+  };
   const canPublish = composerCategoryId !== "" && composerTitle.trim().length > 0 && composerContent.trim().length > 0;
 
   const handlePublish = async () => {
     if (!canPublish) return;
     try {
-      const res = await forumApi.posts.create({ title: composerTitle.trim(), content: composerContent.trim(), category_id: composerCategoryId as number });
-      if (res.data.success && res.data.data) { setPosts((prev) => [res.data.data!, ...prev]); setIsComposerOpen(false); }
-    } catch (err) { console.error("Failed to publish post", err); alert(t("forum.failedToPublish")); }
+      // ✅ THIS IS THE MISSING LINE THAT MAKES THE API CALL!
+      const res = await forumApi.posts.create({ 
+        title: composerTitle.trim(), 
+        content: composerContent.trim(), 
+        category_id: composerCategoryId as number 
+      });
+
+      if (res.data.success && res.data.data) { 
+        setPosts((prev) => [res.data.data!, ...prev]); 
+        setIsComposerOpen(false);
+        // ✅ Clear saved composer data on successful publish
+        localStorage.removeItem('forumComposerCategory');
+        localStorage.removeItem('forumComposerTitle');
+        localStorage.removeItem('forumComposerContent');
+        setToast({ message: t("forum.postPublishedSuccess"), type: "success" });
+      }
+    } catch (err) { 
+      console.error("Failed to publish post", err); 
+      setToast({ message: t("forum.failedToPublish"), type: "error" }); 
+    }
   };
 
   const handleLoadMore = () => { const nextPage = page + 1; setPage(nextPage); fetchPosts(nextPage, true); };
 
-  const getCategoryName = (cat: ForumCategory | null | undefined) => {
+    const getCategoryName = (cat: ForumCategory | null | undefined) => {
     if (!cat) return t("forum.uncategorized");
     const translations = cat.translations;
     if (translations) {
+      // ✅ Checks lowercase first (e.g., 'es', 'fr', 'ar')
       if (translations[currentLangCode]) return translations[currentLangCode];
+      // ✅ Fallback to uppercase just in case (e.g., 'ES', 'FR', 'AR')
       if (translations[currentLangCode.toUpperCase()]) return translations[currentLangCode.toUpperCase()];
     }
+    // ✅ Final fallback to the default database name
     return cat.name;
   };
 
@@ -162,6 +255,13 @@ const Forum: React.FC = () => {
   const handleLike = async (e: React.MouseEvent, postId: number) => {
     e.preventDefault();
     e.stopPropagation();
+    
+    // ✅ NEW: Check if user is logged in BEFORE calling the API
+    if (!user) {
+      setToast({ message: t("forum.loginToLike"), type: "error" });
+      return;
+    }
+    
     try {
       const res = await forumApi.posts.toggleLike(postId);
       if (res.data.success) {
@@ -169,7 +269,10 @@ const Forum: React.FC = () => {
         const liked = res.data.liked;
         setPosts(prev => prev.map(p => p.post_id === postId ? { ...p, like_count, liked } : p));
       }
-    } catch (err) { console.error("❌ Failed to toggle like", err); }
+    } catch (err) { 
+      console.error("❌ Failed to toggle like", err); 
+      setToast({ message: t("forum.failedToLike"), type: "error" }); // ✅ NEW: Toast instead of console only
+    }
   };
 
   const visiblePosts = useMemo(() => {
@@ -200,9 +303,12 @@ const Forum: React.FC = () => {
     if (!reportModal.postId) return;
     try {
       await forumApi.posts.report(reportModal.postId, reportModal.reason || "");
-      alert(t("forum.reportSubmitted"));
+      setToast({ message: t("forum.reportSubmitted"), type: "success" }); // ✅ NEW: Toast instead of alert
       closeReportModal();
-    } catch (err) { console.error("Failed to submit report", err); alert(t("forum.failedToReport")); }
+    } catch (err) { 
+      console.error("Failed to submit report", err); 
+      setToast({ message: t("forum.failedToReport"), type: "error" }); // ✅ NEW: Toast instead of alert
+    }
   };
 
   const handleDeletePost = async (postId: number) => {
@@ -210,9 +316,10 @@ const Forum: React.FC = () => {
     try {
       await forumApi.posts.delete(postId);
       setPosts((prev) => prev.filter((p) => p.post_id !== postId));
+      setToast({ message: t("forum.postDeletedSuccess"), type: "success" }); // ✅ NEW: Toast instead of alert
     } catch (err) {
       console.error("Failed to delete post", err);
-      alert(t("forum.failedToDelete"));
+      setToast({ message: t("forum.failedToDelete"), type: "error" }); // ✅ NEW: Toast instead of alert
     }
   };
 
@@ -245,7 +352,7 @@ const Forum: React.FC = () => {
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-[260px_1fr] gap-6 md:gap-8 items-start">
-          <aside className="flex flex-col gap-4 md:gap-6 lg:sticky lg:top-28">
+          <aside className="flex flex-col gap-4 md:gap-6">
             <button onClick={openComposer}
               className="w-full inline-flex items-center justify-center gap-2 px-4 py-2 md:px-5 md:py-3 rounded-lg text-[12px] md:text-[13px] font-bold tracking-[0.03em] font-['Hanken_Grotesk'] transition-all duration-200 border cursor-pointer"
               style={{ backgroundColor: colors.forestGreen, color: colors.creamLight, borderColor: colors.forestGreen }}
@@ -436,7 +543,7 @@ const Forum: React.FC = () => {
                                 </div>
                               )}
 
-                              {user && user.id !== post.user_id && (
+                              {user && user.id !== post.user_id && !isAuthorAdmin(post.users) && (
                                 <button
                                   onClick={(e) => { e.preventDefault(); e.stopPropagation(); openReportModal(post.post_id); }}
                                   className={`flex items-center gap-1.5 font-['Inter'] text-[11px] md:text-[12px] opacity-30 hover:opacity-100 transition-all duration-300 cursor-pointer ${isRTL ? "flex-row-reverse" : ""}`}
@@ -542,6 +649,33 @@ const Forum: React.FC = () => {
           </div>
         </div>
       )}
+
+      {/* ✅ Toast Notification UI */}
+      {toast && (
+        <div 
+          className="fixed bottom-6 right-6 z-[100] flex items-center gap-3 px-5 py-3 rounded-lg shadow-lg border animate-slide-up" 
+          style={{ 
+            backgroundColor: toast.type === "success" ? colors.forestGreen : colors.red, 
+            borderColor: "transparent", 
+            color: colors.creamLight 
+          }}
+          onClick={(e) => e.stopPropagation()}
+        >
+          <Icon name={toast.type === "success" ? "check_circle" : "error"} size={20} />
+          <span className="font-['Inter'] text-[14px] font-medium">{toast.message}</span>
+          <button onClick={(e) => { e.stopPropagation(); setToast(null); }} className="ml-2 hover:opacity-70 transition-opacity">
+            <Icon name="close" size={18} />
+          </button>
+        </div>
+      )}
+      
+      <style>{`
+        @keyframes slide-up {
+          from { transform: translateY(100%); opacity: 0; }
+          to { transform: translateY(0); opacity: 1; }
+        }
+        .animate-slide-up { animation: slide-up 0.3s ease-out; }
+      `}</style>
     </div>
   );
 };

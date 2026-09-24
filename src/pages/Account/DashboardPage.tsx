@@ -3,8 +3,8 @@ import { useLang } from "../../context/LanguageContext";
 import { useAuth } from "../../context/AuthContext";
 import { scholarsApi } from "../../api/scholarsApi";
 import ProfileSidebar from "../../components/ProfileSidebar";
-import { useNavigate, Link } from "react-router-dom";
-import DOMPurify from 'dompurify';
+import BiographyRenderer from "../../components/BiographyRenderer";
+import { useNavigate, Link, useSearchParams } from "react-router-dom"; 
 
 /* ─────────────────────────────────────────────
    Oulamauna — Dashboard (User / Contributor)
@@ -13,8 +13,7 @@ import DOMPurify from 'dompurify';
 
 type Status = "DRAFT" | "PENDING" | "APPROVED" | "REJECTED" | "SUPERSEDED";
 type SubmissionKind = "new" | "edit";
-type UserTab = "overview" | "notifications";
-type ContributorTab = UserTab | "submissions" | "media" | "works";
+type ContributorTab = "overview" | "submissions" | "media" | "works";
 type StatusFilter = "ALL" | Status;
 
 // ─ FORUM.TSX COLOR PALETTE ─
@@ -171,7 +170,7 @@ function StatusBanner({ variant }: { variant: "pending" | "superseded" }) {
   );
 }
 
-function BiographySection({ loading, versionData }: { loading: boolean; versionData: any }) {
+function BiographySection({ loading, versionData, lang }: { loading: boolean; versionData: any; lang?: string }) {
   if (loading) {
     return (
       <div style={{ textAlign: "center", padding: "60px 20px", color: MUTED }}>
@@ -195,14 +194,9 @@ function BiographySection({ loading, versionData }: { loading: boolean; versionD
         ...MONO, fontSize: "11px", color: GREEN, letterSpacing: "0.15em",
         marginBottom: "16px", paddingBottom: "12px", borderBottom: `2px solid ${GREEN}`, textTransform: "uppercase"
       }}>Biography</h3>
-      <div
-        style={{
-          fontSize: "15px", lineHeight: "1.8", color: GREEN,
-          fontFamily: SERIF.fontFamily, padding: "24px",
-          backgroundColor: "rgba(11, 67, 53, 0.04)", borderRadius: "12px", border: `1px solid ${BORDER}`
-        }}
-        dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(versionData.biography) }}
-      />
+      <div style={{ padding: "24px", backgroundColor: "rgba(11, 67, 53, 0.04)", borderRadius: "12px", border: `1px solid ${BORDER}` }}>
+        <BiographyRenderer content={versionData.biography} lang={lang} />
+      </div>
     </section>
   );
 }
@@ -238,9 +232,9 @@ function ModalHeader({ title, meta, onClose, sticky = false }: { title: string; 
 
 /* ── Mobile: single continuous full-page scroll, sticky close button at top ───── */
 function MobileScholarModal({
-  title, meta, versionData, loading, variant, onClose,
+  title, meta, versionData, loading, variant, onClose, lang,
 }: {
-  title: string; meta: string; versionData: any; loading: boolean; variant: "pending" | "superseded"; onClose: () => void;
+  title: string; meta: string; versionData: any; loading: boolean; variant: "pending" | "superseded"; onClose: () => void; lang?: string;
 }) {
   return (
     <div style={{ position: "fixed", inset: 0, zIndex: 200, backgroundColor: BG, display: "flex", flexDirection: "column" }}>
@@ -250,7 +244,7 @@ function MobileScholarModal({
         <div style={{ padding: "20px", display: "flex", flexDirection: "column", gap: "20px" }}>
           <ScholarInfoBlocks versionData={versionData} />
           <StatusBanner variant={variant} />
-          <BiographySection loading={loading} versionData={versionData} />
+          <BiographySection loading={loading} versionData={versionData} lang={lang} />
         </div>
       </div>
     </div>
@@ -274,7 +268,7 @@ function PreviewModal({ item, onClose }: { item: any; onClose: () => void }) {
   const meta = `${item.kind === 'new' ? 'New Scholar Submission' : 'Edit Proposal'} • ${item.lang.toUpperCase()} • Submitted ${item.date}`;
 
   if (isMobile) {
-    return <MobileScholarModal title={title} meta={meta} versionData={versionData} loading={loading} variant="pending" onClose={onClose} />;
+    return <MobileScholarModal title={title} meta={meta} versionData={versionData} loading={loading} variant="pending" onClose={onClose} lang={item.lang} />;
   }
 
   return (
@@ -317,7 +311,7 @@ function PreviewModal({ item, onClose }: { item: any; onClose: () => void }) {
           <ModalHeader title={title} meta={meta} onClose={onClose} />
           <div style={{ flex: 1, overflowY: "auto", padding: "32px" }}>
             <div style={{ maxWidth: "800px", margin: "0 auto" }}>
-              <BiographySection loading={loading} versionData={versionData} />
+              <BiographySection loading={loading} versionData={versionData} lang={item.lang} />
             </div>
           </div>
         </div>
@@ -342,7 +336,7 @@ function SupersededModal({ item, onClose }: { item: Submission; onClose: () => v
   const meta = `${item.kind === 'new' ? 'New Scholar Submission' : 'Edit Proposal'} • ${item.lang.toUpperCase()} • Submitted ${item.date}`;
 
   if (isMobile) {
-    return <MobileScholarModal title={title} meta={meta} versionData={versionData} loading={loading} variant="superseded" onClose={onClose} />;
+    return <MobileScholarModal title={title} meta={meta} versionData={versionData} loading={loading} variant="superseded" onClose={onClose} lang={item.lang} />;
   }
 
   return (
@@ -385,7 +379,7 @@ function SupersededModal({ item, onClose }: { item: Submission; onClose: () => v
           <ModalHeader title={title} meta={meta} onClose={onClose} />
           <div style={{ flex: 1, overflowY: "auto", padding: "32px" }}>
             <div style={{ maxWidth: "800px", margin: "0 auto" }}>
-              <BiographySection loading={loading} versionData={versionData} />
+              <BiographySection loading={loading} versionData={versionData} lang={item.lang} />
             </div>
           </div>
         </div>
@@ -790,9 +784,12 @@ function StatusTable({
         </thead>
         <tbody>
           {rows.map((r, i) => (
-            <tr key={i} style={{ borderBottom: i === rows.length - 1 ? "none" : `1px solid ${BORDER}`, transition: "background-color 0.2s" }}
-                onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "rgba(11, 67, 53, 0.04)")}
-                onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "transparent")}
+            <tr 
+              key={i} 
+              id={r.id ? `row-${r.id}` : undefined}
+              style={{ borderBottom: i === rows.length - 1 ? "none" : `1px solid ${BORDER}`, transition: "background-color 0.2s" }}
+              onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "rgba(11, 67, 53, 0.04)")}
+              onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "transparent")}
             >
               <td style={{ padding: "14px 0", fontSize: "14px", color: GREEN, verticalAlign: "middle", ...SERIF, fontWeight: 700 }}>{r.primary}</td>
               <td style={{ padding: "14px 0", fontSize: "12px", color: MUTED, verticalAlign: "middle", ...MONO }}>{r.secondary}</td>
@@ -841,9 +838,12 @@ function SubmissionsTable({ rows, t, isRTL, onAction }: {
         </thead>
         <tbody>
           {rows.map((r) => (
-            <tr key={r.id} style={{ borderBottom: `1px solid ${BORDER}`, transition: "background-color 0.2s" }}
-                onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "rgba(11, 67, 53, 0.04)")}
-                onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "transparent")}
+            <tr 
+              key={r.id} 
+              id={`row-${r.id}`}
+              style={{ borderBottom: `1px solid ${BORDER}`, transition: "background-color 0.2s" }}
+              onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "rgba(11, 67, 53, 0.04)")}
+              onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "transparent")}
             >
               <td style={{ padding: "14px 0", fontSize: "11px", fontWeight: 700, color: r.kind === "new" ? GREEN : colors.amber, ...MONO, verticalAlign: "middle" }}>
                 {r.kind === "new" ? t("dashboard.kind.new") : t("dashboard.kind.edit")}
@@ -893,7 +893,6 @@ export default function DashboardPage() {
   const navigate = useNavigate();
   const isRTL = lang === "AR";
 
-  // ✅ RESPONSIVE: Detect mobile screen size
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
 
   useEffect(() => {
@@ -902,13 +901,31 @@ export default function DashboardPage() {
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  const userRole = (user as any)?.role_name;
-const isAdmin = userRole === "admin";
-const isContributor = userRole === "contributor" || isAdmin; // Admins can also contribute
+  const userData = user as any;
+  const isAdmin = userData?.role_name === "admin";
+  const isContributor = userData?.contributorBadge === true || isAdmin;
   const username = (user as any)?.username ?? (user as any)?.displayName ?? "there";
 
-  const [tab, setTab] = useState<ContributorTab>("overview");
-  const [statusFilter, setStatusFilter] = useState<StatusFilter>("ALL");
+  const [searchParams, setSearchParams] = useSearchParams();
+  
+  const initialTab = (searchParams.get("tab") as ContributorTab) || "overview";
+  const initialStatus = (searchParams.get("status") as StatusFilter) || "ALL";
+  const highlightId = searchParams.get("highlight");
+
+  const [tab, setTab] = useState<ContributorTab>(initialTab);
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>(initialStatus);
+
+  const handleTabChange = (nextTab: ContributorTab) => {
+    setTab(nextTab);
+    setSearchParams({ tab: nextTab }, { replace: true });
+  };
+
+  const handleStatusFilterChange = (next: StatusFilter) => {
+    setStatusFilter(next);
+    const params: Record<string, string> = { tab: "submissions" };
+    if (next !== "ALL") params.status = next;
+    setSearchParams(params, { replace: true });
+  };
 
   const [submissions, setSubmissions] = useState<Submission[]>([]);
   const [works, setWorks] = useState<TableRow[]>([]);
@@ -923,6 +940,28 @@ const isContributor = userRole === "contributor" || isAdmin; // Admins can also 
   const [previewItem, setPreviewItem] = useState<any>(null);
   const [supersededItem, setSupersededItem] = useState<Submission | null>(null);
   const [fileItem, setFileItem] = useState<TableRow | null>(null);
+
+  useEffect(() => {
+    if (highlightId && !isLoadingData) {
+      setTimeout(() => {
+        const element = document.getElementById(`row-${highlightId}`);
+        if (element) {
+          element.scrollIntoView({ behavior: "smooth", block: "center" });
+          element.style.transition = "background-color 0.5s ease";
+          element.style.backgroundColor = "rgba(184, 134, 11, 0.2)";
+          
+          setTimeout(() => {
+            element.style.backgroundColor = "transparent";
+          }, 2500);
+        }
+
+        const newSearchParams = new URLSearchParams(searchParams.toString());
+        newSearchParams.delete("highlight");
+        navigate(`?${newSearchParams.toString()}`, { replace: true });
+
+      }, 300);
+    }
+  }, [highlightId, isLoadingData, navigate, searchParams]);
 
   useEffect(() => {
     if (tab === "submissions" || tab === "media" || tab === "works" || tab === "overview") {
@@ -1097,11 +1136,8 @@ const isContributor = userRole === "contributor" || isAdmin; // Admins can also 
     { id: "submissions", label: t("dashboard.tabs.submissions"), icon: "outbox" },
     { id: "media", label: t("dashboard.tabs.media"), icon: "perm_media" },
     { id: "works", label: t("dashboard.tabs.works"), icon: "menu_book" },
-    { id: "notifications", label: t("dashboard.tabs.notifications"), icon: "notifications" },
   ];
   
-  // ✅ RESPONSIVE: Adjust card padding for mobile, and use a flex gap (instead of
-  // scattered margins on the title/filters/pagination) so spacing stays even top-to-bottom
   const cardStyle: React.CSSProperties = {
     padding: isMobile ? "16px" : "24px 28px",
     display: "flex",
@@ -1127,7 +1163,6 @@ const isContributor = userRole === "contributor" || isAdmin; // Admins can also 
         .op-tabs { display: flex; gap: 2px; overflow-x: auto; border-bottom: 1.5px solid rgba(11, 67, 53, 0.15); }
         .op-tabs::-webkit-scrollbar { display: none; }
 
-        /* ✅ RESPONSIVE: Media queries for the small (non-split) modal */
         @media (max-width: 768px) {
           .file-detail-modal-content {
             width: 100% !important;
@@ -1143,8 +1178,6 @@ const isContributor = userRole === "contributor" || isAdmin; // Admins can also 
       {supersededItem && <SupersededModal item={supersededItem} onClose={() => setSupersededItem(null)} />}
       {fileItem && <FileDetailModal item={fileItem} onClose={() => setFileItem(null)} />}
 
-      {/* ✅ RESPONSIVE: Main container adapts to column layout on mobile, reduced padding.
-          Extra top/bottom breathing room under the navbar and above the footer. */}
       <div style={{ 
         maxWidth: "1150px", 
         margin: "0 auto", 
@@ -1154,25 +1187,23 @@ const isContributor = userRole === "contributor" || isAdmin; // Admins can also 
         gap: isMobile ? "16px" : "32px" 
       }}>
         
-        {/* ✅ RESPONSIVE: Hide ProfileSidebar on mobile */}
         {!isMobile && <ProfileSidebar role={isContributor ? "contributor" : "user"} active="dashboard" />}
 
         <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: "20px" }}>
           <div>
             <p style={{ ...MONO, fontSize: isMobile ? "10px" : "11px", textTransform: "uppercase", letterSpacing: "0.08em", opacity: 0.7, marginBottom: "4px" }}>DASHBOARD</p>
-            {/* ✅ RESPONSIVE: Smaller heading on mobile */}
             <h1 style={{ ...SERIF, fontSize: isMobile ? "22px" : "28px", fontWeight: 700, color: GREEN, margin: "0 0 4px" }}>
               {t("dashboard.welcome")}, {username}
             </h1>
             <p style={{ fontSize: isMobile ? "12px" : "14px", color: MUTED, margin: 0 }}>
-  {isAdmin ? (
-    <>{t("dashboard.roleLabel")}: <strong style={{ color: GOLD }}>{t("dashboard.roleAdmin")}</strong></>
-  ) : isContributor ? (
-    <>{t("dashboard.roleLabel")}: <strong style={{ color: GREEN }}>{t("dashboard.roleContributor")}</strong></>
-  ) : (
-    t("dashboard.welcomeUser")
-  )}
-</p>
+              {isAdmin ? (
+                <>{t("dashboard.roleLabel")}: <strong style={{ color: GOLD }}>{t("dashboard.roleAdmin")}</strong></>
+              ) : isContributor ? (
+                <>{t("dashboard.roleLabel")}: <strong style={{ color: GREEN }}>{t("dashboard.roleContributor")}</strong></>
+              ) : (
+                t("dashboard.welcomeUser")
+              )}
+            </p>
           </div>
 
           {!isContributor && (
@@ -1209,7 +1240,7 @@ const isContributor = userRole === "contributor" || isAdmin; // Admins can also 
 
           <div className="op-tabs" style={{ overflowX: isMobile ? "scroll" : "visible" }}>
             {tabs.map((tb) => (
-              <TabBtn key={tb.id} active={tab === tb.id} onClick={() => setTab(tb.id as ContributorTab)}>
+              <TabBtn key={tb.id} active={tab === tb.id} onClick={() => handleTabChange(tb.id as ContributorTab)}>
                 <Icon name={tb.icon} size={14} /> {tb.label}
               </TabBtn>
             ))}
@@ -1217,7 +1248,6 @@ const isContributor = userRole === "contributor" || isAdmin; // Admins can also 
 
           {tab === "overview" && (
             <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
-              {/* ✅ RESPONSIVE: Stats grid becomes 2 columns on mobile */}
               <div style={{ display: "grid", gridTemplateColumns: isMobile ? "repeat(2, 1fr)" : "repeat(4, 1fr)", gap: isMobile ? "10px" : "12px" }}>
                 {[
                   [t("dashboard.stats.scholars"), submissions.length],
@@ -1265,20 +1295,19 @@ const isContributor = userRole === "contributor" || isAdmin; // Admins can also 
               />
 
              <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
-  <FilterChip active={statusFilter === "ALL"} onClick={() => setStatusFilter("ALL")} count={counts.ALL}>{t("dashboard.filter.all")}</FilterChip>
-  <FilterChip active={statusFilter === "DRAFT"} onClick={() => setStatusFilter("DRAFT")} count={counts.DRAFT}>{t("dashboard.status.draft")}</FilterChip>
-  
-  {/* ✅ Hide PENDING and REJECTED for admins only */}
-  {!isAdmin && (
-    <>
-      <FilterChip active={statusFilter === "PENDING"} onClick={() => setStatusFilter("PENDING")} count={counts.PENDING}>{t("dashboard.status.pending")}</FilterChip>
-      <FilterChip active={statusFilter === "REJECTED"} onClick={() => setStatusFilter("REJECTED")} count={counts.REJECTED}>{t("dashboard.status.rejected")}</FilterChip>
-    </>
-  )}
-  
-  <FilterChip active={statusFilter === "APPROVED"} onClick={() => setStatusFilter("APPROVED")} count={counts.APPROVED}>{t("dashboard.status.approved")}</FilterChip>
-  <FilterChip active={statusFilter === "SUPERSEDED"} onClick={() => setStatusFilter("SUPERSEDED")} count={counts.SUPERSEDED}>{t("dashboard.status.superseded")}</FilterChip>
-</div>
+              <FilterChip active={statusFilter === "ALL"} onClick={() => handleStatusFilterChange("ALL")} count={counts.ALL}>{t("dashboard.filter.all")}</FilterChip>
+              <FilterChip active={statusFilter === "DRAFT"} onClick={() => handleStatusFilterChange("DRAFT")} count={counts.DRAFT}>{t("dashboard.status.draft")}</FilterChip>
+              
+              {!isAdmin && (
+                <>
+                  <FilterChip active={statusFilter === "PENDING"} onClick={() => handleStatusFilterChange("PENDING")} count={counts.PENDING}>{t("dashboard.status.pending")}</FilterChip>
+                  <FilterChip active={statusFilter === "REJECTED"} onClick={() => handleStatusFilterChange("REJECTED")} count={counts.REJECTED}>{t("dashboard.status.rejected")}</FilterChip>
+                </>
+              )}
+              
+              <FilterChip active={statusFilter === "APPROVED"} onClick={() => handleStatusFilterChange("APPROVED")} count={counts.APPROVED}>{t("dashboard.status.approved")}</FilterChip>
+              <FilterChip active={statusFilter === "SUPERSEDED"} onClick={() => handleStatusFilterChange("SUPERSEDED")} count={counts.SUPERSEDED}>{t("dashboard.status.superseded")}</FilterChip>
+            </div>
 
               {isLoadingData ? <EmptyRow text="Loading submissions..." /> : (
                 <>
@@ -1325,13 +1354,6 @@ const isContributor = userRole === "contributor" || isAdmin; // Admins can also 
                   />
                 </>
               )}
-            </HoverCard>
-          )}
-
-          {tab === "notifications" && (
-            <HoverCard style={cardStyle}>
-              <SectionTitle icon="notifications" title={t("dashboard.tabs.notifications")} />
-              <EmptyRow text={t("dashboard.empty.notifications")} />
             </HoverCard>
           )}
         </div>

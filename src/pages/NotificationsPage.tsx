@@ -38,7 +38,12 @@ const NotificationsPage: React.FC = () => {
     else setIsLoading(true);
 
     try {
-      const response = await notificationApi.getNotifications({ unread_only: currentFilter === "unread", page: currentPage, limit: LIMIT });
+      const response = await notificationApi.getNotifications({
+        unread_only: currentFilter === "unread",
+        page: currentPage,
+        limit: LIMIT,
+        scope: "public",
+      });
       if (response.data.success) {
         const newNotifications = response.data.data || [];
         setNotifications((prev) => (isAppending ? [...prev, ...newNotifications] : newNotifications));
@@ -95,39 +100,91 @@ const NotificationsPage: React.FC = () => {
     setSelectedId(notification.notification_id);
     if (!notification.is_read) handleMarkAsRead(notification.notification_id);
 
+    // ✅ HANDLE REJECTIONS: Send to specific tab, filter REJECTED, and highlight the exact item
     if (notification.type?.includes("REJECTED")) {
-      navigate("/dashboard/submissions?status=rejected");
+      const entity = notification.related_entity || "";
+      let highlightId = "";
+
+      if (entity.includes("work:")) {
+        highlightId = entity.split(",").find((p) => p.startsWith("work:"))?.split(":")[1] || "";
+      } else if (entity.includes("media:")) {
+        highlightId = entity.split(",").find((p) => p.startsWith("media:"))?.split(":")[1] || "";
+      } else if (entity.includes("version:")) {
+        highlightId = entity.split(",").find((p) => p.startsWith("version:"))?.split(":")[1] || "";
+      }
+
+      const highlightParam = highlightId ? `&highlight=${highlightId}` : "";
+
+      if (notification.type === "WORK_REJECTED") {
+        navigate(`/dashboard?tab=works&status=REJECTED${highlightParam}`);
+      } else if (notification.type === "MEDIA_REJECTED") {
+        navigate(`/dashboard?tab=media&status=REJECTED${highlightParam}`);
+      } else {
+        navigate(`/dashboard?tab=submissions&status=REJECTED${highlightParam}`);
+      }
       return;
     }
 
     const entity = notification.related_entity;
     if (!entity) return;
 
-    let baseUrl = "";
-    let focusValue = "";
+    let targetUrl = "";
 
-    if (entity.startsWith("scholar_")) {
-      const parts = entity.split("_");
-      baseUrl = `/scholars/${parts[1]}`;
-      if (parts[2] === "media" || parts[2] === "image") focusValue = `media-${parts[3]}`;
-      else if (parts[2] === "work" || parts[2] === "book") focusValue = `work-${parts[3]}`;
-      else if (parts[2] === "reference") focusValue = `reference-${parts[3]}`;
-    } else if (entity.startsWith("submission_")) {
-      baseUrl = `/admin/submissions/${entity.split("_")[1]}`;
+    // ✅ 1. Forum Posts & Comments
+    if (entity.startsWith("forum_post:") || entity.startsWith("post:")) {
+      const parts = entity.split(",");
+      const postId = parts[0].split(":")[1];
+      const hasComment = parts.length > 1 && parts[1].includes("comment:");
+
+      if (hasComment) {
+        const commentId = parts[1].split(":")[1];
+        targetUrl = `/forum/${postId}?highlight=${commentId}`;
+      } else {
+        targetUrl = `/admin/discussions?postId=${postId}`;
+      }
+    }
+    // ✅ 2. Scholar Approved/Rejected (Clean ID + Correct Language + Focus on Work/Media)
+    else if (entity.includes("scholar:") && !entity.startsWith("scholar_version:")) {
+      const parts = entity.split(",");
+      const scholarId = parts.find((p) => p.startsWith("scholar:"))?.split(":")[1] || "1";
+      const lang = parts.find((p) => p.startsWith("lang:"))?.split(":")[1] || "en";
+
+      let focus = "";
+      if (entity.includes("work:")) {
+        const workId = parts.find((p) => p.startsWith("work:"))?.split(":")[1];
+        focus = `work-${workId}`;
+      } else if (entity.includes("media:")) {
+        const mediaId = parts.find((p) => p.startsWith("media:"))?.split(":")[1];
+        focus = `media-${mediaId}`;
+      } else if (entity.includes("version:")) {
+        const versionId = parts.find((p) => p.startsWith("version:"))?.split(":")[1];
+        focus = `version-${versionId}`;
+      }
+
+      targetUrl = `/scholars/${scholarId}?lang=${lang}${focus ? `&focus=${focus}` : ""}`;
+    }
+    // ✅ 3. Scholar Pending Submissions (Admin)
+    else if (entity.startsWith("scholar_version:")) {
+      const scholarId = entity.split(":")[1];
+      if (notification.type === "NEW_SCHOLAR_SUBMISSION") {
+        targetUrl = `/admin/pending/scholars/${scholarId}`;
+      } else if (notification.type === "EDIT_PROPOSAL") {
+        targetUrl = `/admin/pending/edits/${scholarId}`;
+      } else {
+        targetUrl = `/scholars/${scholarId}`;
+      }
+    }
+    // ✅ 4. Legacy/Other Types
+    else if (entity.startsWith("submission_")) {
+      targetUrl = `/admin/submissions/${entity.split("_")[1]}`;
     } else if (entity.startsWith("report_")) {
-      baseUrl = `/admin/reports/${entity.split("_")[1]}`;
+      targetUrl = `/admin/reports/${entity.split("_")[1]}`;
     } else {
-      const parts = entity.split("_");
-      baseUrl = `/${parts[0]}s/${parts[1]}`;
+      const parts = entity.split(":");
+      targetUrl = `/${parts[0]}s/${parts[1]}`;
     }
 
-    const currentSearchParams = new URLSearchParams(window.location.search);
-    const currentLang = currentSearchParams.get("lang") || "en";
-    const finalUrl = new URL(baseUrl, window.location.origin);
-    finalUrl.searchParams.set("lang", currentLang);
-    if (focusValue) finalUrl.searchParams.set("focus", focusValue);
-
-    navigate(finalUrl.pathname + finalUrl.search);
+    navigate(targetUrl);
   };
 
   const handleLoadMore = () => {

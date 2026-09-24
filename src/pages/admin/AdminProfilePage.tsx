@@ -3,42 +3,8 @@ import { useLang } from "../../context/LanguageContext";
 import { useAuth } from "../../context/AuthContext";
 import { userApi } from "../../api/userApi";
 
-/* ------------------------------------------------------------------ */
-/*  Design tokens — Oulamnauna admin palette                          */
-/* ------------------------------------------------------------------ */
-const colors = {
-  creamLight: "#fcfaf5",
-  creamMid: "#f6efdc",
-  creamDark: "#e5d5a8",
-  forestGreen: "#0b4335",
-  amber: "#b8860b",
-  red: "#8b2c2c",
-};
-
-const fonts = {
-  headline: "'Hanken Grotesk', sans-serif",
-  body: "'Inter', sans-serif",
-  label: "'JetBrains Mono', monospace",
-};
-
-const cardStyle: React.CSSProperties = {
-  backgroundColor: colors.creamLight,
-  borderRadius: 12,
-  boxShadow: "0px 4px 20px rgba(11, 67, 53, 0.08)",
-  border: `1px solid ${colors.forestGreen}`,
-};
-
-const Icon: React.FC<{ name: string; size?: number; filled?: boolean }> = ({ name, size = 18, filled = false }) => (
-  <span className="material-symbols-outlined" style={{ fontSize: size, lineHeight: 1, fontVariationSettings: `'FILL' ${filled ? 1 : 0}, 'wght' 400, 'GRAD' 0, 'opsz' 24` }}>
-    {name}
-  </span>
-);
-
-/* ------------------------------------------------------------------ */
-/*  Main Component                                                     */
-/* ------------------------------------------------------------------ */
 export default function AdminProfilePage() {
-  const { lang } = useLang();
+  const { lang, t } = useLang();
   const { user } = useAuth();
   const isRTL = lang === "AR";
 
@@ -53,7 +19,11 @@ export default function AdminProfilePage() {
   const [isLoading, setIsLoading] = useState(true);
   const [saved, setSaved] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
+  
   const [passwordData, setPasswordData] = useState({ current: "", newPass: "", confirm: "" });
+  const [passwordSaved, setPasswordSaved] = useState(false);
+  const [passwordError, setPasswordError] = useState("");
+  const [isUpdatingPassword, setIsUpdatingPassword] = useState(false);
   
   // ✅ Image upload state
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -61,9 +31,52 @@ export default function AdminProfilePage() {
 
   const handlePasswordChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setPasswordData({ ...passwordData, [e.target.name]: e.target.value });
+    setPasswordSaved(false);
+    setPasswordError("");
   };
 
-  // ✅ Image handlers
+  const handleUpdatePassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setPasswordSaved(false);
+    setPasswordError("");
+
+    // ✅ Frontend Validation
+    if (passwordData.current === passwordData.newPass) {
+      setPasswordError(t("admin.profile.errors.passwordSame"));
+      return;
+    }
+    if (passwordData.newPass !== passwordData.confirm) {
+      setPasswordError(t("admin.profile.errors.passwordMismatch"));
+      return;
+    }
+    if (passwordData.newPass.length < 6) {
+      setPasswordError(t("admin.profile.errors.passwordLength"));
+      return;
+    }
+
+    setIsUpdatingPassword(true);
+    try {
+      const response = await userApi.profile.updatePassword({
+        currentPassword: passwordData.current,
+        newPassword: passwordData.newPass,
+        confirmNewPassword: passwordData.confirm,
+      });
+
+      if (response.data.success) {
+        setPasswordSaved(true);
+        setPasswordData({ current: "", newPass: "", confirm: "" });
+        setTimeout(() => setPasswordSaved(false), 3000);
+      } else {
+        setPasswordError(response.data.message || t("admin.profile.errors.passwordUpdateFailed"));
+      }
+    } catch (err: any) {
+      console.error("Password update error:", err);
+      setPasswordError(err.response?.data?.message || t("admin.profile.errors.passwordUpdateError"));
+    } finally {
+      setIsUpdatingPassword(false);
+    }
+  };
+
   const handleAvatarClick = () => fileInputRef.current?.click();
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
@@ -71,7 +84,6 @@ export default function AdminProfilePage() {
     }
   };
 
-  // ✅ Fetch real profile data on mount
   useEffect(() => {
     const fetchProfile = async () => {
       try {
@@ -87,20 +99,19 @@ export default function AdminProfilePage() {
         }
       } catch (err) {
         console.error("Failed to fetch admin profile:", err);
-        setErrorMsg("Failed to load profile data.");
+        setErrorMsg(t("admin.profile.errors.loadFailed"));
       } finally {
         setIsLoading(false);
       }
     };
     fetchProfile();
-  }, []);
+  }, [t]);
 
   const handleProfileChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     setProfileData({ ...profileData, [e.target.name]: e.target.value });
     setSaved(false);
   };
 
-  // ✅ REAL SAVE ACTION
   const handleSaveProfile = async (e: React.FormEvent) => {
     e.preventDefault();
     setSaved(false);
@@ -116,261 +127,228 @@ export default function AdminProfilePage() {
       
       if (response.data.success) {
         setSaved(true);
-        setSelectedFile(null); // Clear file after success
+        setSelectedFile(null);
         setTimeout(() => setSaved(false), 3000);
       } else {
-        setErrorMsg(response.data.message || "Failed to update profile.");
+        setErrorMsg(response.data.message || t("admin.profile.errors.profileUpdateFailed"));
       }
     } catch (err: any) {
       console.error("Save error:", err);
-      setErrorMsg(err.response?.data?.message || "An error occurred while saving.");
+      setErrorMsg(err.response?.data?.message || t("admin.profile.errors.profileUpdateError"));
     }
   };
 
   if (isLoading) {
     return (
-      <div dir={isRTL ? "rtl" : "ltr"} style={{ fontFamily: fonts.body, color: colors.forestGreen, backgroundColor: colors.creamLight, minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center" }}>
-        Loading profile...
+      <div className="min-h-screen flex items-center justify-center bg-[#fbf9f4]">
+        <span className="material-symbols-outlined text-[40px] text-[#1e4d3a]/40 animate-pulse">hourglass_empty</span>
       </div>
     );
   }
 
-  const inputStyle: React.CSSProperties = {
-    width: "100%",
-    padding: "10px 12px",
-    borderRadius: 8,
-    border: `1px solid ${colors.creamDark}`,
-    backgroundColor: "#fff",
-    fontFamily: fonts.body,
-    fontSize: 13,
-    color: colors.forestGreen,
-    outline: "none",
-    transition: "border-color 0.2s",
-    boxSizing: "border-box",
-  };
-
-  const labelStyle: React.CSSProperties = {
-    display: "block",
-    fontFamily: fonts.label,
-    fontSize: 11,
-    fontWeight: 600,
-    letterSpacing: "0.06em",
-    textTransform: "uppercase",
-    color: colors.forestGreen,
-    marginBottom: 8,
-    opacity: 0.8,
-  };
-
-  // ✅ Safely get role name, default to ADMINISTRATOR for this page
   const userRole = ((user as any)?.role_name || "admin").toUpperCase();
 
   return (
-    <div dir={isRTL ? "rtl" : "ltr"} style={{ fontFamily: fonts.body, color: colors.forestGreen, backgroundColor: colors.creamLight, minHeight: "100vh", padding: 24 }}>
-      <div style={{ maxWidth: 1000, margin: "0 auto" }}>
+    <div className="oulamauna-dashboard min-h-screen text-[#1e4d3a] antialiased font-['Inter']" dir={isRTL ? "rtl" : "ltr"}>
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&family=Source+Serif+4:wght@400;500;600;700&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap');
+        .oulamauna-dashboard { background: radial-gradient(circle at 8% 10%, rgba(201,168,76,0.055), transparent 24%), radial-gradient(circle at 92% 16%, rgba(79,145,132,0.06), transparent 25%), #fbf9f4; }
+        .oulamauna-dashboard * { box-sizing: border-box; }
+        .oulamauna-dashboard .serif-title { font-family: 'Source Serif 4', Georgia, serif; letter-spacing: -0.025em; }
+        .oulamauna-dashboard .mono-label { font-family: 'JetBrains Mono', monospace; letter-spacing: 0.06em; }
+        .oulamauna-dashboard .dashboard-card { background: rgba(251,249,244,0.96); border: 1px solid rgba(30,77,58,0.10); border-radius: 10px; box-shadow: 0 5px 18px rgba(30,77,58,0.055); transition: box-shadow 180ms ease; }
+        .oulamauna-dashboard .dashboard-card:hover { box-shadow: 0 9px 26px rgba(30,77,58,0.08); }
+      `}</style>
 
-        {/* ─ Page Header ── */}
-        <div style={{ marginBottom: 24 }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
-            <span style={{ fontFamily: fonts.label, fontSize: 11, letterSpacing: "0.08em", color: colors.forestGreen, opacity: 0.7 }}>ADMIN / PROFILE</span>
+      <main className="max-w-[1200px] mx-auto px-3 md:px-5 xl:px-7 py-6 md:py-8">
+        
+        {/* ── Page Header ── */}
+        <div className="mb-8">
+          <div className="flex items-center gap-2 mb-2">
+            <span className="mono-label text-[9px] uppercase font-bold text-[#1e4d3a]/60">{t("admin.profile.breadcrumb")}</span>
           </div>
-          <h1 style={{ fontFamily: fonts.headline, fontSize: 28, fontWeight: 700, color: colors.forestGreen, margin: "0 0 6px" }}>My Profile</h1>
-          <p style={{ fontFamily: fonts.body, fontSize: 13, color: colors.forestGreen, opacity: 0.75, margin: 0 }}>Manage your personal account information and security.</p>
+          <h1 className="serif-title text-[27px] md:text-[32px] leading-tight font-semibold text-[#082f27]">{t("admin.profile.title")}</h1>
+          <p className="text-[13px] text-[#1e4d3a]/70 mt-1">{t("admin.profile.subtitle")}</p>
         </div>
 
-        <div style={{ display: "grid", gridTemplateColumns: "280px 1fr", gap: 24, alignItems: "start" }}>
+        <div className="grid grid-cols-1 lg:grid-cols-[280px_1fr] gap-6 items-start">
           
           {/* ── Left Column: Profile Summary Card ── */}
-          <div style={{ ...cardStyle, padding: 24, display: "flex", flexDirection: "column", alignItems: "center", textAlign: "center" }}>
+          <div className="dashboard-card p-6 flex flex-col items-center text-center">
             
             {/* ✅ Clean Clickable Avatar with Elegant Hover Overlay */}
             <div 
               onClick={handleAvatarClick}
-              style={{ 
-                width: 80, height: 80, borderRadius: "50%", 
-                backgroundColor: colors.creamMid, color: colors.forestGreen, 
-                border: `2px solid ${colors.forestGreen}`, 
-                display: "flex", alignItems: "center", justifyContent: "center", 
-                fontFamily: fonts.headline, fontWeight: 700, fontSize: 32, marginBottom: 16,
-                overflow: "hidden", cursor: "pointer", position: "relative",
-                flexShrink: 0
-              }}
+              className="w-20 h-20 rounded-full bg-[#f6efdc] border-2 border-[#1e4d3a]/20 flex items-center justify-center font-['Source_Serif_4'] font-bold text-3xl text-[#1e4d3a] mb-4 overflow-hidden cursor-pointer relative flex-shrink-0 group"
             >
               {selectedFile ? (
-                <img src={URL.createObjectURL(selectedFile)} alt="Preview" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                <img src={URL.createObjectURL(selectedFile)} alt="Preview" className="w-full h-full object-cover" />
               ) : (user as any)?.profile_picture || (user as any)?.avatar ? (
-                <img 
-                  src={(user as any).profile_picture || (user as any).avatar} 
-                  alt="Avatar" 
-                  style={{ width: "100%", height: "100%", objectFit: "cover" }} 
-                  crossOrigin="anonymous"
-                  referrerPolicy="no-referrer"
-                />
+                <img src={(user as any).profile_picture || (user as any).avatar} alt="Avatar" className="w-full h-full object-cover" crossOrigin="anonymous" referrerPolicy="no-referrer" />
               ) : (
                 (profileData.name || profileData.username || "U").charAt(0).toUpperCase()
               )}
               
               {/* Elegant Hover Overlay */}
-              <div 
-                style={{
-                  position: "absolute", inset: 0,
-                  backgroundColor: "rgba(11, 67, 53, 0.6)",
-                  display: "flex", alignItems: "center", justifyContent: "center",
-                  opacity: 0, transition: "opacity 0.2s ease",
-                  color: colors.creamLight
-                }}
-                onMouseEnter={(e) => (e.currentTarget.style.opacity = "1")}
-                onMouseLeave={(e) => (e.currentTarget.style.opacity = "0")}
-              >
-                <Icon name="edit" size={24} />
+              <div className="absolute inset-0 bg-[#082f27]/60 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-200 text-white">
+                <span className="material-symbols-outlined text-[24px]">edit</span>
               </div>
             </div>
 
             {/* ✅ Hidden File Input */}
-            <input 
-              type="file" 
-              ref={fileInputRef} 
-              style={{ display: "none" }} 
-              accept="image/*" 
-              onChange={handleFileChange} 
-            />
+            <input type="file" ref={fileInputRef} className="hidden" accept="image/*" onChange={handleFileChange} />
 
             {selectedFile && (
-              <p style={{ fontSize: 11, color: colors.amber, marginTop: -8, marginBottom: 8, fontWeight: 600 }}>
-                New image selected
+              <p className="text-[11px] text-[#C9A84C] font-bold mb-3 -mt-1">
+                {t("admin.profile.avatar.newImageSelected")}
               </p>
             )}
 
-            <h2 style={{ fontFamily: fonts.headline, fontSize: 18, fontWeight: 700, margin: "0 0 4px" }}>{profileData.name || profileData.username}</h2>
-            <span style={{ 
-              fontFamily: fonts.label, fontSize: 10, fontWeight: 700, letterSpacing: "0.08em", 
-              padding: "4px 10px", borderRadius: 9999, backgroundColor: colors.forestGreen, color: colors.creamLight, marginBottom: 16 
-            }}>
-              {userRole}
+            <h2 className="serif-title text-[18px] font-semibold text-[#082f27] mb-1">{profileData.name || profileData.username}</h2>
+            <span className="inline-flex items-center px-3 py-1 rounded-full bg-[#1e4d3a] text-white mono-label text-[10px] font-bold uppercase tracking-wider mb-5">
+              {userRole === "ADMIN" ? t("admin.profile.role") : userRole}
             </span>
             
-            <div style={{ width: "100%", borderTop: `1px solid ${colors.creamDark}`, paddingTop: 16, marginTop: 8, textAlign: isRTL ? "right" : "left" }}>
-              <div style={{ marginBottom: 12 }}>
-                <p style={{ ...labelStyle, marginBottom: 4, fontSize: 9 }}>Email</p>
-                <p style={{ fontFamily: fonts.body, fontSize: 12, margin: 0, wordBreak: "break-all" }}>{profileData.email}</p>
+            <div className="w-full border-t border-[#1e4d3a]/10 pt-4 text-left">
+              <div className="mb-4">
+                <p className="mono-label text-[9px] uppercase font-bold text-[#1e4d3a]/60 mb-1">{t("admin.profile.personalInfo.emailLabel")}</p>
+                <p className="text-[12px] font-medium text-[#082f27] break-all">{profileData.email}</p>
               </div>
-              <div style={{ marginBottom: 12 }}>
-                <p style={{ ...labelStyle, marginBottom: 4, fontSize: 9 }}>Username</p>
-                <p style={{ fontFamily: fonts.body, fontSize: 12, margin: 0 }}>@{profileData.username}</p>
+              <div>
+                <p className="mono-label text-[9px] uppercase font-bold text-[#1e4d3a]/60 mb-1">{t("admin.profile.personalInfo.usernameLabel")}</p>
+                <p className="text-[12px] font-medium text-[#082f27]">@{profileData.username}</p>
               </div>
             </div>
           </div>
 
           {/* ── Right Column: Forms ── */}
-          <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
+          <div className="flex flex-col gap-6">
             
             {/* Form 1: Personal Information */}
-            <div style={{ ...cardStyle, padding: 24 }}>
-              <h3 style={{ fontFamily: fonts.headline, fontSize: 16, fontWeight: 600, margin: "0 0 20px", display: "flex", alignItems: "center", gap: 8 }}>
-                <Icon name="person" size={20} /> Personal Information
+            <div className="dashboard-card p-6">
+              <h3 className="serif-title text-[18px] font-semibold text-[#082f27] mb-5 flex items-center gap-2">
+                <span className="material-symbols-outlined text-[20px]">person</span> {t("admin.profile.personalInfo.title")}
               </h3>
               
               {errorMsg && (
-                <div style={{ padding: "10px 12px", backgroundColor: "rgba(139, 44, 44, 0.1)", color: colors.red, borderRadius: 8, fontSize: 13, marginBottom: 16 }}>
-                  {errorMsg}
+                <div className="bg-[#e96d5c]/10 text-[#e96d5c] p-3 rounded-[8px] text-[13px] mb-5 flex items-center gap-2">
+                  <span className="material-symbols-outlined text-[18px]">error</span> {errorMsg}
                 </div>
               )}
 
-              <form onSubmit={handleSaveProfile} style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+              <form onSubmit={handleSaveProfile} className="flex flex-col gap-5">
                 <div>
-                  <label style={labelStyle}>Display Name</label>
+                  <label className="mono-label text-[10px] uppercase font-bold text-[#1e4d3a]/60 mb-1.5 block">{t("admin.profile.personalInfo.displayName")}</label>
                   <input 
                     type="text" name="name" value={profileData.name} onChange={handleProfileChange} 
-                    style={inputStyle} placeholder="Your full name"
+                    className="w-full bg-[#fbf9f4] border border-[#1e4d3a]/15 rounded-[6px] px-3 py-2 text-[13px] font-medium text-[#1e4d3a] focus:outline-none focus:ring-2 focus:ring-[#1e4d3a]/20 transition-all" 
+                    placeholder={t("admin.profile.personalInfo.displayNamePlaceholder")}
                   />
                 </div>
                 <div>
-                  <label style={labelStyle}>Username</label>
+                  <label className="mono-label text-[10px] uppercase font-bold text-[#1e4d3a]/60 mb-1.5 block">{t("admin.profile.personalInfo.username")}</label>
                   <input 
                     type="text" name="username" value={profileData.username} disabled
-                    style={{ ...inputStyle, backgroundColor: "#f9f9f9", cursor: "not-allowed", opacity: 0.7 }} 
+                    className="w-full bg-[#f9f9f9] border border-[#1e4d3a]/15 rounded-[6px] px-3 py-2 text-[13px] font-medium text-[#1e4d3a] cursor-not-allowed opacity-70" 
                   />
                 </div>
                 <div>
-                  <label style={labelStyle}>Email Address</label>
+                  <label className="mono-label text-[10px] uppercase font-bold text-[#1e4d3a]/60 mb-1.5 block">{t("admin.profile.personalInfo.email")}</label>
                   <input 
                     type="email" name="email" value={profileData.email} disabled
-                    style={{ ...inputStyle, backgroundColor: "#f9f9f9", cursor: "not-allowed", opacity: 0.7 }} 
+                    className="w-full bg-[#f9f9f9] border border-[#1e4d3a]/15 rounded-[6px] px-3 py-2 text-[13px] font-medium text-[#1e4d3a] cursor-not-allowed opacity-70" 
                   />
                 </div>
                 <div>
-                  <label style={labelStyle}>Bio / Description</label>
+                  <label className="mono-label text-[10px] uppercase font-bold text-[#1e4d3a]/60 mb-1.5 block">{t("admin.profile.personalInfo.bio")}</label>
                   <textarea 
                     name="bio" value={profileData.bio} onChange={handleProfileChange} rows={4}
-                    style={{ ...inputStyle, resize: "vertical", minHeight: 80 }} placeholder="Tell us about yourself..."
+                    className="w-full bg-[#fbf9f4] border border-[#1e4d3a]/15 rounded-[6px] px-3 py-2 text-[13px] font-medium text-[#1e4d3a] focus:outline-none focus:ring-2 focus:ring-[#1e4d3a]/20 transition-all resize-vertical min-h-[80px]" 
+                    placeholder={t("admin.profile.personalInfo.bioPlaceholder")}
                   />
                 </div>
 
-                <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 8 }}>
+                <div className="flex justify-end mt-2">
                   <button 
                     type="submit" 
-                    style={{ 
-                      padding: "10px 24px", borderRadius: 8, cursor: "pointer", border: "none", 
-                      backgroundColor: saved ? "#22c55e" : colors.forestGreen, color: colors.creamLight, 
-                      fontFamily: fonts.body, fontSize: 13, fontWeight: 700, display: "flex", alignItems: "center", gap: 6,
-                      transition: "background 0.2s"
-                    }}
+                    className={`inline-flex items-center justify-center gap-2 rounded-[8px] px-5 py-2.5 text-[11px] font-bold uppercase tracking-wide border transition-all duration-300 cursor-pointer ${
+                      saved 
+                        ? "bg-[#2f7d74] border-[#2f7d74] text-white" 
+                        : "bg-[#1e4d3a] border-[#1e4d3a] text-white hover:bg-transparent hover:text-[#1e4d3a]"
+                    }`}
                   >
-                    <Icon name={saved ? "check_circle" : "save"} size={16} filled={saved} />
-                    {saved ? "Saved Successfully" : "Save Changes"}
+                    <span className="material-symbols-outlined text-[16px]" style={{ fontVariationSettings: saved ? "'FILL' 1" : "'FILL' 0" }}>
+                      {saved ? "check_circle" : "save"}
+                    </span>
+                    {saved ? t("admin.profile.personalInfo.saved") : t("admin.profile.personalInfo.saveChanges")}
                   </button>
                 </div>
               </form>
             </div>
 
-            {/* Form 2: Security & Password (Static for now) */}
-            <div style={{ ...cardStyle, padding: 24 }}>
-              <h3 style={{ fontFamily: fonts.headline, fontSize: 16, fontWeight: 600, margin: "0 0 20px", display: "flex", alignItems: "center", gap: 8 }}>
-                <Icon name="lock" size={20} /> Security & Password
+            {/* Form 2: Security & Password */}
+            <div className="dashboard-card p-6">
+              <h3 className="serif-title text-[18px] font-semibold text-[#082f27] mb-5 flex items-center gap-2">
+                <span className="material-symbols-outlined text-[20px]">lock</span> {t("admin.profile.security.title")}
               </h3>
               
-              <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+              <form onSubmit={handleUpdatePassword} className="flex flex-col gap-5">
+                {passwordError && (
+                  <div className="bg-[#e96d5c]/10 text-[#e96d5c] p-3 rounded-[8px] text-[13px] flex items-center gap-2">
+                    <span className="material-symbols-outlined text-[18px]">error</span> {passwordError}
+                  </div>
+                )}
+
                 <div>
-                  <label style={labelStyle}>Current Password</label>
+                  <label className="mono-label text-[10px] uppercase font-bold text-[#1e4d3a]/60 mb-1.5 block">{t("admin.profile.security.currentPassword")}</label>
                   <input 
                     type="password" name="current" value={passwordData.current} onChange={handlePasswordChange} 
-                    style={inputStyle} placeholder="••••••••"
+                    className="w-full bg-[#fbf9f4] border border-[#1e4d3a]/15 rounded-[6px] px-3 py-2 text-[13px] font-medium text-[#1e4d3a] focus:outline-none focus:ring-2 focus:ring-[#1e4d3a]/20 transition-all" 
+                    placeholder={t("admin.profile.security.currentPasswordPlaceholder")} required
                   />
                 </div>
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                   <div>
-                    <label style={labelStyle}>New Password</label>
+                    <label className="mono-label text-[10px] uppercase font-bold text-[#1e4d3a]/60 mb-1.5 block">{t("admin.profile.security.newPassword")}</label>
                     <input 
                       type="password" name="newPass" value={passwordData.newPass} onChange={handlePasswordChange} 
-                      style={inputStyle} placeholder="••••••••"
+                      className="w-full bg-[#fbf9f4] border border-[#1e4d3a]/15 rounded-[6px] px-3 py-2 text-[13px] font-medium text-[#1e4d3a] focus:outline-none focus:ring-2 focus:ring-[#1e4d3a]/20 transition-all" 
+                      placeholder={t("admin.profile.security.currentPasswordPlaceholder")} required
                     />
                   </div>
                   <div>
-                    <label style={labelStyle}>Confirm New Password</label>
+                    <label className="mono-label text-[10px] uppercase font-bold text-[#1e4d3a]/60 mb-1.5 block">{t("admin.profile.security.confirmNewPassword")}</label>
                     <input 
                       type="password" name="confirm" value={passwordData.confirm} onChange={handlePasswordChange} 
-                      style={inputStyle} placeholder="••••••••"
+                      className="w-full bg-[#fbf9f4] border border-[#1e4d3a]/15 rounded-[6px] px-3 py-2 text-[13px] font-medium text-[#1e4d3a] focus:outline-none focus:ring-2 focus:ring-[#1e4d3a]/20 transition-all" 
+                      placeholder={t("admin.profile.security.currentPasswordPlaceholder")} required
                     />
                   </div>
                 </div>
 
-                <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 8 }}>
+                <div className="flex justify-end mt-2">
                   <button 
-                    type="button"
-                    style={{ 
-                      padding: "10px 24px", borderRadius: 8, cursor: "pointer", 
-                      border: `1px solid ${colors.forestGreen}`, backgroundColor: "transparent", 
-                      color: colors.forestGreen, fontFamily: fonts.body, fontSize: 13, fontWeight: 700 
-                    }}
+                    type="submit"
+                    disabled={isUpdatingPassword}
+                    className={`inline-flex items-center justify-center gap-2 rounded-[8px] px-5 py-2.5 text-[11px] font-bold uppercase tracking-wide border transition-all duration-300 cursor-pointer ${
+                      passwordSaved 
+                        ? "bg-[#2f7d74] border-[#2f7d74] text-white" 
+                        : "bg-[#1e4d3a] border-[#1e4d3a] text-white hover:bg-transparent hover:text-[#1e4d3a] disabled:bg-[#1e4d3a]/70 disabled:border-[#1e4d3a]/70 disabled:text-white disabled:cursor-wait disabled:hover:bg-[#1e4d3a]/70 disabled:hover:text-white"
+                    }`}
                   >
-                    Update Password
+                    <span className="material-symbols-outlined text-[16px]" style={{ fontVariationSettings: passwordSaved ? "'FILL' 1" : "'FILL' 0" }}>
+                      {passwordSaved ? "check_circle" : "lock_reset"}
+                    </span>
+                    {isUpdatingPassword ? t("admin.profile.security.updating") : passwordSaved ? t("admin.profile.security.updated") : t("admin.profile.security.updatePassword")}
                   </button>
                 </div>
-              </div>
+              </form>
             </div>
 
           </div>
         </div>
-      </div>
+      </main>
     </div>
   );
 }

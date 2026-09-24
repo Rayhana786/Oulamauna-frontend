@@ -55,6 +55,16 @@ const ServerError = () => {
   const { lang, t } = useLang();
   const isRTL = lang === "AR";
 
+  // 1. Get translations
+  const rawTitle = t("errors.server.title");
+  const rawDesc = t("errors.server.desc");
+  const rawBtn = t("errors.server.button");
+
+  // 2. Fallback to hardcoded English if the context is broken (t returns the key itself)
+  const title = rawTitle === "errors.server.title" ? "Patience is Key" : rawTitle;
+  const desc = rawDesc === "errors.server.desc" ? "Our library is currently undergoing a brief restoration. Please try again in a few moments." : rawDesc;
+  const btnText = rawBtn === "errors.server.button" ? "REFRESH PAGE" : rawBtn;
+
   return (
     <div dir={isRTL ? "rtl" : "ltr"} style={{ ...SANS, backgroundColor: BG, minHeight: "100vh", color: GREEN, display: "flex", alignItems: "center", justifyContent: "center", padding: "20px", overflow: "hidden" }}>
       <style>{`
@@ -89,7 +99,7 @@ const ServerError = () => {
           </div>
 
           <h2 style={{ ...SERIF, fontSize: "28px", fontWeight: 700, color: GREEN, margin: "0 0 12px" }}>
-            {t("errors.server.title")}
+            {title}
           </h2>
 
           <div style={{ 
@@ -98,12 +108,12 @@ const ServerError = () => {
           }} />
 
           <p style={{ fontSize: "14px", color: MUTED, margin: "0 0 32px", lineHeight: 1.6, maxWidth: "320px", marginLeft: "auto", marginRight: "auto" }}>
-            {t("errors.server.desc")}
+            {desc}
           </p>
 
           <HoverBtn onClick={() => window.location.reload()}>
             <Icon name="refresh" size={16} />
-            {t("errors.server.button")}
+            {btnText}
           </HoverBtn>
         </div>
       </div>
