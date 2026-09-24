@@ -307,19 +307,24 @@ export default function UserManagement() {
   const hasActiveFilters = activeTab !== "all" || roleFilter !== "all" || search.trim() !== "";
 
   const handleToggleContribute = async (user: User) => {
-    setBusyId(user.id);
-    try {
-      await adminApi.users.toggleContribute(user.id);
-      setUsers((prev) =>
-        prev.map((u) => (u.id === user.id ? { ...u, contributorBadge: !u.contributorBadge } : u)) // ✅ Now toggles contributorBadge
-      );
-    } catch (error) {
-      console.error("Failed to update contributor status:", error);
-      alert("Failed to update contributor status. Please try again.");
-    } finally {
-      setBusyId(null);
-    }
-  };
+  setBusyId(user.id);
+  try {
+    await adminApi.users.toggleContribute(user.id);
+
+    setUsers((prev) =>
+      prev.map((u) =>
+        u.id === user.id
+          ? { ...u, allowed_to_contribute: !u.allowed_to_contribute }
+          : u
+      )
+    );
+  } catch (error) {
+    console.error("Failed to update contributor status:", error);
+    alert("Failed to update contributor status. Please try again.");
+  } finally {
+    setBusyId(null);
+  }
+};
 
   const handleUnban = async (user: User) => {
     setBusyId(user.id);
