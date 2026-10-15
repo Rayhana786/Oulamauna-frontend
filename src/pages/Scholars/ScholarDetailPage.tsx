@@ -1238,24 +1238,7 @@ const ScholarDetailPage: React.FC = () => {
     return () => clearTimeout(timer);
   }, [activeTab, s, focusParam, searchParams, setSearchParams]);
 
-  // ✅ SMART URL CORRECTION: Placed safely BEFORE any early returns!
-  useEffect(() => {
-    if (!s) return; 
-    
-    const hasAnyContent = Object.values(s.name || {}).some(n => n) || Object.values(s.biography || {}).some(b => b);
-    if (!hasAnyContent) return;
-
-    const requestedUpper = lang.toUpperCase();
-    if (!s.name[requestedUpper]) {
-      const firstAvailable = Object.keys(s.name).find(key => s.name[key])?.toLowerCase();
-      if (firstAvailable && firstAvailable !== langParam?.toLowerCase()) {
-        setSearchParams({ lang: firstAvailable, tab: activeTab }, { replace: true });
-        setLang(firstAvailable.toUpperCase());
-        setGlobalLang(firstAvailable);
-      }
-    }
-  }, [s, lang, langParam, activeTab, setSearchParams, setGlobalLang]);
-
+ 
   if (isLoading) {
     return <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", backgroundColor: "#fbf9f4" }}><Icon name="hourglass_empty" size={32} style={{ color: "#1e4d3a66" }} /></div>;
   }
@@ -1596,8 +1579,7 @@ const ScholarDetailPage: React.FC = () => {
       </header>
 
       <main style={{ maxWidth: "1280px", margin: "0 auto", padding: isMobile ? "16px 16px 40px" : "24px 64px 60px" }}>
-        {/* ✅ Only show empty state if the scholar has NO content in ANY language */}
-        {!hasAnyContent ? (
+        {!hasLangContent ? (
           <EmptyLangState langName={currentLangName} t={t} onContribute={() => navigate(`/scholars/${s.id}/submit/${lang.toLowerCase()}`)} />
         ) : (
           <>

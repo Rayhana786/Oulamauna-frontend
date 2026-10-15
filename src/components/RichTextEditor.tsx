@@ -54,7 +54,12 @@ function useFloatingPosition(
   const [pos, setPos] = useState<{ top: number; left: number } | null>(null);
 
   useEffect(() => {
-    if (!isOpen || !anchorRef.current) return;
+  if (!isOpen) {
+    setPos(null);
+    return;
+  }
+
+  if (!anchorRef.current) return;
 
     const compute = () => {
       const rect = anchorRef.current!.getBoundingClientRect();
@@ -316,10 +321,13 @@ function ColorPickerPopover({
   onChange: (color: string) => void;
   onClose: () => void;
   anchorRef: React.RefObject<HTMLButtonElement>;
+
 }) {
+  const { t } = useLang(); // ADD THIS LINE
   const ref = useRef<HTMLDivElement>(null);
   const customInputRef = useRef<HTMLInputElement>(null);
   const POPUP_WIDTH = 216;
+
   const pos = useFloatingPosition(anchorRef, true, POPUP_WIDTH);
 
   useEffect(() => {
