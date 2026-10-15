@@ -150,16 +150,26 @@ const ContactPage: React.FC = () => {
         input:focus, textarea:focus, select:focus { border-color: #C9A84C !important; outline: none; box-shadow: 0 0 0 3px rgba(201,168,76,0.1); }
         .contact-info-row:hover .contact-icon-badge { background-color: rgba(30,77,58,0.08); }
         @keyframes spin { 100% { transform: rotate(360deg); } }
+        @media (max-width: 900px) {
+  .contact-grid { grid-template-columns: 1fr !important; gap: 32px !important; }
+}
+@media (max-width: 600px) {
+  .contact-wrap { padding: 32px 16px 64px !important; }
+  .contact-hero { padding: 36px 24px !important; margin-bottom: 32px !important; }
+  .contact-title { font-size: 28px !important; }
+  .contact-card { padding: 24px 20px !important; }
+  .contact-row { grid-template-columns: 1fr !important; }
+}
       `}</style>
 
-      <div style={{ maxWidth: "1280px", margin: "0 auto", padding: "64px 40px 120px" }}>
-        <div style={{ position: "relative", overflow: "hidden", borderRadius: "16px", padding: "64px 48px", marginBottom: "48px", border: "1px solid rgba(201,168,76,0.25)", backgroundImage: `url(${heroImage})`, backgroundSize: "cover", backgroundPosition: "center" }}>
+      <div className="contact-wrap" style={{ maxWidth: "1280px", margin: "0 auto", padding: "64px 40px 120px" }}>
+        <div className="contact-hero" style={{ position: "relative", overflow: "hidden", borderRadius: "16px", padding: "64px 48px", marginBottom: "48px", border: "1px solid rgba(201,168,76,0.25)", backgroundImage: `url(${heroImage})`, backgroundSize: "cover", backgroundPosition: "center" }}>
           <div style={{ position: "absolute", inset: 0, background: "linear-gradient(120deg, rgba(30,77,58,0.92) 0%, rgba(30,77,58,0.85) 45%, rgba(30,77,58,0.6) 100%)" }} />
           <div style={{ position: "relative", zIndex: 1 }}>
             <p style={{ ...MONO, fontSize: "11px", color: "#C9A84C", letterSpacing: "0.2em", marginBottom: "16px", fontWeight: 700 }}>
               {t("contact.breadcrumb")}
             </p>
-            <h1 style={{ ...GROTESK, fontSize: "40px", fontWeight: 700, color: "#fbf9f4", margin: "0 0 20px 0", lineHeight: 1.2 }}>
+            <h1 className="contact-title" style={{ ...GROTESK, fontSize: "40px", fontWeight: 700, color: "#fbf9f4", margin: "0 0 20px 0", lineHeight: 1.2 }}>
               {t("contact.title")}
             </h1>
             <p style={{ ...INTER, fontSize: "16px", color: "rgba(251,249,244,0.85)", lineHeight: 1.7, maxWidth: "640px", margin: 0 }}>
@@ -168,8 +178,8 @@ const ContactPage: React.FC = () => {
           </div>
         </div>
 
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 360px", gap: "48px", alignItems: "start" }}>
-          <div style={{ backgroundColor: "#F5F3EC", borderRadius: "16px", padding: "40px", border: "1px solid rgba(30,77,58,0.1)" }}>
+        <div className="contact-grid" style={{ display: "grid", gridTemplateColumns: "1fr 360px", gap: "48px", alignItems: "start" }}>
+          <div className="contact-card" style={{ backgroundColor: "#F5F3EC", borderRadius: "16px", padding: "40px", border: "1px solid rgba(30,77,58,0.1)" }}>
             {sent ? (
               <div style={{ padding: "20px 0", textAlign: "center" }}>
                 <div style={{ width: "64px", height: "64px", borderRadius: "16px", backgroundColor: "rgba(30,77,58,0.1)", display: "flex", alignItems: "center", justifyContent: "center", marginBottom: "24px", margin: "0 auto 24px" }}>
@@ -193,7 +203,7 @@ const ContactPage: React.FC = () => {
                   </div>
                 )}
 
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "20px", marginBottom: "20px" }}>
+                <div className="contact-row" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "20px", marginBottom: "20px" }}>
                   <div>
                     <label style={labelStyle}>{t("contact.labels.name")}</label>
                     <input type="text" value={name} onChange={e => { setName(e.target.value); if (submitted) setErrors(prev => ({ ...prev, name: undefined })); }} placeholder={t("contact.placeholders.name")} style={inputStyle(!!errors.name)} />

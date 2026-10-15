@@ -40,10 +40,11 @@ const AboutPage: React.FC = () => {
         .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; font-family: 'Material Symbols Outlined'; display: inline-block; vertical-align: middle; }
         * { box-sizing: border-box; }
         @media (max-width: 900px) {
-          .about-grid { grid-template-columns: 1fr !important; }
-          .about-grid > * { grid-column: 1 !important; }
-          .about-image { grid-row: auto !important; margin-top: 20px; }
-        }
+  .about-grid { grid-template-columns: 1fr !important; }
+  .about-grid > * { grid-column: 1 !important; grid-row: auto !important; }
+  .about-image { grid-row: auto !important; margin-top: 20px; }
+  .about-intro { grid-template-columns: 1fr !important; gap: 24px !important; }
+}
       `}</style>
 
       <div style={{ maxWidth: "1280px", margin: "0 auto", padding: "64px 40px 0" }}>
@@ -62,7 +63,7 @@ const AboutPage: React.FC = () => {
           </div>
         </div>
 
-        <div style={{ display: "grid", gridTemplateColumns: "1.6fr 1fr", gap: "48px", marginBottom: "72px" }}>
+        <div className="about-intro" style={{ display: "grid", gridTemplateColumns: "1.6fr 1fr", gap: "48px", marginBottom: "72px" }}>
           <p style={{ ...INTER, fontSize: "18px", color: "#1e4d3a", lineHeight: 1.7, margin: 0 }}>
             {t("about.introLeft")}
           </p>

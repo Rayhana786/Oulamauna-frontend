@@ -69,6 +69,7 @@ const Navbar: React.FC = () => {
   const searchRef = useRef<HTMLDivElement>(null);
   const profileRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const mobileInputRef = useRef<HTMLInputElement>(null);
 
   const location = useLocation();
   const isHome = location.pathname === "/";
@@ -138,7 +139,7 @@ const Navbar: React.FC = () => {
   useEffect(() => {
     const fn = (e: MouseEvent) => {
       if (langRef.current && !langRef.current.contains(e.target as Node)) setLangOpen(false);
-      if (searchRef.current && !searchRef.current.contains(e.target as Node)) setSearchOpen(false);
+      if (window.innerWidth >= 768 && searchRef.current && !searchRef.current.contains(e.target as Node)) setSearchOpen(false);
       if (profileRef.current && !profileRef.current.contains(e.target as Node)) setProfileOpen(false);
     };
     document.addEventListener("mousedown", fn);
@@ -534,7 +535,66 @@ const Navbar: React.FC = () => {
         </div>
       </nav>
 
-      <NotificationsPanel isOpen={notifPanelOpen} onClose={handleCloseNotifPanel} isRTL={isRTL} />
+      {/* Mobile search panel */}
+{searchOpen && (
+  <div className="md:hidden fixed left-3 right-3 top-[72px] z-[60] bg-[#1e4d3a] border border-white/10 rounded-2xl shadow-xl p-3" dir={isRTL ? "rtl" : "ltr"}>
+    <div className="relative mb-2">
+      <input
+        ref={mobileInputRef}
+        type="search"
+        value={searchQuery}
+        onChange={(e) => setSearchQuery(e.target.value)}
+        onKeyDown={handleSearchKeyDown}
+        placeholder={t("navbar.searchPlaceholder")}
+        autoFocus
+        className="w-full h-11 ps-4 pe-11 rounded-xl text-base bg-white/10 border border-white/20 placeholder-white/40 text-white outline-none focus:border-[#C9A84C]/50"
+      />
+      <button
+        onClick={() => {
+          if (searchQuery) { setSearchQuery(""); mobileInputRef.current?.focus(); }
+          else { setSearchOpen(false); }
+        }}
+        className="absolute top-1/2 -translate-y-1/2 end-2 p-1.5 text-white/60"
+      >
+        <span className="material-symbols-outlined">close</span>
+      </button>
+    </div>
+
+    {searchQuery.trim().length > 0 && (
+      <div className="max-h-[60vh] overflow-y-auto custom-scrollbar">
+        {isSearching ? (
+          <div className="py-6 text-center text-white/60 text-sm">{t("navbar.searching")}</div>
+        ) : searchResults ? (() => {
+          const sections = [
+            { label: t("navbar.scholars"), items: searchResults.scholars },
+            { label: t("navbar.works"), items: searchResults.works },
+            { label: t("navbar.media"), items: searchResults.media },
+            { label: t("navbar.forumPosts"), items: searchResults.posts },
+          ].filter((s) => s.items.length > 0);
+
+          if (sections.length === 0) {
+            return <div className="py-6 text-center text-white/60 text-sm">{t("navbar.noResults")} "{searchQuery}"</div>;
+          }
+          return (
+            <div className="space-y-3">
+              {sections.map((s) => (
+                <div key={s.label}>
+                  <h3 className="text-[#C9A84C] text-xs font-bold uppercase tracking-wider mb-1 px-2">{s.label}</h3>
+                  {s.items.map((item, idx) => (
+                    <button key={`${s.label}-${idx}`} onClick={() => handleResultClick(item)} className="w-full text-start px-3 py-2 rounded-lg active:bg-white/10">
+                      <div className="text-white font-medium text-sm truncate">{item.title}</div>
+                      {item.subtitle && <div className="text-white/60 text-xs mt-0.5 truncate">{item.subtitle}</div>}
+                    </button>
+                  ))}
+                </div>
+              ))}
+            </div>
+          );
+        })() : null}
+      </div>
+    )}
+  </div>
+)}
 
       {/* Full-Page Mobile Menu */}
       {mobileMenuOpen && (
