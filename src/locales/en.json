@@ -1,4 +1,4 @@
-{   
+{
   "home": {
     "searching": "Searching...",
     "searchScholars": "Scholars",
@@ -6,56 +6,56 @@
     "searchMedia": "Media",
     "searchDiscussions": "Discussions",
     "noResultsPrefix": "No results found for",
-    "welcomeBack": "WELCOME BACK",
+    "welcomeBack": "Welcome back",
     "readyToContinue": "Ready to continue your journey?",
-    "tagline": "WELCOME TO OULAMAUNA",
-    "title": "Discover the Scholars Who Shaped Islamic Thought",
-    "subtitle": "Explore centuries of knowledge, from the Classical era to modern times. Verified biographies, original works, and manuscript archives — all in one place.",
+    "tagline": "Welcome to Oulamauna",
+    "title": "Discover the scholars who shaped Islamic thought",
+    "subtitle": "Explore centuries of knowledge, from the classical era to the modern age. Documented biographies, original works, and an archive of manuscripts — all in one place.",
     "searchPlaceholder": "Search by name, discipline, or era...",
     "exploreButton": "Start Exploring",
     "featuredLabel": "Featured Scholars",
     "meetTheGiants": "Meet the Giants",
     "viewAll": "View All Scholars",
     "recentLabel": "Recently Added",
-    "whyTagline": "WHY OULAMAUNA",
-    "whyTitleLine1": "Preserving Knowledge",
-    "whyTitleLine2": "With Purpose",
-    "whyDescription": "We believe every scholar's legacy deserves more than a footnote. Our archive pairs rigorous verification with accessible, multilingual storytelling.",
-    "whyBullet1": "Verified biographies and sources",
-    "whyBullet2": "Multilingual access in Arabic, French & English",
-    "whyBullet3": "Careful manuscript digitization",
+    "whyTagline": "Why Oulamauna",
+    "whyTitleLine1": "Preserving knowledge",
+    "whyTitleLine2": "with awareness and purpose",
+    "whyDescription": "We believe every scholar's legacy deserves more than a footnote. Our archive combines careful documentation with accessible multilingual storytelling.",
+    "whyBullet1": "Documented biographies and sources",
+    "whyBullet2": "Multilingual accessibility (Arabic, French and English)",
+    "whyBullet3": "Careful digitization of manuscripts",
     "whyBullet4": "Open to researchers and contributors",
-    "whyCtaButton": "About The Archive",
-    "statScholars": "Scholars",
-    "statManuscripts": "Manuscripts",
-    "statDisciplines": "Disciplines",
-    "statCenturies": "Centuries",
-    "worksLabel": "Featured Works & Manuscripts",
+    "whyCtaButton": "About the Archive",
+    "statScholars": "scholars",
+    "statManuscripts": "manuscripts",
+    "statDisciplines": "disciplines",
+    "statCenturies": "centuries",
+    "worksLabel": "Selected Works & Manuscripts",
     "erasLabel": "Explore by Era",
     "scholarsCount": "scholars",
     "disciplinesLabel": "Browse by Discipline",
     "disciplinesSubtitle": "Explore the fields of knowledge that shaped Islamic civilization across the centuries",
-    "showLess": "Show Less",
-    "showMore": "Show More",
+    "showLess": "Show less",
+    "showMore": "Show more",
     "popularLabel": "Trending Discussions",
     "popularDiscussionsTitle": "Most Popular Discussions",
     "viewAllDiscussions": "View All Discussions",
-    "ctaTitle": "Ready to dive deeper?",
+    "ctaTitle": "Ready to go deeper?",
     "ctaText": "Join our community of researchers and contributors",
     "ctaButton": "Become a Contributor",
-    "pillar1Title": "BESPOKE RESEARCH",
-    "pillar1Desc": "Tailored archives that bring history to life.",
-    "pillar2Title": "TIMELESS WISDOM",
+    "pillar1Title": "Dedicated Research",
+    "pillar1Desc": "An archive designed to bring history back to life.",
+    "pillar2Title": "Timeless Wisdom",
     "pillar2Desc": "Elegant narratives that stand the test of time.",
-    "pillar3Title": "QUALITY PRESERVATION",
-    "pillar3Desc": "Premium digitization by trusted artisans.",
-    "pillar4Title": "PERSONAL JOURNEY",
-    "pillar4Desc": "Collaborative exploration designed around you."
+    "pillar3Title": "High-Quality Preservation",
+    "pillar3Desc": "Outstanding digitization by trusted experts.",
+    "pillar4Title": "Personal Journey",
+    "pillar4Desc": "Collaborative exploration tailored to you."
   },
   "userManagement": {
     "title": "User Management",
-    "subtitle": "View every account, manage contributor access, and handle bans in one place.",
-    "searchPlaceholder": "Search name or email",
+    "subtitle": "View every account, manage contributor permissions, and handle bans in one place.",
+    "searchPlaceholder": "Search by name or email",
     "clear": "Clear",
     "tabs": {
       "all": "All Users",
@@ -70,7 +70,7 @@
       "bannedUsers": "Banned Users",
       "bannedUsersDesc": "Restricted accounts",
       "admins": "Admins",
-      "adminsDesc": "Administrator role"
+      "adminsDesc": "Admin role"
     },
     "roles": {
       "all": "All Roles",
@@ -87,8 +87,8 @@
       "status": "Status",
       "actions": "Actions",
       "noUsers": "No users found matching your filters.",
-      "revokeContributor": "Click to revoke contributor access",
-      "grantContributor": "Click to grant contributor access",
+      "revokeContributor": "Click to revoke contributor permission",
+      "grantContributor": "Click to grant contributor permission",
       "allowed": "Allowed",
       "notAllowed": "Not allowed",
       "viewDetails": "View details",
@@ -96,7 +96,7 @@
       "banUser": "Ban user",
       "banned": "Banned",
       "active": "Active",
-      "inactive":"Inactive"
+      "inactive": "Inactive"
     },
     "modal": {
       "banTitle": "Ban User",
@@ -117,9 +117,64 @@
       }
     }
   },
-   "adminDashboard": {
-    "title": "ADMIN DASHBOARD",
-    "welcomeUser": "Welcome to the Admin Panel",
+  "languages": {
+    "english": "English",
+    "arabic": "Arabic",
+    "french": "French",
+    "unknown": "Unknown"
+  },
+  "months": {
+    "jan": "January",
+    "feb": "February",
+    "mar": "March",
+    "apr": "April",
+    "may": "May",
+    "jun": "June",
+    "jul": "July",
+    "aug": "August",
+    "sep": "September",
+    "oct": "October",
+    "nov": "November",
+    "dec": "December"
+  },
+  "common": {
+    "cancel": "Cancel",
+    "confirm": "Confirm",
+    "noData": "No data available",
+    "user": "User",
+    "unnamed": "Unnamed",
+    "noResults": "No results found.",
+    "retry": "Retry",
+    "clear": "Clear",
+    "showing": "Showing",
+    "of": "of",
+    "goBack": "Go back",
+    "sortBy": "Sort by",
+    "newestFirst": "Newest first",
+    "oldestFirst": "Oldest first",
+    "nameAZ": "Name (A-Z)",
+    "scholar": "Scholar",
+    "all": "All",
+    "approved": "Approved",
+    "pending": "Pending",
+    "rejected": "Rejected",
+    "view": "View file",
+    "download": "Download",
+    "openLink": "Open link",
+    "noFileAttached": "No file or link attached.",
+    "unknown": "Unknown",
+    "year": "Year",
+    "language": "Language",
+    "status": "Status",
+    "format": "Format",
+    "type": "Type",
+    "featured": "Featured",
+    "actions": "Actions",
+    "details": "Details"
+  },
+  "adminDashboard": {
+    "title": "Admin Dashboard",
+    "welcomeUser": "Welcome to the Admin Dashboard",
     "stats": {
       "scholars": "Scholars",
       "edits": "Edits",
@@ -129,7 +184,7 @@
     "metrics": {
       "scholars": "Total Scholars",
       "allTime": "All time",
-      "pending": "Pending Reviews",
+      "pending": "Pending Review",
       "requiresAttention": "Requires attention",
       "activeUsers": "Active Contributors",
       "canContribute": "Can contribute",
@@ -142,19 +197,19 @@
       "monthly": "Monthly Activity",
       "yearly": "Yearly Activity",
       "daily": "Daily Activity",
-      "thisYearDesc": "Contributions over the current year",
-      "allTimeDesc": "All-time contribution history",
-      "last30DaysDesc": "Contributions over the last 30 days",
+      "thisYearDesc": "Contributions during the current year",
+      "allTimeDesc": "Overall contribution history",
+      "last30DaysDesc": "Contributions during the last 30 days",
       "toggle": {
-        "30days": "30 Days",
+        "30days": "30 days",
         "yearly": "Yearly",
-        "all": "All Time"
+        "all": "All"
       },
-      "queue": "Review Queue",
-      "currentQueue": "Current items pending review",
-      "total": "Total Pending",
+      "queue": "Queue",
+      "currentQueue": "Items currently under review",
+      "total": "Total pending",
       "topDisciplines": "Top Disciplines",
-      "rankedByVolume": "Ranked by submission volume"
+      "rankedByVolume": "Ranked by volume"
     },
     "empty": {
       "data": "No data available yet.",
@@ -165,84 +220,37 @@
       "title": "Moderation & Safety",
       "subtitle": "Platform health and user safety metrics",
       "urgentReports": "Urgent Reports",
-      "highStrike": "High Strike Users",
-      "sixMonthTrend": "6-Month Forum Trend",
+      "highStrike": "Offending Users",
+      "sixMonthTrend": "Forum Trend (6 months)",
       "legend": {
-        "forum": "Forum Posts",
+        "forum": "Forum posts",
         "reports": "Reports"
       }
     },
     "performance": {
       "title": "Performance Overview",
-      "subtitle": "Platform health and engagement metrics",
+      "subtitle": "Platform health and engagement rates",
       "totalUsers": "Total Registered Users",
       "approvalRate": "Approval Rate",
-      "openReports": "Open Reports Index",
-      "hiddenPosts": "Hidden Forum Posts",
+      "openReports": "Open Reports Indicator",
+      "hiddenPosts": "Hidden Posts",
       "systemStatus": "System Status",
-      "operational": "Operational"
+      "operational": "Operating normally"
     },
     "events": {
       "latest": "Latest Events",
-      "recent": "Recent platform activity and updates"
+      "recent": "Recent activity and platform updates"
     },
     "contributors": {
       "top": "Top Contributors",
-      "mostActive": "Most active scholars this month"
+      "mostActive": "Most active this month"
     },
     "languages": {
       "title": "Language Distribution",
       "distribution": "Content distribution by language"
     }
   },
-    "languages": {
-    "english": "English",
-    "arabic": "Arabic",
-    "french": "French",
-    "unknown": "Unknown"
-  },
-  "months": {
-    "jan": "Jan", "feb": "Feb", "mar": "Mar", "apr": "Apr",
-    "may": "May", "jun": "Jun", "jul": "Jul", "aug": "Aug",
-    "sep": "Sep", "oct": "Oct", "nov": "Nov", "dec": "Dec"
-  },
-     "common": {
-    "cancel": "Cancel",
-    "confirm": "Confirm",
-    "noData": "No data available",
-    "user": "User",
-    "unnamed": "Unnamed",
-    "noResults": "No results found.",
-    "retry": "Retry",
-    "clear": "Clear",
-    "showing": "Showing",
-    "of": "of",
-    "goBack": "Go Back",
-    "sortBy": "Sort By",
-    "newestFirst": "Newest First",
-    "oldestFirst": "Oldest First",
-    "nameAZ": "Name (A-Z)",
-    "scholar": "Scholar",
-    "all": "All",
-    "approved": "Approved",
-    "pending": "Pending",
-    "rejected": "Rejected",
-    "view": "View File",
-    "download": "Download",
-    "openLink": "Open Link",
-    "noFileAttached": "No file or link attached.",
-    "unknown": "Unknown",
-    "year": "Year",
-    "language": "Language",
-    "status": "Status",
-    "format": "Format",
-    "type": "Type",
-    "featured": "Featured",
-    "actions": "Actions",
-    "details": "Details"
-  },
-  
-    "scholar": {
+  "scholar": {
     "unknown": "Unknown",
     "noContent": "No content available in",
     "langName": {
@@ -255,17 +263,17 @@
     "download": "Download",
     "titleRequired": "Title is required",
     "validYear": "Please enter a valid year",
-    "urlRequired": "URL is required",
+    "urlRequired": "Link is required",
     "fileRequired": "File is required",
     "fileTooLarge": "File is too large",
     "workAddedSuccess": "Work added successfully",
     "mediaAddedSuccess": "Media added successfully",
     "addNewWork": "Add New Work",
     "title": "Title",
-    "workTitlePlaceholder": "Enter work title",
+    "workTitlePlaceholder": "Enter the work title",
     "year": "Year",
-    "yearPlaceholder": "e.g., 1200",
-    "formatLabel": "Format",
+    "yearPlaceholder": "e.g. 1200",
+    "formatLabel": "Type",
     "format": {
       "BOOK": "Book",
       "ARTICLE": "Article",
@@ -284,31 +292,27 @@
       "INVENTION": "Invention",
       "SOFTWARE": "Software",
       "MAP": "Map",
-      "OTHER": "Other",
-      "pdf": "PDF",
-      "audio": "Audio",
-      "video": "Video"
+      "OTHER": "Other"
     },
     "digitalAccess": "Digital Access",
     "none": "None",
-    "uploadFile": "Upload File",
-    "pasteLink": "Paste Link",
+    "uploadFile": "Upload file",
+    "pasteLink": "Paste link",
     "noFileAttached": "No file attached",
-    "urlPlaceholder": "https://...",
     "cancel": "Cancel",
     "saving": "Saving...",
     "addWorkBtn": "Add Work",
     "addMediaModal": "Add Media",
-    "mediaTitlePlaceholder": "Enter media title",
+    "mediaTitlePlaceholder": "Enter the media title",
     "description": "Description",
-    "descriptionPlaceholder": "Enter description",
-    "fileLink": "File or Link",
+    "descriptionPlaceholder": "Enter a description",
+    "fileLink": "File or link",
     "uploading": "Uploading...",
     "addMediaBtn": "Add Media",
     "addedBy": "Added by",
     "loading": "Loading...",
     "downloading": "Downloading...",
-    "openLink": "Open Link",
+    "openLink": "Open link",
     "loginFirst": "Please log in first",
     "accountBanned": "Your account has been banned",
     "privilegesRevoked": "Your contribution privileges have been revoked",
@@ -317,11 +321,11 @@
     "scholars": "Scholars",
     "createdBy": "Created by",
     "lastUpdated": "Last updated by",
-    "shareText": "Check out this scholar: {name}",
+    "shareText": "Check out this scholar: {{name}}",
     "linkCopied": "Link copied to clipboard",
     "editBtn": "Edit",
     "addVersionBtn": "Add Version",
-    "atAGlance": "AT A GLANCE",
+    "atAGlance": "At a Glance",
     "fullName": "Full Name",
     "born": "Born",
     "died": "Died",
@@ -329,44 +333,71 @@
     "region": "Region",
     "discipline": "Discipline",
     "allContributors": "All Contributors",
-    "contributors": "Contributors",
+    "contributors": "contributors",
     "contributor": "Contributor",
     "contributions": "Contributions",
     "tab": {
-      "works": "WORKS",
-      "media": "MEDIA",
-      "relations": "RELATIONS",
-      "more": "MORE"
+      "works": "Works",
+      "media": "Media",
+      "relations": "Relations",
+      "more": "More"
     },
     "bibliographyTitle": "Bibliography",
     "addWork": "Add Work",
     "emptyWorks": "No works listed yet.",
     "addFirstWork": "Add the first work",
-    "colTitle": "TITLE",
-    "colYear": "YEAR",
-    "colFormat": "FORMAT",
-    "colAccess": "ACCESS",
+    "colTitle": "Title",
+    "colYear": "Year",
+    "colFormat": "Type",
+    "colAccess": "Access",
     "mediaTitle": "Media",
     "addMedia": "Add Media",
     "emptyMedia": "No media available yet.",
     "addFirstMedia": "Add the first media",
-    "emptyRelations": "No intellectual relations or disciples recorded yet.",
-    "intellectualLineage": "INTELLECTUAL LINEAGE",
-    "notableDisciples": "NOTABLE DISCIPLES",
-    "relatedByField": "RELATED BY FIELD",
+    "emptyRelations": "No intellectual relations or students recorded yet.",
+    "intellectualLineage": "Intellectual Lineage",
+    "notableDisciples": "Notable Disciples",
+    "relatedByField": "Related by Field",
     "emptyReferences": "No academic references listed yet.",
     "academicReferences": "Academic References",
-    "recentRevisions": "RECENT REVISIONS",
-    "showLess": "Show Less",
-    "viewMore": "View More"
+    "recentRevisions": "Recent Revisions",
+    "showLess": "Show less",
+    "viewMore": "View more"
   },
-  
- 
-    "admin": { "profile": {
+  "time": {
+    "justNow": "Just now",
+    "minutesShort": "m",
+    "hoursShort": "h",
+    "daysShort": "d"
+  },
+  "notifications": {
+    "title": "Notifications",
+    "markAllRead": "Mark all as read",
+    "viewAll": "View all",
+    "all": "All",
+    "unread": "Unread",
+    "noNotifications": "No notifications",
+    "caughtUp": "You're all caught up!",
+    "willNotify": "We'll notify you when something new happens.",
+    "new": "New",
+    "week": "This week",
+    "earlier": "Earlier",
+    "loadMore": "Load more",
+    "readMore": "Read more",
+    "readLess": "Read less",
+    "time": {
+      "justNow": "Just now",
+      "minsAgo": "m",
+      "hoursAgo": "h",
+      "daysAgo": "d"
+    }
+  },
+  "admin": {
+    "profile": {
       "breadcrumb": "Account Settings",
-      "title": "My Profile",
+      "title": "Profile",
       "subtitle": "Manage your personal information and security settings.",
-      "role": "Administrator",
+      "role": "Admin",
       "avatar": {
         "newImageSelected": "New image selected"
       },
@@ -375,11 +406,11 @@
         "displayName": "Display Name",
         "displayNamePlaceholder": "Enter your display name",
         "username": "Username",
-        "email": "Email Address",
+        "email": "Email",
         "emailLabel": "Email",
         "usernameLabel": "Username",
-        "bio": "Biography",
-        "bioPlaceholder": "Tell us a little bit about yourself...",
+        "bio": "Bio",
+        "bioPlaceholder": "Tell us a little about yourself...",
         "saveChanges": "Save Changes",
         "saved": "Saved!"
       },
@@ -404,12 +435,12 @@
         "passwordUpdateError": "An error occurred while updating the password."
       }
     },
-         "contactUs": {
-      "title": "Contact Us Management",
+    "contactUs": {
+      "title": "Contact Messages Management",
       "subtitle": "Review and reply to user inquiries.",
       "refresh": "Refresh",
-      "empty": "No messages found for this filter.",
-      "noSubject": "No Subject",
+      "empty": "No messages match this filter.",
+      "noSubject": "No subject",
       "subjects": {
         "general": "General Inquiry",
         "technical": "Technical Issue",
@@ -424,9 +455,9 @@
         "archived": "Archived"
       },
       "status": {
-        "pending": "PENDING",
-        "replied": "REPLIED",
-        "archived": "ARCHIVED"
+        "pending": "Pending",
+        "replied": "Replied",
+        "archived": "Archived"
       },
       "table": {
         "date": "Date",
@@ -443,9 +474,9 @@
       "modal": {
         "title": "Reply to {name}",
         "originalMessage": "Original Message",
-        "yourReply": "Your Reply (Sent via Email)",
-        "replyPlaceholder": "Type your response to the user here...",
-        "internalNote": "Internal Admin Note (Optional)",
+        "yourReply": "Your reply (will be sent by email)",
+        "replyPlaceholder": "Write your reply to the user here...",
+        "internalNote": "Internal admin note (optional)",
         "notePlaceholder": "Add a private note for other admins...",
         "cancel": "Cancel",
         "send": "Send Reply",
@@ -456,51 +487,50 @@
       },
       "errors": {
         "fetchFailed": "Failed to fetch contact messages.",
-        "sendFailed": "Failed to send reply. Please try again.",
-        "archiveFailed": "Failed to archive message."
+        "sendFailed": "Failed to send the reply. Please try again.",
+        "archiveFailed": "Failed to archive the message."
       }
     },
-    
-     "reports": {
+    "reports": {
       "title": "Moderation Queue",
       "subtitle": "Review and resolve community reports",
-      "allClear": "All Clear!",
-      "allClearDesc": "No pending reports to review.",
+      "allClear": "All clear!",
+      "allClearDesc": "There are no pending reports to review.",
       "reportedBy": "By:",
       "reportedTimes": "Reported {count} time(s)",
       "reasons": "Reasons:",
       "notSpecified": "Not specified",
       "content": "Content:",
       "author": "Author:",
-      "deletedUser": "Deleted User",
+      "deletedUser": "Deleted user",
       "strikes": "Strikes:",
       "type": {
         "post": "Post",
         "comment": "Comment"
       },
       "status": {
-        "banned": "BANNED"
+        "banned": "Banned"
       },
       "actions": {
-        "viewContext": "View Context",
-        "dismiss": "Dismiss",
-        "deleteStrike": "Delete & Strike",
-        "banUser": "Ban User"
+        "viewContext": "View context",
+        "dismiss": "Dismiss report",
+        "deleteStrike": "Delete & strike",
+        "banUser": "Ban user"
       },
       "confirm": {
         "dismiss": "Are you sure you want to dismiss this report?",
         "deleteStrike": "Are you sure you want to delete this content and add a strike?",
-        "banUser": "WARNING: Are you sure you want to BAN user {username}?"
+        "banUser": "Warning: are you sure you want to ban the user {username}?"
       },
       "success": {
         "userBanned": "User {username} has been banned successfully."
       },
       "errors": {
-        "processFailed": "Failed to process report. Please try again.",
-        "banFailed": "Failed to ban user. Please try again."
+        "processFailed": "Failed to process the report. Please try again.",
+        "banFailed": "Failed to ban the user. Please try again."
       }
     },
-          "discussions": {
+    "discussions": {
       "title": "Discussions Management",
       "subtitle": "Moderate community posts.",
       "manageCategories": "Manage Categories",
@@ -510,13 +540,13 @@
       "uncategorized": "Uncategorized",
       "comments": "comments",
       "filter": {
-        "allPosts": "All Posts",
-        "activeOnly": "Active Only",
-        "hiddenOnly": "Hidden Only",
-        "allCategories": "All Categories"
+        "allPosts": "All posts",
+        "activeOnly": "Active only",
+        "hiddenOnly": "Hidden only",
+        "allCategories": "All categories"
       },
       "status": {
-        "hidden": "HIDDEN"
+        "hidden": "Hidden"
       },
       "table": {
         "postDetails": "Post Details",
@@ -526,11 +556,11 @@
         "actions": "Actions"
       },
       "actions": {
-        "viewDetails": "View Details",
-        "hide": "Hide Post",
-        "restore": "Restore Post",
-        "delete": "Delete Permanently",
-        "banUser": "Ban User",
+        "viewDetails": "View details",
+        "hide": "Hide post",
+        "restore": "Restore post",
+        "delete": "Delete permanently",
+        "banUser": "Ban user",
         "hideComment": "Hide comment",
         "restoreComment": "Restore comment",
         "deleteComment": "Delete permanently"
@@ -540,35 +570,35 @@
         "postedOn": "Posted on",
         "comments": "Comments",
         "noComments": "No comments yet.",
-        "commentHidden": "This comment has been hidden by a moderator.",
-        "viewOriginal": "View original",
+        "commentHidden": "This comment was hidden by a moderator.",
+        "viewOriginal": "View original text",
         "loadFailed": "Failed to load post details.",
         "close": "Close"
       },
       "confirm": {
         "hide": "Hide this post from the public site?",
-        "deletePermanent": "PERMANENTLY delete this post and all its comments? This cannot be undone.",
-        "banUser": "Ban user {username}?",
-        "deleteCommentPermanent": "PERMANENTLY delete this comment and all its replies? This cannot be undone."
+        "deletePermanent": "Permanently delete this post and all its comments? This action cannot be undone.",
+        "banUser": "Ban the user {username}?",
+        "deleteCommentPermanent": "Permanently delete this comment and all replies to it? This action cannot be undone."
       },
       "success": {
         "userBanned": "User {username} has been banned."
       },
       "errors": {
-        "hideFailed": "Failed to hide post",
-        "restoreFailed": "Failed to restore post",
-        "deleteFailed": "Failed to delete post",
-        "banFailed": "Failed to ban user",
-        "hideCommentFailed": "Failed to hide comment",
-        "restoreCommentFailed": "Failed to restore comment",
-        "deleteCommentFailed": "Failed to delete comment"
+        "hideFailed": "Failed to hide the post",
+        "restoreFailed": "Failed to restore the post",
+        "deleteFailed": "Failed to delete the post",
+        "banFailed": "Failed to ban the user",
+        "hideCommentFailed": "Failed to hide the comment",
+        "restoreCommentFailed": "Failed to restore the comment",
+        "deleteCommentFailed": "Failed to delete the comment"
       },
       "time": {
         "today": "Today",
         "daysAgo": "days ago"
       }
     },
-          "categories": {
+    "categories": {
       "title": "Forum Categories",
       "subtitle": "Manage discussion categories and translations.",
       "addCategory": "Add Category",
@@ -586,12 +616,12 @@
       "delete": "Delete",
       "deleteConfirm": "Delete this category? Posts must be moved or deleted first.",
       "primaryName": "Primary Name *",
-      "primaryNamePlaceholder": "e.g., Manuscripts",
-      "descriptionPlaceholder": "Brief description of this category...",
+      "primaryNamePlaceholder": "e.g. Manuscripts",
+      "descriptionPlaceholder": "A short description of this category...",
       "cancel": "Cancel"
     },
-          "scholarReview": {
-      "atAGlance": "AT A GLANCE",
+    "scholarReview": {
+      "atAGlance": "At a Glance",
       "fullName": "Full Name",
       "born": "Born",
       "died": "Died",
@@ -599,7 +629,7 @@
       "region": "Region",
       "discipline": "Discipline",
       "biography": "Biography",
-      "works": "Works & Bibliography",
+      "works": "Works & Publications",
       "title": "Title",
       "year": "Year",
       "format": "Format",
@@ -607,228 +637,227 @@
       "status": "Status",
       "media": "Integrated Media",
       "relationships": "Relationships",
-      "intellectualLineage": "INTELLECTUAL LINEAGE",
-      "notableDisciples": "NOTABLE DISCIPLES",
+      "intellectualLineage": "Intellectual Lineage",
+      "notableDisciples": "Notable Disciples",
       "references": "References",
-      "viewSource": "View Source",
+      "viewSource": "View source",
       "activity": "Activity",
       "error": {
-        "notFound": "This scholar submission could not be found. It may have already been reviewed.",
-        "failed": "Failed to load this scholar submission. Please try again."
+        "notFound": "This scholar's submission was not found. It may have already been reviewed.",
+        "failed": "Failed to load this scholar's submission. Please try again."
       },
       "modal": {
         "restrict": {
           "title": "Restrict User",
-          "desc": "Choose an action. This will automatically reject this scholar submission as well.",
-          "revoke": "Revoke Contribution Access",
-          "revokeDesc": "They can still log in, but cannot submit new content. (Recommended for low-quality submissions)",
-          "ban": "Ban Account Completely",
-          "banDesc": "They will be completely locked out of the platform. (Use for spam, abuse, or severe violations)"
+          "desc": "Choose an action. This will also automatically reject this scholar's submission.",
+          "revoke": "Revoke contribution privileges",
+          "revokeDesc": "They can still log in, but cannot submit new content. (Recommended for low-quality contributions)",
+          "ban": "Ban the account completely",
+          "banDesc": "They will be completely blocked from the platform. (Used for spam or serious violations)"
         },
         "confirm": {
           "title": "Confirm Action",
           "desc": "This will",
-          "ban": "BAN",
-          "revoke": "REVOKE CONTRIBUTION ACCESS FOR",
-          "andReject": "and automatically REJECT the scholar",
+          "ban": "ban",
+          "revoke": "revoke contribution privileges from",
+          "andReject": "and automatically reject the scholar's submission",
           "warning": "This action cannot be undone from this screen.",
           "button": "Confirm & Reject"
         },
         "approve": {
-          "title": "Approve Scholar?",
-          "notes": "APPROVAL NOTES (Optional)",
+          "title": "Approve this scholar?",
+          "notes": "Approval notes (optional)",
           "notesPlaceholder": "Add any notes about this approval...",
           "confirm": "Confirm Approval"
         },
         "reject": {
-          "title": "Reject Scholar?",
-          "reason": "REJECTION REASON *",
+          "title": "Reject this scholar?",
+          "reason": "Rejection reason *",
           "reasonPlaceholder": "Please explain why this submission is being rejected...",
           "confirm": "Confirm Rejection"
         }
       }
     },
-       "pendingEdits": {
-  "title": "Pending Edits Queue",
-  "subtitle": "Review and approve scholar edit submissions.",
-  "noEdits": "No edits found matching your filters.",
-  "back": "Back to Pending Edits",
-  "badge": "PENDING EDIT",
-  "editor": "Editor",
-  "original": "Original",
-  "proposed": "Proposed",
-  "currentVersion": "Current Version",
-  "proposedVersion": "Proposed Version",
-  "changedFields": "Changed Fields",
-  "workChanges": "Work Changes",
-  "refChanges": "Reference Changes",
-  "mediaChanges": "Media Changes",
-  "disciplineChanges": "Discipline Changes",
-  "newDisciplines": "PROPOSED NEW DISCIPLINES",
-  "removedDisciplines": "PROPOSED REMOVALS",
-  "rejectReason": "Rejection Reason",
-  "rejectPlaceholder": "Enter reason...",
-  "confirmReject": "Confirm Reject",
-  "stats": {
-    "accepted": "Accepted",
-    "rejected": "Rejected",
-    "pending": "Pending",
-    "total": "Total Changes"
-  },
-  "action": {
-    "restrict": "Restrict User",
-    "rejectAll": "Reject All",
-    "approve": "Approve Accepted"
-  },
-  "table": {
-    "scholar": "Scholar",
-    "language": "Language",
-    "editor": "Editor",
-    "submitted": "Submitted",
-    "actions": "Actions"
-  },
-  "colType": "Type",
-  "colTitle": "Title",
-  "colYear": "Year",
-  "colFormat": "Format",
-  "colAccess": "Access",
-  "colCitation": "Citation",
-  "colUrl": "URL",
-  "modal": {
-    "restrict": {
-      "title": "Restrict User",
-      "desc": "Choose an action. This will automatically reject this edit submission as well.",
-      "revoke": "Revoke Contribution Access",
-      "revokeDesc": "They can still log in, but cannot submit new edits. (Recommended for low-quality edits)",
-      "ban": "Ban Account Completely",
-      "banDesc": "They will be completely locked out of the platform. (Use for spam, abuse, or severe violations)"
-    },
-    "confirm": {
-      "title": "Confirm Action",
-      "desc": "This will",
-      "ban": "BAN",
-      "revoke": "REVOKE CONTRIBUTION ACCESS FOR",
-      "andReject": "and automatically REJECT the edit for",
-      "warning": "This action cannot be undone from this screen.",
-      "button": "Confirm & Reject"
-    },
-    "approve": {
-      "title": "Approve Edit?",
-      "notes": "APPROVAL NOTES (Optional)",
-      "notesPlaceholder": "Add any notes about this approval...",
-      "desc": "This will publish the edited scholar to the portal. This action cannot be undone.",
-      "confirm": "Confirm Approval"
-    },
-    "reject": {
-      "title": "Reject Edit?",
-      "desc": "Are you sure you want to reject all changes? The editor will be notified.",
-      "warning": "This action cannot be undone.",
-      "reason": "REJECTION REASON *",
-      "reasonPlaceholder": "Please provide a reason for rejection...",
-      "confirm": "Confirm Rejection"
-    }
-  }
-},
-      
-       "works": {
-  "title": "All Works",
-  "noData": "No works found matching your filters.",
-  "description": "Description",
-  "uploader": "Uploaded By"
-},
-"media": {
-  "title": "All Media",
-  "noData": "No media found matching your filters.",
-  "description": "Description",
-  "uploader": "Uploaded By",
-  "views": "Views",
-  "likes": "Likes"
-},
-"common": {
-  "user": "User",
-  "status": "Status",
-  "language": "Language",
-  "scholar": "Scholar",
-  "title": "Title",
-  "format": "Format",
-  "type": "Type",
-  "featured": "Featured",
-  "actions": "Actions",
-  "details": "Details",
-  "all": "All",
-  "approved": "Approved",
-  "pending": "Pending",
-  "rejected": "Rejected",
-  "view": "View File",
-  "download": "Download",
-  "openLink": "Open Link",
-  "noFileAttached": "No file or link attached.",
-  "unknown": "Unknown",
-  "year": "Year",
-  "sortBy": "Sort By",
-  "newestFirst": "Newest First",
-  "oldestFirst": "Oldest First",
-  "nameAZ": "Name (A-Z)",
-  "showing": "Showing",
-  "of": "of",
-  "clear": "Clear",
-  "goBack": "Go Back",
-  "cancel": "Cancel"
-},
-"scholars": {
-  "new": {
-    "title": "New Scholars Queue",
-    "subtitle": "Review newly submitted scholar profiles before they go live on the archive.",
-    "empty": "No submissions found matching your filters.",
-    "table": {
-      "scholar": "Scholar",
-      "submitter": "Submitter",
-      "submitted": "Submitted",
-      "actions": "Actions",
-      "discipline": "Discipline"
-    },
-    "modal": {
-      "restrict": {
-        "title": "Restrict User",
-        "desc": "Choose an action. This will automatically reject this scholar submission as well.",
-        "revoke": "Revoke Contribution Access",
-        "revokeDesc": "They can still log in, but cannot submit new content. (Recommended for low-quality submissions)",
-        "ban": "Ban Account Completely",
-        "banDesc": "They will be completely locked out of the platform. (Use for spam, abuse, or severe violations)"
+    "pendingEdits": {
+      "title": "Pending Edits Queue",
+      "subtitle": "Review and approve the edits submitted about scholars.",
+      "noEdits": "No edits found matching the filters.",
+      "back": "Back to Pending Edits",
+      "badge": "Pending edit",
+      "editor": "Editor",
+      "original": "Original",
+      "proposed": "Proposed",
+      "currentVersion": "Current Version",
+      "proposedVersion": "Proposed Version",
+      "changedFields": "Modified Fields",
+      "workChanges": "Work Changes",
+      "refChanges": "Reference Changes",
+      "mediaChanges": "Media Changes",
+      "disciplineChanges": "Discipline Changes",
+      "newDisciplines": "Proposed New Disciplines",
+      "removedDisciplines": "Disciplines Proposed for Removal",
+      "rejectReason": "Rejection reason",
+      "rejectPlaceholder": "Enter the reason...",
+      "confirmReject": "Confirm Rejection",
+      "stats": {
+        "accepted": "Accepted",
+        "rejected": "Rejected",
+        "pending": "Pending",
+        "total": "Total edits"
       },
-      "confirm": {
-        "title": "Confirm Action",
-        "desc": "This will",
-        "ban": "BAN",
-        "revoke": "REVOKE CONTRIBUTION ACCESS FOR",
-        "andReject": "and automatically REJECT the scholar",
-        "warning": "This action cannot be undone from this screen.",
-        "button": "Confirm & Reject"
+      "action": {
+        "restrict": "Restrict user",
+        "rejectAll": "Reject all",
+        "approve": "Approve edits"
       },
-      "approve": {
-        "title": "Approve Scholar?",
-        "notes": "Approval Notes (Optional)",
-        "notesPlaceholder": "Add any notes about this approval...",
-        "confirm": "Confirm Approval"
+      "table": {
+        "scholar": "Scholar",
+        "language": "Language",
+        "editor": "Editor",
+        "submitted": "Submitted on",
+        "actions": "Actions"
       },
-      "reject": {
-        "title": "Reject Scholar?",
-        "reason": "Rejection Reason *",
-        "reasonPlaceholder": "Please explain why this submission is being rejected...",
-        "confirm": "Confirm Rejection"
+      "colType": "Type",
+      "colTitle": "Title",
+      "colYear": "Year",
+      "colFormat": "Format",
+      "colAccess": "Access",
+      "colCitation": "Citation",
+      "colUrl": "Link",
+      "modal": {
+        "restrict": {
+          "title": "Restrict User",
+          "desc": "Choose an action. This action will also automatically reject the edit request.",
+          "revoke": "Revoke contribution privileges",
+          "revokeDesc": "They can still log in, but will not be able to submit new edits. (Recommended for low-quality edits)",
+          "ban": "Ban the account completely",
+          "banDesc": "They will be completely blocked from accessing the platform. (Used for spam, abuse, or serious violations)"
+        },
+        "confirm": {
+          "title": "Confirm Action",
+          "desc": "This action will",
+          "ban": "ban",
+          "revoke": "revoke contribution privileges from",
+          "andReject": "and automatically reject the edit for the user",
+          "warning": "This action cannot be undone from this page.",
+          "button": "Confirm & Reject"
+        },
+        "approve": {
+          "title": "Approve the edit?",
+          "notes": "Approval notes (optional)",
+          "notesPlaceholder": "Add any notes about this approval...",
+          "desc": "This action will publish the scholar with their edits on the portal. This action cannot be undone.",
+          "confirm": "Confirm Approval"
+        },
+        "reject": {
+          "title": "Reject the edit?",
+          "desc": "Are you sure you want to reject all the edits? The editor will be notified.",
+          "warning": "This action cannot be undone.",
+          "reason": "Rejection reason *",
+          "reasonPlaceholder": "Please provide a reason for the rejection...",
+          "confirm": "Confirm Rejection"
+        }
       }
-    }
-  }
-},
-  "regionManagement": {
+    },
+    "works": {
+      "title": "All Works",
+      "noData": "No works found matching the filters.",
+      "description": "Description",
+      "uploader": "Uploaded by"
+    },
+    "media": {
+      "title": "All Media",
+      "noData": "No media found matching the filters.",
+      "description": "Description",
+      "uploader": "Uploaded by",
+      "views": "Views",
+      "likes": "Likes"
+    },
+    "common": {
+      "user": "User",
+      "status": "Status",
+      "language": "Language",
+      "scholar": "Scholar",
+      "title": "Title",
+      "format": "Format",
+      "type": "Type",
+      "featured": "Featured",
+      "actions": "Actions",
+      "details": "Details",
+      "all": "All",
+      "approved": "Approved",
+      "pending": "Pending",
+      "rejected": "Rejected",
+      "view": "View file",
+      "download": "Download",
+      "openLink": "Open link",
+      "noFileAttached": "No file or link attached.",
+      "unknown": "Unknown",
+      "year": "Year",
+      "sortBy": "Sort by",
+      "newestFirst": "Newest first",
+      "oldestFirst": "Oldest first",
+      "nameAZ": "Name (A-Z)",
+      "showing": "Showing",
+      "of": "of",
+      "clear": "Clear",
+      "goBack": "Go back",
+      "cancel": "Cancel"
+    },
+    "scholars": {
+      "new": {
+        "title": "New Scholars Queue",
+        "subtitle": "Review newly submitted scholar profiles before they are published in the archive.",
+        "empty": "No submissions found matching the filters.",
+        "table": {
+          "scholar": "Scholar",
+          "submitter": "Submitted by",
+          "submitted": "Submitted on",
+          "actions": "Actions",
+          "discipline": "Discipline"
+        },
+        "modal": {
+          "restrict": {
+            "title": "Restrict User",
+            "desc": "Choose an action. This will also automatically reject this scholar's submission.",
+            "revoke": "Revoke contribution privileges",
+            "revokeDesc": "They can still log in, but cannot submit new content. (Recommended for low-quality contributions)",
+            "ban": "Ban the account completely",
+            "banDesc": "They will be completely blocked from the platform. (Used for spam or serious violations)"
+          },
+          "confirm": {
+            "title": "Confirm Action",
+            "desc": "This will",
+            "ban": "ban",
+            "revoke": "revoke contribution privileges from",
+            "andReject": "and automatically reject the scholar's submission",
+            "warning": "This action cannot be undone from this screen.",
+            "button": "Confirm & Reject"
+          },
+          "approve": {
+            "title": "Approve this scholar?",
+            "notes": "Approval notes (optional)",
+            "notesPlaceholder": "Add any notes about this approval...",
+            "confirm": "Confirm Approval"
+          },
+          "reject": {
+            "title": "Reject this scholar?",
+            "reason": "Rejection reason *",
+            "reasonPlaceholder": "Please explain why this submission is being rejected...",
+            "confirm": "Confirm Rejection"
+          }
+        }
+      }
+    },
+    "regionManagement": {
       "title": "Region Management",
       "addNew": "Add Region",
-      "closeForm": "Close Form",
-      "formTitle": "Add New Region",
+      "closeForm": "Close form",
+      "formTitle": "Add a New Region",
       "placeholder": {
-        "en": "Enter English name",
-        "ar": "Enter Arabic name",
-        "fr": "Enter French name"
+        "en": "Enter the name in English",
+        "ar": "Enter the name in Arabic",
+        "fr": "Enter the name in French"
       },
       "creating": "Creating...",
       "create": "Create Region",
@@ -836,30 +865,30 @@
       "allTitle": "All Regions",
       "searchPlaceholder": "Search regions...",
       "noFound": "No regions found.",
-      "more": "more",
+      "more": "More",
       "hide": "Hide",
       "show": "Show",
       "save": "Save",
       "edit": "Edit",
       "missing": "Missing",
-      "fillAtLeastOne": "Please fill at least one language.",
-      "nameCannotBeEmpty": "Name cannot be empty.",
-      "errorCreating": "Error creating region.",
-      "confirmDelete": "⚠️ WARNING: Deleting this will remove it from assigned scholars. Proceed?"
+      "fillAtLeastOne": "Please fill in at least one language.",
+      "nameCannotBeEmpty": "The name cannot be empty.",
+      "errorCreating": "Error creating the region.",
+      "confirmDelete": "⚠️ Warning: deleting this item will remove it from the scholars linked to it. Do you want to continue?"
     },
     "disciplineManagement": {
       "title": "Discipline Management",
       "addNew": "Add Discipline",
-      "closeForm": "Close Form",
-      "formTitle": "Add New Discipline",
+      "closeForm": "Close form",
+      "formTitle": "Add a New Discipline",
       "placeholder": {
-        "en": "Enter English name",
-        "ar": "Enter Arabic name",
-        "fr": "Enter French name"
+        "en": "Enter the name in English",
+        "ar": "Enter the name in Arabic",
+        "fr": "Enter the name in French"
       },
-      "imageLabel": "Discipline Image (Optional)",
-      "chooseImage": "Choose Image",
-      "changeImage": "Change Image",
+      "imageLabel": "Discipline image (optional)",
+      "chooseImage": "Choose an image",
+      "changeImage": "Change image",
       "remove": "Remove",
       "creating": "Creating...",
       "create": "Create Discipline",
@@ -867,19 +896,19 @@
       "allTitle": "All Disciplines",
       "searchPlaceholder": "Search disciplines...",
       "noFound": "No disciplines found.",
-      "img": "Img",
-      "more": "more",
+      "img": "Image",
+      "more": "More",
       "hide": "Hide",
       "show": "Show",
       "save": "Save",
       "edit": "Edit",
       "missing": "Missing",
-      "fillAtLeastOne": "Please fill at least one language.",
-      "nameCannotBeEmpty": "Name cannot be empty.",
-      "errorCreating": "Error creating discipline.",
-      "confirmDelete": "⚠️ WARNING: Deleting this will remove it from assigned scholars. Proceed?"
+      "fillAtLeastOne": "Please fill in at least one language.",
+      "nameCannotBeEmpty": "The name cannot be empty.",
+      "errorCreating": "Error creating the discipline.",
+      "confirmDelete": "⚠️ Warning: deleting this item will remove it from the scholars linked to it. Do you want to continue?"
     },
-          "allScholars": {
+    "allScholars": {
       "title": "All Scholars",
       "searchPlaceholder": "Search by name or ID...",
       "tabs": {
@@ -888,29 +917,29 @@
         "rejected": "Rejected"
       },
       "badges": {
-        "live": "Live",
+        "live": "Published",
         "pendingOnly": "Pending",
         "rejectedOnly": "Rejected"
       },
       "actions": {
-        "viewDetails": "View Details",
+        "viewDetails": "View details",
         "versions": "Versions"
       },
       "empty": "No scholars found matching your criteria.",
       "modal": {
-        "subtitle": "Complete version history and details",
-        "viewDetails": "View Details",
+        "subtitle": "Full version history and details",
+        "viewDetails": "View details",
         "noVersionsForLang": "No versions match these filters."
       },
       "sort": {
-  "newestToOldest": "Newest to Oldest",
-  "oldestToNewest": "Oldest to Newest",
-  "nameAZ": "Name (A to Z)",
-  "nameZA": "Name (Z to A)"
-}
+        "newestToOldest": "Newest to oldest",
+        "oldestToNewest": "Oldest to newest",
+        "nameAZ": "Name (A-Z)",
+        "nameZA": "Name (Z-A)"
+      }
     },
     "scholarDetail": {
-      "backToAll": "Back to All Scholars",
+      "backToAll": "Back to all scholars",
       "notFound": "Not found",
       "notFoundDesc": "The requested scholar version could not be loaded.",
       "failedToLoad": "Failed to load this version",
@@ -933,16 +962,33 @@
       "year": "Year",
       "format": "Format",
       "access": "Access",
-      "openLink": "Open Link",
+      "openLink": "Open link",
       "view": "View",
       "download": "Download",
       "citation": "Citation",
-      "url": "URL"
+      "url": "Link"
     },
-      "notifications": {
+    "roles": {
+      "administrator": "Admin"
+    },
+    "navbar": {
+      "changeLanguage": "Change language",
+      "language": "Language",
+      "myProfile": "My Profile",
+      "notifications": "Notifications",
+      "viewPublicSite": "View public site",
+      "logout": "Log out",
+      "loading": "Loading...",
+      "noLanguages": "No languages",
+      "logoutConfirmTitle": "Confirm Log Out",
+      "logoutConfirmMessage": "Are you sure you want to log out? You may lose any unsaved changes.",
+      "cancel": "Cancel",
+      "confirmLogout": "Log out"
+    },
+    "notifications": {
       "title": "Notifications",
       "adminTitle": "Admin Notifications",
-      "markAllRead": "Mark all read",
+      "markAllRead": "Mark all as read",
       "loading": "Loading...",
       "empty": "No admin notifications",
       "time": {
@@ -951,20 +997,6 @@
         "hours": "h",
         "days": "d"
       }
-    },
-    
-    "roles": {
-      "administrator": "Administrator"
-    },
-    "navbar": {
-      "changeLanguage": "Change Language",
-      "language": "Language",
-      "myProfile": "My Profile",
-      "notifications": "Notifications",
-      "viewPublicSite": "View Public Site",
-      "logout": "Logout",
-      "loading": "Loading...",
-      "noLanguages": "No languages"
     },
     "sidebar": {
       "dashboard": "Dashboard",
@@ -992,311 +1024,411 @@
       "contactUs": "Contact Us"
     }
   },
-    "scholarPage": {
-    "breadcrumb": "HOME › SCHOLAR ENCYCLOPEDIA",
-    "breadcrumbHome": "HOME",
-    "breadcrumbCurrent": "SCHOLAR ENCYCLOPEDIA",
-    "heroTitle": "Explore the Intellectual Heritage",
-    "heroSub": "A comprehensive directory of polymaths, theologians, and scientists who shaped the global landscape of knowledge.",
-    "searchPlaceholder": "Search by name...",
-    "searchBtn": "SEARCH",
-    "filters": "FILTERS",
+  "scholarDetail": {
+    "loginFirst": "Please log in first.",
+    "accountBanned": "Your account is banned.",
+    "privilegesRevoked": "Contribution privileges have been revoked.",
+    "linkCopied": "Link copied!",
+    "emptyWorks": "No works have been added yet.",
+    "addFirstWork": "Add the first work",
+    "emptyMedia": "No media has been added yet.",
+    "addFirstMedia": "Add the first media",
+    "emptyRelations": "No relationships have been recorded for this scholar yet.",
+    "emptyReferences": "No academic references have been added yet.",
+    "view": "View",
+    "download": "Download",
+    "openLink": "Open link",
+    "loading": "Loading...",
+    "downloading": "Downloading...",
+    "fileTooLarge": "File is too large",
+    "saving": "Saving...",
+    "uploading": "Uploading...",
+    "createdBy": "Created by",
+    "lastUpdated": "Last updated by",
+    "atAGlance": "At a Glance",
+    "fullName": "Full Name",
+    "born": "Born",
+    "died": "Died",
+    "century": "Century",
+    "region": "Region",
+    "discipline": "Discipline",
+    "allContributors": "All Contributors",
+    "contributor": "Contributor",
+    "contributions": "Contributions",
+    "contributors": "contributors",
+    "bibliographyTitle": "List of Works",
+    "colTitle": "Title",
+    "colYear": "Year",
+    "colFormat": "Format",
+    "colAccess": "Digital Access",
+    "mediaTitle": "Integrated Media Library",
+    "addWork": "Add Work",
+    "addMedia": "Add Media",
+    "intellectualLineage": "Intellectual Lineage",
+    "notableDisciples": "Notable Disciples",
+    "relatedByField": "Scholars Related by Field",
+    "academicReferences": "Academic References",
+    "recentRevisions": "Latest Revisions",
+    "viewMore": "View more",
+    "showLess": "Show less",
+    "noContent": "No one has contributed to this page yet in",
+    "contribute": "Contribute now →",
+    "editEnglish": "EDIT ENGLISH",
+    "editArabic": "EDIT ARABIC",
+    "editFrench": "EDIT FRENCH",
+    "addEnglish": "ADD ENGLISH VERSION",
+    "addArabic": "ADD ARABIC VERSION",
+    "addFrench": "ADD FRENCH VERSION",
+    "tabWorks": "Works",
+    "tabMedia": "Media",
+    "tabRelations": "Relations",
+    "tabReferences": "References",
+    "addNewWork": "Add New Work",
+    "addMediaModal": "Add Media",
+    "title": "Title",
+    "year": "Year",
+    "format": "Format",
+    "digitalAccess": "Digital Access",
+    "none": "None",
+    "uploadFile": "Upload file",
+    "pasteLink": "Paste link",
+    "noFileAttached": "No digital file will be attached.",
+    "cancel": "Cancel",
+    "addWorkBtn": "Add Work",
+    "addMediaBtn": "Add Media",
+    "description": "Description",
+    "fileLink": "File / Link",
+    "noFile": "No file will be attached.",
+    "workTitlePlaceholder": "e.g. The Problem of Culture",
+    "yearPlaceholder": "e.g. 1959",
+    "mediaTitlePlaceholder": "e.g. 1972 lecture on colonizability",
+    "descriptionPlaceholder": "A short description",
+    "urlPlaceholder": "https://archive.org/details/…",
+    "titleRequired": "Title is required.",
+    "validYear": "Please enter a valid year.",
+    "urlRequired": "Please enter a link.",
+    "fileRequired": "Please upload a file.",
+    "pdfFile": "PDF file",
+    "audioFile": "Audio file",
+    "videoFile": "Video file",
+    "home": "Home",
+    "scholars": "Scholars",
+    "addedBy": "Added by",
+    "uploadedBy": "Uploaded by",
+    "teacher": "Teacher",
+    "student": "Student",
+    "version": "Version",
+    "more": "More",
+    "untitledMedia": "Untitled media",
+    "scholarNotFound": "Scholar not found",
+    "workAddedSuccess": "Work added successfully!",
+    "mediaAddedSuccess": "Media added successfully!",
+    "failedToAddWork": "Failed to add the work.",
+    "failedToAddMedia": "Failed to add the media.",
+    "shareText": "Check out {name} on the Oulamauna encyclopedia",
+    "shareFailed": "Sharing failed:"
+  },
+  "scholarPage": {
+    "breadcrumb": "Home › Scholars Encyclopedia",
+    "breadcrumbHome": "Home",
+    "breadcrumbCurrent": "Scholars Encyclopedia",
+    "heroTitle": "Explore the Islamic Intellectual Legacy",
+    "heroSub": "A comprehensive guide to the scholars, thinkers, and learned figures who shaped human civilization.",
+    "searchPlaceholder": "Search by scholar name...",
+    "searchBtn": "Search",
+    "filters": "Filters",
     "clearAll": "Clear all",
-    "regionLabel": "REGION",
-    "centuryLabel": "CENTURY (AH)",
-    "disciplineLabel": "DISCIPLINE",
-    "statusLabel": "STATUS",
-    "statusAll": "ALL",
-    "statusDeceased": "DECEASED",
+    "regionLabel": "Region",
+    "centuryLabel": "Century (AH)",
+    "disciplineLabel": "Discipline",
+    "statusLabel": "Status",
+    "statusAll": "All",
+    "statusDeceased": "Deceased",
     "showing": "Showing",
     "of": "of",
-    "scholars": "Scholars",
-    "sortBy": "SORT BY:",
-    "biography": "BIOGRAPHY",
-    "addScholar": "ADD SCHOLAR",
-    "centuries": ["1st – 3rd Century", "4th – 6th Century", "7th – 9th Century"],
-    "sortOptions": ["Name (A-Z)", "Name (Z-A)", "Century (Oldest)", "Century (Newest)"],
-    "noScholars": "No scholars available in this language yet.",
+    "scholars": "scholars",
+    "sortBy": "Sort:",
+    "biography": "Biography",
+    "addScholar": "Add Scholar",
+    "centuries": ["Century 1-3", "Century 4-6", "Century 7-9"],
+    "sortOptions": "Name (A-Z) | Name (Z-A) | Century (Oldest) | Century (Newest)",
+    "noScholars": "No scholars are available in this language yet.",
     "noResults": "No scholars match your search or filters.",
     "tryChanging": "Try changing your search terms or clearing the filters.",
     "loading": "Loading..."
   },
-   "contributorRoute": {
+  "contributorRoute": {
     "loading": "Loading...",
     "loginRequired": {
-      "title": "Please Log In",
-      "message": "You must be logged in to contribute, add, or edit scholar data.",
-      "loginButton": "Log In",
-      "goBack": "Go Back"
+      "title": "Please log in",
+      "message": "You must log in first to contribute by adding or editing scholar data.",
+      "loginButton": "Log in",
+      "goBack": "Go back"
     },
     "restricted": {
       "banned": {
-        "title": "Account Banned",
-        "message": "Your account has been banned and you cannot submit scholars. Please contact support if you believe this is an error."
+        "title": "Account banned",
+        "message": "Your account has been banned and you cannot submit new scholars. Please contact support if you believe this is a mistake."
       },
       "revoked": {
-        "title": "Contribution Privileges Revoked",
+        "title": "Contribution privileges revoked",
         "message": "Your contribution privileges have been revoked by an administrator. You cannot submit new scholars or edits at this time."
       },
-      "goBack": "Go Back"
+      "goBack": "Go back"
     }
   },
-    "navbar": {
+  "navbar": {
     "home": "Home",
     "scholars": "Scholars",
     "forum": "Forum",
     "about": "About",
     "contact": "Contact",
-    "logoAlt": "Oulamauna Logo",
-    "searchPlaceholder": "Search scholars, works, media, or posts...",
+    "logoAlt": "Oulamauna logo",
+    "searchPlaceholder": "Search for scholars, works, media, or posts...",
     "searching": "Searching...",
     "works": "Works",
     "media": "Media",
     "forumPosts": "Forum Posts",
     "noResults": "No results for",
     "notifications": "Notifications",
-    "login": "Log In",
-    "register": "Register",
+    "login": "Log in",
+    "register": "Sign up",
     "profile": "Profile",
     "dashboard": "Dashboard",
     "settings": "Settings",
     "siteAdminPanel": "Admin Panel",
-    "signOut": "Sign Out",
+    "signOut": "Sign out",
     "logoutSuccess": "Logged out successfully",
-    "logoutTitle": "Log Out",
+    "logoutTitle": "Log out",
     "logoutConfirm": "Are you sure you want to log out?",
-    "profileMenu": "Profile Menu",
+    "profileMenu": "Profile menu",
     "close": "Close"
   },
-  
-
- "contact": {
-  "breadcrumb": "CONTACT US",
-  "title": "Get in Touch",
-  "description": "Have a question, suggestion, or feedback? We'd love to hear from you. Fill out the form below and our team will get back to you as soon as possible.",
-  "formTitle": "Send us a message",
-  "sentTitle": "Message Sent Successfully!",
-  "sentSubtitle": "Thank you for reaching out. We have received your message and will reply to your email shortly.",
-  "sentBack": "Send Another Message",
-  "directContact": "Other ways to reach us",
-  "labels": {
-    "name": "NAME",
-    "email": "E-MAIL",
-    "subject": "SUBJECT",
-    "message": "MESSAGE",
-    "btn": "SEND",
-    "sending": "SENDING..."
+  "contact": {
+    "breadcrumb": "Contact Us",
+    "title": "Get in Touch",
+    "description": "Have a question, suggestion, or feedback? We'd love to hear from you. Fill out the form below and our team will get back to you as soon as possible.",
+    "formTitle": "Send us a message",
+    "sentTitle": "Message sent successfully!",
+    "sentSubtitle": "Thank you for reaching out. We have received your message and will reply to your email soon.",
+    "sentBack": "Send another message",
+    "directContact": "Other ways to reach us",
+    "labels": {
+      "name": "Name",
+      "email": "Email",
+      "subject": "Subject",
+      "message": "Message",
+      "btn": "Send",
+      "sending": "Sending..."
+    },
+    "placeholders": {
+      "name": "Full name",
+      "email": "example@mail.com",
+      "message": "How can we help you?"
+    },
+    "errors": {
+      "nameEmpty": "Name is required.",
+      "emailEmpty": "Email is required.",
+      "emailInvalid": "Please enter a valid email address.",
+      "messageEmpty": "Message is required.",
+      "messageShort": "The message must be at least 10 characters long."
+    },
+    "info": {
+      "emailLabel": "Email",
+      "emailValue": "contact@oulamauna.com",
+      "locationLabel": "Location",
+      "locationValue": "Worldwide / Online",
+      "phoneLabel": "Phone",
+      "phoneValue": "+966 50 000 0000"
+    },
+    "subjects": {
+      "general": "General Inquiry",
+      "technical": "Technical Issue",
+      "partnership": "Partnership / Collaboration",
+      "correction": "Content Correction",
+      "other": "Other"
+    }
   },
-  "placeholders": {
-    "name": "Full name",
-    "email": "example@mail.com",
-    "message": "How can we help you?"
+  "about": {
+    "breadcrumb": "About Us",
+    "title": "About Us",
+    "heroDescription": "A free collaborative encyclopedia dedicated to the scholars and thinkers of the Islamic intellectual heritage.",
+    "introLeft": "Oulamauna was created with a clear purpose: to preserve the biographies and works of the scholars who shaped Islamic thought, and to make this knowledge easy to find, read, and pass on.",
+    "introRight": "Behind every entry are years of care, driven by our contributors' respect for knowledge and love for the heritage they document.",
+    "whatLabel": "What do we do?",
+    "whatBody": "We bring biographies, manuscripts, and academic references together in a single multilingual archive.",
+    "archiveLabel": "Our Archive",
+    "archiveP1": "Each entry brings together a scholar's biography, notable works, and available manuscripts in one place, in Arabic, English, and French.",
+    "archiveP2": "To keep entries reliable, we ask contributors to cite their sources, and every contribution goes through a review before it is published.",
+    "accessLabel": "Openness",
+    "accessBody": "At Oulamauna, openness is the core of our work. We believe scholarly heritage should be easy to reach and easy to understand.",
+    "accessSub": "That is why every entry is free to read in three languages, so no single language limits who can learn from it.",
+    "teamLabel": "Our Contributors",
+    "teamBody": "Our contributors are not just people who add names — they are researchers and readers with deep respect for the heritage they document. Their care for sources and accuracy is what keeps the archive trustworthy.",
+    "exploreLink": "Browse Scholars",
+    "ctaLabel": "Get in touch",
+    "ctaTitle": "Do you have a correction, a suggestion for a scholar to add, or a question about the archive? We'd be glad to hear from you.",
+    "ctaButton": "Write to us"
   },
-  "errors": {
-    "nameEmpty": "Name is required.",
-    "emailEmpty": "Email is required.",
-    "emailInvalid": "Please enter a valid email address.",
-    "messageEmpty": "Message is required.",
-    "messageShort": "Message must be at least 10 characters long."
-  },
-  "info": {
-    "emailLabel": "EMAIL",
-    "emailValue": "contact@oulamauna.com",
-    "locationLabel": "LOCATION",
-    "locationValue": "Global / Online",
-    "phoneLabel": "PHONE",
-    "phoneValue": "+123 456 7890"
-  },
-  "subjects": {
-    "general": "General Inquiry",
-    "technical": "Technical Issue",
-    "partnership": "Partnership / Collaboration",
-    "correction": "Content Correction",
-    "other": "Other"
-  }
-},
-"about": {
-  "breadcrumb": " ABOUT",
-  "title": "About Us",
-  "heroDescription": "A free, collaborative encyclopedia dedicated to the scholars and thinkers of the Islamic intellectual tradition.",
-  "introLeft": "Oulamauna was created with a clear purpose: to preserve the lives and works of the scholars who shaped Islamic thought, and to make that knowledge easy to find, read, and pass on.",
-  "introRight": "With years of care behind every entry, our contributors are driven by respect for scholarship and a love of the tradition they document.",
-  "whatLabel": "What we do?",
-  "whatBody": "We gather biographies, manuscripts, and academic references into one multilingual archive.",
-  "archiveLabel": "Our Archive",
-  "archiveP1": "Every entry brings together a scholar's biography, notable works, and available manuscripts in one place — in Arabic, English, and French.",
-  "archiveP2": "To keep entries reliable, we ask contributors to cite their sources, and every submission passes a review before it goes live.",
-  "accessLabel": "Openness",
-  "accessBody": "At Oulamauna, openness is at the heart of what we do. We believe scholarly heritage should be easy to reach and easy to understand.",
-  "accessSub": "That's why every entry is free to read in three languages, so no single language limits who can learn from it.",
-  "teamLabel": "Our Contributors",
-  "teamBody": "Our contributors aren't just adding names — they're researchers and readers with a deep respect for the tradition they document. Their care for sources and accuracy is what keeps the archive trustworthy.",
-  "exploreLink": "EXPLORE SCHOLARS",
-  "ctaLabel": "GET IN TOUCH",
-  "ctaTitle": "Have a correction, a scholar to suggest, or a question about the archive? We'd love to hear from you.",
-  "ctaButton": "CONTACT US"
-},
-
   "forum": {
-    "pageTitle": "Discussions",
+    "pageTitle": "Discussion Forum",
     "searchPlaceholder": "Search by title, content, or author...",
-    "newPostButton": "Start New Discussion",
+    "newPostButton": "Start a New Discussion",
     "allDiscussions": "All Discussions",
     "categoriesLabel": "Categories",
-    "sortRecent": "Latest first",
-    "sortPopular": "Popular first",
+    "sortRecent": "Newest first",
+    "sortPopular": "Most popular",
     "sortUnanswered": "Unanswered",
-    "loadMore": "Load More",
-    "noResults": "No discussions match your filters.",
+    "loadMore": "Load more",
+    "noResults": "No discussions match the filters.",
     "composerTitle": "Start a Discussion",
     "composerCategoryLabel": "Category",
     "composerCategoryPlaceholder": "Choose a category",
     "composerTitleLabel": "Title",
-    "composerTitlePlaceholder": "What's your question or topic?",
+    "composerTitlePlaceholder": "What is your question or topic?",
     "composerContentLabel": "Content",
     "composerContentPlaceholder": "Share details, context, or sources...",
     "composerCancel": "Cancel",
     "composerPublish": "Publish",
-    "comments": "Comments",
+    "comments": "comments",
     "posts": "posts",
     "report": "Report",
-    "reportPost": "Report Post",
+    "reportPost": "Report a post",
     "confirmReport": "Are you sure you want to report this post?",
     "reportReason": "Reason for reporting (optional)",
     "cancel": "Cancel",
     "submit": "Submit",
     "deletePost": "Delete",
-    "confirmDeletePost": "Are you sure you want to delete this post? This cannot be undone.",
+    "confirmDeletePost": "Are you sure you want to delete this post? This action cannot be undone.",
     "loadingDiscussions": "Loading discussions...",
     "uncategorized": "Uncategorized",
     "anonymous": "Anonymous",
-    "failedToPublish": "Failed to publish post.",
+    "failedToPublish": "Failed to publish the post.",
     "reportSubmitted": "Report submitted successfully.",
-    "failedToReport": "Failed to submit report.",
-    "failedToDelete": "Failed to delete post.",
+    "failedToReport": "Failed to submit the report.",
+    "failedToDelete": "Failed to delete the post.",
     "loginToPost": "Please log in to create a post.",
     "postPublishedSuccess": "Post published successfully!",
     "loginToLike": "Please log in to like.",
-    "failedToLike": "Failed to like post.",
+    "failedToLike": "Failed to like the post.",
     "postDeletedSuccess": "Post deleted successfully."
   },
   "forumPost": {
     "loginToComment": "Log in to comment",
-"logIn": "Log in",
-"loginToPost": "Please log in to post comments.",
-"loginToLike": "Please log in to like.",
-"failedToLikePost": "Failed to like post.",
-"failedToLikeComment": "Failed to like comment.",
-"failedToPostComment": "Failed to post comment.",
-    "backToForum": "Back to Discussions",
+    "logIn": "Log in",
+    "loginToPost": "Please log in to add a comment.",
+    "loginToLike": "Please log in to like.",
+    "failedToLikePost": "Failed to like the post.",
+    "failedToLikeComment": "Failed to like the comment.",
+    "failedToPostComment": "Failed to add the comment.",
+    "backToForum": "Back to discussions",
     "postedBy": "Posted by",
     "onDate": "on",
-    "views": "Views",
-    "comments": "Comments",
+    "views": "views",
+    "comments": "comments",
     "commentPlaceholder": "Share your thoughts...",
-    "postComment": "Post Comment",
+    "postComment": "Post comment",
     "noComments": "No comments yet. Be the first to share your thoughts!",
     "replyingTo": "Replying to",
     "cancelReply": "Cancel",
     "reply": "Reply",
     "loading": "Loading post...",
     "report": "Report",
-    "reportPost": "Report Post",
-    "reportComment": "Report Comment",
+    "reportPost": "Report post",
+    "reportComment": "Report comment",
     "confirmReport": "Are you sure you want to report this?",
     "reportReason": "Reason for reporting (optional)",
     "cancel": "Cancel",
     "submit": "Submit",
-    "fullscreen": "Fullscreen",
-    "exitFullscreen": "Exit Fullscreen",
-    "loadMoreComments": "Load more comments",
+    "fullscreen": "Full screen",
+    "exitFullscreen": "Exit full screen",
+    "loadMoreComments": "Show more comments",
     "viewReplies": "View replies",
     "hideReplies": "Hide replies",
-    "sortNewest": "Newest",
-    "sortOldest": "Oldest",
-    "deletePost": "Delete Post",
+    "sortNewest": "Newest first",
+    "sortOldest": "Oldest first",
+    "deletePost": "Delete post",
     "deleteComment": "Delete",
     "confirmDeletePost": "Are you sure you want to delete this post? This cannot be undone.",
     "confirmDeleteComment": "Are you sure you want to delete this comment?",
-    "deletedComment": "[This comment was deleted]",
+    "deletedComment": "[This comment has been deleted]",
     "uncategorized": "Uncategorized",
-    "unknownUser": "Unknown User",
+    "unknownUser": "Unknown user",
     "postNotFound": "Post not found.",
     "reportSubmitted": "Report submitted successfully.",
-    "failedToReport": "Failed to submit report.",
-    "failedToDeletePost": "Failed to delete post.",
-    "failedToDeleteComment": "Failed to delete comment.",
+    "failedToReport": "Failed to submit the report.",
+    "failedToDeletePost": "Failed to delete the post.",
+    "failedToDeleteComment": "Failed to delete the comment.",
     "time": {
-      "justNow": "just now",
-      "minsAgo": "m ago",
-      "hoursAgo": "h ago",
-      "daysAgo": "d ago"
+      "justNow": "Just now",
+      "minsAgo": "m",
+      "hoursAgo": "h",
+      "daysAgo": "d"
     }
   },
   "errors": {
     "server": {
-      "title": "Patience is Key",
-      "desc": "Our library is currently undergoing a brief restoration. Please try again in a few moments.",
-      "button": "REFRESH PAGE"
+      "title": "Indeed, with hardship comes ease",
+      "desc": "We are performing quick maintenance on the library right now. Please try again in a little while.",
+      "button": "Refresh page"
     },
     "notFound": {
       "title": "404",
-      "subtitle": "Page Missing",
-      "desc": "The knowledge you seek is not in this section of the library.",
-      "button": "RETURN TO HOME"
+      "subtitle": "Page not found",
+      "desc": "The knowledge you are looking for is not in this section of the library.",
+      "button": "Back to home"
     },
     "invalidToken": {
-      "title": "Link Expired",
+      "title": "Link expired",
       "desc": "This verification link is no longer valid. It may have expired or already been used.",
-      "login": "LOG IN AGAIN",
-      "help": "NEED HELP?"
+      "login": "Log in again",
+      "help": "Need help?"
     },
     "forbidden": {
-      "title": "Access Restricted",
-      "desc": "You do not have the necessary permissions to view this page.",
-      "button": "Go Back Home"
+      "title": "Restricted access",
+      "desc": "You do not have the permissions needed to view this page.",
+      "button": "Back to home"
     }
   },
-
   "login": {
     "title": "Welcome back",
-    "subtitle": "Enter your credentials to access your account",
+    "subtitle": "Enter your details to access your account",
     "emailLabel": "Email",
     "emailPlaceholder": "Enter your email",
     "passwordLabel": "Password",
     "passwordPlaceholder": "Enter your password",
-    "forgot": "Forgot password?",
-    "button": "Sign In",
-    "loading": "Signing in...",
-    "google": "Sign in with Google",
+    "forgot": "Forgot your password?",
+    "button": "Log in",
+    "loading": "Logging in...",
+    "google": "Log in with Google",
     "noAccount": "Don't have an account?",
     "join": "Sign up",
     "or": "or",
     "errEmailEmpty": "Email is required",
     "errEmailInvalid": "Invalid email address",
     "errPasswordEmpty": "Password is required",
-    "errInvalidAuth": "Invalid email or password",
-    "errServer": "Server connection failed",
-    "imageTitle": "Preserving Islamic Scholarly Heritage",
-    "imageSubtitle": "Discover centuries of knowledge from renowned scholars.",
-    "badge1": "Verified Sources",
-    "badge2": "500+ Scholars"
+    "errInvalidAuth": "Incorrect email or password",
+    "errServer": "Failed to connect to the server",
+    "imageTitle": "Preserving the Islamic scholarly heritage",
+    "imageSubtitle": "Discover centuries of knowledge from great scholars.",
+    "badge1": "Documented sources",
+    "badge2": "500+ scholars"
   },
   "register": {
-    "title": "Create your account",
+    "title": "Create an account",
     "subtitle": "Start your journey with Oulamauna today",
-    "usernameLabel": "Full Name",
+    "usernameLabel": "Full name",
     "usernamePlaceholder": "Enter your full name",
     "emailLabel": "Email",
     "emailPlaceholder": "Enter your email",
     "passwordLabel": "Password",
     "passwordPlaceholder": "Create a password",
-    "confirmLabel": "Confirm Password",
+    "confirmLabel": "Confirm password",
     "confirmPlaceholder": "Confirm your password",
-    "button": "Sign Up",
+    "button": "Create account",
     "google": "Sign up with Google",
     "haveAccount": "Already have an account?",
-    "signIn": "Sign in",
+    "signIn": "Log in",
     "or": "or",
     "loading": "Creating account...",
     "errors": {
@@ -1304,196 +1436,344 @@
       "emailEmpty": "Email is required",
       "emailInvalid": "Invalid email address",
       "passwordEmpty": "Password is required",
-      "passwordWeak": "Password must be at least 8 characters with uppercase, number, and symbol",
+      "passwordWeak": "Password must be at least 8 characters with an uppercase letter, a number, and a symbol",
       "confirmEmpty": "Please confirm your password",
-      "confirmMatch": "Passwords do not match",
-      "server": "An error occurred. Please try again."
+      "confirmMatch": "The passwords do not match",
+      "server": "Something went wrong. Please try again."
     },
-    "imageTitle": "Join Our Community",
-    "imageSubtitle": "Become a contributor and help preserve Islamic scholarly heritage.",
-    "badge1": "Join 1000+ Scholars",
-    "badge2": "Secure & Verified"
+    "imageTitle": "Join our community",
+    "imageSubtitle": "Become a contributor and help preserve the Islamic scholarly heritage.",
+    "badge1": "Join 1000+ scholars",
+    "badge2": "Secure and verified"
   },
   "forgotPassword": {
-    "back": "Back to Sign In", "title": "Forgot Password?", "subtitle": "Enter your email and we'll send you a link to reset your password.",
-    "emailLabel": "EMAIL ADDRESS", "emailPlaceholder": "scholar@oulamauna.org", "button": "SEND RESET LINK", "sending": "Sending...",
-    "errEmpty": "Please enter your email address.", "errInvalid": "Please enter a valid email address.", "errServer": "Server connection failed. Please try again.",
-    "sentTitle": "Check your inbox", "sentSubtitle": "We sent a reset link to", "sentNote": "Didn't receive it? Check your spam or", "sentRetry": "try another email", "sentBack": "BACK TO SIGN IN"
+    "back": "Back to log in",
+    "title": "Forgot your password?",
+    "subtitle": "Enter your email and we'll send you a link to reset your password.",
+    "emailLabel": "Email address",
+    "emailPlaceholder": "scholar@oulamauna.org",
+    "button": "Send reset link",
+    "sending": "Sending...",
+    "errEmpty": "Please enter your email address.",
+    "errInvalid": "Please enter a valid email address.",
+    "errServer": "Failed to connect to the server. Please try again later.",
+    "sentTitle": "Check your inbox",
+    "sentSubtitle": "We sent the reset link to",
+    "sentNote": "Didn't receive it? Check your spam folder or",
+    "sentRetry": "try another email",
+    "sentBack": "Back to log in"
   },
   "resetPassword": {
-    "back": " Back to Sign In", "title": "Reset Password", "subtitle": "Choose a new password for your account.",
-    "passwordLabel": "NEW PASSWORD", "passwordPlaceholder": "Enter new password",
-    "confirmLabel": "CONFIRM PASSWORD", "confirmPlaceholder": "Confirm new password",
-    "button": "RESET PASSWORD", "sending": "Resetting...",
-    "errPasswordEmpty": "Please enter a new password.", "errPasswordWeak": "Please satisfy all password requirements.",
-    "errConfirmEmpty": "Please confirm your password.", "errConfirmMatch": "Passwords do not match.", "errServer": "Failed to reset password.",
-    "doneTitle": "Password Updated", "doneSubtitle": "Your password has been reset successfully. You can now sign in.", "doneButton": "SIGN IN",
-    "invalidToken": "This reset link is invalid or has expired.", "invalidBack": "Request a new link",
-    "checks": { "length": "At least 8 characters", "upper": "One uppercase letter", "number": "One number", "symbol": "One symbol", "add": "Add:", "allGood": "Strong password!" }
+    "back": "Back to log in",
+    "title": "Reset your password",
+    "subtitle": "Choose a new password for your account.",
+    "passwordLabel": "New password",
+    "passwordPlaceholder": "Enter a new password",
+    "confirmLabel": "Confirm password",
+    "confirmPlaceholder": "Re-enter the password",
+    "button": "Set password",
+    "sending": "Setting...",
+    "errPasswordEmpty": "Please enter a new password.",
+    "errPasswordWeak": "Please meet all the password requirements.",
+    "errConfirmEmpty": "Please confirm the password.",
+    "errConfirmMatch": "The passwords do not match.",
+    "errServer": "Failed to reset the password.",
+    "doneTitle": "Password updated",
+    "doneSubtitle": "Your password has been reset successfully. You can now log in.",
+    "doneButton": "Log in",
+    "invalidToken": "The reset link is invalid or has expired.",
+    "invalidBack": "Request a new link",
+    "checks": {
+      "length": "At least 8 characters",
+      "upper": "One uppercase letter",
+      "number": "One number",
+      "symbol": "One symbol",
+      "add": "Add:",
+      "allGood": "Strong password!"
+    }
   },
   "verifyEmail": {
-    "category": "ACCOUNT SECURITY", "loadingTitle": "Verifying your email...", "loadingSubtitle": "Please wait while we activate your account",
-    "successTitle": "Email Verified!", "successSubtitle": "Your account is now active. You will be redirected to login shortly.",
-    "successRedirect": "Redirecting to login", "successBack": "Go to Login Now", "successHome": "or go Home", "counting": "in",
-    "resendPlaceholder": "Enter your email address", "resendButton": "Send New Link", "resendSent": "Email sent! Check your inbox.",
-    "resendErrorEmpty": "Please enter your email.", "resendErrorFailed": "Could not send. Please try again.",
+    "category": "Account Security",
+    "loadingTitle": "Verifying your email...",
+    "loadingSubtitle": "Please wait while we activate your account",
+    "successTitle": "Email confirmed!",
+    "successSubtitle": "Your account is now active. You will be redirected to log in shortly.",
+    "successRedirect": "Redirecting to log in",
+    "successBack": "Log in now",
+    "successHome": "or the home page",
+    "counting": "in",
+    "resendPlaceholder": "Enter your email",
+    "resendButton": "Send a new link",
+    "resendSent": "Sent! Check your email.",
+    "resendErrorEmpty": "Please enter your email.",
+    "resendErrorFailed": "Failed to send. Try again.",
     "errors": {
-      "no_token": { "title": "Missing Link", "subtitle": "No verification token was found. Enter your email to get a new link.", "backHome": "Back to Home" },
-      "invalid_token": { "title": "Invalid Link", "subtitle": "This link has already been used or is not recognized.", "backHome": "Back to Home", "register": "or create a new account" },
-      "expired_token": { "title": "Link Expired", "subtitle": "This link has expired. Enter your email to receive a new one.", "backHome": "Back to Home" },
-      "network": { "title": "Connection Error", "subtitle": "Could not reach the server. Please check your internet connection.", "tryAgain": "Try Again", "backHome": "Back to Home" },
-      "server": { "title": "Server Error", "subtitle": "Something went wrong on our end. Please try again in a few moments.", "tryAgain": "Try Again", "backHome": "Back to Home" },
-      "unknown": { "title": "Verification Failed", "subtitle": "An unexpected error occurred. Please try again or contact support.", "backHome": "Back to Home" }
+      "no_token": {
+        "title": "Missing link",
+        "subtitle": "The verification token was not found. Enter your email to get a new link.",
+        "backHome": "Back to home"
+      },
+      "invalid_token": {
+        "title": "Invalid link",
+        "subtitle": "This link has already been used or is unknown.",
+        "backHome": "Back to home",
+        "register": "or create a new account"
+      },
+      "expired_token": {
+        "title": "Link expired",
+        "subtitle": "The link has expired. Enter your email to receive a new link.",
+        "backHome": "Back to home"
+      },
+      "network": {
+        "title": "Connection error",
+        "subtitle": "Could not reach the server. Please check your connection.",
+        "tryAgain": "Try again",
+        "backHome": "Back to home"
+      },
+      "server": {
+        "title": "Server error",
+        "subtitle": "Something went wrong on our side. Please try again later.",
+        "tryAgain": "Try again",
+        "backHome": "Back to home"
+      },
+      "unknown": {
+        "title": "Verification failed",
+        "subtitle": "An unexpected error occurred. Please try again.",
+        "backHome": "Back to home"
+      }
     }
   },
   "verifyEmailPending": {
-    "category": "ACCOUNT SECURITY", "title": "Verify your email", "subtitle": "A confirmation link has been sent to your inbox.",
-    "alreadyVerifiedTitle": "Email Already Verified", "alreadyVerifiedSub": "Your email is already confirmed. You're all set.",
-    "alreadyVerifiedBack": "Go back", "alreadyVerifiedHome": "or go Home",
-    "cta": "OPEN GMAIL", "resend": "RESEND LINK", "resentSuccess": "SENT", "backToLogin": "BACK TO LOGIN",
-    "checking": "Checking your status...", "errorMessage": "Something went wrong. Please try again."
-  }
-
-,
- "dashboard": {
-  "title": "DASHBOARD",
-  "welcome": "Welcome",
-  "welcomeUser": "Welcome to your dashboard",
-  "roleLabel": "Role",
-  "roleAdmin": "Admin",
-  "roleContributor": "Contributor",
-  "tabs": {
-    "overview": "OVERVIEW",
-    "submissions": "MY SUBMISSIONS",
-    "media": "MEDIA",
-    "works": "WORKS & REFERENCES",
-    "notifications": "NOTIFICATIONS"
+    "category": "Account Security",
+    "title": "Verify your email",
+    "subtitle": "A confirmation link has been sent to your email.",
+    "alreadyVerifiedTitle": "Already verified",
+    "alreadyVerifiedSub": "Your email is already verified. You're all set.",
+    "alreadyVerifiedBack": "Back to the previous page",
+    "alreadyVerifiedHome": "or the home page",
+    "cta": "OPEN GMAIL",
+    "resend": "Resend",
+    "resentSuccess": "Sent",
+    "backToLogin": "Back",
+    "checking": "Checking...",
+    "errorMessage": "Something went wrong. Please try again."
   },
-  "stats": {
-    "scholars": "Scholars",
-    "versions": "Versions",
-    "media": "Media",
-    "works": "Works"
+  "dashboard": {
+    "title": "Dashboard",
+    "welcome": "Welcome",
+    "welcomeUser": "Welcome to your dashboard",
+    "roleLabel": "Role",
+    "roleAdmin": "Admin",
+    "roleContributor": "Contributor",
+    "tabs": {
+      "overview": "Overview",
+      "submissions": "My Submissions",
+      "media": "Media",
+      "works": "Works & References",
+      "notifications": "Notifications"
+    },
+    "stats": {
+      "scholars": "Scholars",
+      "versions": "Versions",
+      "media": "Media",
+      "works": "Works"
+    },
+    "overview": {
+      "recentActivity": "Recent Activity"
+    },
+    "activity": {
+      "newScholar": "A new scholar was submitted",
+      "editProposed": "An edit was proposed"
+    },
+    "empty": {
+      "recent": "No recent activity",
+      "submissions": "No submissions found",
+      "media": "No media uploaded yet",
+      "works": "No works added yet",
+      "notifications": "No notifications yet"
+    },
+    "loading": {
+      "submissions": "Loading submissions...",
+      "media": "Loading media...",
+      "works": "Loading works..."
+    },
+    "filter": {
+      "all": "All",
+      "draft": "Draft",
+      "pending": "Under review",
+      "approved": "Approved",
+      "rejected": "Rejected",
+      "superseded": "Superseded"
+    },
+    "status": {
+      "draft": "Draft",
+      "pending": "Under review",
+      "approved": "Approved",
+      "rejected": "Rejected",
+      "superseded": "Superseded"
+    },
+    "table": {
+      "type": "Type",
+      "scholar": "Scholar",
+      "language": "Language",
+      "version": "Version",
+      "date": "Date",
+      "status": "Status",
+      "actions": "Actions",
+      "file": "File",
+      "title": "Title"
+    },
+    "actions": {
+      "view": "View",
+      "edit": "Edit",
+      "delete": "Delete",
+      "continue": "Continue",
+      "newScholar": "New Scholar ",
+      "viewFile": "View file",
+      "download": "Download",
+      "openLink": "Open link",
+      "viewOnScholarPage": "View on the scholar's page"
+    },
+    "confirm": {
+      "deleteDraft": "Are you sure you want to permanently delete this draft?",
+      "deleteRejected": "Are you sure you want to permanently delete this rejected item?"
+    },
+    "success": {
+      "draftDeleted": "Draft deleted successfully!",
+      "rejectedDeleted": "Rejected item deleted successfully!"
+    },
+    "error": {
+      "deleteDraft": "Failed to delete the draft. Please try again.",
+      "deleteRejected": "Failed to delete. Please try again."
+    },
+    "cta": {
+      "title": "Ready to contribute?",
+      "desc": "Start by adding scholars, works, and media to the platform.",
+      "button": "New Submission"
+    },
+    "media": {
+      "tempNote": "Media management is coming soon."
+    },
+    "scholarInfo": {
+      "region": "Region",
+      "dates": "Dates",
+      "alsoKnownAs": "Also known as"
+    },
+    "banner": {
+      "pendingDesc": "An administrator is currently reviewing this submission.",
+      "supersededDesc": "This version has been replaced by a newer approved version.",
+      "draftDesc": "This item has not been submitted for review yet.",
+      "pendingItemDesc": "An administrator is currently reviewing this item.",
+      "approvedDesc": "This item is published on the scholar's page.",
+      "rejectedDesc": "This item was not approved.",
+      "supersededItemDesc": "This item has been replaced by a newer version."
+    },
+    "biography": "Biography",
+    "loadingDetails": "Loading details...",
+    "errorLoadData": "Failed to load data.",
+    "untitledSubmission": "Untitled submission",
+    "newScholarSubmission": "New scholar submission",
+    "editProposal": "Edit proposal",
+    "submitted": "Submitted on",
+    "noFileAttached": "No file attached.",
+    "pagination": {
+      "previous": "Previous",
+      "next": "Next"
+    },
+    "kind": {
+      "new": "New",
+      "edit": "Edit"
+    },
+    "unknownScholar": "Unknown scholar",
+    "unknown": "Unknown",
+    "untitled": "Untitled"
   },
-  "overview": {
-    "recentActivity": "Recent Activity"
-  },
-  "activity": {
-    "newScholar": "New scholar submitted",
-    "editProposed": "Edit proposed"
-  },
-  "empty": {
-    "recent": "No recent activity",
-    "submissions": "No submissions found",
-    "media": "No media uploaded yet",
-    "works": "No works added yet",
-    "notifications": "No notifications yet"
-  },
-  "loading": {
-    "submissions": "Loading submissions...",
-    "media": "Loading media...",
-    "works": "Loading works..."
-  },
-  "filter": {
-    "all": "All",
-    "draft": "Draft",
-    "pending": "Pending",
-    "approved": "Approved",
-    "rejected": "Rejected",
-    "superseded": "Superseded"
-  },
-  "status": {
-    "draft": "DRAFT",
-    "pending": "PENDING",
-    "approved": "APPROVED",
-    "rejected": "REJECTED",
-    "superseded": "SUPERSEDED"
-  },
-  "table": {
-    "type": "Type",
-    "scholar": "Scholar",
-    "language": "Language",
-    "version": "Version",
-    "date": "Date",
-    "status": "Status",
-    "actions": "Actions",
-    "file": "File",
-    "title": "Title"
-  },
-  "actions": {
-    "view": "View",
-    "edit": "Edit",
-    "delete": "Delete",
-    "continue": "Continue",
-    "newScholar": "New Scholar +",
-    "viewFile": "VIEW FILE",
-    "download": "DOWNLOAD",
-    "openLink": "OPEN LINK",
-    "viewOnScholarPage": "VIEW ON SCHOLAR PAGE"
-  },
-  "confirm": {
-    "deleteDraft": "Are you sure you want to permanently delete this draft?",
-    "deleteRejected": "Are you sure you want to permanently delete this rejected submission?"
-  },
-  "success": {
-    "draftDeleted": "Draft deleted successfully!",
-    "rejectedDeleted": "Rejected submission deleted successfully!"
-  },
-  "error": {
-    "deleteDraft": "Failed to delete draft. Please try again.",
-    "deleteRejected": "Failed to delete. Please try again."
-  },
-  "cta": {
-    "title": "Ready to contribute?",
-    "desc": "Start adding scholars, works, and media to the platform.",
-    "button": "New Submission"
-  },
-  "media": {
-    "tempNote": "Media management is coming soon."
-  },
-  "scholarInfo": {
-    "region": "Region",
-    "dates": "Dates",
-    "alsoKnownAs": "Also Known As"
-  },
-  "banner": {
-    "pendingDesc": "An admin is currently reviewing this submission.",
-    "supersededDesc": "This version was replaced by a newer approved version.",
-    "draftDesc": "This item hasn't been submitted for review yet.",
-    "pendingItemDesc": "An admin is currently reviewing this item.",
-    "approvedDesc": "This item is live on the scholar's page.",
-    "rejectedDesc": "This item was not approved.",
-    "supersededItemDesc": "This item was replaced by a newer version."
-  },
-  "biography": "Biography",
-  "loadingDetails": "Loading details...",
-  "errorLoadData": "Failed to load data.",
-  "untitledSubmission": "Untitled Submission",
-  "newScholarSubmission": "New Scholar Submission",
-  "editProposal": "Edit Proposal",
-  "submitted": "Submitted",
-  "noFileAttached": "No file attached.",
-  "pagination": {
-    "previous": "Previous",
-    "next": "Next"
-  },
-  "kind": {
-    "new": "New",
-    "edit": "Edit"
-  },
-  "unknownScholar": "Unknown Scholar",
-  "unknown": "Unknown",
-  "untitled": "Untitled"
-},
-"logout": {
-    "confirmMessage": "Are you sure you want to sign out? Any unsaved changes may be lost.",
+  "editProfile": {
+    "loading": "Loading profile...",
+    "title": "Edit Profile",
+    "success": "Profile updated successfully!",
+    "error": {
+      "load": "Failed to load profile data.",
+      "update": "Failed to update the profile.",
+      "general": "An error occurred while saving."
+    },
+    "newImageSelected": "New image selected",
+    "changePicture": "Change profile picture",
+    "roleAdmin": "Admin",
+    "roleUser": "User",
+    "roleContributor": "Contributor",
+    "statusBrowsing": "Browsing",
+    "statusContributing": "Contributing",
+    "newImageReady": "New image ready to save",
+    "personalInfo": "Personal Information",
+    "editProfile": "Edit Profile",
+    "displayName": "Display Name",
+    "username": "Username",
+    "email": "Email",
+    "bio": "Bio",
+    "links": "Links",
+    "linksHint": "Add your social media links or personal website.",
+    "linkPlaceholder": "https://...",
+    "addLink": "Add link",
     "cancel": "Cancel",
-    "confirm": "Sign Out"
+    "saving": "Saving...",
+    "saveProfile": "Save Profile"
   },
-   "footer": {
-    "tagline": "Dedicated to Islamic Scholarly Preservation",
+  "settings": {
+    "loading": "Loading settings...",
+    "errorLoad": "Failed to load settings.",
+    "errorUpdate": "Failed to update settings. Please try again.",
+    "errorDeactivate": "Failed to deactivate the account.",
+    "errorDelete": "Failed to delete the account.",
+    "saved": "Saved",
+    "processing": "Processing...",
+    "cancel": "Cancel",
+    "title": "Account Settings",
+    "desc": "Manage your preferences, privacy, and account status.",
+    "language": "Language",
+    "preferredLanguage": "Preferred language",
+    "notifications": "Notifications",
+    "enableNotifications": "Enable notifications",
+    "notificationsDesc": "Receive general notifications about your account and contributions.",
+    "privacy": "Privacy",
+    "profileVisibility": "Profile visibility",
+    "visibilityPublic": "Public",
+    "visibilityRegistered": "Registered users only",
+    "visibilityPrivate": "Private",
+    "showEmail": "Show email",
+    "showEmailDesc": "Display your email address on your public profile.",
+    "showContributions": "Show contributions",
+    "showContributionsDesc": "Display your contribution history on your public profile.",
+    "accountManagement": "Account Management",
+    "deactivateAccount": "Deactivate Account",
+    "deactivateAccountDesc": "Temporarily deactivate your account. You can reactivate it by logging in again.",
+    "deactivate": "Deactivate",
+    "deactivateConfirmMessage": "Are you sure you want to deactivate your account? Your data will be kept, and you can reactivate it at any time by logging in again.",
+    "deleteAccount": "Delete Account",
+    "deleteAccountDesc": "Permanently anonymize your account. This action cannot be undone.",
+    "deleteAccountWarning": "This action is irreversible. Your account will be anonymized, your password will be deleted, and you will not be able to log in again. Your past contributions will remain visible under an anonymous username.",
+    "typeDeleteToConfirm": "Type DELETE to confirm:",
+    "deletePlaceholder": "DELETE",
+    "deleteAccountConfirm": "Delete account",
+    "securityPassword": "Security & Password",
+    "currentPassword": "Current password",
+    "newPassword": "New password",
+    "confirmNewPassword": "Confirm new password",
+    "updatePassword": "Update password",
+    "updated": "Updated!",
+    "errorSamePassword": "The new password cannot be the same as the current password.",
+    "errorPasswordMismatch": "The new password and its confirmation do not match.",
+    "errorPasswordLength": "The new password must be at least 6 characters long."
+  },
+  "logout": {
+    "confirmMessage": "Are you sure you want to log out? You may lose any unsaved changes.",
+    "cancel": "Cancel",
+    "confirm": "Log out"
+  },
+  "footer": {
+    "tagline": "Dedicated to preserving the Islamic scholarly heritage",
     "quickLinks": "Quick Links",
-    "about": "About Us",
+    "about": "About",
     "scholars": "Scholars",
     "works": "Works & Manuscripts",
     "disciplines": "Disciplines",
@@ -1501,7 +1781,7 @@
     "forum": "Forum",
     "faq": "FAQ",
     "privacy": "Privacy Policy",
-    "contact": "Contact",
+    "contact": "Contact Us",
     "address": "Algiers, Algeria",
     "email": "contact@oulamauna.com",
     "phone": "+213 (0) XX XX XX XX",
@@ -1509,20 +1789,18 @@
     "terms": "Terms of Use",
     "privacyLink": "Privacy"
   },
-    "hero": {
-    "tagline": "WELCOME TO OULAMAUNA",
-    "title": "Discover the Scholars Who Shaped Islamic Thought",
-    "subtitle": "Explore centuries of knowledge, from the Classical era to modern times. Verified biographies, original works, and manuscript archives — all in one place.",
+  "hero": {
+    "tagline": "Welcome to Oulamauna",
+    "title": "Discover the scholars who shaped Islamic thought",
+    "subtitle": "Explore centuries of knowledge, from the classical era to the modern age. Documented biographies, original works, and an archive of manuscripts — all in one place.",
     "exploreButton": "Start Exploring"
   },
-  
-  
-    "sidebar": {
+  "sidebar": {
     "dashboard": "Dashboard",
     "editProfile": "Edit Profile",
     "settings": "Settings",
-    "signOut": "Sign Out",
-    "profileCompletion": "Profile Completion",
+    "signOut": "Sign out",
+    "profileCompletion": "Profile completion",
     "completeHint": "Add more details to increase your visibility.",
     "links": "Links"
   },
@@ -1530,11 +1808,10 @@
     "dashboard": "Dashboard",
     "editProfile": "Edit Profile",
     "settings": "Settings",
-    "logout": "Sign out",
+    "logout": "Log out",
     "ariaLabel": "Profile menu"
   },
-    "profile": {
-      
+  "profile": {
     "loading": "Loading profile...",
     "roleUser": "User",
     "roleAdmin": "Admin",
@@ -1542,11 +1819,11 @@
     "joined": "Joined",
     "stats": {
       "contributions": "Contributions",
-      "forumPosts": "Forum Posts",
-      "contribs": "Contribs",
+      "forumPosts": "Forum posts",
+      "contribs": "Contributions",
       "forum": "Forum"
     },
-    "activityTitle": "ACTIVITY",
+    "activityTitle": "Activity",
     "activity": {
       "recentContributions": "Recent Contributions",
       "hiddenContributions": "This user has hidden their contributions.",
@@ -1565,7 +1842,7 @@
       "mediaUpload": "Media upload",
       "newEdition": "New edition",
       "work": "Work",
-      "submission": "submission",
+      "submission": "Submission",
       "newScholarEntry": "New scholar entry"
     },
     "forum": {
@@ -1588,97 +1865,18 @@
     "error": {
       "notFound": {
         "title": "Profile not found",
-        "desc": "No profile exists for this ID."
+        "desc": "There is no profile for this ID."
       },
-      "general": "Error loading profile",
+      "general": "Error loading the profile",
       "generalDesc": "Please try again later."
     }
   },
-    "editProfile": {
-    "loading": "Loading profile...",
-    "title": "EDIT PROFILE",
-    "success": "Profile Updated Successfully!",
-    "error": {
-      "load": "Failed to load profile data.",
-      "update": "Failed to update profile.",
-      "general": "An error occurred while saving."
-    },
-    "newImageSelected": "New image selected",
-    "changePicture": "Change profile picture",
-    "roleAdmin": "Admin",
-    "roleUser": "User",
-    "roleContributor": "Contributor",
-    "statusBrowsing": "Browsing",
-    "statusContributing": "Contributing",
-    "newImageReady": "New image ready to save",
-    "personalInfo": "Personal Information",
-    "displayName": "Display Name",
-    "username": "Username",
-    "email": "Email",
-    "bio": "Bio",
-    "links": "Links",
-    "linksHint": "Add your social media or personal website links.",
-    "linkPlaceholder": "https://...",
-    "addLink": "Add Link",
-    "cancel": "Cancel",
-    "saving": "Saving...",
-    "editProfile": "Edit Profile",
-    "saveProfile": "Save Profile"
-  },
-    "settings": {
-    "loading": "Loading settings...",
-    "errorLoad": "Failed to load settings.",
-    "errorUpdate": "Failed to update settings. Please try again.",
-    "errorDeactivate": "Failed to deactivate account.",
-    "errorDelete": "Failed to delete account.",
-    "saved": "SAVED",
-    "processing": "Processing...",
-    "cancel": "Cancel",
-    "title": "Account Settings",
-    "desc": "Manage your preferences, privacy, and account status.",
-    "language": "Language",
-    "preferredLanguage": "Preferred Language",
-    "notifications": "Notifications",
-    "enableNotifications": "Enable Notifications",
-    "notificationsDesc": "Receive global notifications about your account and contributions.",
-    "privacy": "Privacy",
-    "profileVisibility": "Profile Visibility",
-    "visibilityPublic": "Public",
-    "visibilityRegistered": "Registered Users Only",
-    "visibilityPrivate": "Private",
-    "showEmail": "Show Email",
-    "showEmailDesc": "Display your email address on your public profile.",
-    "showContributions": "Show Contributions",
-    "showContributionsDesc": "Display your contribution history on your public profile.",
-    "accountManagement": "Account Management",
-    "deactivateAccount": "Deactivate Account",
-    "deactivateAccountDesc": "Temporarily disable your account. You can reactivate by logging in again.",
-    "deactivate": "Deactivate",
-    "deactivateConfirmMessage": "Are you sure you want to deactivate your account? Your data will be preserved, and you can reactivate it at any time by logging back in.",
-    "deleteAccount": "Delete Account",
-    "deleteAccountDesc": "Permanently anonymize your account. This cannot be undone.",
-    "deleteAccountWarning": "This is irreversible. Your account will be anonymized, your password will be destroyed, and you will not be able to log in again. Your past contributions will remain visible under an anonymized username.",
-    "typeDeleteToConfirm": "Type DELETE to confirm:",
-    "deletePlaceholder": "DELETE",
-    "deleteAccountConfirm": "Delete Account",
-    "securityPassword": "Security & Password",
-    "currentPassword": "Current Password",
-    "newPassword": "New Password",
-    "confirmNewPassword": "Confirm New Password",
-    "updatePassword": "Update Password",
-    "updated": "Updated!",
-    "errorSamePassword": "New password cannot be the same as your current password.",
-    "errorPasswordMismatch": "New password and confirmation do not match.",
-    "errorPasswordLength": "New password must be at least 6 characters long."
-  },
-  
-  
   "scholars": {
     "newScholars": {
       "title": "New Scholars",
-      "subtitle": "Review newly submitted scholar profiles before they go live on the archive.",
-      "updatedLabel": "Updated just now",
-      "empty": "No submissions in the queue.",
+      "subtitle": "Review newly submitted scholar profiles before they are published in the archive.",
+      "updatedLabel": "Just updated",
+      "empty": "There are no submissions in the queue.",
       "noResults": "No submissions match your search."
     },
     "stats": {
@@ -1716,12 +1914,12 @@
       "review": "Review",
       "approve": "Approve",
       "reject": "Reject",
-      "strip": "Strip contributor privileges"
+      "strip": "Revoke contributor privileges"
     },
     "strip": {
-      "title": "Strip contributor privileges?",
+      "title": "Revoke contributor privileges?",
       "body": "This will remove contributor privileges from {name} and delete all of their pending submissions. This action cannot be undone.",
-      "confirm": "Strip privileges"
+      "confirm": "Revoke privileges"
     },
     "review": {
       "cancel": "Cancel"
@@ -1729,44 +1927,44 @@
   },
   "scholarReview": {
     "badge": {
-      "newSubmission": "NEW SUBMISSION"
+      "newSubmission": "New submission"
     },
     "hero": {
-      "submitter": "Submitter",
-      "highImpact": "1 High Impact Submission"
+      "submitter": "Submitted by",
+      "highImpact": "High-impact submission"
     },
     "submittedLang": {
-      "en": "English (Primary)",
-      "ar": "Arabic (Primary)",
-      "fr": "Français (Primary)"
+      "en": "English (primary)",
+      "ar": "Arabic (primary)",
+      "fr": "French (primary)"
     },
     "editBar": {
-      "label": "Editing — fix typos or correct any field, then confirm.",
+      "label": "Edit mode — correct mistakes or modify any field, then confirm.",
       "cancel": "Cancel",
       "confirm": "Confirm"
     },
     "actions": {
-      "editPage": "Edit Page",
-      "reject": "Reject / Request Changes",
-      "approve": "Approve Submission"
+      "editPage": "Edit page",
+      "reject": "Reject / Request changes",
+      "approve": "Approve submission"
     },
     "modal": {
       "approveTitle": "Approve this submission?",
       "rejectTitle": "Reject or request changes?",
-      "stripTitle": "Strip contributor access?",
-      "approveSub": "This will publish {name} to the encyclopedia.",
-      "unreviewed": "unreviewed new disciplines will be added automatically.",
-      "rejectSub": "Optionally tell the contributor what needs to change. Leave blank to reject without a message.",
-      "stripSub": "This removes {name}'s contributor privileges. This action is logged.",
-      "rejectPlaceholder": "e.g. Please verify the birth year — sources conflict between 1905 and 1906.",
+      "stripTitle": "Revoke contributor privileges?",
+      "approveSub": "This will publish {name} in the encyclopedia.",
+      "unreviewed": "New disciplines have not been reviewed yet and will be added automatically.",
+      "rejectSub": "You can tell the contributor what needs to change. Leave it empty to reject without a message.",
+      "stripSub": "This will remove {name}'s contributor privileges. This action is logged.",
+      "rejectPlaceholder": "e.g. Please verify the birth year — there is a conflict between sources, 1905 and 1906.",
       "confirmApprove": "Approve",
       "confirmReject": "Reject",
-      "confirmSendReject": "Send & Reject",
-      "confirmStrip": "Strip Access"
+      "confirmSendReject": "Send & reject",
+      "confirmStrip": "Revoke privileges"
     },
     "sections": {
       "biography": "Academic Biography",
-      "lineage": "Intellectual Lineage & Relations",
+      "lineage": "Intellectual Affiliation & Relationships",
       "bibliography": "Bibliography",
       "media": "Documents & Media",
       "references": "Academic References"
@@ -1780,16 +1978,16 @@
       "disciples": "Notable Disciples"
     },
     "works": {
-      "title": "TITLE",
-      "year": "YEAR",
-      "format": "FORMAT",
-      "access": "DIGITAL ACCESS",
-      "view": "VIEW",
+      "title": "Title",
+      "year": "Year",
+      "format": "Format",
+      "access": "Digital Access",
+      "view": "View",
       "viewPdf": "View PDF"
     },
     "media": {
       "viewPdf": "View PDF",
-      "viewPhotos": "View Photos",
+      "viewPhotos": "View photos",
       "watch": "Watch",
       "listen": "Listen",
       "open": "Open"
@@ -1804,62 +2002,62 @@
       "century": "Century",
       "discipline": "Discipline",
       "expertiseClusters": "Expertise Clusters",
-      "submitterNote": "Submitter Note"
+      "submitterNote": "Contributor's note"
     },
     "chips": {
-      "kept": "kept",
-      "removed": "removed",
-      "pending": "pending",
+      "kept": "Kept",
+      "removed": "Removed",
+      "pending": "Pending",
       "keepPrompt": "Keep \"{label}\"?",
       "yesAdd": "Yes, add",
-      "undo": "undo",
+      "undo": "Undo",
       "keepTitle": "Keep this discipline",
       "removeTitle": "Remove this discipline",
-      "hint": "= new discipline proposed by contributor — decide to keep or remove"
+      "hint": "= new discipline proposed by the contributor — decide whether to keep or remove it"
     }
   },
   "reviewQueue": {
     "title": "Review Queue",
-    "subtitle": "Manage incoming scholar profiles and archival contributions. Ensure all metadata adheres to standards.",
+    "subtitle": "Manage incoming scholar profiles and archival contributions. Make sure all metadata complies with the standards.",
     "stats": {
-      "totalPending": "Total Pending",
+      "totalPending": "Total pending",
       "overdue": "Overdue (>3 days)",
-      "newToday": "New Today",
-      "avgTime": "Avg. Review Time",
-      "thisWeek": "This Week"
+      "newToday": "New today",
+      "avgTime": "Average review time",
+      "thisWeek": "This week"
     },
     "filters": {
       "title": "Filter Submissions",
-      "clearAll": "Clear All",
+      "clearAll": "Clear all",
       "language": "Language",
-      "allLanguages": "All Languages",
+      "allLanguages": "All languages",
       "discipline": "Discipline",
-      "allDisciplines": "All Disciplines",
+      "allDisciplines": "All disciplines",
       "type": "Type",
-      "allTypes": "All Types",
-      "newProfile": "New Profile",
-      "contentEdit": "Content Edit",
+      "allTypes": "All types",
+      "newProfile": "New profile",
+      "contentEdit": "Content edit",
       "sort": "Sort"
     },
     "sort": {
-      "newest": "Newest First",
-      "oldest": "Oldest First",
-      "nameAZ": "Name (A–Z)"
+      "newest": "Newest first",
+      "oldest": "Oldest first",
+      "nameAZ": "Name (A-Z)"
     },
     "lang": {
       "en": "English",
-      "ar": "العربية",
-      "fr": "Français"
+      "ar": "Arabic",
+      "fr": "French"
     },
     "table": {
       "title": "New Scholar Submissions",
-      "updated": "Updated 2m ago",
+      "updated": "Updated 2 minutes ago",
       "scholar": "Scholar",
       "editor": "Editor",
-      "editType": "Edit Type",
-      "submitted": "Submitted",
+      "editType": "Edit type",
+      "submitted": "Submitted on",
       "actions": "Actions",
-      "empty": "No submissions found"
+      "empty": "No submissions"
     },
     "editTypes": {
       "bioModified": "Biography updated",
@@ -1867,7 +2065,7 @@
       "workModified": "Work modified",
       "mediaAdded": "Media added",
       "mediaModified": "Media updated",
-      "vitalsUpdated": "Vitals updated",
+      "vitalsUpdated": "Vital data updated",
       "disciplineAdded": "Discipline added"
     },
     "pagination": {
@@ -1877,31 +2075,31 @@
       "review": "Review",
       "approve": "Approve",
       "reject": "Reject",
-      "strip": "Strip Contributor"
+      "strip": "Revoke contributor privileges"
     },
     "modal": {
-      "title": "Strip Contributor",
-      "body": "Are you sure you want to remove all submissions from {name}?",
+      "title": "Revoke contributor privileges",
+      "body": "Are you sure you want to remove all of {name}'s submissions?",
       "warning": "This action cannot be undone.",
       "cancel": "Cancel",
       "confirm": "Confirm"
     }
   },
   "pendingEditReview": {
-    "pendingEdit": "PENDING EDIT",
+    "pendingEdit": "Pending edit",
     "editor": "Editor",
     "original": "Original",
     "proposed": "Proposed",
     "accepted": "Accepted",
     "rejected": "Rejected",
     "pending": "Pending",
-    "totalChanges": "total changes",
-    "rejectAll": "Reject All",
-    "approveAccepted": "Approve Accepted ({count})",
-    "changedFields": "Changed Fields",
-    "disciplineChanges": "Discipline Changes",
-    "workChanges": "Bibliography Changes",
-    "mediaChanges": "Media Changes",
+    "totalChanges": "Total changes",
+    "rejectAll": "Reject all",
+    "approveAccepted": "Approve accepted ({count})",
+    "changedFields": "Modified fields",
+    "disciplineChanges": "Discipline changes",
+    "workChanges": "Work changes",
+    "mediaChanges": "Media changes",
     "accept": "Accept",
     "reject": "Reject",
     "modify": "Modify",
@@ -1909,199 +2107,199 @@
     "editing": "Editing...",
     "saveChanges": "Save changes",
     "cancel": "Cancel",
-    "rejectReasonLabel": "Reason for rejection:",
+    "rejectReasonLabel": "Rejection reason:",
     "rejectReasonPlaceholder": "Explain why this change is being rejected...",
     "rejectionReason": "Rejection reason",
-    "confirmReject": "Reject",
+    "confirmReject": "Confirm rejection",
     "type": "Type",
     "title": "Title",
     "year": "Year",
     "format": "Format",
     "access": "Access",
-    "accessUrl": "Access URL",
+    "accessUrl": "Access link",
     "description": "Description",
-    "meta": "Meta (size/type info)",
-    "origLabel": "Orig",
+    "meta": "Metadata (size/type)",
+    "origLabel": "Original",
     "newLabel": "New",
     "editLabel": "Edit",
-    "view": "VIEW",
-    "newWork": "New Work",
-    "modifiedWork": "Modified Work",
-    "deletedWork": "Deleted Work",
-    "newMedia": "New Media",
-    "modifiedMedia": "Modified Media",
-    "deletedMedia": "Deleted Media",
-    "proposedNewDisciplines": "Proposed New Disciplines",
-    "proposedRemovals": "Proposed Removals",
+    "view": "View",
+    "newWork": "New work",
+    "modifiedWork": "Modified work",
+    "deletedWork": "Deleted work",
+    "newMedia": "New media",
+    "modifiedMedia": "Modified media",
+    "deletedMedia": "Deleted media",
+    "proposedNewDisciplines": "Proposed new disciplines",
+    "proposedRemovals": "Proposed removals",
     "acceptRemoval": "Accept removal",
     "keepDiscipline": "Keep (reject removal)",
-    "editInformation": "Edit Information",
-    "editDate": "Edit Date",
-    "editType": "Edit Type",
-    "originalAuthor": "Original Author",
+    "editInformation": "Edit information",
+    "editDate": "Edit date",
+    "editType": "Edit type",
+    "originalAuthor": "Original author",
     "language": "Language",
-    "editorNote": "Editor's Note",
+    "editorNote": "Editor's note",
     "viewPdf": "View PDF",
-    "viewPhotos": "View Photos",
+    "viewPhotos": "View photos",
     "watch": "Watch",
     "listen": "Listen",
     "open": "Open",
     "modal": {
-      "approveTitle": "Approve accepted changes?",
+      "approveTitle": "Approve the accepted changes?",
       "rejectTitle": "Reject all changes?",
-      "stripTitle": "Strip editor access?",
-      "approveSub": "This will apply {count} accepted changes to {name}'s profile.",
+      "stripTitle": "Revoke the editor's privileges?",
+      "approveSub": "This will apply {count} accepted change(s) to {name}'s profile.",
       "rejectSub": "This will reject all proposed changes and notify the editor.",
-      "stripSub": "This will remove editing privileges from {name}.",
-      "rejectPlaceholder": "Optional: Provide a reason for rejection...",
-      "confirmApprove": "Confirm Approval",
-      "confirmReject": "Confirm Rejection",
-      "confirmStrip": "Strip Access"
+      "stripSub": "This will remove {name}'s editing privileges.",
+      "rejectPlaceholder": "Optional: provide a reason for the rejection...",
+      "confirmApprove": "Confirm approval",
+      "confirmReject": "Confirm rejection",
+      "confirmStrip": "Revoke privileges"
     }
   },
-   "mediaQueue": {
+  "mediaQueue": {
     "title": "Media Verification",
     "subtitle": "Review and verify submitted media files, links, and documents before they are published.",
     "stats": {
-      "totalPending": "Total Pending",
-      "priorityReviews": "Priority Reviews",
-      "avgTime": "Avg. Review Time"
+      "totalPending": "Total pending",
+      "priorityReviews": "Priority reviews",
+      "avgTime": "Average review time"
     },
     "filters": {
       "title": "Filter Media",
-      "clearAll": "Clear All",
-      "type": "Media Type",
-      "allTypes": "All Types",
+      "clearAll": "Clear all",
+      "type": "Media type",
+      "allTypes": "All types",
       "scholar": "Scholar",
-      "allScholars": "All Scholars",
+      "allScholars": "All scholars",
       "sort": "Sort"
     },
     "sort": {
-      "newest": "Newest First",
-      "oldest": "Oldest First",
-      "titleAZ": "Title (A–Z)"
+      "newest": "Newest first",
+      "oldest": "Oldest first",
+      "titleAZ": "Title (A-Z)"
     },
     "type": {
-      "pdf": "PDF",
+      "pdf": "PDF file",
       "audio": "Audio",
       "video": "Video",
       "link": "Link"
     },
     "table": {
-      "title": "Pending Media Submissions",
-      "updated": "Updated just now",
+      "title": "Pending Media Requests",
+      "updated": "Just updated",
       "media": "Media",
       "type": "Type",
       "source": "Source",
       "language": "Language",
       "scholar": "Scholar",
-      "submitter": "Submitter",
-      "submitted": "Submitted",
+      "submitter": "Submitted by",
+      "submitted": "Submitted on",
       "actions": "Actions",
-      "empty": "No media submissions found"
+      "empty": "No media requests found"
     },
     "source": {
-      "link": "External Link"
+      "link": "External link"
     },
     "actions": {
       "approve": "Approve",
       "reject": "Reject",
       "delete": "Delete",
-      "strip": "Strip Contributor"
+      "strip": "Remove contributor"
     },
     "modal": {
       "rejectTitle": "Reject this media?",
       "rejectBody": "You are about to reject \"{title}\". Please provide a reason.",
-      "rejectPlaceholder": "Reason for rejection...",
-      "rejectReasonLabel": "REJECTION REASON *",
-      "rejectReasonPlaceholder": "Please explain why this submission is being rejected...",
-      "approveTitle": "Approve Submission",
+      "rejectPlaceholder": "Rejection reason...",
+      "rejectReasonLabel": "Rejection reason *",
+      "rejectReasonPlaceholder": "Please explain why this request is being rejected...",
+      "approveTitle": "Approve request",
       "approveBody": "Are you sure you want to approve \"{title}\"?",
-      "approveNotesLabel": "APPROVAL NOTES (Optional)",
+      "approveNotesLabel": "Approval notes (optional)",
       "approveNotesPlaceholder": "Add any notes about this approval...",
-      "confirmApprove": "Confirm Approve",
+      "confirmApprove": "Confirm approval",
       "cancel": "Cancel",
       "confirm": "Confirm"
     },
     "strip": {
-      "title": "Strip Contributor Credit?",
-      "body": "This will remove <b>{name}</b> as the contributor for \"{title}\".",
+      "title": "Remove contributor credit?",
+      "body": "This will remove <b>{name}</b> as a contributor of \"{title}\".",
       "warning": "This action is permanent and cannot be undone.",
       "cancel": "Cancel",
-      "confirm": "Confirm Strip",
-      "alreadyStripped": "Contributor already stripped"
+      "confirm": "Confirm removal",
+      "alreadyStripped": "Contributor already removed"
     },
     "review": {
-      "title": "Review Media",
+      "title": "Media Review",
       "detailsTitle": "Media Details",
       "label": {
         "title": "Title",
         "description": "Description",
         "scholar": "Scholar",
         "type": "Type",
-        "submittedBy": "Submitted By",
-        "fileName": "File Name"
+        "submittedBy": "Submitted by",
+        "fileName": "File name"
       },
-      "fileActions": "File Actions",
-      "viewFile": "VIEW FILE",
-      "download": "DOWNLOAD",
-      "openLink": "OPEN LINK",
+      "fileActions": "File actions",
+      "viewFile": "View file",
+      "download": "Download",
+      "openLink": "Open link",
       "noFileOrLink": "No file or link attached.",
-      "checksTitle": "Verification Checks",
-      "check1": "Media is accessible and plays/renders correctly.",
-      "check2": "Content matches the provided title and description.",
-      "check3": "Copyright and legal usage rights are verified.",
-      "check4": "Content adheres to community guidelines.",
-      "notesTitle": "Reviewer Notes",
+      "checksTitle": "Verification checks",
+      "check1": "The media is accessible and plays/displays correctly.",
+      "check2": "The content matches the submitted title and description.",
+      "check3": "Copyright and legal use have been verified.",
+      "check4": "The content follows the community guidelines.",
+      "notesTitle": "Reviewer notes",
       "notesPlaceholder": "Add internal notes about this media...",
       "errorChecks": "Please complete all verification checks before approving.",
-      "errorReject": "A reason is required when rejecting media. Please add notes."
+      "errorReject": "A rejection reason is required when rejecting media. Please add notes."
     },
     "restrict": {
       "title": "Restrict User",
       "submitted": "submitted",
-      "desc": "Choose an action. This will automatically reject this media submission as well.",
-      "revoke": "Revoke Contribution Access",
-      "revokeDesc": "They can still log in, but cannot submit new content. (Recommended for low-quality submissions)",
-      "ban": "Ban Account Completely",
-      "banDesc": "They will be completely locked out of the platform. (Use for spam, abuse, or severe violations)",
-      "confirmBanTitle": "Confirm Ban",
-      "confirmRevokeTitle": "Confirm Revocation",
+      "desc": "Choose an action. This will also automatically reject this media request.",
+      "revoke": "Revoke contribution privileges",
+      "revokeDesc": "They can keep logging in, but cannot submit new content. (Recommended for low-quality submissions)",
+      "ban": "Ban the account completely",
+      "banDesc": "Their account will be completely locked out of the platform. (Used for spam, abuse, or serious violations)",
+      "confirmBanTitle": "Confirm ban",
+      "confirmRevokeTitle": "Confirm revocation",
       "confirmDescPrefix": "This will",
-      "banAction": "BAN",
-      "revokeAction": "REVOKE CONTRIBUTION ACCESS FOR",
-      "confirmDescAndReject": "and automatically REJECT the media",
+      "banAction": "ban",
+      "revokeAction": "revoke contribution privileges for",
+      "confirmDescAndReject": "and automatically reject the media",
       "confirmDescWarning": "This action cannot be undone from this screen.",
-      "goBack": "Go Back",
+      "goBack": "Go back",
       "confirmButton": "Confirm & Reject"
     },
     "errors": {
-      "approve": "Failed to approve media.",
-      "reject": "Failed to reject media."
+      "approve": "Failed to approve the media.",
+      "reject": "Failed to reject the media."
     }
   },
-    "worksQueue": {
+  "worksQueue": {
     "title": "Works Verification",
-    "subtitle": "Review and verify submitted scholarly works, books, and manuscripts before they are published.",
+    "subtitle": "Review and verify submitted academic works, books, and manuscripts before they are published.",
     "yearLabel": "Year",
     "stats": {
-      "totalPending": "Total Pending",
-      "priorityReviews": "Priority Reviews",
-      "avgTime": "Avg. Review Time"
+      "totalPending": "Total pending",
+      "priorityReviews": "Priority reviews",
+      "avgTime": "Average review time"
     },
     "filters": {
       "title": "Filter Works",
-      "clearAll": "Clear All",
+      "clearAll": "Clear all",
       "format": "Format",
-      "allFormats": "All Formats",
+      "allFormats": "All formats",
       "scholar": "Scholar",
-      "allScholars": "All Scholars",
+      "allScholars": "All scholars",
       "sort": "Sort"
     },
     "sort": {
-      "newest": "Newest First",
-      "oldest": "Oldest First",
-      "titleAZ": "Title (A–Z)"
+      "newest": "Newest first",
+      "oldest": "Oldest first",
+      "titleAZ": "Title (A-Z)"
     },
     "format": {
       "book": "Book",
@@ -2112,41 +2310,41 @@
       "other": "Other"
     },
     "table": {
-      "title": "Pending Works Submissions",
-      "updated": "Updated just now",
+      "title": "Pending Works Requests",
+      "updated": "Just updated",
       "work": "Work",
       "format": "Format",
       "access": "Digital Access",
       "language": "Language",
       "scholar": "Scholar",
-      "submitter": "Submitter",
-      "submitted": "Submitted",
+      "submitter": "Submitted by",
+      "submitted": "Submitted on",
       "actions": "Actions",
-      "empty": "No works submissions found"
+      "empty": "No works requests found"
     },
     "access": {
-      "link": "External Link",
+      "link": "External link",
       "none": "No digital file"
     },
     "actions": {
       "approve": "Approve",
       "reject": "Reject",
       "delete": "Delete",
-      "review": "Review Work",
-      "strip": "Strip Contributor"
+      "review": "Review work",
+      "strip": "Remove contributor"
     },
     "modal": {
       "rejectTitle": "Reject this work?",
       "rejectBody": "You are about to reject \"{title}\". Please provide a reason.",
-      "rejectPlaceholder": "Reason for rejection...",
-      "rejectReasonLabel": "REJECTION REASON *",
-      "rejectReasonPlaceholder": "Please explain why this submission is being rejected...",
-      "approveTitle": "Approve Submission",
+      "rejectPlaceholder": "Rejection reason...",
+      "rejectReasonLabel": "Rejection reason *",
+      "rejectReasonPlaceholder": "Please explain why this request is being rejected...",
+      "approveTitle": "Approve request",
       "approveBody": "Are you sure you want to approve \"{title}\"?",
-      "approveNotesLabel": "APPROVAL NOTES (Optional)",
+      "approveNotesLabel": "Approval notes (optional)",
       "approveNotesPlaceholder": "Add any notes about this approval...",
-      "confirmApprove": "Confirm Approve",
-      "deleteTitle": "Delete this submission?",
+      "confirmApprove": "Confirm approval",
+      "deleteTitle": "Delete this request?",
       "deleteBody": "Are you sure you want to permanently delete \"{title}\"? This action cannot be undone.",
       "deletePlaceholder": "Reason for deletion (optional)...",
       "deleteConfirm": "Delete",
@@ -2154,413 +2352,411 @@
       "confirm": "Confirm"
     },
     "strip": {
-      "title": "Strip Contributor Credit?",
-      "body": "This will remove <b>{name}</b> as the contributor for \"{title}\".",
+      "title": "Remove contributor credit?",
+      "body": "This will remove <b>{name}</b> as a contributor of \"{title}\".",
       "warning": "This action is permanent and cannot be undone.",
       "cancel": "Cancel",
-      "confirm": "Confirm Strip",
-      "alreadyStripped": "Contributor already stripped"
+      "confirm": "Confirm removal",
+      "alreadyStripped": "Contributor already removed"
     },
     "review": {
-      "title": "Review Work",
+      "title": "Work Review",
       "detailsTitle": "Work Details",
       "label": {
         "title": "Title",
         "year": "Year",
         "format": "Format",
         "scholar": "Scholar",
-        "submittedBy": "Submitted By",
+        "submittedBy": "Submitted by",
         "description": "Description",
-        "fileName": "File Name"
+        "fileName": "File name"
       },
-      "fileActions": "File Actions",
-      "viewFile": "VIEW FILE",
-      "download": "DOWNLOAD",
-      "openLink": "OPEN LINK",
+      "fileActions": "File actions",
+      "viewFile": "View file",
+      "download": "Download",
+      "openLink": "Open link",
       "noFileOrLink": "No file or link attached.",
-      "checksTitle": "Verification Checks",
-      "check1": "Bibliographic information is accurate and complete.",
-      "check2": "Work is correctly attributed to the scholar.",
-      "check3": "Copyright and usage rights are verified.",
-      "check4": "Content adheres to academic standards.",
-      "notesTitle": "Reviewer Notes",
+      "checksTitle": "Verification checks",
+      "check1": "The bibliographic information is accurate and complete.",
+      "check2": "The work is correctly attributed to the scholar.",
+      "check3": "Copyright and usage have been verified.",
+      "check4": "The content meets academic standards.",
+      "notesTitle": "Reviewer notes",
       "notesPlaceholder": "Add internal notes about this work...",
       "errorChecks": "Please complete all verification checks before approving.",
-      "errorReject": "A reason is required when rejecting a work. Please add notes."
+      "errorReject": "A rejection reason is required when rejecting a work. Please add notes."
     },
     "restrict": {
       "title": "Restrict User",
       "submitted": "submitted",
-      "desc": "Choose an action. This will automatically reject this work submission as well.",
-      "revoke": "Revoke Contribution Access",
-      "revokeDesc": "They can still log in, but cannot submit new content. (Recommended for low-quality submissions)",
-      "ban": "Ban Account Completely",
-      "banDesc": "They will be completely locked out of the platform. (Use for spam, abuse, or severe violations)",
-      "confirmBanTitle": "Confirm Ban",
-      "confirmRevokeTitle": "Confirm Revocation",
+      "desc": "Choose an action. This will also automatically reject this work request.",
+      "revoke": "Revoke contribution privileges",
+      "revokeDesc": "They can keep logging in, but cannot submit new content. (Recommended for low-quality submissions)",
+      "ban": "Ban the account completely",
+      "banDesc": "Their account will be completely locked out of the platform. (Used for spam, abuse, or serious violations)",
+      "confirmBanTitle": "Confirm ban",
+      "confirmRevokeTitle": "Confirm revocation",
       "confirmDescPrefix": "This will",
-      "banAction": "BAN",
-      "revokeAction": "REVOKE CONTRIBUTION ACCESS FOR",
-      "confirmDescAndReject": "and automatically REJECT the work",
+      "banAction": "ban",
+      "revokeAction": "revoke contribution privileges for",
+      "confirmDescAndReject": "and automatically reject the work",
       "confirmDescWarning": "This action cannot be undone from this screen.",
-      "goBack": "Go Back",
+      "goBack": "Go back",
       "confirmButton": "Confirm & Reject"
     },
     "errors": {
-      "approve": "Failed to approve work.",
-      "reject": "Failed to reject work."
+      "approve": "Failed to approve the work.",
+      "reject": "Failed to reject the work."
     },
     "badge": {
-      "stripped": "Stripped"
+      "stripped": "Removed"
     },
     "toast": {
-      "approved": "\"{title}\" has been approved successfully.",
-      "rejected": "\"{title}\" has been rejected.",
-      "deleted": "\"{title}\" has been deleted.",
-      "stripped": "Contributor \"{name}\" has been stripped."
+      "approved": "\"{title}\" was approved successfully.",
+      "rejected": "\"{title}\" was rejected.",
+      "deleted": "\"{title}\" was deleted.",
+      "stripped": "Contributor \"{name}\" was removed."
     }
   },
-
-"submitScholar": {
-  "portal": {
-    "title": "Academic Submission Portal",
-    "subtitle": "Contributing to the definitive digital record of Islamic intellectual heritage. Please ensure all data is cited and verified.",
-    "selectLang": "SELECT SUBMISSION LANGUAGE",
-    "langDesc": "Choose the language for your scholarly contribution. Additional languages can be submitted after the initial entry is reviewed.",
-    "begin": "BEGIN SUBMISSION"
-  },
-  "steps": {
-    "identity": "Identity & Metadata",
-    "relations": "Academic Relations",
-    "narrative": "Narrative Content",
-    "works": "Academic Works",
-    "media": "Media Library",
-    "refs": "References",
-    "review": "Review & Submit"
-  },
-  "success": {
-    "title": "Submission Received",
-    "desc": "Your scholar entry has been submitted for editorial review. You will be notified once the review process is complete.",
-    "pending": "PENDING REVIEW",
-    "note": "The editorial team will review your entry and may Approve, Reject, or Request Changes. You can track the status from your dashboard.",
-    "goHome": "Back to Home",
-    "goDashboard": "View Dashboard",
-    "submitAnother": "Submit Another Scholar"
-  },
-  "step1": {
-    "title": "Identity & Core Metadata",
-    "portrait": "Scholar Portrait",
-    "uploadImage": "Upload Image",
-    "canonicalName": "Canonical Name",
-    "aliases": "Aliases",
-    "birthDateGregorian": "Birth Date (Gregorian)",
-    "birthDateHijri": "Birth Date (Hijri)",
-    "deathDateGregorian": "Death Date (Gregorian)",
-    "deathDateHijri": "Death Date (Hijri)",
-    "region": "Region",
-    "centuryGregorianStart": "Century Gregorian Start",
-    "centuryGregorianEnd": "Century Gregorian End",
-    "centuryHijriStart": "Century Hijri Start",
-    "centuryHijriEnd": "Century Hijri End",
-    "disciplines": "Disciplines",
-    "loadingRegions": "Loading regions...",
-    "loadingDisciplines": "Loading disciplines...",
-    "noDisciplines": "No disciplines available."
-  },
-  "step2": {
-    "title": "Academic Relations & Taxonomy",
-    "teachers": "Primary Teachers",
-    "addTeacher": "Add Teacher",
-    "noTeachers": "No teachers added yet.",
-    "students": "Notable Students",
-    "addStudent": "Add Student",
-    "noStudents": "No students added yet.",
-    "teacher": "Teacher",
-    "student": "Student"
-  },
-  "step3": {
-     "noWorks": "No works available",
-     "work": "Work",
-    "title": "Narrative Content",
-    "biography": "Biography",
-    "richTextEditor": "Rich Text Editor",
-    "placeholder": "Start writing the scholarly biography...",
-    "tip": "Tip: Click a button to toggle formatting on. Click it again to turn it off.",
-    "none": "None",
-    "upload": "Upload",
-    "link": "Paste Link",
-    "titleLabel": "Title",
-    "yearLabel": "Year",
-    "format": "Format",
-    "description": "Description",
-    "descPlaceholder": "Brief description of the work",
-    "digitalAccess": "Digital Access",
-    "noneHint": "No digital file. Will appear as \"—\" in the bibliography.",
-    "addWork": "Add New Work",
-    "workFormats": {
-      "book": "Book",
-      "article": "Article",
-      "treatise": "Treatise",
-      "manuscript": "Manuscript",
-      "lecture": "Lecture",
-      "sermon": "Sermon",
-      "fatwa": "Fatwa",
-      "poem": "Poem",
-      "letter": "Letter",
-      "commentary": "Commentary",
-      "translation": "Translation",
-      "research": "Research",
-      "course": "Course",
-      "device": "Device",
-      "invention": "Invention",
-      "software": "Software",
-      "map": "Map",
-      "other": "Other"
+  "submitScholar": {
+    "portal": {
+      "title": "Academic Submission Portal",
+      "subtitle": "Contribute to the definitive digital record of the Islamic intellectual heritage. Please make sure all data is cited and verified.",
+      "selectLang": "Choose the submission language",
+      "langDesc": "Choose the language in which you want to submit your scholarly contribution. Additional languages can be submitted after the initial entry is reviewed.",
+      "begin": "Start Submission"
+    },
+    "steps": {
+      "identity": "Identity & Metadata",
+      "relations": "Academic Relationships",
+      "narrative": "Narrative Content",
+      "works": "Academic Works",
+      "media": "Media Library",
+      "refs": "References",
+      "review": "Review & Submit"
+    },
+    "success": {
+      "title": "Submission received",
+      "desc": "Your scholar entry has been submitted for editorial review. You will be notified once the review process is complete.",
+      "pending": "Under review",
+      "note": "The editorial team will review your entry and may approve it, reject it, or request changes. You can track the status from your dashboard.",
+      "goHome": "Back to home",
+      "goDashboard": "View dashboard",
+      "submitAnother": "Submit another scholar"
+    },
+    "step1": {
+      "title": "Identity & Core Data",
+      "portrait": "Scholar's portrait",
+      "uploadImage": "Upload image",
+      "canonicalName": "Canonical name",
+      "aliases": "Aliases",
+      "birthDateGregorian": "Birth date (Gregorian)",
+      "birthDateHijri": "Birth date (Hijri)",
+      "deathDateGregorian": "Death date (Gregorian)",
+      "deathDateHijri": "Death date (Hijri)",
+      "region": "Region",
+      "centuryGregorianStart": "Gregorian century start",
+      "centuryGregorianEnd": "Gregorian century end",
+      "centuryHijriStart": "Hijri century start",
+      "centuryHijriEnd": "Hijri century end",
+      "disciplines": "Disciplines",
+      "loadingRegions": "Loading regions...",
+      "loadingDisciplines": "Loading disciplines...",
+      "noDisciplines": "No disciplines available."
+    },
+    "step2": {
+      "title": "Academic Relationships & Classification",
+      "teachers": "Main teachers",
+      "addTeacher": "Add teacher",
+      "noTeachers": "No teachers added yet.",
+      "students": "Notable students",
+      "addStudent": "Add student",
+      "noStudents": "No students added yet.",
+      "teacher": "Teacher",
+      "student": "Student"
+    },
+    "step3": {
+      "noWorks": "No works available",
+      "work": "Work",
+      "title": "Narrative Content",
+      "biography": "Biography",
+      "richTextEditor": "Rich text editor",
+      "placeholder": "Start writing the scholarly biography...",
+      "tip": "Tip: click a button to turn formatting on. Click it again to turn it off.",
+      "none": "None",
+      "upload": "Upload",
+      "link": "Paste link",
+      "titleLabel": "Title",
+      "yearLabel": "Year",
+      "format": "Type",
+      "description": "Description",
+      "descPlaceholder": "A short description of the work",
+      "digitalAccess": "Digital access",
+      "noneHint": "No digital file. It will appear as \"—\" in the bibliography.",
+      "addWork": "Add new work",
+      "workFormats": {
+        "book": "Book",
+        "article": "Article",
+        "treatise": "Treatise",
+        "manuscript": "Manuscript",
+        "lecture": "Lecture",
+        "sermon": "Sermon",
+        "fatwa": "Fatwa",
+        "poem": "Poem",
+        "letter": "Letter",
+        "commentary": "Commentary",
+        "translation": "Translation",
+        "research": "Research",
+        "course": "Course",
+        "device": "Device",
+        "invention": "Invention",
+        "software": "Software",
+        "map": "Map",
+        "other": "Other"
+      }
+    },
+    "step4": {
+      "title": "Global Media Library",
+      "desc": "Attach PDF files, audio recordings, documentaries, and images related to this scholar. This library is shared across all language versions.",
+      "noMedia": "No media added yet.",
+      "media": "Media",
+      "titleLabel": "Title",
+      "yearLabel": "Year",
+      "fileType": "File type",
+      "description": "Description",
+      "descPlaceholder": "A short description of the media",
+      "fileLink": "File / Link",
+      "uploadFile": "Upload file",
+      "pasteLink": "Paste link",
+      "fileHint": "PDF, audio (MP3/WAV), video (MP4) — up to 100 MB",
+      "linkPlaceholder": "https://youtube.com/watch?v=… or a direct file link",
+      "addMedia": "Add media",
+      "fileTypes": {
+        "pdf": "PDF",
+        "audio": "Audio",
+        "video": "Video"
+      }
+    },
+    "step5": {
+      "title": "References & Bibliography",
+      "warning": "At least one reference is required before submitting.",
+      "noRefs": "No references added yet.",
+      "reference": "Reference",
+      "titleLabel": "Title",
+      "citation": "Citation",
+      "url": "Link",
+      "addRef": "Add reference"
+    },
+    "step6": {
+      "title": "Review & Submit",
+      "desc": "Review your submission below. Click any step in the progress bar to go back and make changes.",
+      "identitySection": "01 — Identity",
+      "relationsSection": "02 — Relationships",
+      "narrativeSection": "03 — Narrative",
+      "worksSection": "04 — Academic Works",
+      "mediaSection": "05 — Media Library",
+      "refsSection": "06 — References",
+      "confirmText": "I confirm that the information I provided is accurate to the best of my knowledge and complies with Oulamauna's submission guidelines and academic integrity standards."
+    },
+    "header": {
+      "newScholar": "New Scholar"
+    },
+    "draft": {
+      "restored": "A saved draft was restored. You need to re-attach files (image, works, media).",
+      "autosaved": "Progress is saved automatically on this device",
+      "confirmNew": "Start a new scholar? Any unsaved progress in this form will be lost (saved drafts are safe)."
+    },
+    "footer": {
+      "back": "Back",
+      "saveDraft": "Save as draft",
+      "saved": "Saved",
+      "saveFailed": "Save failed",
+      "next": "Next",
+      "submit": "Submit for review",
+      "submitting": "Submitting..."
+    },
+    "buttons": {
+      "add": "+ Add"
+    },
+    "placeholders": {
+      "searching": "Searching...",
+      "searchScholar": "Search for a scholar by name...",
+      "noResults": "No scholars found",
+      "dropFile": "Drop the file here, or",
+      "browse": "browse",
+      "canonicalName": "e.g. Malek Bennabi",
+      "aliasExample": "e.g. Malek Bennabi",
+      "yearExample": "e.g. 1905",
+      "centuryStart": "e.g. 20",
+      "centuryEnd": "e.g. 21",
+      "region": "Choose a region",
+      "workTitleExample": "e.g. The Problem of Culture",
+      "workYearExample": "e.g. 1959",
+      "archiveLink": "https://archive.org/details/…",
+      "mediaTitleExample": "e.g. Cairo lecture 1968",
+      "mediaYearExample": "e.g. 1968",
+      "refTitleExample": "e.g. The Conditions of Renaissance",
+      "refCitationExample": "e.g. Malek Bennabi",
+      "refUrlExample": "https://en.wikipedia.org/wiki/Malek_Bennabi"
+    },
+    "errors": {
+      "invalidYear": "Invalid year",
+      "yearInFuture": "The year cannot be in the future",
+      "deathBeforeBirth": "The death date cannot be before the birth date",
+      "invalidCentury": "Invalid century",
+      "endCenturyBeforeStart": "The century end cannot be before the century start",
+      "bannerTitle": "Please fix the following",
+      "failedToLoad": "Failed to load data",
+      "submitIssues": "The scholar was submitted, but some issues occurred:",
+      "submitFailed": "Submission failed. Please check your inputs and try again.",
+      "canonicalName": "Canonical name is required.",
+      "region": "Please choose a region.",
+      "disciplines": "Choose at least one discipline.",
+      "workTitle": "Work title is required.",
+      "workYear": "Work year is required.",
+      "mediaTitle": "Media title is required.",
+      "refTitle": "Reference title is required.",
+      "refCitation": "Reference citation is required.",
+      "refsRequired": "Add at least one reference.",
+      "confirm": "Please confirm before submitting."
     }
   },
-  "step4": {
-    "title": "Global Media Library",
-    "desc": "Attach PDFs, audio recordings, video documentaries, and images related to this scholar. This library is shared across all language versions.",
-    "noMedia": "No media added yet.",
-    "media": "Media",
-    "titleLabel": "Title",
-    "yearLabel": "Year",
-    "fileType": "File Type",
-    "description": "Description",
-    "descPlaceholder": "Brief description of the media",
-    "fileLink": "File / Link",
-    "uploadFile": "Upload File",
-    "pasteLink": "Paste Link",
-    "fileHint": "PDF, Audio (MP3/WAV), Video (MP4) — up to 100 MB",
-    "linkPlaceholder": "https://youtube.com/watch?v=… or direct file URL",
-    "addMedia": "Add Media",
-    "fileTypes": {
-      "pdf": "PDF",
-      "audio": "Audio",
-      "video": "Video"
-    }
-  },
-  "step5": {
-    "title": "References & Bibliography",
-    "warning": "At least ONE reference is required before submission.",
-    "noRefs": "No references added yet.",
-    "reference": "Reference",
-    "titleLabel": "Title",
-    "citation": "Citation",
-    "url": "URL",
-    "addRef": "Add Reference"
-  },
-  "step6": {
-    "title": "Review & Submit",
-    "desc": "Review your submission below. Click on any step in the progress bar to go back and make edits.",
-    "identitySection": "01 — IDENTITY",
-    "relationsSection": "02 — RELATIONS",
-    "narrativeSection": "03 — NARRATIVE",
-    "worksSection": "04 — ACADEMIC WORKS",
-    "mediaSection": "05 — MEDIA LIBRARY",
-    "refsSection": "06 — REFERENCES",
-    "confirmText": "I confirm that the information I have provided is accurate to the best of my knowledge, and complies with Oulamauna's submission guidelines and academic integrity standards."
-  },
-  "header": {
-    "newScholar": "New Scholar"
-  },
-  "draft": {
-    "restored": "A saved draft was restored. Files (portrait, works, media) need to be re-attached.",
-    "autosaved": "Progress is saved automatically on this device",
-    "confirmNew": "Start a new scholar? Any unsaved progress on this form will be lost (saved drafts are safe)."
-  },
-  "footer": {
-    "back": "BACK",
-    "saveDraft": "SAVE DRAFT",
-    "saved": "Saved",
-    "saveFailed": "Save failed",
-    "next": "NEXT",
-    "submit": "SUBMIT FOR REVIEW",
-    "submitting": "Submitting..."
-  },
-  "buttons": {
-    "add": "+ ADD"
-  },
-  "placeholders": {
-    "searching": "Searching...",
-    "searchScholar": "Search scholar by name...",
-    "noResults": "No scholars found",
-    "dropFile": "Drop file here, or",
-    "browse": "browse",
-    "canonicalName": "e.g. Malek Bennabi",
-    "aliasExample": "e.g. Malik Bin Nabi",
-    "yearExample": "e.g. 1905",
-    "centuryStart": "e.g. 20",
-    "centuryEnd": "e.g. 21",
-    "region": "Select Region",
-    "workTitleExample": "e.g. The Problem of Culture",
-    "workYearExample": "e.g. 1959",
-    "archiveLink": "https://archive.org/details/…",
-    "mediaTitleExample": "e.g. 1968 Cairo Lecture",
-    "mediaYearExample": "e.g. 1968",
-    "refTitleExample": "e.g. Les Conditions de la Renaissance",
-    "refCitationExample": "e.g. Malek Bennabi",
-    "refUrlExample": "https://en.wikipedia.org/wiki/Malek_Bennabi"
-  },
-  "errors": {
-    "invalidYear": "Invalid year",
-    "yearInFuture": "Year cannot be in the future",
-    "deathBeforeBirth": "Death date cannot be before birth date",
-    "invalidCentury": "Invalid century",
-    "endCenturyBeforeStart": "End century cannot be before start century",
-    "bannerTitle": "PLEASE FIX THE FOLLOWING",
-    "failedToLoad": "Failed to load data",
-    "submitIssues": "Scholar submitted, but issues occurred:",
-    "submitFailed": "Failed to submit. Please check your entries and try again.",
-    "canonicalName": "Canonical name is required.",
-    "region": "Please select a region.",
-    "disciplines": "Select at least one discipline.",
-    "workTitle": "Work title is required.",
-    "workYear": "Work year is required.",
-    "mediaTitle": "Media title is required.",
-    "refTitle": "Reference title is required.",
-    "refCitation": "Reference citation is required.",
-    "refsRequired": "Add at least one reference.",
-    "confirm": "Please confirm before submitting."
-  }
-},
   "editScholar": {
     "preservedNoteLabel": "Note:",
-    "preservedNoteText": "Works and media are preserved from the approved version and cannot be modified in this edit form.",
-    "preservedBadge": "PRESERVED",
+    "preservedNoteText": "Works and media are preserved from the approved version and cannot be edited in this edit form.",
+    "preservedBadge": "Preserved",
     "alerts": {
-      "draftSaved": "Saved as draft successfully!",
-      "draftSaveFailed": "Could not save draft.",
+      "draftSaved": "Saved as a draft successfully!",
+      "draftSaveFailed": "Could not save the draft.",
       "resubmitSuccess": "Resubmitted for review!",
-      "resubmitFailedPrefix": "Failed to resubmit:",
+      "resubmitFailedPrefix": "Resubmission failed:",
       "editSubmitSuccess": "Edit submitted successfully! Redirecting...",
-      "editSubmitFailedPrefix": "Failed to submit edit proposal:",
+      "editSubmitFailedPrefix": "Failed to submit the edit proposal:",
       "unknownError": "Unknown error"
     },
     "loading": "Loading scholar data...",
     "breadcrumbHome": "Home",
     "breadcrumbScholars": "Scholars",
-    "breadcrumbEdit": "Edit Proposal",
-    "editingVersionLabel": "Editing English Version",
+    "breadcrumbEdit": "Edit proposal",
+    "editingVersionLabel": "Editing English version",
     "saved": "Saved!",
-    "saveDraft": "Save as Draft",
+    "saveDraft": "Save as draft",
     "draftRestoredNotice": "A saved draft was restored. Your previous progress has been loaded.",
-    "eyebrowEditableFields": "EDITABLE FIELDS",
-    "basicInfo": "Core Information",
-    "fullName": "Canonical Name",
+    "eyebrowEditableFields": "Editable fields",
+    "basicInfo": "Basic Information",
+    "fullName": "Full name",
     "aliases": "Aliases",
-    "aliasPlaceholder": "Add alias & press Enter",
+    "aliasPlaceholder": "Add an alias and press Enter",
     "region": "Region",
-    "selectRegion": "Select a region...",
+    "selectRegion": "Choose a region...",
     "discipline": "Disciplines",
-    "centuryRanges": "Century Ranges",
-    "hijriStart": "Hijri Start",
-    "hijriEnd": "Hijri End",
-    "gregorianStart": "Gregorian Start",
-    "gregorianEnd": "Gregorian End",
-    "dates": "Birth & Death Dates",
-    "birthGregorian": "Birth (Gregorian)",
+    "centuryRanges": "Century ranges",
+    "hijriStart": "Hijri century start",
+    "hijriEnd": "Hijri century end",
+    "gregorianStart": "Gregorian century start",
+    "gregorianEnd": "Gregorian century end",
+    "dates": "Birth and death dates",
+    "birthGregorian": "Born (Gregorian)",
     "birthGregorianPlaceholder": "e.g. 1905",
-    "birthHijri": "Birth (Hijri)",
+    "birthHijri": "Born (Hijri)",
     "birthHijriPlaceholder": "e.g. 1323",
-    "deathGregorian": "Death (Gregorian)",
+    "deathGregorian": "Died (Gregorian)",
     "deathGregorianPlaceholder": "e.g. 1973",
-    "deathHijri": "Death (Hijri)",
+    "deathHijri": "Died (Hijri)",
     "deathHijriPlaceholder": "e.g. 1393",
-    "eyebrowEditable": "EDITABLE",
-    "portraitTitle": "Scholar Portrait",
+    "eyebrowEditable": "Editable",
+    "portraitTitle": "Scholar's portrait",
     "clickToUpload": "Click to upload",
-    "modifyImageOverlay": "MODIFY IMAGE",
+    "modifyImageOverlay": "Change image",
     "selectedFilePrefix": "Selected:",
-    "modifyButton": "Modify",
+    "modifyButton": "Change",
     "removeButton": "Remove",
-    "eyebrowEditableField": "EDITABLE FIELD",
+    "eyebrowEditableField": "Editable field",
     "biography": "Biography",
-    "biographyContentLabel": "Biography Content",
+    "biographyContentLabel": "Biography content",
     "biographyPlaceholder": "Write the scholar's biography...",
-    "biographyHint": "Supports rich text formatting. This content will be submitted for admin review.",
-    "eyebrowPreservedData": "PRESERVED DATA",
+    "biographyHint": "Supports rich text formatting. This content will be sent for moderator review.",
+    "eyebrowPreservedData": "Preserved data",
     "worksTitle": "Works & Publications",
-    "worksTableTitle": "TITLE",
-    "worksTableYear": "YEAR",
-    "worksTableFormat": "FORMAT",
+    "worksTableTitle": "Title",
+    "worksTableYear": "Year",
+    "worksTableFormat": "Format",
     "noWorksRecorded": "No works recorded.",
     "mediaTitle": "Media Library",
     "noDescription": "No description",
     "noMediaRecorded": "No media recorded.",
-    "eyebrowAddReferences": "ADD NEW REFERENCES",
+    "eyebrowAddReferences": "Add new references",
     "referencesTitle": "Academic References",
-    "referencesHint": "Existing approved references are preserved. You may add new ones below for review.",
-    "existingReferencesLabel": "EXISTING APPROVED REFERENCES",
-    "newReferenceLabel": "New Reference",
+    "referencesHint": "Existing approved references are preserved. You can add new references below for review.",
+    "existingReferencesLabel": "Existing approved references",
+    "newReferenceLabel": "New reference",
     "refTitleLabel": "Title",
-    "refTitlePlaceholder": "e.g. Book Title",
+    "refTitlePlaceholder": "e.g. Book title",
     "refCitationLabel": "Citation",
-    "refCitationPlaceholder": "e.g. Author, Year, Publisher",
-    "refUrlLabel": "URL (Optional)",
-    "addNewReference": "Add New Reference",
-    "eyebrowAddRelationships": "ADD NEW RELATIONSHIPS",
+    "refCitationPlaceholder": "e.g. Author, year, publisher",
+    "refUrlLabel": "Link (optional)",
+    "addNewReference": "Add a new reference",
+    "eyebrowAddRelationships": "Add new relationships",
     "relationshipsTitle": "Teachers & Students",
-    "relationshipsHint": "Existing relationships are preserved. You may add new ones below for review.",
-    "existingRelationshipsLabel": "EXISTING APPROVED RELATIONSHIPS",
+    "relationshipsHint": "Existing relationships are preserved. You can add new relationships below for review.",
+    "existingRelationshipsLabel": "Existing approved relationships",
     "unknownScholar": "Unknown",
     "relationTypes": {
       "teacher": "Teacher",
       "student": "Student"
     },
-    "addTeachersLabel": "Add Teachers",
-    "addTeacherButton": "Add Teacher",
+    "addTeachersLabel": "Add teachers",
+    "addTeacherButton": "Add teacher",
     "teacherLabel": "Teacher",
-    "addStudentsLabel": "Add Students",
-    "addStudentButton": "Add Student",
+    "addStudentsLabel": "Add students",
+    "addStudentButton": "Add student",
     "studentLabel": "Student",
     "cancelButton": "Cancel",
-    "saveChanges": "Submit Edit Proposal",
+    "saveChanges": "Submit edit proposal",
     "submitting": "Submitting..."
   },
   "richEditor": {
-  "unknown": "Unknown",
-  "externalLink": "EXTERNAL LINK",
-  "scholarLink": "SCHOLAR LINK",
-  "url": "URL",
-  "urlPlaceholder": "https://example.com",
-  "linkText": "LINK TEXT",
-  "linkTextPlaceholder": "Text to display",
-  "openInNewTab": "Open in new tab",
-  "remove": "REMOVE",
-  "updateLink": "UPDATE LINK",
-  "insertLink": "INSERT LINK",
-  "searchScholar": "SEARCH SCHOLAR",
-  "searchScholarPlaceholder": "Search scholar by name...",
-  "searching": "Searching...",
-  "noScholarsFound": "No scholars found",
-  "typeAtLeastTwoChars": "Type at least 2 characters.",
-  "removeLink": "REMOVE LINK",
-  "customColor": "Custom color",
-  "undo": "Undo",
-  "redo": "Redo",
-  "bold": "Bold",
-  "italic": "Italic",
-  "underline": "Underline",
-  "strikethrough": "Strikethrough",
-  "superscript": "Superscript",
-  "heading1": "Heading 1",
-  "heading2": "Heading 2",
-  "heading3": "Heading 3",
-  "bulletList": "Bullet list",
-  "numberedList": "Numbered list",
-  "blockquote": "Blockquote",
-  "horizontalRule": "Horizontal rule",
-  "alignLeft": "Align left",
-  "alignCenter": "Align center",
-  "alignRight": "Align right",
-  "justify": "Justify",
-  "textColor": "Text color",
-  "highlight": "Highlight",
-  "highlightColor": "Highlight color",
-  "ltr": "Left-to-right",
-  "rtl": "Right-to-left",
-  "insertEditLink": "Insert / edit link"
-}
-
+    "unknown": "Unknown",
+    "externalLink": "External link",
+    "scholarLink": "Scholar link",
+    "url": "Link (URL)",
+    "urlPlaceholder": "https://example.com",
+    "linkText": "Link text",
+    "linkTextPlaceholder": "The text to display",
+    "openInNewTab": "Open in a new tab",
+    "remove": "Remove",
+    "updateLink": "Update link",
+    "insertLink": "Insert link",
+    "searchScholar": "Search for a scholar",
+    "searchScholarPlaceholder": "Search for the scholar by name...",
+    "searching": "Searching...",
+    "noScholarsFound": "No scholars found",
+    "typeAtLeastTwoChars": "Type at least two characters.",
+    "removeLink": "Remove link",
+    "customColor": "Custom color",
+    "undo": "Undo",
+    "redo": "Redo",
+    "bold": "Bold",
+    "italic": "Italic",
+    "underline": "Underline",
+    "strikethrough": "Strikethrough",
+    "superscript": "Superscript",
+    "heading1": "Heading 1",
+    "heading2": "Heading 2",
+    "heading3": "Heading 3",
+    "bulletList": "Bulleted list",
+    "numberedList": "Numbered list",
+    "blockquote": "Quote",
+    "horizontalRule": "Horizontal line",
+    "alignLeft": "Align left",
+    "alignCenter": "Align center",
+    "alignRight": "Align right",
+    "justify": "Justify",
+    "textColor": "Text color",
+    "highlight": "Highlight",
+    "highlightColor": "Highlight color",
+    "ltr": "Left to right",
+    "rtl": "Right to left",
+    "insertEditLink": "Insert / edit link"
+  }
 }
