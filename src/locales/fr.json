@@ -944,6 +944,7 @@
       }
     },
     "sidebar": {
+      "mobileMenu": "Menu d'administration",
       "dashboard": "Tableau de bord",
       "section": {
         "content": "Contenu",

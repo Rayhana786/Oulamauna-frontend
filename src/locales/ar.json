@@ -990,6 +990,7 @@
       }
     },
     "sidebar": {
+      "mobileMenu": "قائمة الإدارة",
       "dashboard": "لوحة التحكم",
      
       "section": {

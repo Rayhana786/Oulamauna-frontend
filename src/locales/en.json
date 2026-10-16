@@ -999,6 +999,7 @@
       }
     },
     "sidebar": {
+      "mobileMenu": "ADMIN MENU",
       "dashboard": "Dashboard",
       "section": {
         "content": "Content",
