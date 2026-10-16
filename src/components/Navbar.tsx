@@ -66,6 +66,7 @@ const Navbar: React.FC = () => {
   const [toast, setToast] = useState<{ message: string; type: "success" | "error" } | null>(null);
 
   const langRef = useRef<HTMLDivElement>(null);
+  const mobileLangRef = useRef<HTMLDivElement>(null);
   const searchRef = useRef<HTMLDivElement>(null);
   const profileRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -74,7 +75,7 @@ const Navbar: React.FC = () => {
   const location = useLocation();
   const isHome = location.pathname === "/";
   const isNotificationsPage = location.pathname === "/notifications";
-  const isRTL = lang === "AR";
+  const isRTL = safeLang === "ar";
 
   const userRole = (user as any)?.role || (user as any)?.role_name;
   const isAdmin = userRole && String(userRole).toLowerCase() === 'admin';
@@ -138,7 +139,8 @@ const Navbar: React.FC = () => {
 
   useEffect(() => {
     const fn = (e: MouseEvent) => {
-      if (langRef.current && !langRef.current.contains(e.target as Node)) setLangOpen(false);
+      const inLang = langRef.current?.contains(e.target as Node) || mobileLangRef.current?.contains(e.target as Node);
+      if (!inLang) setLangOpen(false);
       if (window.innerWidth >= 768 && searchRef.current && !searchRef.current.contains(e.target as Node)) setSearchOpen(false);
       if (profileRef.current && !profileRef.current.contains(e.target as Node)) setProfileOpen(false);
     };
@@ -267,7 +269,7 @@ const Navbar: React.FC = () => {
 
       <nav
         dir={isRTL ? "rtl" : "ltr"}
-        className={`fixed left-0 right-0 z-50 flex items-center justify-between md:grid md:grid-cols-[1fr_auto_1fr] md:justify-normal px-6 py-3 navbar-animate ${!showNavbar ? 'hide' : ''} ${isTransparent ? 'top-4 md:top-6 bg-transparent backdrop-blur-none border-b-0 shadow-none md:mx-auto md:max-w-[1280px] md:w-[95%] md:rounded-full' : 'top-0 bg-[#1e4d3a]/85 backdrop-blur-md border-b border-[#C9A84C]/20 shadow-md md:w-full md:max-w-none md:bg-[#1e4d3a]/95'}`}
+        className={`fixed left-0 right-0 z-50 flex items-center justify-between md:grid md:grid-cols-[1fr_auto_1fr] md:justify-normal px-4 md:px-6 py-3 navbar-animate ${!showNavbar ? 'hide' : ''} ${isTransparent ? 'top-4 md:top-6 bg-transparent backdrop-blur-none border-b-0 shadow-none md:mx-auto md:max-w-[1280px] md:w-[95%] md:rounded-full' : 'top-0 bg-[#1e4d3a]/85 backdrop-blur-md border-b border-[#C9A84C]/20 shadow-md md:w-full md:max-w-none md:bg-[#1e4d3a]/95'}`}
       >
         {/* Logo */}
         <Link to="/" className="flex items-center group order-1 md:order-none md:col-start-1 md:justify-self-start flex-shrink-0">
@@ -666,7 +668,7 @@ const Navbar: React.FC = () => {
 
           {/* Language Selector at Bottom */}
           <div className="sticky bottom-0 bg-white border-t border-gray-200">
-            <div className="relative" ref={langRef}>
+            <div className="relative" ref={mobileLangRef}>
                             <button onClick={() => setLangOpen(!langOpen)} className="w-full flex items-center justify-between px-6 py-4 text-gray-900 hover:text-[#1e4d3a] transition-colors">
                 <span className={`font-['Inter'] text-[16px] font-medium ${isRTL ? 'arabic-text' : ''}`}>
                   {(dbLanguages || []).find(l => (l.code || "").toLowerCase() === safeLang)?.name || (lang || "EN").toUpperCase()}
@@ -742,10 +744,13 @@ const Navbar: React.FC = () => {
         </div>
       )}
 
+      {/* Notifications Panel */}
+      <NotificationsPanel isOpen={notifPanelOpen} onClose={handleCloseNotifPanel} isRTL={isRTL} />
+
       {/* Toast Notification UI */}
       {toast && (
         <div 
-          className={`fixed bottom-4 sm:bottom-6 ${isRTL ? 'left-4 sm:left-6' : 'right-4 sm:right-6'} z-[300] flex items-center gap-3 px-4 sm:px-5 py-3 rounded-lg shadow-lg border animate-slide-up max-w-[calc(100vw-2rem)]`} 
+          className={`fixed bottom-6 ${isRTL ? 'left-6' : 'right-6'} z-[300] flex items-center gap-3 px-5 py-3 rounded-lg shadow-lg border animate-slide-up`} 
           style={{ 
             backgroundColor: toast.type === "success" ? "#0b4335" : "#8b2c2c", 
             borderColor: "transparent", 
@@ -756,8 +761,8 @@ const Navbar: React.FC = () => {
           <span className="material-symbols-outlined" style={{ fontSize: '20px' }}>
             {toast.type === "success" ? "check_circle" : "error"}
           </span>
-          <span className="font-['Inter'] text-[14px] font-medium min-w-0 break-words">{toast.message}</span>
-          <button onClick={() => setToast(null)} className={`${isRTL ? 'mr-2' : 'ml-2'} flex-shrink-0 hover:opacity-70 transition-opacity`}>
+          <span className="font-['Inter'] text-[14px] font-medium">{toast.message}</span>
+          <button onClick={() => setToast(null)} className={`${isRTL ? 'mr-2' : 'ml-2'} hover:opacity-70 transition-opacity`}>
             <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>close</span>
           </button>
         </div>
