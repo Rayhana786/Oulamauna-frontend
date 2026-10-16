@@ -745,7 +745,7 @@ const Navbar: React.FC = () => {
       {/* Toast Notification UI */}
       {toast && (
         <div 
-          className={`fixed bottom-6 ${isRTL ? 'left-6' : 'right-6'} z-[300] flex items-center gap-3 px-5 py-3 rounded-lg shadow-lg border animate-slide-up`} 
+          className={`fixed bottom-4 sm:bottom-6 ${isRTL ? 'left-4 sm:left-6' : 'right-4 sm:right-6'} z-[300] flex items-center gap-3 px-4 sm:px-5 py-3 rounded-lg shadow-lg border animate-slide-up max-w-[calc(100vw-2rem)]`} 
           style={{ 
             backgroundColor: toast.type === "success" ? "#0b4335" : "#8b2c2c", 
             borderColor: "transparent", 
@@ -756,8 +756,8 @@ const Navbar: React.FC = () => {
           <span className="material-symbols-outlined" style={{ fontSize: '20px' }}>
             {toast.type === "success" ? "check_circle" : "error"}
           </span>
-          <span className="font-['Inter'] text-[14px] font-medium">{toast.message}</span>
-          <button onClick={() => setToast(null)} className={`${isRTL ? 'mr-2' : 'ml-2'} hover:opacity-70 transition-opacity`}>
+          <span className="font-['Inter'] text-[14px] font-medium min-w-0 break-words">{toast.message}</span>
+          <button onClick={() => setToast(null)} className={`${isRTL ? 'mr-2' : 'ml-2'} flex-shrink-0 hover:opacity-70 transition-opacity`}>
             <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>close</span>
           </button>
         </div>
