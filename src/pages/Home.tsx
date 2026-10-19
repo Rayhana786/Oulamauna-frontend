@@ -43,15 +43,6 @@ interface ApiDiscipline {
   count: number;
 }
 
-interface ApiEra {
-  name: string;
-  period: string;
-  image_url: string;
-  scholars_count: number;
-  startYear: number;
-  endYear: number;
-}
-
 interface ApiWork {
   work_id: number;
   scholar_id: number;
@@ -89,11 +80,12 @@ interface ApiPopularPost {
   created_at: string;
 }
 
+// "eras" is intentionally not listed here anymore (section removed).
+// If the backend still sends it, it is simply ignored.
 interface HomeApiData {
   featuredScholars: ApiScholar[];
   recentScholars: ApiRecentScholar[];
   disciplines: ApiDiscipline[];
-  eras: ApiEra[];
   featuredWorks: ApiWork[];
   stats: ApiStats;
   popularForumPosts: ApiPopularPost[];
@@ -129,6 +121,8 @@ const WorkCover: React.FC<{ work: ApiWork; className?: string }> = ({ work, clas
         src={work.media_url}
         alt={work.title ?? ""}
         className={className}
+        loading="lazy"
+        decoding="async"
         onError={() => setBroken(true)}
       />
     );
@@ -226,12 +220,11 @@ const Skeleton: React.FC<{ className?: string }> = ({ className = "" }) => (
 /*  MAIN COMPONENT                                                    */
 /* ------------------------------------------------------------------ */
 const Home: React.FC = () => {
-  // ✅ DYNAMIC TRANSLATION FUNCTION FROM CONTEXT
   const { lang, t } = useLang();
   const { user } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
-  
+
   const isRTL = lang === "AR";
 
   const [homeData, setHomeData] = useState<HomeApiData | null>(null);
@@ -328,7 +321,7 @@ const Home: React.FC = () => {
     const now = new Date();
     const diffTime = now.getTime() - date.getTime();
     const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
-    
+
     if (diffDays < 1) {
       const diffHours = Math.floor(diffTime / (1000 * 60 * 60));
       if (diffHours < 1) {
@@ -343,7 +336,6 @@ const Home: React.FC = () => {
     return date.toLocaleDateString(isRTL ? "ar-DZ" : lang === "FR" ? "fr-FR" : "en-US");
   };
 
-  // ✅ DYNAMIC STATS WITH TRANSLATION KEYS
   const archiveStats = homeData ? [
     { icon: "groups", value: `${homeData.stats.scholars}+`, labelKey: "home.statScholars" },
     { icon: "menu_book", value: `${homeData.stats.manuscripts}+`, labelKey: "home.statManuscripts" },
@@ -354,7 +346,6 @@ const Home: React.FC = () => {
   const featuredScholars = homeData?.featuredScholars ?? [];
   const recentScholars = homeData?.recentScholars ?? [];
   const disciplines = homeData?.disciplines ?? [];
-  const eras = homeData?.eras ?? [];
   const featuredWorks = homeData?.featuredWorks ?? [];
   const popularForumPosts = homeData?.popularForumPosts ?? [];
 
@@ -488,9 +479,8 @@ const Home: React.FC = () => {
 
   return (
     <div className="antialiased min-h-screen selection:bg-[#C9A84C] selection:text-[#1e4d3a] flex flex-col bg-[#fbf9f4]">
+      {/* Fonts are now loaded from index.html (see instructions). Only local CSS stays here. */}
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&family=Source+Serif+4:wght@400;600;700&display=swap');
-        @import url('https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap');
         .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; font-family: 'Material Symbols Outlined'; display: inline-block; vertical-align: middle; }
         @keyframes fade-in {
           from { opacity: 0; transform: translateY(-10px); }
@@ -511,29 +501,29 @@ const Home: React.FC = () => {
       )}
 
       <main className="flex-grow pt-16 md:pt-0" dir={isRTL ? "rtl" : "ltr"}>
-       {/* 1. Feature Pillars */}
-<FadeIn>
-  <section className="px-[20px] md:px-[64px] max-w-[1040px] mx-auto py-14 md:py-16">
-    <div className="flex flex-col md:flex-row justify-between gap-10 md:gap-6 text-center">
-      {[
-        { icon: "library_books", titleKey: "home.pillar1Title", descKey: "home.pillar1Desc" },
-        { icon: "auto_stories", titleKey: "home.pillar2Title", descKey: "home.pillar2Desc" },
-        { icon: "verified", titleKey: "home.pillar3Title", descKey: "home.pillar3Desc" },
-        { icon: "explore", titleKey: "home.pillar4Title", descKey: "home.pillar4Desc" },
-      ].map((card, i) => (
-        <FadeIn key={i} delay={100 + i * 100} className="flex-1 flex flex-col items-center gap-3 group cursor-pointer">
-          <div className="mb-0.5 transition-transform duration-300 group-hover:-translate-y-1">
-            <span className="material-symbols-outlined text-[22px] text-[#1e4d3a]" style={{ fontVariationSettings: "'FILL' 0, 'wght' 100" }}>{card.icon}</span>
-          </div>
-          <div>
-            <h4 className="font-['Inter'] text-[11px] leading-[16px] text-[#1e4d3a] uppercase tracking-[0.12em] mb-1.5 font-semibold">{t(card.titleKey)}</h4>
-            <p className="font-['Inter'] text-[13px] leading-[20px] text-[#1e4d3a]/60">{t(card.descKey)}</p>
-          </div>
+        {/* 1. Feature Pillars */}
+        <FadeIn>
+          <section className="px-[20px] md:px-[64px] max-w-[1040px] mx-auto py-14 md:py-16">
+            <div className="flex flex-col md:flex-row justify-between gap-10 md:gap-6 text-center">
+              {[
+                { icon: "library_books", titleKey: "home.pillar1Title", descKey: "home.pillar1Desc" },
+                { icon: "auto_stories", titleKey: "home.pillar2Title", descKey: "home.pillar2Desc" },
+                { icon: "verified", titleKey: "home.pillar3Title", descKey: "home.pillar3Desc" },
+                { icon: "explore", titleKey: "home.pillar4Title", descKey: "home.pillar4Desc" },
+              ].map((card, i) => (
+                <FadeIn key={i} delay={100 + i * 100} className="flex-1 flex flex-col items-center gap-3 group cursor-pointer">
+                  <div className="mb-0.5 transition-transform duration-300 group-hover:-translate-y-1">
+                    <span className="material-symbols-outlined text-[22px] text-[#1e4d3a]" style={{ fontVariationSettings: "'FILL' 0, 'wght' 100" }}>{card.icon}</span>
+                  </div>
+                  <div>
+                    <h4 className="font-['Inter'] text-[11px] leading-[16px] text-[#1e4d3a] uppercase tracking-[0.12em] mb-1.5 font-semibold">{t(card.titleKey)}</h4>
+                    <p className="font-['Inter'] text-[13px] leading-[20px] text-[#1e4d3a]/60">{t(card.descKey)}</p>
+                  </div>
+                </FadeIn>
+              ))}
+            </div>
+          </section>
         </FadeIn>
-      ))}
-    </div>
-  </section>
-</FadeIn>
 
         {/* 2. Welcome & Search Section */}
         <FadeIn>
@@ -560,7 +550,7 @@ const Home: React.FC = () => {
                 <h3 className="font-['Hanken_Grotesk'] text-4xl md:text-5xl leading-tight text-[#1e4d3a] font-bold mb-6 max-w-4xl">{t("home.title")}</h3>
               </>
             )}
-            
+
             <p className="font-['Inter'] text-[18px] leading-[1.7] text-[#1e4d3a]/80 mb-10 max-w-3xl">
               {user && !isRTL ? "Explore centuries of knowledge, from the Classical era to modern times. Your personalized archive awaits." : t("home.subtitle")}
             </p>
@@ -691,7 +681,13 @@ const Home: React.FC = () => {
                 </Link>
               </FadeIn>
               <FadeIn delay={200} className="rounded-2xl overflow-hidden h-[360px] md:h-[420px] bg-[#F5F3EC]">
-                <img src="https://images.unsplash.com/photo-1457369804613-52c61a468e7d?w=800&h=1000&fit=crop" alt="Why Oulamauna" className="w-full h-full object-cover" />
+                <img
+                  src="https://images.unsplash.com/photo-1457369804613-52c61a468e7d?w=800&h=1000&fit=crop&auto=format&q=70"
+                  alt="Why Oulamauna"
+                  className="w-full h-full object-cover"
+                  loading="lazy"
+                  decoding="async"
+                />
               </FadeIn>
               <FadeIn delay={300} className="flex flex-col gap-7 lg:pl-4">
                 {(loading ? Array.from({ length: 4 }) : archiveStats).map((stat: any, i) => (
@@ -726,7 +722,7 @@ const Home: React.FC = () => {
                 </div>
               )) : featuredWorks.map((work, index) => (
                 <FadeIn key={work.work_id} delay={100 + index * 150} className="h-full">
-                  <Link 
+                  <Link
                     to={`/scholars/${work.scholar_id}?lang=${work.work_lang}&focus=work-${work.work_id}`}
                     className="h-full flex flex-col bg-[#F5F3EC] rounded-2xl overflow-hidden border border-[#1e4d3a]/10 hover:shadow-lg hover:-translate-y-1 transition-all duration-300 group"
                   >
@@ -744,65 +740,14 @@ const Home: React.FC = () => {
           </section>
         </FadeIn>
 
-        {/* 7. Eras Timeline */}
-        <FadeIn>
-          <section className="py-20 px-[20px] md:px-[64px] bg-[#fbf9f4]">
-            <div className="max-w-[1280px] mx-auto">
-              <h2 className="font-['Hanken_Grotesk'] text-3xl font-bold text-[#1e4d3a] text-center mb-12">{t("home.erasLabel")}</h2>
-              <div className="flex flex-col gap-6">
-                {loading ? Array.from({ length: 5 }).map((_, i) => (
-                  <div key={i} className="flex bg-white rounded-xl overflow-hidden border border-[#1e4d3a]/10">
-                    <Skeleton className="w-48 flex-shrink-0 hidden md:block rounded-none min-h-[150px]" />
-                    <div className="flex-1 p-6 flex items-center justify-between">
-                      <div className="space-y-2"><Skeleton className="h-5 w-40" /><Skeleton className="h-3 w-28" /></div>
-                      <Skeleton className="h-16 w-20" />
-                    </div>
-                  </div>
-                )) : eras.map((era, index) => {
-                  const localImageMap: Record<string, string> = {
-                    "Classical Era": "/images/eras/classical.jpg",
-                    "Golden Age": "/images/eras/golden.jpg",
-                    "Andalusian Era": "/images/eras/andalusian.jpg",
-                    "Ottoman Era": "/images/eras/ottoman.jpg",
-                    "Modern Era": "/images/eras/modern.jpg",
-                  };
-                  const imageSrc = localImageMap[era.name] || era.image_url;
-
-                  return (
-                    <FadeIn key={era.name} delay={100 + index * 100}>
-                      <Link to={`/scholars?minYear=${era.startYear}&maxYear=${era.endYear}&era=${encodeURIComponent(era.name)}`} className="group flex bg-white rounded-xl overflow-hidden border border-[#1e4d3a]/10 hover:shadow-lg hover:translate-x-1 transition-all duration-300">
-                        <div className="w-48 flex-shrink-0 bg-[#F5F3EC] hidden md:block">
-                          <img src={imageSrc} alt={era.name} className="w-full h-full object-cover min-h-[150px]" />
-                        </div>
-                        <div className="flex-1 p-6 flex items-center justify-between">
-                          <div>
-                            <h3 className="font-['Hanken_Grotesk'] text-xl font-bold text-[#1e4d3a] mb-1">{era.name}</h3>
-                            <p className="font-['JetBrains_Mono'] text-xs text-[#C9A84C] font-semibold">{era.period}</p>
-                          </div>
-                          <div className="text-center px-6 py-4 bg-[#1e4d3a]/80 rounded-lg backdrop-blur-sm">
-                            <div className="font-['Hanken_Grotesk'] text-2xl font-bold text-[#e5d5a8]">{era.scholars_count}</div>
-                            <div className="font-['JetBrains_Mono'] text-[9px] text-[#fbf9f4]/80 tracking-wider mt-1">
-                              {t("home.scholarsCount").toUpperCase()}
-                            </div>
-                          </div>
-                        </div>
-                      </Link>
-                    </FadeIn>
-                  );
-                })}
-              </div>
-            </div>
-          </section>
-        </FadeIn>
-
-        {/* 8. Disciplines Grid */}
+        {/* 7. Disciplines Grid (Eras section removed) */}
         <FadeIn>
           <section id="disciplines" className="scroll-mt-32 py-20 px-[20px] md:px-[64px] max-w-[1280px] mx-auto">
             <h2 className="font-['Hanken_Grotesk'] text-3xl font-bold text-[#1e4d3a] text-center mb-4">{t("home.disciplinesLabel")}</h2>
             <p className="font-['Inter'] text-[15px] text-[#1e4d3a]/60 text-center mb-12 max-w-2xl mx-auto">
               {t("home.disciplinesSubtitle")}
             </p>
-            
+
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
               {loading ? Array.from({ length: 6 }).map((_, i) => (
                 <div key={i} className="p-6 bg-[#fcfaf5] rounded-[12px] border border-[#1e4d3a]/20">
@@ -811,14 +756,20 @@ const Home: React.FC = () => {
               )) : (
                 disciplines.slice(0, showAllDisciplines ? disciplines.length : 6).map((disc, index) => (
                   <FadeIn key={disc.discipline_id} delay={50 + index * 50}>
-                    <Link 
-                      to={`/scholars?discipline=${disc.name}`} 
+                    <Link
+                      to={`/scholars?discipline=${disc.name}`}
                       className="group block p-6 bg-[#fcfaf5] rounded-[12px] border border-[#1e4d3a] shadow-[0px_4px_20px_rgba(30,77,58,0.08)] hover:shadow-[0px_6px_24px_rgba(30,77,58,0.12)] hover:-translate-y-1 transition-all duration-300 h-full flex flex-col"
                       style={{ backgroundColor: '#fcfaf5', minHeight: '280px' }}
                     >
                       <div className="w-full h-24 mb-4 rounded-[6px] overflow-hidden bg-[#f6efdc] border border-[#1e4d3a]/10 group-hover:border-[#1e4d3a] transition-colors duration-300 flex-shrink-0">
                         {disc.image_url ? (
-                          <img src={disc.image_url} alt={disc.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
+                          <img
+                            src={disc.image_url}
+                            alt={disc.name}
+                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                            loading="lazy"
+                            decoding="async"
+                          />
                         ) : (
                           <div className="w-full h-full flex items-center justify-center">
                             <span className="material-symbols-outlined text-[32px] text-[#1e4d3a]/40">{getDisciplineIcon(disc.name)}</span>
@@ -863,7 +814,7 @@ const Home: React.FC = () => {
           </section>
         </FadeIn>
 
-        {/* 9. Popular Forum Posts */}
+        {/* 8. Popular Forum Posts */}
         {popularForumPosts.length > 0 && (
           <FadeIn>
             <section className="py-20 px-[20px] md:px-[64px] bg-[#F5F3EC] border-y-2 border-[#1e4d3a]/10">
@@ -884,8 +835,8 @@ const Home: React.FC = () => {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   {popularForumPosts.map((post, index) => (
                     <FadeIn key={post.post_id} delay={100 + index * 100}>
-                      <Link 
-                        to={`/forum/${post.post_id}`} 
+                      <Link
+                        to={`/forum/${post.post_id}`}
                         className="group flex flex-col h-full bg-[#fbf9f4] rounded-xl p-6 border border-[#1e4d3a]/10 hover:shadow-lg hover:-translate-y-1 transition-all duration-300"
                       >
                         <h3 className="font-['Hanken_Grotesk'] text-xl font-bold text-[#1e4d3a] mb-3 group-hover:text-[#C9A84C] transition-colors line-clamp-2">
@@ -897,7 +848,13 @@ const Home: React.FC = () => {
                         <div className="flex items-center justify-between mt-auto pt-4 border-t border-[#1e4d3a]/10">
                           <div className="flex items-center gap-2">
                             {post.author?.profile_picture ? (
-                              <img src={post.author.profile_picture} alt={post.author.name || post.author.username} className="w-6 h-6 rounded-full object-cover" />
+                              <img
+                                src={post.author.profile_picture}
+                                alt={post.author.name || post.author.username}
+                                className="w-6 h-6 rounded-full object-cover"
+                                loading="lazy"
+                                decoding="async"
+                              />
                             ) : (
                               <div className="w-6 h-6 rounded-full bg-[#1e4d3a]/10 flex items-center justify-center">
                                 <span className="material-symbols-outlined text-[14px] text-[#1e4d3a]/60">person</span>
@@ -927,7 +884,7 @@ const Home: React.FC = () => {
           </FadeIn>
         )}
 
-        {/* 10. CTA Section */}
+        {/* 9. CTA Section */}
         <FadeIn>
           <section className="py-24 px-[20px] md:px-[64px] text-center bg-[#1e4d3a] relative overflow-hidden">
             <div className="absolute -top-24 -right-24 w-72 h-72 rounded-full border-2 border-[#C9A84C] opacity-20" />
@@ -935,8 +892,8 @@ const Home: React.FC = () => {
             <div className="relative z-10 max-w-2xl mx-auto">
               <h2 className="font-['Hanken_Grotesk'] text-3xl md:text-4xl font-bold text-[#fbf9f4] mb-4">{t("home.ctaTitle")}</h2>
               <p className="font-['Inter'] text-base text-[#fbf9f4]/80 mb-8 leading-relaxed">{t("home.ctaText")}</p>
-              <button 
-                onClick={() => user ? navigate("/scholars") : navigate("/register")} 
+              <button
+                onClick={() => user ? navigate("/scholars") : navigate("/register")}
                 className="inline-flex items-center gap-2 px-10 py-4 bg-[#C9A84C] text-[#1e4d3a] border-2 border-[#C9A84C] rounded-lg text-xs font-bold tracking-[0.1em] font-['JetBrains_Mono'] uppercase hover:bg-[#fbf9f4] transition-colors duration-300 cursor-pointer"
               >
                 {t("home.ctaButton")}

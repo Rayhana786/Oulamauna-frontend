@@ -93,7 +93,8 @@ interface TableRow {
   sourceType?: string;
   description?: string;
 }
-
+const getLangCode = (version: any): string =>
+  (version?.languages?.code || "en").toLowerCase();
 /* ── Shared scholar-detail pieces (used by both Preview and Superseded modals) ───── */
 function ScholarImage({ url, name, style }: { url?: string; name?: string; style?: React.CSSProperties }) {
   return (
@@ -972,7 +973,7 @@ export default function DashboardPage() {
           const data = result.data;
 
           const mappedSubmissions: Submission[] = data.scholar_versions.map((v: any) => {
-            const langCode = v.languages?.code || "en";
+            const langCode = getLangCode(v);
             return {
               id: v.version_id,
               scholarId: v.scholar_id,
@@ -987,7 +988,7 @@ export default function DashboardPage() {
 
           const mappedWorks: TableRow[] = data.works.map((w: any) => {
             const version = w.scholar_versions;
-            const langCode = version?.language_id === 1 ? 'en' : version?.language_id === 3 ? 'ar' : version?.language_id === 2 ? 'fr' : 'en';
+            const langCode = getLangCode(version);
             return {
               id: w.work_id,
               primary: w.title,
@@ -1008,7 +1009,7 @@ export default function DashboardPage() {
 
           const mappedMedia: TableRow[] = data.media.map((m: any) => {
             const version = m.scholar_versions;
-            const langCode = version?.language_id === 1 ? 'en' : version?.language_id === 3 ? 'ar' : version?.language_id === 2 ? 'fr' : 'en';
+            const langCode = getLangCode(version);
             return {
               id: m.media_id,
               primary: m.title || m.file_name || "Untitled",
