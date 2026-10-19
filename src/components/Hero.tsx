@@ -4,7 +4,7 @@ import { Link } from "react-router-dom";
 import { useLang } from "../context/LanguageContext";
 
 import heroVideo from "../assets/hero4.webm";
-import heroPoster from "../assets/screen.png";
+
 
 const Hero: React.FC = () => {
   const { lang, t } = useLang();
@@ -15,34 +15,37 @@ const Hero: React.FC = () => {
       className="relative h-[100svh] min-h-[600px] w-full overflow-hidden md:min-h-[650px]"
       dir={isRTL ? "rtl" : "ltr"}
     >
-      {/* Video Background */}
+      {/* Background: show the poster while video loads */}
       <div className="absolute inset-0 h-full w-full overflow-hidden bg-[#285B4B]">
-        {/* Display the image while the video loads */}
         <img
-          src={heroPoster}
-          alt=""
-          fetchPriority="high"
-          className="absolute inset-0 h-full w-full object-cover object-center"
-        />
+  src="/screen.png"
+  alt="Hero background"
+  fetchPriority="high"
+  className="absolute inset-0 h-full w-full object-cover"
+  onLoad={(e) => {
+    console.log("✅ Poster loaded:", e.currentTarget.naturalWidth, "x", e.currentTarget.naturalHeight);
+  }}
+  onError={() => {
+    console.error("❌ Poster failed to load: /screen.png");
+  }}
+/>
 
-        {/* Background Video */}
         <video
           autoPlay
           muted
           loop
           playsInline
           preload="auto"
-          poster={heroPoster}
+          poster="/screen.png"
           onCanPlay={(e) => {
             e.currentTarget.style.opacity = "1";
           }}
-          className="absolute inset-0 h-full w-full object-cover object-center opacity-0 transition-opacity duration-500"
+          className="absolute inset-0 h-full w-full object-cover opacity-0 transition-opacity duration-500"
           aria-hidden="true"
         >
           <source src={heroVideo} type="video/webm" />
         </video>
 
-        {/* Overlay for text readability */}
         <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-black/30 via-black/10 to-black/40" />
       </div>
 
