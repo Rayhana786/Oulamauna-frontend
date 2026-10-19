@@ -1,50 +1,61 @@
-
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { useLang } from "../context/LanguageContext";
 
 import heroVideo from "../assets/hero4.webm";
 
-
 const Hero: React.FC = () => {
   const { lang, t } = useLang();
   const isRTL = lang === "AR";
+
+  // The video starts loading ONLY after the poster image is fully loaded,
+  // so the two files don't fight for the same bandwidth.
+  const [posterLoaded, setPosterLoaded] = useState(false);
+  const [videoAllowed, setVideoAllowed] = useState(true);
+
+  useEffect(() => {
+    // Skip the video on "data saver" or very slow connections
+    const conn = (navigator as any).connection;
+    if (conn && (conn.saveData || /(^|-)2g$/.test(conn.effectiveType || ""))) {
+      setVideoAllowed(false);
+    }
+  }, []);
 
   return (
     <section
       className="relative h-[100svh] min-h-[600px] w-full overflow-hidden md:min-h-[650px]"
       dir={isRTL ? "rtl" : "ltr"}
     >
-      {/* Background: show the poster while video loads */}
-      <div className="absolute inset-0 h-full w-full overflow-hidden bg-[#285B4B]">
+      {/* Background: neutral dark color (no green flash) + poster + video */}
+      <div className="absolute inset-0 h-full w-full overflow-hidden bg-[#14110d]">
         <img
-  src="/screen.png"
-  alt="Hero background"
-  fetchPriority="high"
-  className="absolute inset-0 h-full w-full object-cover"
-  onLoad={(e) => {
-    console.log("✅ Poster loaded:", e.currentTarget.naturalWidth, "x", e.currentTarget.naturalHeight);
-  }}
-  onError={() => {
-    console.error("❌ Poster failed to load: /screen.png");
-  }}
-/>
+          src="/screen.webp"
+          alt=""
+          fetchPriority="high"
+          decoding="async"
+          onLoad={() => setPosterLoaded(true)}
+          onError={() => setPosterLoaded(true)}
+          className={`absolute inset-0 h-full w-full object-cover transition-opacity duration-300 ${
+            posterLoaded ? "opacity-100" : "opacity-0"
+          }`}
+        />
 
-        <video
-          autoPlay
-          muted
-          loop
-          playsInline
-          preload="auto"
-          poster="/screen.png"
-          onCanPlay={(e) => {
-            e.currentTarget.style.opacity = "1";
-          }}
-          className="absolute inset-0 h-full w-full object-cover opacity-0 transition-opacity duration-500"
-          aria-hidden="true"
-        >
-          <source src={heroVideo} type="video/webm" />
-        </video>
+        {posterLoaded && videoAllowed && (
+          <video
+            autoPlay
+            muted
+            loop
+            playsInline
+            preload="auto"
+            onCanPlay={(e) => {
+              e.currentTarget.style.opacity = "1";
+            }}
+            className="absolute inset-0 h-full w-full object-cover opacity-0 transition-opacity duration-500"
+            aria-hidden="true"
+          >
+            <source src={heroVideo} type="video/webm" />
+          </video>
+        )}
 
         <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-black/30 via-black/10 to-black/40" />
       </div>
@@ -82,23 +93,13 @@ const Hero: React.FC = () => {
       {/* Custom Animations */}
       <style>{`
         @keyframes fade-in {
-          from {
-            opacity: 0;
-          }
-          to {
-            opacity: 1;
-          }
+          from { opacity: 0; }
+          to { opacity: 1; }
         }
 
         @keyframes fade-in-up {
-          from {
-            opacity: 0;
-            transform: translateY(30px);
-          }
-          to {
-            opacity: 1;
-            transform: translateY(0);
-          }
+          from { opacity: 0; transform: translateY(30px); }
+          to { opacity: 1; transform: translateY(0); }
         }
 
         .animate-fade-in {
@@ -110,13 +111,8 @@ const Hero: React.FC = () => {
           opacity: 0;
         }
 
-        .animation-delay-200 {
-          animation-delay: 0.2s;
-        }
-
-        .animation-delay-400 {
-          animation-delay: 0.4s;
-        }
+        .animation-delay-200 { animation-delay: 0.2s; }
+        .animation-delay-400 { animation-delay: 0.4s; }
       `}</style>
     </section>
   );
