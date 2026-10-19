@@ -31,6 +31,7 @@ const Hero: React.FC = () => {
           preload="auto"
           poster="/screen.webp"
           onCanPlay={(e) => {
+            
             e.currentTarget.style.opacity = "1";
           }}
           className="absolute inset-0 h-full w-full object-cover opacity-0 transition-opacity duration-500"

@@ -1,5 +1,15 @@
 {
   "home": {
+    "loadError": "We couldn't load the latest data for this page.",
+"retry": "Retry",
+"subtitleLoggedIn": "Explore centuries of knowledge, from the Classical era to modern times. Your personalized archive awaits.",
+"centuryCE": "{n} CE",
+"unknownCentury": "Unknown Century",
+"minutesAgo": "{n}m ago",
+"hoursAgo": "{n}h ago",
+"daysAgo": "{n} days ago",
+"weeksAgo": "{n} weeks ago",
+"yesterday": "Yesterday",
     "searching": "Searching...",
     "searchScholars": "Scholars",
     "searchWorks": "Works",

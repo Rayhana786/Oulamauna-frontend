@@ -316,25 +316,27 @@ const Home: React.FC = () => {
     }
   }, [location]);
 
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    const now = new Date();
-    const diffTime = now.getTime() - date.getTime();
-    const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+ const formatDate = (dateString: string) => {
+  const date = new Date(dateString);
+  const diffTime = Date.now() - date.getTime();
+  const diffDays = Math.floor(diffTime / 86400000);
+  const ago = (key: string, n: number) => t(key).replace("{n}", String(n));
 
-    if (diffDays < 1) {
-      const diffHours = Math.floor(diffTime / (1000 * 60 * 60));
-      if (diffHours < 1) {
-        const diffMinutes = Math.floor(diffTime / (1000 * 60));
-        return isRTL ? `منذ ${diffMinutes} دقيقة` : `${diffMinutes}m ago`;
-      }
-      return isRTL ? `منذ ${diffHours} ساعة` : `${diffHours}h ago`;
-    }
-    if (diffDays === 1) return isRTL ? "أمس" : "Yesterday";
-    if (diffDays < 7) return isRTL ? `منذ ${diffDays} أيام` : `${diffDays} days ago`;
-    if (diffDays < 30) return isRTL ? `منذ ${Math.floor(diffDays / 7)} أسابيع` : `${Math.floor(diffDays / 7)} weeks ago`;
-    return date.toLocaleDateString(isRTL ? "ar-DZ" : lang === "FR" ? "fr-FR" : "en-US");
-  };
+  if (diffDays < 1) {
+    const diffHours = Math.floor(diffTime / 3600000);
+    if (diffHours < 1) return ago("home.minutesAgo", Math.max(0, Math.floor(diffTime / 60000)));
+    return ago("home.hoursAgo", diffHours);
+  }
+  if (diffDays === 1) return t("home.yesterday");
+  if (diffDays < 7) return ago("home.daysAgo", diffDays);
+  if (diffDays < 30) return ago("home.weeksAgo", Math.floor(diffDays / 7));
+
+  try {
+    return date.toLocaleDateString(lang.toLowerCase());
+  } catch {
+    return date.toLocaleDateString();
+  }
+};
 
   const archiveStats = homeData ? [
     { icon: "groups", value: `${homeData.stats.scholars}+`, labelKey: "home.statScholars" },
@@ -494,8 +496,8 @@ const Home: React.FC = () => {
       {error && (
         <div className="max-w-[1280px] mx-auto px-[20px] md:px-[64px] pt-6 w-full">
           <div className="flex items-center justify-between gap-4 bg-[#fdecea] border border-[#b3261e]/30 text-[#7a1f1f] rounded-lg px-4 py-3 text-sm font-['Inter']">
-            <span>We couldn't load the latest data for this page.</span>
-            <button onClick={loadHomeData} className="shrink-0 font-semibold underline hover:no-underline">Retry</button>
+            <span>{t("home.loadError")}</span>
+<button onClick={loadHomeData} className="shrink-0 font-semibold underline hover:no-underline">{t("home.retry")}</button>
           </div>
         </div>
       )}
@@ -552,7 +554,7 @@ const Home: React.FC = () => {
             )}
 
             <p className="font-['Inter'] text-[18px] leading-[1.7] text-[#1e4d3a]/80 mb-10 max-w-3xl">
-              {user && !isRTL ? "Explore centuries of knowledge, from the Classical era to modern times. Your personalized archive awaits." : t("home.subtitle")}
+              {user && isRTL ? t("home.subtitleLoggedIn") : t("home.subtitle")}
             </p>
 
             <div ref={searchRef} className="w-full max-w-2xl relative mb-10">
@@ -646,7 +648,9 @@ const Home: React.FC = () => {
                       </div>
                       <h3 className="font-['Hanken_Grotesk'] text-base font-semibold text-[#1e4d3a] mb-1">{scholar.canonical_name}</h3>
                       <p className="font-['JetBrains_Mono'] text-[10px] text-[#C9A84C] font-semibold mb-1">
-                        {scholar.century_gregorian_start ? `${scholar.century_gregorian_start} CE` : "Unknown Century"}
+                        {scholar.century_gregorian_start
+  ? t("home.centuryCE").replace("{n}", String(scholar.century_gregorian_start))
+  : t("home.unknownCentury")}
                       </p>
                       <p className="font-['Inter'] text-xs text-[#1e4d3a]/60">{formatDate(scholar.created_at)}</p>
                     </Link>

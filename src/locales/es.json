@@ -1,5 +1,15 @@
 {
   "home": {
+    "loadError": "No pudimos cargar los datos más recientes de esta página.",
+"retry": "Reintentar",
+"subtitleLoggedIn": "Explora siglos de conocimiento, desde la época clásica hasta la actualidad. Tu archivo personalizado te espera.",
+"centuryCE": "{n} d. C.",
+"unknownCentury": "Siglo desconocido",
+"minutesAgo": "hace {n} min",
+"hoursAgo": "hace {n} h",
+"daysAgo": "hace {n} días",
+"weeksAgo": "hace {n} semanas",
+"yesterday": "Ayer",
     "searching": "Buscando...",
     "searchScholars": "Eruditos",
     "searchWorks": "Obras",
