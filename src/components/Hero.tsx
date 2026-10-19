@@ -4,7 +4,8 @@ import { Link } from "react-router-dom";
 import { useLang } from "../context/LanguageContext";
 
 // Import the video directly from your assets folder
-import heroVideo from "../assets/hero4.mp4"; 
+import heroVideo from "../assets/hero4.webm"; 
+import heroPoster from "../assets/screen.png";
 
 const Hero: React.FC = () => {
   const { lang, t } = useLang();
@@ -15,15 +16,16 @@ const Hero: React.FC = () => {
       {/* Video Background */}
       <div className="absolute inset-0 w-full h-full">
         <video
-          autoPlay
-          muted
-          loop
-          playsInline
-          className="absolute inset-0 w-full h-full object-cover"
-        >
-          <source src={heroVideo} type="video/mp4" />
-          Your browser does not support the video tag.
-        </video>
+  autoPlay
+  muted
+  loop
+  playsInline
+  preload="auto"
+  poster={heroPoster}
+  className="absolute inset-0 w-full h-full object-cover"
+>
+  <source src={heroVideo} type="video/webm" />
+</video>
         
         {/* Brighter neutral overlay (reduced darkness so video is more visible) */}
         <div className="absolute inset-0 bg-gradient-to-b from-black/30 via-black/10 to-black/40" />
