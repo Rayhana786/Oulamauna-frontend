@@ -13,23 +13,32 @@ const Hero: React.FC = () => {
 
   return (
     <section className="relative h-screen min-h-[700px] w-full overflow-hidden" dir={isRTL ? "rtl" : "ltr"}>
-      {/* Video Background */}
-      <div className="absolute inset-0 w-full h-full">
-        <video
-  autoPlay
-  muted
-  loop
-  playsInline
-  preload="auto"
-  poster={heroPoster}
-  className="absolute inset-0 w-full h-full object-cover"
->
-  <source src={heroVideo} type="video/webm" />
-</video>
-        
-        {/* Brighter neutral overlay (reduced darkness so video is more visible) */}
-        <div className="absolute inset-0 bg-gradient-to-b from-black/30 via-black/10 to-black/40" />
-      </div>
+    {/* Video Background */}
+<div className="absolute inset-0 w-full h-full bg-black">
+  {/* Image appears immediately while the video loads */}
+  <img
+    src={heroPoster}
+    alt=""
+    fetchPriority="high"
+    className="absolute inset-0 w-full h-full object-cover"
+  />
+
+  {/* Background Video */}
+  <video
+    autoPlay
+    muted
+    loop
+    playsInline
+    preload="auto"
+    poster={heroPoster}
+    className="absolute inset-0 w-full h-full object-cover"
+  >
+    <source src={heroVideo} type="video/webm" />
+  </video>
+
+  {/* Brighter neutral overlay */}
+  <div className="absolute inset-0 bg-gradient-to-b from-black/30 via-black/10 to-black/40" />
+</div>
 
       {/* Content */}
       <div className="relative z-10 h-full flex flex-col items-center justify-center px-[20px] md:px-[64px] text-center">
