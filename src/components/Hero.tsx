@@ -2,7 +2,7 @@ import React from "react";
 import { Link } from "react-router-dom";
 import { useLang } from "../context/LanguageContext";
 
-import heroVideo from "../assets/hero4.webm";
+import heroVideo from "../assets/hero.webm";
 
 const Hero: React.FC = () => {
   const { lang, t } = useLang();
@@ -31,7 +31,7 @@ const Hero: React.FC = () => {
           preload="auto"
           poster="/screen.webp"
           onCanPlay={(e) => {
-            
+             
             e.currentTarget.style.opacity = "1";
           }}
           className="absolute inset-0 h-full w-full object-cover opacity-0 transition-opacity duration-500"
