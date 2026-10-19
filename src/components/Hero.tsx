@@ -1,10 +1,9 @@
-// src/components/Hero.tsx
+
 import React from "react";
 import { Link } from "react-router-dom";
 import { useLang } from "../context/LanguageContext";
 
-// Import the video directly from your assets folder
-import heroVideo from "../assets/hero4.webm"; 
+import heroVideo from "../assets/hero4.webm";
 import heroPoster from "../assets/screen.png";
 
 const Hero: React.FC = () => {
@@ -12,55 +11,66 @@ const Hero: React.FC = () => {
   const isRTL = lang === "AR";
 
   return (
-    <section className="relative h-screen min-h-[700px] w-full overflow-hidden" dir={isRTL ? "rtl" : "ltr"}>
-    {/* Video Background */}
-<div className="absolute inset-0 w-full h-full bg-black">
-  {/* Image appears immediately while the video loads */}
-  <img
-    src={heroPoster}
-    alt=""
-    fetchPriority="high"
-    className="absolute inset-0 w-full h-full object-cover"
-  />
+    <section
+      className="relative h-[100svh] min-h-[600px] w-full overflow-hidden md:min-h-[650px]"
+      dir={isRTL ? "rtl" : "ltr"}
+    >
+      {/* Video Background */}
+      <div className="absolute inset-0 h-full w-full overflow-hidden bg-[#285B4B]">
+        {/* Display the image while the video loads */}
+        <img
+          src={heroPoster}
+          alt=""
+          fetchPriority="high"
+          className="absolute inset-0 h-full w-full object-cover object-center"
+        />
 
-  {/* Background Video */}
-  <video
-    autoPlay
-    muted
-    loop
-    playsInline
-    preload="auto"
-    poster={heroPoster}
-    className="absolute inset-0 w-full h-full object-cover"
-  >
-    <source src={heroVideo} type="video/webm" />
-  </video>
+        {/* Background Video */}
+        <video
+          autoPlay
+          muted
+          loop
+          playsInline
+          preload="auto"
+          poster={heroPoster}
+          onCanPlay={(e) => {
+            e.currentTarget.style.opacity = "1";
+          }}
+          className="absolute inset-0 h-full w-full object-cover object-center opacity-0 transition-opacity duration-500"
+          aria-hidden="true"
+        >
+          <source src={heroVideo} type="video/webm" />
+        </video>
 
-  {/* Brighter neutral overlay */}
-  <div className="absolute inset-0 bg-gradient-to-b from-black/30 via-black/10 to-black/40" />
-</div>
+        {/* Overlay for text readability */}
+        <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-black/30 via-black/10 to-black/40" />
+      </div>
 
       {/* Content */}
-      <div className="relative z-10 h-full flex flex-col items-center justify-center px-[20px] md:px-[64px] text-center">
-        <div className="max-w-4xl mx-auto">
-          <p className="font-['JetBrains_Mono'] text-[11px] md:text-[13px] leading-[16px] text-[#C9A84C] uppercase tracking-[0.2em] font-bold mb-6 animate-fade-in">
-            {t('hero.tagline')}
+      <div className="relative z-10 flex h-full flex-col items-center justify-center px-5 py-16 text-center sm:px-8 md:px-16">
+        <div className="mx-auto w-full max-w-4xl">
+          {/* Tagline */}
+          <p className="mb-4 font-['JetBrains_Mono'] text-[10px] font-bold uppercase leading-5 tracking-[0.15em] text-[#C9A84C] sm:mb-6 sm:text-xs sm:tracking-[0.2em] md:text-[13px]">
+            {t("hero.tagline")}
           </p>
-          
-          <h1 className="font-['Hanken_Grotesk'] text-4xl md:text-5xl lg:text-6xl leading-tight text-[#fbf9f4] font-bold mb-6 animate-fade-in-up">
-            {t('hero.title')}
+
+          {/* Main Heading */}
+          <h1 className="mb-5 font-['Hanken_Grotesk'] text-3xl font-bold leading-tight text-[#fbf9f4] sm:text-4xl md:mb-6 md:text-5xl lg:text-6xl">
+            {t("hero.title")}
           </h1>
-          
-          <p className="font-['Inter'] text-lg md:text-xl leading-relaxed text-[#fbf9f4]/90 mb-10 max-w-2xl mx-auto animate-fade-in-up animation-delay-200">
-            {t('hero.subtitle')}
+
+          {/* Subtitle */}
+          <p className="mx-auto mb-8 max-w-2xl font-['Inter'] text-base leading-relaxed text-[#fbf9f4]/90 sm:text-lg md:mb-10 md:text-xl">
+            {t("hero.subtitle")}
           </p>
-          
-          <div className="flex justify-center items-center animate-fade-in-up animation-delay-400">
+
+          {/* Explore Button */}
+          <div className="flex justify-center">
             <Link
               to="/scholars"
-              className="px-8 py-4 bg-[#1e4d3a] text-[#fbf9f4] border-2 border-[#1e4d3a] rounded-lg text-[13px] font-bold tracking-[0.05em] font-['Hanken_Grotesk'] hover:bg-[#fbf9f4] hover:text-[#1e4d3a] transition-all duration-300"
+              className="inline-flex min-h-12 items-center justify-center rounded-lg border-2 border-[#1e4d3a] bg-[#1e4d3a] px-6 py-3 text-center font-['Hanken_Grotesk'] text-xs font-bold tracking-wide text-[#fbf9f4] transition-colors duration-300 hover:bg-[#fbf9f4] hover:text-[#1e4d3a] sm:px-8 sm:py-4 sm:text-[13px]"
             >
-              {t('hero.exploreButton')}
+              {t("hero.exploreButton")}
             </Link>
           </div>
         </div>
@@ -69,29 +79,38 @@ const Hero: React.FC = () => {
       {/* Custom Animations */}
       <style>{`
         @keyframes fade-in {
-          from { opacity: 0; }
-          to { opacity: 1; }
+          from {
+            opacity: 0;
+          }
+          to {
+            opacity: 1;
+          }
         }
+
         @keyframes fade-in-up {
-          from { 
+          from {
             opacity: 0;
             transform: translateY(30px);
           }
-          to { 
+          to {
             opacity: 1;
             transform: translateY(0);
           }
         }
+
         .animate-fade-in {
           animation: fade-in 1s ease-out forwards;
         }
+
         .animate-fade-in-up {
           animation: fade-in-up 1s ease-out forwards;
           opacity: 0;
         }
+
         .animation-delay-200 {
           animation-delay: 0.2s;
         }
+
         .animation-delay-400 {
           animation-delay: 0.4s;
         }
